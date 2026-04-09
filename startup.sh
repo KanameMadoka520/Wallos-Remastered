@@ -9,6 +9,14 @@ echo "Startup script is running..." > /var/log/startup.log
 PUID=${PUID:-82}
 PGID=${PGID:-82}
 
+cat <<'EOF' > /usr/local/etc/php/conf.d/zz-upload-limits.ini
+upload_max_filesize=64M
+post_max_size=256M
+max_file_uploads=50
+max_input_time=120
+max_execution_time=120
+EOF
+
 # Change the www-data user id and group id to be the user-specified ones
 groupmod -o -g "$PGID" www-data
 usermod -o -u "$PUID" www-data

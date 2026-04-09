@@ -3,6 +3,7 @@ FROM bellamy/wallos:latest
 WORKDIR /var/www/html
 
 COPY . .
+COPY nginx.conf /etc/nginx/nginx.conf
 
 RUN sed -i 's/\r$//' /var/www/html/startup.sh && \
     chown -R www-data:www-data /var/www/html && \
