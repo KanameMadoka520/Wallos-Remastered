@@ -202,14 +202,19 @@ function resetDetailImageControls() {
 
 function validateDetailImageFile(file) {
   const config = getDetailImageConfig();
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+  const fileName = String(file?.name || "").toLowerCase();
+  const hasAllowedExtension = [".jpg", ".jpeg", ".png", ".webp"].some((extension) =>
+    fileName.endsWith(extension),
+  );
+  const hasAllowedType = allowedTypes.includes(file.type);
 
   if (!config.canUpload) {
     showErrorMessage(config.uploadBlockedMessage);
     return false;
   }
 
-  if (!allowedTypes.includes(file.type)) {
+  if (!hasAllowedType && !hasAllowedExtension) {
     showErrorMessage(config.invalidTypeMessage);
     return false;
   }
@@ -817,7 +822,22 @@ function submitFormData(formData, submitButton, endpoint) {
     },
     body: formData,
   })
-    .then((response) => response.json())
+    .then(async (response) => {
+      const rawResponse = await response.text();
+      let data = null;
+
+      try {
+        data = JSON.parse(rawResponse);
+      } catch (error) {
+        throw new Error(rawResponse || translate("unknown_error"));
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || translate("unknown_error"));
+      }
+
+      return data;
+    })
     .then((data) => {
       if (data.status === "Success") {
         showSuccessMessage(data.message);
@@ -829,7 +849,7 @@ function submitFormData(formData, submitButton, endpoint) {
     })
     .catch((error) => {
       console.error(error);
-      showErrorMessage(translate("unknown_error"));
+      showErrorMessage(error.message || translate("unknown_error"));
     })
     .finally(() => {
       submitButton.disabled = false;
