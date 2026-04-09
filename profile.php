@@ -172,6 +172,15 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                                 }
                                 ?>
                             </select>
+                            <div class="settings-notes profile-language-note">
+                                <p>
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    <?= translate('language_change_default_names_notice', $i18n) ?>
+                                    <span>
+                                        <a href="settings.php#settings-categories"><?= translate('settings', $i18n) ?></a>
+                                    </span>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

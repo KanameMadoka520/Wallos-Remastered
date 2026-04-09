@@ -1,6 +1,7 @@
 <?php
 
 require_once 'i18n/getlang.php';
+require_once __DIR__ . '/subscription_media.php';
 
 function getBillingCycle($cycle, $frequency, $i18n)
 {
@@ -333,6 +334,10 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                     ?>
                 </div>
                 <?php
+                $detailImage = $subscription['detail_image'] ?? '';
+                $detailImageUrls = wallos_decode_subscription_image_urls($subscription['detail_image_urls'] ?? '[]');
+                $hasDetailImages = $detailImage !== '' || !empty($detailImageUrls);
+
                 if ($subscription['notes'] != "") {
                     ?>
                     <div class="subscription-notes">
@@ -340,6 +345,42 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                             <?php include $imagePath . "images/siteicons/svg/notes.php"; ?>
                             <?= $subscription['notes'] ?>
                         </span>
+                    </div>
+                    <?php
+                }
+
+                if ($hasDetailImages) {
+                    ?>
+                    <div class="subscription-media">
+                        <span class="subscription-media-title">
+                            <i class="fa-regular fa-image"></i>
+                            <?= translate('subscription_images', $i18n) ?>
+                        </span>
+                        <div class="subscription-media-gallery">
+                            <?php
+                            if ($detailImage !== '') {
+                                ?>
+                                <a class="subscription-media-item" href="<?= htmlspecialchars($detailImage, ENT_QUOTES, 'UTF-8') ?>"
+                                    target="_blank" rel="noreferrer">
+                                    <img src="<?= htmlspecialchars($detailImage, ENT_QUOTES, 'UTF-8') ?>"
+                                        alt="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>"
+                                        loading="lazy" decoding="async" />
+                                </a>
+                                <?php
+                            }
+
+                            foreach ($detailImageUrls as $detailImageUrl) {
+                                ?>
+                                <a class="subscription-media-item" href="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                    target="_blank" rel="noreferrer" referrerpolicy="no-referrer">
+                                    <img src="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                        alt="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>"
+                                        loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+                                </a>
+                                <?php
+                            }
+                            ?>
+                        </div>
                     </div>
                     <?php
                 }

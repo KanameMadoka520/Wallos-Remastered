@@ -2,6 +2,8 @@
 
 require_once 'includes/header.php';
 require_once 'includes/getdbkeys.php';
+require_once 'includes/user_groups.php';
+require_once 'includes/subscription_media.php';
 
 include_once 'includes/list_subscriptions.php';
 
@@ -146,6 +148,8 @@ if ($sortOrder == "payment_method_id") {
 }
 
 $headerClass = count($subscriptions) > 0 ? "main-actions" : "main-actions hidden";
+$effectiveUserGroup = wallos_get_effective_user_group($userData['user_group'] ?? WALLOS_USER_GROUP_FREE, $isAdmin);
+$canUploadSubscriptionImages = wallos_can_upload_subscription_images($isAdmin, $userData['user_group'] ?? WALLOS_USER_GROUP_FREE);
 ?>
 <style>
   .logo-preview:after {
@@ -224,6 +228,8 @@ $headerClass = count($subscriptions) > 0 ? "main-actions" : "main-actions hidden
       $print[$id]['url'] = $subscription['url'];
       $print[$id]['notes'] = $subscription['notes'];
       $print[$id]['replacement_subscription_id'] = $subscription['replacement_subscription_id'];
+      $print[$id]['detail_image'] = $subscription['detail_image'] ?? '';
+      $print[$id]['detail_image_urls'] = $subscription['detail_image_urls'] ?? '[]';
 
       if (isset($settings['convertCurrency']) && $settings['convertCurrency'] === 'true' && $currencyId != $mainCurrencyId) {
         $print[$id]['price'] = getPriceConverted($print[$id]['price'], $currencyId, $db);
@@ -276,7 +282,14 @@ $headerClass = count($subscriptions) > 0 ? "main-actions" : "main-actions hidden
     <h3 id="form-title"><?= translate('add_subscription', $i18n) ?></h3>
     <span class="fa-solid fa-xmark close-form" onClick="closeAddSubscription()"></span>
   </header>
-  <form action="endpoints/subscription/add.php" method="post" id="subs-form">
+  <form action="endpoints/subscription/add.php" method="post" id="subs-form" enctype="multipart/form-data"
+    data-effective-user-group="<?= $effectiveUserGroup ?>"
+    data-can-upload-detail-image="<?= $canUploadSubscriptionImages ? '1' : '0' ?>"
+    data-compression-mode="<?= $isAdmin ? 'optional' : ($canUploadSubscriptionImages ? 'required' : 'disabled') ?>"
+    data-detail-image-max-bytes="<?= WALLOS_SUBSCRIPTION_IMAGE_MAX_BYTES ?>"
+    data-detail-image-too-large="<?= htmlspecialchars(translate('subscription_image_too_large', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+    data-detail-image-invalid-type="<?= htmlspecialchars(translate('subscription_image_invalid_type', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+    data-detail-image-upload-blocked="<?= htmlspecialchars(translate('subscription_image_no_upload_permission', $i18n), ENT_QUOTES, 'UTF-8') ?>">
 
     <div class="form-group-inline">
       <input type="text" id="name" name="name" autocomplete="off"
@@ -466,6 +479,58 @@ $headerClass = count($subscriptions) > 0 ? "main-actions" : "main-actions hidden
 
     <div class="form-group">
       <input type="text" id="notes" name="notes" autocomplete="off" placeholder="<?= translate('notes', $i18n) ?>">
+    </div>
+
+    <div class="form-group subscription-detail-images-group">
+      <label for="detail-image-urls"><?= translate('subscription_images', $i18n) ?></label>
+      <div class="subscription-detail-image-panel">
+        <div class="subscription-detail-image-preview is-hidden" id="detail-image-preview-wrapper" data-persisted="0">
+          <img src="" alt="<?= translate('subscription_images', $i18n) ?>" id="detail-image-preview">
+          <button type="button" class="button secondary-button thin detail-image-remove" id="detail-image-remove-button"
+            onClick="removeDetailImagePreview()">
+            <?= translate('subscription_image_remove', $i18n) ?>
+          </button>
+        </div>
+        <div class="subscription-detail-image-actions">
+          <label for="detail-image-upload"
+            class="button secondary-button thin upload-detail-image-button<?= $canUploadSubscriptionImages ? '' : ' disabled' ?>">
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+            <?= translate('subscription_image_upload', $i18n) ?>
+          </label>
+          <input type="file" id="detail-image-upload" name="detail_image"
+            accept="image/jpeg, image/png, image/webp"
+            onchange="handleDetailImageSelect(event)" class="hidden-input"
+            <?= $canUploadSubscriptionImages ? '' : 'disabled' ?>>
+          <input type="hidden" id="remove-detail-image" name="remove-detail-image" value="0">
+          <div class="form-group-inline grow subscription-image-compress-inline">
+            <input type="checkbox" id="compress_subscription_image" name="compress_subscription_image"
+              value="1" <?= $isAdmin ? '' : 'checked' ?> <?= $isAdmin ? '' : 'disabled' ?>>
+            <label for="compress_subscription_image" class="grow">
+              <?= translate('subscription_image_compress_toggle', $i18n) ?>
+            </label>
+          </div>
+        </div>
+      </div>
+      <textarea id="detail-image-urls" name="detail_image_urls" rows="4"
+        placeholder="<?= translate('subscription_image_external_urls_placeholder', $i18n) ?>"></textarea>
+      <div class="settings-notes subscription-image-notes">
+        <p>
+          <i class="fa-solid fa-circle-info"></i>
+          <?= translate('subscription_image_limits_notice', $i18n) ?>
+        </p>
+        <p>
+          <i class="fa-solid fa-circle-info"></i>
+          <?php
+          if ($isAdmin) {
+            echo translate('subscription_image_admin_notice', $i18n);
+          } elseif ($canUploadSubscriptionImages) {
+            echo translate('subscription_image_trusted_notice', $i18n);
+          } else {
+            echo translate('subscription_image_free_notice', $i18n);
+          }
+          ?>
+        </p>
+      </div>
     </div>
 
     <div class="form-group">

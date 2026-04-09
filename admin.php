@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/user_groups.php';
 
 if ($isAdmin != 1) {
     header('Location: index.php');
@@ -36,7 +37,7 @@ if ($oidcSettings === false) {
 }
 
 // get user accounts
-$stmt = $db->prepare('SELECT id, username, email FROM user ORDER BY id ASC');
+$stmt = $db->prepare('SELECT id, username, email, user_group FROM user ORDER BY id ASC');
 $result = $stmt->execute();
 
 $users = [];
@@ -155,6 +156,7 @@ $pageSections = [
                 <?php
                 foreach ($users as $user) {
                     $userIcon = $user['id'] == 1 ? 'fa-user-tie' : 'fa-id-badge';
+                    $isPrimaryAdmin = (int) $user['id'] === 1;
                     ?>
                     <div class="form-group-inline" data-userid="<?= $user['id'] ?>">
                         <div class="user-list-row">
@@ -171,9 +173,35 @@ $pageSections = [
                                 <a href="mailto:<?= $user['email'] ?>"><?= $user['email'] ?></a>
                             </div>
                         </div>
-                        <div>
+                        <div class="user-list-actions">
+                            <div class="user-group-control">
+                                <label for="user-group-<?= $user['id'] ?>"><?= translate('user_group', $i18n) ?></label>
+                                <?php
+                                if ($isPrimaryAdmin) {
+                                    ?>
+                                    <span class="user-group-badge admin">
+                                        <?= wallos_get_user_group_label($user['user_group'] ?? WALLOS_USER_GROUP_FREE, $i18n, true) ?>
+                                    </span>
+                                    <?php
+                                } else {
+                                    $normalizedGroup = wallos_normalize_user_group($user['user_group'] ?? WALLOS_USER_GROUP_FREE);
+                                    ?>
+                                    <select id="user-group-<?= $user['id'] ?>" class="user-group-select"
+                                        data-current-value="<?= $normalizedGroup ?>"
+                                        onchange="updateUserGroup(<?= $user['id'] ?>, this)">
+                                        <option value="free" <?= $normalizedGroup === WALLOS_USER_GROUP_FREE ? 'selected' : '' ?>>
+                                            <?= translate('free_user_group', $i18n) ?>
+                                        </option>
+                                        <option value="trusted" <?= $normalizedGroup === WALLOS_USER_GROUP_TRUSTED ? 'selected' : '' ?>>
+                                            <?= translate('trusted_user_group', $i18n) ?>
+                                        </option>
+                                    </select>
+                                    <?php
+                                }
+                                ?>
+                            </div>
                             <?php
-                            if ($user['id'] != 1) {
+                            if (!$isPrimaryAdmin) {
                                 ?>
                                 <button class="image-button medium" onClick="removeUser(<?= $user['id'] ?>)"
                                     title="<?= translate('delete_user', $i18n) ?>">
@@ -200,6 +228,10 @@ $pageSections = [
                 <p>
                     <i class="fa-solid fa-circle-info"></i>
                     <?= translate('delete_user_info', $i18n) ?>
+                </p>
+                <p>
+                    <i class="fa-solid fa-circle-info"></i>
+                    <?= translate('user_group_management_info', $i18n) ?>
                 </p>
             </div>
             <h2><?= translate('create_user', $i18n) ?></h2>

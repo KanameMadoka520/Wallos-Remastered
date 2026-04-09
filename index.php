@@ -2,6 +2,7 @@
 
 require_once 'includes/header.php';
 require_once 'includes/getdbkeys.php';
+require_once 'includes/user_groups.php';
 
 function formatPrice($price, $currencyCode, $currencies)
 {
@@ -59,6 +60,7 @@ $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
 $result = $stmt->execute();
 $user = $result->fetchArray(SQLITE3_ASSOC);
 $first_name = $user['firstname'] ?? $user['username'] ?? '';
+$effectiveUserGroup = wallos_get_effective_user_group($userData['user_group'] ?? WALLOS_USER_GROUP_FREE, $isAdmin);
 
 // Fetch the next 3 enabled subscriptions up for payment
 $stmt = $db->prepare("SELECT id, logo, name, price, currency_id, next_payment, inactive FROM subscriptions WHERE user_id = :userId AND next_payment >= date('now') AND inactive = 0 ORDER BY next_payment ASC LIMIT 3");
@@ -120,6 +122,26 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         }
     ?>
     <h1><?= translate('hello', $i18n) ?> <?= htmlspecialchars($first_name) ?></h1>
+    <div class="subscription-upload-policy-banner">
+        <div class="subscription-upload-policy-header">
+            <h2><?= translate('homepage_upload_policy_title', $i18n) ?></h2>
+            <span class="user-group-badge <?= htmlspecialchars($effectiveUserGroup, ENT_QUOTES, 'UTF-8') ?>">
+                <?= wallos_get_user_group_label($userData['user_group'] ?? WALLOS_USER_GROUP_FREE, $i18n, $isAdmin) ?>
+            </span>
+        </div>
+        <p><?= translate('homepage_upload_policy_summary', $i18n) ?></p>
+        <p>
+            <?php
+            if ($effectiveUserGroup === 'admin') {
+                echo translate('homepage_upload_policy_admin', $i18n);
+            } elseif ($effectiveUserGroup === WALLOS_USER_GROUP_TRUSTED) {
+                echo translate('homepage_upload_policy_trusted', $i18n);
+            } else {
+                echo translate('homepage_upload_policy_free', $i18n);
+            }
+            ?>
+        </p>
+    </div>
 
     <?php
     // If there are overdue subscriptions, display them

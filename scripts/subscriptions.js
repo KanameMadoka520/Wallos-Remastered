@@ -19,6 +19,137 @@ function toggleNotificationDays() {
   notifyDaysBefore.disabled = !notifyCheckbox.checked;
 }
 
+function getDetailImageConfig() {
+  const form = document.querySelector("#subs-form");
+
+  return {
+    canUpload: form?.dataset.canUploadDetailImage === "1",
+    compressionMode: form?.dataset.compressionMode || "disabled",
+    maxBytes: Number(form?.dataset.detailImageMaxBytes || 0),
+    tooLargeMessage: form?.dataset.detailImageTooLarge || translate("unknown_error"),
+    invalidTypeMessage: form?.dataset.detailImageInvalidType || translate("unknown_error"),
+    uploadBlockedMessage: form?.dataset.detailImageUploadBlocked || translate("unknown_error"),
+  };
+}
+
+function resetDetailImageCompression() {
+  const compressCheckbox = document.querySelector("#compress_subscription_image");
+  const config = getDetailImageConfig();
+
+  if (!compressCheckbox) {
+    return;
+  }
+
+  compressCheckbox.checked = config.compressionMode !== "optional";
+}
+
+function clearDetailImagePreview() {
+  const previewWrapper = document.querySelector("#detail-image-preview-wrapper");
+  const previewImage = document.querySelector("#detail-image-preview");
+
+  if (!previewWrapper || !previewImage) {
+    return;
+  }
+
+  previewImage.src = "";
+  previewWrapper.dataset.persisted = "0";
+  previewWrapper.classList.add("is-hidden");
+}
+
+function showDetailImagePreview(src, persisted = false) {
+  const previewWrapper = document.querySelector("#detail-image-preview-wrapper");
+  const previewImage = document.querySelector("#detail-image-preview");
+
+  if (!previewWrapper || !previewImage || !src) {
+    clearDetailImagePreview();
+    return;
+  }
+
+  previewImage.src = src;
+  previewWrapper.dataset.persisted = persisted ? "1" : "0";
+  previewWrapper.classList.remove("is-hidden");
+}
+
+function resetDetailImageControls() {
+  const detailImageInput = document.querySelector("#detail-image-upload");
+  const detailImageUrls = document.querySelector("#detail-image-urls");
+  const removeDetailImage = document.querySelector("#remove-detail-image");
+
+  if (detailImageInput) {
+    detailImageInput.value = "";
+  }
+  if (detailImageUrls) {
+    detailImageUrls.value = "";
+  }
+  if (removeDetailImage) {
+    removeDetailImage.value = "0";
+  }
+
+  resetDetailImageCompression();
+  clearDetailImagePreview();
+}
+
+function validateDetailImageFile(file) {
+  const config = getDetailImageConfig();
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+  if (!config.canUpload) {
+    showErrorMessage(config.uploadBlockedMessage);
+    return false;
+  }
+
+  if (!allowedTypes.includes(file.type)) {
+    showErrorMessage(config.invalidTypeMessage);
+    return false;
+  }
+
+  if (config.maxBytes > 0 && file.size > config.maxBytes) {
+    showErrorMessage(config.tooLargeMessage);
+    return false;
+  }
+
+  return true;
+}
+
+function handleDetailImageSelect(event) {
+  const fileInput = event.target;
+  const removeDetailImage = document.querySelector("#remove-detail-image");
+
+  if (!fileInput.files || !fileInput.files[0]) {
+    return;
+  }
+
+  const file = fileInput.files[0];
+  if (!validateDetailImageFile(file)) {
+    fileInput.value = "";
+    return;
+  }
+
+  if (removeDetailImage) {
+    removeDetailImage.value = "0";
+  }
+
+  const reader = new FileReader();
+  reader.onload = function (loadEvent) {
+    showDetailImagePreview(loadEvent.target.result, false);
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeDetailImagePreview() {
+  const detailImageInput = document.querySelector("#detail-image-upload");
+  const removeDetailImage = document.querySelector("#remove-detail-image");
+  const previewWrapper = document.querySelector("#detail-image-preview-wrapper");
+
+  if (detailImageInput && detailImageInput.files && detailImageInput.files.length > 0) {
+    detailImageInput.value = "";
+  } else if (previewWrapper?.dataset.persisted === "1" && removeDetailImage) {
+    removeDetailImage.value = "1";
+  }
+
+  clearDetailImagePreview();
+}
+
 function resetForm() {
   const id = document.querySelector("#id");
   id.value = "";
@@ -45,6 +176,7 @@ function resetForm() {
   replacementSubscription.classList.add("hide");
   const form = document.querySelector("#subs-form");
   form.reset();
+  resetDetailImageControls();
   closeLogoSearch();
   const deleteButton = document.querySelector("#deletesub");
   deleteButton.style = 'display: none';
@@ -91,6 +223,26 @@ function fillEditFormFields(subscription) {
 
   const notes = document.querySelector("#notes");
   notes.value = subscription.notes;
+  const detailImageUrls = document.querySelector("#detail-image-urls");
+  if (detailImageUrls) {
+    detailImageUrls.value = Array.isArray(subscription.detail_image_urls)
+      ? subscription.detail_image_urls.join("\n")
+      : "";
+  }
+  const removeDetailImage = document.querySelector("#remove-detail-image");
+  if (removeDetailImage) {
+    removeDetailImage.value = "0";
+  }
+  const detailImageInput = document.querySelector("#detail-image-upload");
+  if (detailImageInput) {
+    detailImageInput.value = "";
+  }
+  resetDetailImageCompression();
+  if (subscription.detail_image) {
+    showDetailImagePreview(subscription.detail_image, true);
+  } else {
+    clearDetailImagePreview();
+  }
   const inactive = document.querySelector("#inactive");
   inactive.checked = subscription.inactive;
   const url = document.querySelector("#url");
@@ -511,6 +663,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
     submitButton.disabled = true;
     const formData = new FormData(subscriptionForm);
+    const detailImageFileInput = document.querySelector("#detail-image-upload");
+    const detailImageFile = detailImageFileInput?.files?.[0];
+    const detailImageConfig = getDetailImageConfig();
+    const compressCheckbox = document.querySelector("#compress_subscription_image");
+
+    if (detailImageFile && !validateDetailImageFile(detailImageFile)) {
+      submitButton.disabled = false;
+      return;
+    }
+
+    const shouldCompressDetailImage =
+      detailImageConfig.compressionMode === "optional"
+        ? (compressCheckbox?.checked ? "1" : "0")
+        : "1";
+
+    formData.set("compress_subscription_image", shouldCompressDetailImage);
+    if (!formData.get("remove-detail-image")) {
+      formData.set("remove-detail-image", "0");
+    }
 
     const fileInput = document.querySelector("#logo");
     const file = fileInput.files[0];

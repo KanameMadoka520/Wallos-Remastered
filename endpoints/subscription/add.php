@@ -4,10 +4,23 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/inputvalidation.php';
 require_once '../../includes/getsettings.php';
-
+require_once '../../includes/subscription_media.php';
+require_once '../../includes/user_groups.php';
 if (!file_exists('../../images/uploads/logos')) {
     mkdir('../../images/uploads/logos', 0777, true);
     mkdir('../../images/uploads/logos/avatars', 0777, true);
+}
+
+wallos_ensure_subscription_media_directory(__DIR__ . '/../../');
+
+function subscription_error_response($message)
+{
+    header('Content-Type: application/json');
+    echo json_encode([
+        'status' => 'Error',
+        'message' => $message,
+    ]);
+    exit();
 }
 
 function sanitizeFilename($filename)
@@ -240,9 +253,50 @@ $notifyDaysBefore = $_POST['notify_days_before'];
 $inactive = isset($_POST['inactive']) ? true : false;
 $cancellationDate = $_POST['cancellation_date'] ?? null;
 $replacementSubscriptionId = $_POST['replacement_subscription_id'];
+$detailImageUrlsRaw = $_POST['detail_image_urls'] ?? '';
+$removeDetailImage = isset($_POST['remove-detail-image']) && $_POST['remove-detail-image'] === '1';
 
 if ($replacementSubscriptionId == 0 || $inactive == 0) {
     $replacementSubscriptionId = null;
+}
+
+$userStmt = $db->prepare('SELECT user_group FROM user WHERE id = :userId');
+$userStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+$userResult = $userStmt->execute();
+$currentUser = $userResult ? $userResult->fetchArray(SQLITE3_ASSOC) : false;
+
+$isAdminUser = $userId === 1;
+$currentUserGroup = wallos_normalize_user_group($currentUser['user_group'] ?? WALLOS_USER_GROUP_FREE);
+$canUploadDetailImage = wallos_can_upload_subscription_images($isAdminUser, $currentUserGroup);
+$compressDetailImage = $isAdminUser
+    ? (isset($_POST['compress_subscription_image']) && $_POST['compress_subscription_image'] === '1')
+    : $canUploadDetailImage;
+
+try {
+    $detailImageUrls = wallos_parse_subscription_image_urls($detailImageUrlsRaw, $i18n);
+} catch (RuntimeException $exception) {
+    subscription_error_response($exception->getMessage());
+}
+
+$existingSubscription = null;
+$detailImage = '';
+$oldDetailImage = '';
+$newDetailImage = '';
+
+if ($isEdit) {
+    $id = (int) $_POST['id'];
+    $existingStmt = $db->prepare('SELECT detail_image FROM subscriptions WHERE id = :id AND user_id = :userId');
+    $existingStmt->bindValue(':id', $id, SQLITE3_INTEGER);
+    $existingStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+    $existingResult = $existingStmt->execute();
+    $existingSubscription = $existingResult ? $existingResult->fetchArray(SQLITE3_ASSOC) : false;
+
+    if ($existingSubscription === false) {
+        subscription_error_response(translate('error', $i18n));
+    }
+
+    $oldDetailImage = $existingSubscription['detail_image'] ?? '';
+    $detailImage = $oldDetailImage;
 }
 
 if ($logoUrl !== "") {
@@ -256,46 +310,71 @@ if ($logoUrl !== "") {
     if (!empty($_FILES['logo']['name'])) {
         $fileType = mime_content_type($_FILES['logo']['tmp_name']);
         if (strpos($fileType, 'image') === false) {
-            echo translate("fill_all_fields", $i18n);
-            exit();
+            subscription_error_response(translate("fill_all_fields", $i18n));
         }
         $logo = resizeAndUploadLogo($_FILES['logo'], '../../images/uploads/logos/', $name, $settings);
     }
 }
 
+if (!$canUploadDetailImage && !empty($_FILES['detail_image']['name'])) {
+    subscription_error_response(translate('subscription_image_no_upload_permission', $i18n));
+}
+
+if ($removeDetailImage) {
+    $detailImage = '';
+}
+
+if ($canUploadDetailImage && !empty($_FILES['detail_image']['name'])) {
+    try {
+        $newDetailImage = wallos_store_uploaded_subscription_image(
+            $_FILES['detail_image'],
+            $name,
+            __DIR__ . '/../../',
+            $compressDetailImage,
+            $i18n
+        );
+        $detailImage = $newDetailImage;
+    } catch (RuntimeException $exception) {
+        subscription_error_response($exception->getMessage());
+    }
+}
+
+$detailImageUrlsJson = wallos_encode_subscription_image_urls($detailImageUrls);
+
 if (!$isEdit) {
     $sql = "INSERT INTO subscriptions (
-                        name, logo, price, currency_id, next_payment, cycle, frequency, notes, 
-                        payment_method_id, payer_user_id, category_id, notify, inactive, url, 
+                        name, logo, price, currency_id, next_payment, cycle, frequency, notes,
+                        payment_method_id, payer_user_id, category_id, notify, inactive, url,
                         notify_days_before, user_id, cancellation_date, replacement_subscription_id,
-                        auto_renew, start_date
+                        auto_renew, start_date, detail_image, detail_image_urls
                     ) VALUES (
-                        :name, :logo, :price, :currencyId, :nextPayment, :cycle, :frequency, :notes, 
-                        :paymentMethodId, :payerUserId, :categoryId, :notify, :inactive, :url, 
+                        :name, :logo, :price, :currencyId, :nextPayment, :cycle, :frequency, :notes,
+                        :paymentMethodId, :payerUserId, :categoryId, :notify, :inactive, :url,
                         :notifyDaysBefore, :userId, :cancellationDate, :replacement_subscription_id,
-                        :autoRenew, :startDate
+                        :autoRenew, :startDate, :detailImage, :detailImageUrls
                     )";
 } else {
-    $id = $_POST['id'];
-    $sql = "UPDATE subscriptions SET 
-                        name = :name, 
-                        price = :price, 
+    $sql = "UPDATE subscriptions SET
+                        name = :name,
+                        price = :price,
                         currency_id = :currencyId,
-                        next_payment = :nextPayment, 
+                        next_payment = :nextPayment,
                         auto_renew = :autoRenew,
                         start_date = :startDate,
-                        cycle = :cycle, 
-                        frequency = :frequency, 
-                        notes = :notes, 
+                        cycle = :cycle,
+                        frequency = :frequency,
+                        notes = :notes,
                         payment_method_id = :paymentMethodId,
-                        payer_user_id = :payerUserId, 
-                        category_id = :categoryId, 
-                        notify = :notify, 
-                        inactive = :inactive, 
-                        url = :url, 
-                        notify_days_before = :notifyDaysBefore, 
-                        cancellation_date = :cancellationDate, 
-                        replacement_subscription_id = :replacement_subscription_id";
+                        payer_user_id = :payerUserId,
+                        category_id = :categoryId,
+                        notify = :notify,
+                        inactive = :inactive,
+                        url = :url,
+                        notify_days_before = :notifyDaysBefore,
+                        cancellation_date = :cancellationDate,
+                        replacement_subscription_id = :replacement_subscription_id,
+                        detail_image = :detailImage,
+                        detail_image_urls = :detailImageUrls";
 
     if ($logo != "") {
         $sql .= ", logo = :logo";
@@ -330,8 +409,14 @@ if ($isEdit) {
 }
 $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
 $stmt->bindParam(':replacement_subscription_id', $replacementSubscriptionId, SQLITE3_INTEGER);
+$stmt->bindParam(':detailImage', $detailImage, SQLITE3_TEXT);
+$stmt->bindParam(':detailImageUrls', $detailImageUrlsJson, SQLITE3_TEXT);
 
 if ($stmt->execute()) {
+    if ($oldDetailImage !== '' && $oldDetailImage !== $detailImage) {
+        wallos_delete_subscription_image_if_unused($db, __DIR__ . '/../../', $oldDetailImage);
+    }
+
     $success['status'] = "Success";
     $text = $isEdit ? "updated" : "added";
     $success['message'] = translate('subscription_' . $text . '_successfuly', $i18n);
@@ -342,7 +427,10 @@ if ($stmt->execute()) {
     echo json_encode($success);
     exit();
 } else {
-    echo translate('error', $i18n) . ": " . $db->lastErrorMsg();
+    if ($newDetailImage !== '') {
+        wallos_delete_subscription_image_file(__DIR__ . '/../../', $newDetailImage);
+    }
+    subscription_error_response(translate('error', $i18n) . ": " . $db->lastErrorMsg());
 }
 $db->close();
 ?>
