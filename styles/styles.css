@@ -333,6 +333,31 @@ main>.contain {
   scroll-margin-top: 120px;
 }
 
+.localized-reset-box {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px dashed rgba(var(--main-color-rgb), 0.28);
+  border-radius: 14px;
+  background-color: rgba(var(--main-color-rgb), 0.05);
+}
+
+.localized-reset-box h3 {
+  margin: 0 0 10px 0;
+}
+
+.localized-reset-box p {
+  margin: 0 0 10px 0;
+}
+
+.localized-reset-confirm {
+  margin: 12px 0 14px 0;
+  align-items: flex-start;
+}
+
+.localized-reset-confirm label {
+  line-height: 1.45;
+}
+
 @media (max-width: 1100px) {
   .page-layout {
     grid-template-columns: 1fr;
