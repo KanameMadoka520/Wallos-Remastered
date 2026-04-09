@@ -19,15 +19,23 @@ if ($subscriptionToClone === false) {
     ]));
 }
 
-$query = "INSERT INTO subscriptions (name, logo, price, currency_id, next_payment, cycle, frequency, notes, payment_method_id, payer_user_id, category_id, notify, url, inactive, notify_days_before, user_id, cancellation_date, replacement_subscription_id) VALUES (:name, :logo, :price, :currency_id, :next_payment, :cycle, :frequency, :notes, :payment_method_id, :payer_user_id, :category_id, :notify, :url, :inactive, :notify_days_before, :user_id, :cancellation_date, :replacement_subscription_id)";
+$query = "INSERT INTO subscriptions (
+    name, logo, price, currency_id, next_payment, cycle, frequency, notes,
+    payment_method_id, payer_user_id, category_id, notify, url, inactive,
+    notify_days_before, user_id, cancellation_date, replacement_subscription_id,
+    start_date, auto_renew, detail_image, detail_image_urls
+) VALUES (
+    :name, :logo, :price, :currency_id, :next_payment, :cycle, :frequency, :notes,
+    :payment_method_id, :payer_user_id, :category_id, :notify, :url, :inactive,
+    :notify_days_before, :user_id, :cancellation_date, :replacement_subscription_id,
+    :start_date, :auto_renew, :detail_image, :detail_image_urls
+)";
 $cloneStmt = $db->prepare($query);
 $cloneStmt->bindValue(':name', $subscriptionToClone['name'], SQLITE3_TEXT);
 $cloneStmt->bindValue(':logo', $subscriptionToClone['logo'], SQLITE3_TEXT);
 $cloneStmt->bindValue(':price', $subscriptionToClone['price'], SQLITE3_TEXT);
 $cloneStmt->bindValue(':currency_id', $subscriptionToClone['currency_id'], SQLITE3_INTEGER);
 $cloneStmt->bindValue(':next_payment', $subscriptionToClone['next_payment'], SQLITE3_TEXT);
-$cloneStmt->bindValue(':auto_renew', $subscriptionToClone['auto_renew'], SQLITE3_INTEGER);
-$cloneStmt->bindValue(':start_date', $subscriptionToClone['start_date'], SQLITE3_TEXT);
 $cloneStmt->bindValue(':cycle', $subscriptionToClone['cycle'], SQLITE3_TEXT);
 $cloneStmt->bindValue(':frequency', $subscriptionToClone['frequency'], SQLITE3_INTEGER);
 $cloneStmt->bindValue(':notes', $subscriptionToClone['notes'], SQLITE3_TEXT);
@@ -41,6 +49,10 @@ $cloneStmt->bindValue(':notify_days_before', $subscriptionToClone['notify_days_b
 $cloneStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
 $cloneStmt->bindValue(':cancellation_date', $subscriptionToClone['cancellation_date'], SQLITE3_TEXT);
 $cloneStmt->bindValue(':replacement_subscription_id', $subscriptionToClone['replacement_subscription_id'], SQLITE3_INTEGER);
+$cloneStmt->bindValue(':start_date', $subscriptionToClone['start_date'], SQLITE3_TEXT);
+$cloneStmt->bindValue(':auto_renew', $subscriptionToClone['auto_renew'], SQLITE3_INTEGER);
+$cloneStmt->bindValue(':detail_image', $subscriptionToClone['detail_image'] ?? '', SQLITE3_TEXT);
+$cloneStmt->bindValue(':detail_image_urls', $subscriptionToClone['detail_image_urls'] ?? '[]', SQLITE3_TEXT);
 
 if ($cloneStmt->execute()) {
     $response = [

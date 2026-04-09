@@ -2,6 +2,7 @@
 
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
+require_once '../../includes/subscription_media.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -14,6 +15,15 @@ if ($userIdToDelete == 1 || $userIdToDelete != $userId) {
         "message" => translate('error', $i18n)
     ]));
 } else {
+    $detailImages = wallos_collect_user_subscription_images($db, $userIdToDelete);
+    $avatarPaths = [];
+    $avatarStmt = $db->prepare('SELECT path FROM uploaded_avatars WHERE user_id = :id');
+    $avatarStmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
+    $avatarResult = $avatarStmt->execute();
+    while ($avatarResult && ($avatarRow = $avatarResult->fetchArray(SQLITE3_ASSOC))) {
+        $avatarPaths[] = $avatarRow['path'];
+    }
+
     // Delete user
     $stmt = $db->prepare('DELETE FROM user WHERE id = :id');
     $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
@@ -108,6 +118,21 @@ if ($userIdToDelete == 1 || $userIdToDelete != $userId) {
     $stmt = $db->prepare('DELETE FROM total_yearly_cost WHERE user_id = :id');
     $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
     $result = $stmt->execute();
+
+    $stmt = $db->prepare('DELETE FROM uploaded_avatars WHERE user_id = :id');
+    $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
+    $stmt->execute();
+
+    foreach ($detailImages as $detailImage) {
+        wallos_delete_subscription_image_if_unused($db, __DIR__ . '/../../', $detailImage);
+    }
+
+    foreach ($avatarPaths as $avatarPath) {
+        $fullAvatarPath = __DIR__ . '/../../' . str_replace('/', DIRECTORY_SEPARATOR, $avatarPath);
+        if (is_file($fullAvatarPath)) {
+            unlink($fullAvatarPath);
+        }
+    }
 
     die(json_encode([
         "success" => true,

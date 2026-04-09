@@ -292,6 +292,42 @@ function removeUser(userId) {
 
 }
 
+function updateUserGroup(userId, selectElement) {
+  const previousValue = selectElement.dataset.currentValue || selectElement.value;
+  const nextValue = selectElement.value;
+
+  selectElement.disabled = true;
+
+  fetch('endpoints/admin/updateusergroup.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({
+      userId: userId,
+      userGroup: nextValue,
+    })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        selectElement.dataset.currentValue = nextValue;
+        showSuccessMessage(data.message);
+      } else {
+        selectElement.value = previousValue;
+        showErrorMessage(data.message || translate('error'));
+      }
+    })
+    .catch(() => {
+      selectElement.value = previousValue;
+      showErrorMessage(translate('error'));
+    })
+    .finally(() => {
+      selectElement.disabled = false;
+    });
+}
+
 function addUserButton() {
   const button = document.getElementById('addUserButton');
   button.disabled = true;
