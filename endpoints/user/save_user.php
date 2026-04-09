@@ -3,9 +3,20 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/inputvalidation.php';
 require_once '../../includes/validate_endpoint.php';
 
-if (!file_exists('../../images/uploads/logos')) {
-    mkdir('../../images/uploads/logos', 0777, true);
-    mkdir('../../images/uploads/logos/avatars', 0777, true);
+header('Content-Type: application/json');
+
+$avatarUploadDirectory = '../../images/uploads/logos/avatars/';
+if (!is_dir($avatarUploadDirectory)) {
+    mkdir($avatarUploadDirectory, 0755, true);
+}
+
+function save_user_response($success, $message, array $extra = [])
+{
+    echo json_encode(array_merge([
+        "success" => $success,
+        "message" => $message,
+    ], $extra));
+    exit();
 }
 
 function update_exchange_rate($db, $userId)
@@ -110,91 +121,145 @@ function sanitizeFilename($filename)
     $filename = preg_replace("/[^a-zA-Z0-9\s]/", "", $filename);
     $filename = str_replace(" ", "-", $filename);
     $filename = str_replace(".", "", $filename);
-    return $filename;
+    return $filename !== "" ? $filename : "avatar";
 }
 
-function validateFileExtension($fileExtension)
+function getAvatarMimeTypeMap()
 {
-    $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'jtif', 'webp'];
-    return in_array($fileExtension, $allowedExtensions);
+    return [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+    ];
 }
 
-function resizeAndUploadAvatar($uploadedFile, $uploadDir, $name)
+function loadAvatarImageResource($tmpName, $mimeType)
 {
-    $targetWidth = 80;
-    $targetHeight = 80;
-
-    $timestamp = time();
-    $originalFileName = $uploadedFile['name'];
-    $fileExtension = strtolower(pathinfo($originalFileName, PATHINFO_EXTENSION));
-    $fileExtension = validateFileExtension($fileExtension) ? $fileExtension : 'png';
-    $fileName = $timestamp . '-avatars-' . sanitizeFilename($name) . '.' . $fileExtension;
-    $uploadFile = $uploadDir . $fileName;
-
-    if (move_uploaded_file($uploadedFile['tmp_name'], $uploadFile)) {
-        $fileInfo = getimagesize($uploadFile);
-
-        if ($fileInfo !== false) {
-            $width = $fileInfo[0];
-            $height = $fileInfo[1];
-
-            // Load the image based on its format
-            if ($fileExtension === 'png') {
-                $image = imagecreatefrompng($uploadFile);
-            } elseif ($fileExtension === 'jpg' || $fileExtension === 'jpeg') {
-                $image = imagecreatefromjpeg($uploadFile);
-            } elseif ($fileExtension === 'gif') {
-                $image = imagecreatefromgif($uploadFile);
-            } elseif ($fileExtension === 'webp') {
-                $image = imagecreatefromwebp($uploadFile);
-            } else {
-                // Handle other image formats as needed
-                return "";
-            }
-
-            // Enable alpha channel (transparency) for PNG images
-            if ($fileExtension === 'png') {
-                imagesavealpha($image, true);
-            }
-
-            $newWidth = $width;
-            $newHeight = $height;
-
-            if ($width > $targetWidth) {
-                $newWidth = (int)$targetWidth;
-                $newHeight = (int)(($targetWidth / $width) * $height);
-            }
-
-            if ($newHeight > $targetHeight) {
-                $newWidth = (int)(($targetHeight / $newHeight) * $newWidth);
-                $newHeight = (int)$targetHeight;
-            }
-
-            $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
-            imagesavealpha($resizedImage, true);
-            $transparency = imagecolorallocatealpha($resizedImage, 0, 0, 0, 127);
-            imagefill($resizedImage, 0, 0, $transparency);
-            imagecopyresampled($resizedImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-
-            if ($fileExtension === 'png') {
-                imagepng($resizedImage, $uploadFile);
-            } elseif ($fileExtension === 'jpg' || $fileExtension === 'jpeg') {
-                imagejpeg($resizedImage, $uploadFile);
-            } elseif ($fileExtension === 'gif') {
-                imagegif($resizedImage, $uploadFile);
-            } elseif ($fileExtension === 'webp') {
-                imagewebp($resizedImage, $uploadFile);
-            } else {
-                return "";
-            }
-
-            imagedestroy($image);
-            imagedestroy($resizedImage);
-            return "images/uploads/logos/avatars/" . $fileName;
-        }
+    if ($mimeType === 'image/png') {
+        return imagecreatefrompng($tmpName);
     }
 
-    return "";
+    if ($mimeType === 'image/jpeg') {
+        return imagecreatefromjpeg($tmpName);
+    }
+
+    if ($mimeType === 'image/gif') {
+        return imagecreatefromgif($tmpName);
+    }
+
+    if ($mimeType === 'image/webp') {
+        return imagecreatefromwebp($tmpName);
+    }
+
+    return false;
+}
+
+function writeAvatarImageResource($image, $destination, $mimeType)
+{
+    if ($mimeType === 'image/png') {
+        return imagepng($image, $destination);
+    }
+
+    if ($mimeType === 'image/jpeg') {
+        return imagejpeg($image, $destination, 92);
+    }
+
+    if ($mimeType === 'image/gif') {
+        return imagegif($image, $destination);
+    }
+
+    if ($mimeType === 'image/webp') {
+        return imagewebp($image, $destination, 92);
+    }
+
+    return false;
+}
+
+function resizeAndUploadAvatar($uploadedFile, $uploadDir, $name, $i18n)
+{
+    $uploadError = (int) ($uploadedFile['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($uploadError === UPLOAD_ERR_NO_FILE) {
+        return "";
+    }
+
+    if ($uploadError !== UPLOAD_ERR_OK) {
+        throw new RuntimeException(translate('error_updating_user_data', $i18n));
+    }
+
+    $tmpName = $uploadedFile['tmp_name'] ?? '';
+    if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+        throw new RuntimeException(translate('error_updating_user_data', $i18n));
+    }
+
+    $imageInfo = @getimagesize($tmpName);
+    if ($imageInfo === false || empty($imageInfo['mime'])) {
+        throw new RuntimeException(translate('file_type_error', $i18n));
+    }
+
+    $mimeTypeMap = getAvatarMimeTypeMap();
+    $mimeType = $imageInfo['mime'];
+    if (!isset($mimeTypeMap[$mimeType])) {
+        throw new RuntimeException(translate('file_type_error', $i18n));
+    }
+
+    $width = (int) ($imageInfo[0] ?? 0);
+    $height = (int) ($imageInfo[1] ?? 0);
+    if ($width < 1 || $height < 1) {
+        throw new RuntimeException(translate('file_type_error', $i18n));
+    }
+
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    $targetWidth = 80;
+    $targetHeight = 80;
+    $fileExtension = $mimeTypeMap[$mimeType];
+    $fileName = time() . '-avatars-' . sanitizeFilename($name) . '.' . $fileExtension;
+    $uploadFile = $uploadDir . $fileName;
+
+    $image = loadAvatarImageResource($tmpName, $mimeType);
+    if ($image === false) {
+        throw new RuntimeException(translate('file_type_error', $i18n));
+    }
+
+    if ($mimeType !== 'image/jpeg') {
+        imagesavealpha($image, true);
+    }
+
+    $newWidth = $width;
+    $newHeight = $height;
+
+    if ($width > $targetWidth) {
+        $newWidth = (int) $targetWidth;
+        $newHeight = (int) (($targetWidth / $width) * $height);
+    }
+
+    if ($newHeight > $targetHeight) {
+        $newWidth = (int) (($targetHeight / $newHeight) * $newWidth);
+        $newHeight = (int) $targetHeight;
+    }
+
+    $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+    if ($mimeType !== 'image/jpeg') {
+        imagealphablending($resizedImage, false);
+        imagesavealpha($resizedImage, true);
+        $transparency = imagecolorallocatealpha($resizedImage, 0, 0, 0, 127);
+        imagefill($resizedImage, 0, 0, $transparency);
+    }
+
+    imagecopyresampled($resizedImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+    $writeSucceeded = writeAvatarImageResource($resizedImage, $uploadFile, $mimeType);
+
+    imagedestroy($image);
+    imagedestroy($resizedImage);
+
+    if (!$writeSucceeded) {
+        throw new RuntimeException(translate('error_updating_user_data', $i18n));
+    }
+
+    return "images/uploads/logos/avatars/" . $fileName;
 }
 
 if (
@@ -228,12 +293,7 @@ if (
         $otherUser = $result->fetchArray(SQLITE3_ASSOC);
 
         if ($otherUser) {
-            $response = [
-                "success" => false,
-                "message" => translate('email_exists', $i18n)
-            ];
-            echo json_encode($response);
-            exit();
+            save_user_response(false, translate('email_exists', $i18n));
         }
     }
 
@@ -243,18 +303,13 @@ if (
 
     if (!empty($_FILES['profile_pic']["name"])) {
         $file = $_FILES['profile_pic'];
-
-        $fileType = mime_content_type($_FILES['profile_pic']['tmp_name']);
-        if (strpos($fileType, 'image') === false) {
-            $response = [
-                "success" => false,
-                "message" => translate('fill_all_fields', $i18n)
-            ];
-            echo json_encode($response);
-            exit();
-        }
         $name = $file['name'];
-        $avatar = resizeAndUploadAvatar($_FILES['profile_pic'], '../../images/uploads/logos/avatars/', $name);
+
+        try {
+            $avatar = resizeAndUploadAvatar($_FILES['profile_pic'], $avatarUploadDirectory, $name, $i18n);
+        } catch (RuntimeException $exception) {
+            save_user_response(false, $exception->getMessage());
+        }
 
         if ($avatar !== "") {
             $stmt = $db->prepare("INSERT INTO uploaded_avatars (user_id, path) VALUES (:userId, :path)");
@@ -269,20 +324,10 @@ if (
         if (isset($_POST['confirm_password'])) {
             $confirm = $_POST['confirm_password'];
             if ($password != $confirm) {
-                $response = [
-                    "success" => false,
-                    "message" => translate('passwords_dont_match', $i18n)
-                ];
-                echo json_encode($response);
-                exit();
+                save_user_response(false, translate('passwords_dont_match', $i18n));
             }
         } else {
-            $response = [
-                "success" => false,
-                "message" => translate('passwords_dont_match', $i18n)
-            ];
-            echo json_encode($response);
-            exit();
+            save_user_response(false, translate('passwords_dont_match', $i18n));
         }
     }
 
@@ -327,27 +372,14 @@ if (
         }
 
         $reload = $oldLanguage != $language;
-
-        $response = [
-            "success" => true,
-            "message" => translate('user_details_saved', $i18n),
+        save_user_response(true, translate('user_details_saved', $i18n), [
             "reload" => $reload
-        ];
-        echo json_encode($response);
+        ]);
     } else {
-        $response = [
-            "success" => false,
-            "message" => translate('error_updating_user_data', $i18n)
-        ];
-        echo json_encode($response);
+        save_user_response(false, translate('error_updating_user_data', $i18n));
     }
 
     exit();
 } else {
-    $response = [
-        "success" => false,
-        "message" => translate('fill_all_fields', $i18n)
-    ];
-    echo json_encode($response);
-    exit();
+    save_user_response(false, translate('fill_all_fields', $i18n));
 }

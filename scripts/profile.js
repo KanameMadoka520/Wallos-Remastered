@@ -15,7 +15,22 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             body: formData,
         })
-            .then(response => response.json())
+            .then(async (response) => {
+                const rawResponse = await response.text();
+                let data = null;
+
+                try {
+                    data = JSON.parse(rawResponse);
+                } catch (error) {
+                    throw new Error(rawResponse || translate("unknown_error"));
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.message || translate("unknown_error"));
+                }
+
+                return data;
+            })
             .then(data => {
                 if (data.success) {
                     document.getElementById("avatar").src = document.getElementById("avatarImg").src;
@@ -33,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 console.error(error);
-                showErrorMessage(translate("unknown_error"));
+                showErrorMessage(error.message || translate("unknown_error"));
             })
             .finally(() => {
                 submitButton.disabled = false;
