@@ -59,6 +59,25 @@ function wallos_get_seed_translation_language($language)
     return 'en';
 }
 
+function wallos_get_seed_languages()
+{
+    return ['en', 'zh_cn', 'zh_tw'];
+}
+
+function wallos_get_seed_rows($scope, $language = 'en')
+{
+    switch ($scope) {
+        case 'categories':
+            return wallos_get_default_categories($language);
+        case 'payment_methods':
+            return wallos_get_default_payment_methods($language);
+        case 'currencies':
+            return wallos_get_default_currencies($language);
+        default:
+            return [];
+    }
+}
+
 function wallos_localize_seed_rows(array $rows, array $translations, $language, $matchField)
 {
     $translationLanguage = wallos_get_seed_translation_language($language);
@@ -318,4 +337,28 @@ function wallos_get_default_payment_methods($language = 'en')
     ];
 
     return wallos_localize_seed_rows($paymentMethods, $translations, $language, 'key');
+}
+
+function wallos_get_seed_reset_map($scope, $targetLanguage)
+{
+    $targetRows = wallos_get_seed_rows($scope, $targetLanguage);
+    $supportedLanguages = wallos_get_seed_languages();
+
+    $resetMap = [];
+    foreach ($targetRows as $index => $targetRow) {
+        $variants = [];
+        foreach ($supportedLanguages as $language) {
+            $rows = wallos_get_seed_rows($scope, $language);
+            if (isset($rows[$index]['name'])) {
+                $variants[] = $rows[$index]['name'];
+            }
+        }
+
+        $resetMap[] = [
+            'target_name' => $targetRow['name'],
+            'variants' => array_values(array_unique($variants)),
+        ];
+    }
+
+    return $resetMap;
 }

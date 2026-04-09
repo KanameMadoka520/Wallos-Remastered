@@ -851,6 +851,79 @@ function savePaymentMethodsSorting() {
     });
 }
 
+function toggleLocalizedResetButton(scope) {
+  const checkbox = document.getElementById(`reset-${scope}-confirm`);
+  const button = document.getElementById(`reset-${scope}-button`);
+
+  if (!checkbox || !button) {
+    return;
+  }
+
+  button.disabled = !checkbox.checked;
+}
+
+function applyLocalizedResetItems(scope, items) {
+  items.forEach((item) => {
+    if (scope === "categories") {
+      const input = document.querySelector(`[data-categoryid="${item.id}"] input[name="category"]`);
+      if (input) {
+        input.value = item.name;
+      }
+    }
+
+    if (scope === "currencies") {
+      const input = document.querySelector(`[data-currencyid="${item.id}"] input[name="currency"]`);
+      if (input) {
+        input.value = item.name;
+      }
+    }
+
+    if (scope === "payment_methods") {
+      const paymentName = document.querySelector(`.payments-payment[data-paymentid="${item.id}"] .payment-name`);
+      if (paymentName) {
+        paymentName.textContent = item.name;
+      }
+    }
+  });
+}
+
+function resetLocalizedDefaults(scope) {
+  const checkbox = document.getElementById(`reset-${scope}-confirm`);
+  const button = document.getElementById(`reset-${scope}-button`);
+
+  if (!checkbox || !button || !checkbox.checked) {
+    return;
+  }
+
+  button.disabled = true;
+
+  fetch("endpoints/settings/reset_localized_defaults.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": window.csrfToken,
+    },
+    body: JSON.stringify({ scope }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        applyLocalizedResetItems(scope, data.items || []);
+        showSuccessMessage(data.message);
+        checkbox.checked = false;
+      } else {
+        showErrorMessage(data.message);
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      showErrorMessage(translate("unknown_error"));
+    })
+    .finally(() => {
+      toggleLocalizedResetButton(scope);
+    });
+}
+
 
 var el = document.getElementById('payments-list');
 var sortable = Sortable.create(el, {

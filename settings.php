@@ -900,6 +900,21 @@ $pageSections = [
                 <input type="submit" value="<?= translate('add', $i18n) ?>" id="addCategory"
                     onClick="addCategoryButton()" class="thin mobile-grow" />
             </div>
+            <div class="localized-reset-box">
+                <h3><?= translate('localized_defaults_reset_title', $i18n) ?></h3>
+                <p><?= translate('localized_defaults_reset_categories_info', $i18n) ?></p>
+                <p><?= translate('localized_defaults_reset_matching_info', $i18n) ?></p>
+                <p><?= translate('localized_defaults_reset_warning', $i18n) ?></p>
+                <div class="form-group-inline localized-reset-confirm">
+                    <input type="checkbox" id="reset-categories-confirm" onchange="toggleLocalizedResetButton('categories')">
+                    <label for="reset-categories-confirm"><?= translate('localized_defaults_reset_acknowledge', $i18n) ?></label>
+                </div>
+                <div class="buttons">
+                    <input type="button" class="warning-button thin mobile-grow" id="reset-categories-button"
+                        value="<?= translate('reset_categories_to_current_language', $i18n) ?>"
+                        onClick="resetLocalizedDefaults('categories')" disabled />
+                </div>
+            </div>
         </div>
     </section>
 
@@ -992,6 +1007,21 @@ $pageSections = [
             <div class="buttons">
                 <input type="submit" value="<?= translate('add', $i18n) ?>" id="addCurrency"
                     onClick="addCurrencyButton()" class="thin mobile-grow" />
+            </div>
+            <div class="localized-reset-box">
+                <h3><?= translate('localized_defaults_reset_title', $i18n) ?></h3>
+                <p><?= translate('localized_defaults_reset_currencies_info', $i18n) ?></p>
+                <p><?= translate('localized_defaults_reset_matching_info', $i18n) ?></p>
+                <p><?= translate('localized_defaults_reset_warning', $i18n) ?></p>
+                <div class="form-group-inline localized-reset-confirm">
+                    <input type="checkbox" id="reset-currencies-confirm" onchange="toggleLocalizedResetButton('currencies')">
+                    <label for="reset-currencies-confirm"><?= translate('localized_defaults_reset_acknowledge', $i18n) ?></label>
+                </div>
+                <div class="buttons">
+                    <input type="button" class="warning-button thin mobile-grow" id="reset-currencies-button"
+                        value="<?= translate('reset_currencies_to_current_language', $i18n) ?>"
+                        onClick="resetLocalizedDefaults('currencies')" disabled />
+                </div>
             </div>
             <div class="settings-notes">
                 <p>
@@ -1243,6 +1273,21 @@ $pageSections = [
                 <i class="fa-solid fa-circle-info"></i>
                 <?= translate('rename_payment_methods_info', $i18n) ?>
             </p>
+        </div>
+        <div class="localized-reset-box">
+            <h3><?= translate('localized_defaults_reset_title', $i18n) ?></h3>
+            <p><?= translate('localized_defaults_reset_payment_methods_info', $i18n) ?></p>
+            <p><?= translate('localized_defaults_reset_matching_info', $i18n) ?></p>
+            <p><?= translate('localized_defaults_reset_warning', $i18n) ?></p>
+            <div class="form-group-inline localized-reset-confirm">
+                <input type="checkbox" id="reset-payment_methods-confirm" onchange="toggleLocalizedResetButton('payment_methods')">
+                <label for="reset-payment_methods-confirm"><?= translate('localized_defaults_reset_acknowledge', $i18n) ?></label>
+            </div>
+            <div class="buttons">
+                <input type="button" class="warning-button thin mobile-grow" id="reset-payment_methods-button"
+                    value="<?= translate('reset_payment_methods_to_current_language', $i18n) ?>"
+                    onClick="resetLocalizedDefaults('payment_methods')" disabled />
+            </div>
         </div>
         <header>
             <h2 class="second-header"><?= translate("add_custom_payment", $i18n) ?></h2>
