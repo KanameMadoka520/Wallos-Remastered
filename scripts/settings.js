@@ -252,7 +252,7 @@ function addCategoryButton(categoryId) {
           editCategory(newCategoryId);
         };
         editLink.innerHTML = editSvgContent;
-        editLink.title = translate('save_member');
+        editLink.title = translate('save_category');
 
         const deleteLink = document.createElement("button");
         deleteLink.className = "image-button medium";
@@ -261,7 +261,7 @@ function addCategoryButton(categoryId) {
           removeCategory(newCategoryId);
         };
         deleteLink.innerHTML = deleteSvgContent;
-        deleteLink.title = translate('delete_member');
+        deleteLink.title = translate('delete_category');
 
         row.appendChild(dragIcon);
         row.appendChild(input);
@@ -418,7 +418,7 @@ function addCurrencyButton(currencyId) {
           editCurrency(newCurrencyId);
         };
         editLink.innerHTML = editSvgContent;
-        editLink.title = translate('save_member');
+        editLink.title = translate('save_currency');
 
         const deleteLink = document.createElement("button");
         deleteLink.className = "image-button medium";
@@ -427,7 +427,7 @@ function addCurrencyButton(currencyId) {
           removeCurrency(newCurrencyId);
         };
         deleteLink.innerHTML = deleteSvgContent;
-        deleteLink.title = translate('delete_member');
+        deleteLink.title = translate('delete_currency');
 
         div.appendChild(inputSymbol);
         div.appendChild(inputName);

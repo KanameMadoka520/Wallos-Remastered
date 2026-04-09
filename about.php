@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/page_navigation.php';
 
 $wallosIsUpToDate = true;
 if (!is_null($settings['latest_version'])) {
@@ -8,11 +9,50 @@ if (!is_null($settings['latest_version'])) {
         $wallosIsUpToDate = false;
     }
 }
+
+$pageSections = [
+    ['id' => 'about-custom-build', 'label' => 'tcymc自建服务版'],
+    ['id' => 'about-upstream', 'label' => translate('about', $i18n)],
+    ['id' => 'about-credits', 'label' => translate('credits', $i18n)],
+];
 ?>
 
-<section class="contain">
+<section class="contain has-page-nav">
+    <div class="page-layout">
+        <?php render_page_navigation(translate('about', $i18n), $pageSections); ?>
+        <div class="page-content">
 
-    <section class="account-section">
+    <section class="account-section" id="about-custom-build" data-page-section>
+        <header>
+            <h2>tcymc自建服务版</h2>
+        </header>
+        <div class="credits-list">
+            <div>
+                <h3>部署结构</h3>
+                <span>以自己物理机为后端，香港vps作为网关</span>
+            </div>
+            <div>
+                <h3>源码仓库</h3>
+                <span>
+                    https://github.com/KanameMadoka520/Wallos
+                    <a href="https://github.com/KanameMadoka520/Wallos" target="_blank" title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </span>
+            </div>
+            <div>
+                <h3>上游项目</h3>
+                <span>
+                    Wallos / GPLv3
+                    <a href="https://github.com/ellite/Wallos" target="_blank" title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <section class="account-section" id="about-upstream" data-page-section>
         <header>
             <h2><?= translate('about', $i18n) ?></h2>
         </header>
@@ -78,7 +118,7 @@ if (!is_null($settings['latest_version'])) {
         </div>
     </section>
 
-    <section class="account-section">
+    <section class="account-section" id="about-credits" data-page-section>
         <header>
             <h2><?= translate("credits", $i18n) ?></h2>
         </header>
@@ -136,6 +176,8 @@ if (!is_null($settings['latest_version'])) {
         </div>
     </section>
 
+        </div>
+    </div>
 </section>
 
 <?php

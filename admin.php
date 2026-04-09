@@ -46,11 +46,25 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 $userCount = is_array($users) ? count($users) : 0;
 
 $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
+require_once 'includes/page_navigation.php';
+
+$pageSections = [
+    ['id' => 'admin-registrations', 'label' => translate('registrations', $i18n)],
+    ['id' => 'admin-users', 'label' => translate('user_management', $i18n)],
+    ['id' => 'admin-oidc', 'label' => translate('oidc_settings', $i18n)],
+    ['id' => 'admin-smtp', 'label' => translate('smtp_settings', $i18n)],
+    ['id' => 'admin-security', 'label' => translate('security_settings', $i18n)],
+    ['id' => 'admin-maintenance', 'label' => translate('maintenance_tasks', $i18n)],
+    ['id' => 'admin-backup', 'label' => translate('backup_and_restore', $i18n)],
+];
 ?>
 
-<section class="contain settings">
+<section class="contain settings has-page-nav">
+    <div class="page-layout">
+        <?php render_page_navigation(translate('admin', $i18n), $pageSections); ?>
+        <div class="page-content">
 
-    <section class="account-section">
+    <section class="account-section" id="admin-registrations" data-page-section>
         <header>
             <h2><?= translate('registrations', $i18n) ?></h2>
         </header>
@@ -70,7 +84,7 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
                 </p>
                 <p>
                     <i class="fa-solid fa-circle-info"></i>
-                    By enabling user registrations, the setting to disable login will be unavailable.
+                    <?= translate('registration_disable_login_info', $i18n) ?>
                 </p>
             </div>
             <div class="form-group-inline">
@@ -133,7 +147,7 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
     if ($userCount >= 0) {
         ?>
 
-        <section class="account-section">
+        <section class="account-section" id="admin-users" data-page-section>
             <header>
                 <h2><?= translate('user_management', $i18n) ?></h2>
             </header>
@@ -209,7 +223,7 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
     }
     ?>
 
-    <section class="account-section">
+    <section class="account-section" id="admin-oidc" data-page-section>
         <header>
             <h2><?= translate('oidc_settings', $i18n) ?></h2>
         </header>
@@ -220,47 +234,47 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
                 <label for="oidcEnabled"><?= translate('oidc_oauth_enabled', $i18n) ?></label>
             </div>
             <div class="form-group">
-                <input type="text" id="oidcName" placeholder="Provider Name" autocomplete="off"
+                <input type="text" id="oidcName" placeholder="<?= translate('provider_name', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['name'] ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcClientId" placeholder="Client ID" autocomplete="off"
+                <input type="text" id="oidcClientId" placeholder="<?= translate('client_id', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['client_id'] ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcClientSecret" placeholder="Client Secret" autocomplete="off"
+                <input type="text" id="oidcClientSecret" placeholder="<?= translate('client_secret', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['client_secret'] ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcAuthUrl" placeholder="Auth URL" autocomplete="off"
+                <input type="text" id="oidcAuthUrl" placeholder="<?= translate('auth_url', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['authorization_url'] ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcTokenUrl" placeholder="Token URL" autocomplete="off"
+                <input type="text" id="oidcTokenUrl" placeholder="<?= translate('token_url', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['token_url'] ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcUserInfoUrl" placeholder="User Info URL" autocomplete="off"
+                <input type="text" id="oidcUserInfoUrl" placeholder="<?= translate('user_info_url', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['user_info_url'] ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcRedirectUrl" placeholder="Redirect URL" autocomplete="off"
+                <input type="text" id="oidcRedirectUrl" placeholder="<?= translate('redirect_url', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['redirect_url'] ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcLogoutUrl" placeholder="Logout URL" autocomplete="off"
+                <input type="text" id="oidcLogoutUrl" placeholder="<?= translate('logout_url', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['logout_url'] ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcUserIdentifierField" placeholder="User Identifier Field" autocomplete="off"
+                <input type="text" id="oidcUserIdentifierField" placeholder="<?= translate('user_identifier_field', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['user_identifier_field'] ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcScopes" placeholder="Scopes" autocomplete="off"
+                <input type="text" id="oidcScopes" placeholder="<?= translate('scopes', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['scopes'] ?>" />
             </div>
             <div class="form-group">
-                <input type="hidden" id="oidcAuthStyle" placeholder="Auth Style" autocomplete="off"
+                <input type="hidden" id="oidcAuthStyle" placeholder="<?= translate('auth_style', $i18n) ?>" autocomplete="off"
                     value="<?= $oidcSettings['auth_style'] ?>" />
             </div>
             <div class="form-group-inline">
@@ -280,7 +294,7 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
 
     </section>
 
-    <section class="account-section">
+    <section class="account-section" id="admin-smtp" data-page-section>
         <header>
             <h2><?= translate('smtp_settings', $i18n) ?></h2>
         </header>
@@ -338,13 +352,13 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
         </div>
     </section>
 
-    <section class="account-section">
+    <section class="account-section" id="admin-security" data-page-section>
     <header>
         <h2><?= translate('security_settings', $i18n) ?></h2> </header>
     <div class="admin-form">
         <div class="form-group-inline">
             <input type="text" name="local_webhook_notifications_allowlist" id="local_webhook_notifications_allowlist" autocomplete="off"
-                placeholder="e.g., 192.168.1.5:8123, homeassistant.local" value="<?= htmlspecialchars($settings['local_webhook_notifications_allowlist'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+                placeholder="<?= translate('local_webhook_allowlist_placeholder', $i18n) ?>" value="<?= htmlspecialchars($settings['local_webhook_notifications_allowlist'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
         </div>
         
         <div class="buttons">
@@ -429,7 +443,7 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
 
     ?>
 
-    <section class="account-section">
+    <section class="account-section" id="admin-maintenance" data-page-section>
         <header>
             <h2>
                 <?= translate('maintenance_tasks', $i18n) ?>
@@ -486,24 +500,24 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
             <h3><?= translate('cronjobs', $i18n) ?></h3>
             <div>
                 <div class="inline-row">
-                    <input type="button" value="Check for Updates" class="button tiny mobile-grow"
+                    <input type="button" value="<?= translate('check_for_updates', $i18n) ?>" class="button tiny mobile-grow"
                         onclick="executeCronJob('checkforupdates')">
-                    <input type="button" value="Send Notifications" class="button tiny mobile-grow"
+                    <input type="button" value="<?= translate('send_notifications', $i18n) ?>" class="button tiny mobile-grow"
                         onclick="executeCronJob('sendnotifications')">
-                    <input type="button" value="Send Cancellation Notifications" class="button tiny mobile-grow"
+                    <input type="button" value="<?= translate('send_cancellation_notifications', $i18n) ?>" class="button tiny mobile-grow"
                         onclick="executeCronJob('sendcancellationnotifications')">
-                    <input type="button" value="Send Password Reset Emails" class="button tiny mobile-grow"
+                    <input type="button" value="<?= translate('send_password_reset_emails', $i18n) ?>" class="button tiny mobile-grow"
                         onclick="executeCronJob('sendresetpasswordemails')">
-                    <input type="button" value="Send Verification Emails" class="button tiny mobile-grow"
+                    <input type="button" value="<?= translate('send_verification_emails', $i18n) ?>" class="button tiny mobile-grow"
                         onclick="executeCronJob('sendverificationemails')">
-                    <input type="button" value="Update Exchange Rates" class="button tiny mobile-grow"
+                    <input type="button" value="<?= translate('update_exchange_rates', $i18n) ?>" class="button tiny mobile-grow"
                         onclick="executeCronJob('updateexchange')">
-                    <input type="button" value="Update Next Payments" class="button tiny mobile-grow"
+                    <input type="button" value="<?= translate('update_next_payments', $i18n) ?>" class="button tiny mobile-grow"
                         onclick="executeCronJob('updatenextpayment')">
-                    <input type="button" value="Store Total Yearly Cost" class="button tiny mobile-grow"
+                    <input type="button" value="<?= translate('store_total_yearly_cost', $i18n) ?>" class="button tiny mobile-grow"
                         onclick="executeCronJob('storetotalyearlycost')">
-                    <input type="button" value="Generate AI Recommendations" class="button tiny mobile-grow"
-                        onclick="executeCronJob('generaterecommendations')">    
+                    <input type="button" value="<?= translate('generate_recommendations', $i18n) ?>" class="button tiny mobile-grow"
+                        onclick="executeCronJob('generaterecommendations')">
                 </div>
                 <div class="inline-row">
                     <textarea id="cronjobResult" class="thin" readonly></textarea>
@@ -512,7 +526,7 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
         </div>
     </section>
 
-    <section class="account-section">
+    <section class="account-section" id="admin-backup" data-page-section>
         <header>
             <h2><?= translate('backup_and_restore', $i18n) ?></h2>
         </header>
@@ -532,6 +546,8 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
         </div>
     </section>
 
+        </div>
+    </div>
 </section>
 <script src="scripts/admin.js?<?= $version ?>"></script>
 

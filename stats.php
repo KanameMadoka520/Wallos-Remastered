@@ -14,138 +14,190 @@ $row = $result->fetchArray(SQLITE3_ASSOC);
 $code = $row['code'];
 
 require_once 'includes/stats_calculations.php';
+require_once 'includes/page_navigation.php';
+
+$categoryDataPoints = [];
+if (isset($categoryCost)) {
+  foreach ($categoryCost as $category) {
+    if ($category['cost'] != 0) {
+      $categoryDataPoints[] = [
+        "label" => html_entity_decode($category['name']),
+        "y" => $category["cost"],
+      ];
+    }
+  }
+}
+
+$showCategoryCostGraph = count($categoryDataPoints) > 1;
+
+$memberDataPoints = [];
+if (isset($memberCost)) {
+  foreach ($memberCost as $member) {
+    if ($member['cost'] != 0) {
+      $memberDataPoints[] = [
+        "label" => html_entity_decode($member['name']),
+        "y" => $member["cost"],
+      ];
+    }
+  }
+}
+
+$showMemberCostGraph = count($memberDataPoints) > 1;
+
+$paymentMethodDataPoints = [];
+foreach ($paymentMethodsCount as $paymentMethod) {
+  if ($paymentMethod['count'] != 0) {
+    $paymentMethodDataPoints[] = [
+      "label" => html_entity_decode($paymentMethod['name']),
+      "y" => $paymentMethod["count"],
+    ];
+  }
+}
+
+$showPaymentMethodsGraph = count($paymentMethodDataPoints) > 1;
+$showStatsGraphs = $showCategoryCostGraph || $showMemberCostGraph || $showPaymentMethodsGraph || $showTotalMonthlyCostGraph || $showVsBudgetGraph;
+
+$pageSections = [
+  ['id' => 'stats-overview', 'label' => translate('general_statistics', $i18n)],
+];
+
+if ($showStatsGraphs) {
+  $pageSections[] = ['id' => 'stats-graphs', 'label' => translate('split_views', $i18n)];
+}
 
 ?>
-<section class="contain">
-  <?php
-  if ($showCantConverErrorMessage) {
-    ?>
-    <div class="error-box">
-      <div class="error-message">
-        <i class="fa-solid fa-exclamation-circle"></i>
-        <?= translate('cant_convert_currency', $i18n) ?>
-      </div>
-    </div>
-    <?php
-  }
-  ?>
-  <div class="split-header">
-    <h2>
-      <?= translate('general_statistics', $i18n) ?> <span class="header-subtitle"><?= $statsSubtitle ?></span>
-    </h2>
-    <div class="filtermenu">
-      <button class="button secondary-button" id="filtermenu-button">
-        <i class="fa-solid fa-filter"></i>
-        <?= translate("filter", $i18n) ?>
-      </button>
-      <div class="filtermenu-content">
+<section class="contain has-page-nav">
+  <div class="page-layout">
+    <?php render_page_navigation(translate('stats', $i18n), $pageSections); ?>
+    <div class="page-content">
+      <section class="account-section" id="stats-overview" data-page-section>
         <?php
-        if (count($members) > 1) {
+        if ($showCantConverErrorMessage) {
           ?>
-          <div class="filtermenu-submenu">
-            <div class="filter-title" onClick="toggleSubMenu('member')"><?= translate("member", $i18n) ?></div>
-            <div class="filtermenu-submenu-content" id="filter-member">
-              <?php
-              foreach ($members as $member) {
-                if ($member['count'] == 0) {
-                  continue;
-                }
-                $selectedClass = '';
-                if (isset($_GET['member']) && $_GET['member'] == $member['id']) {
-                  $selectedClass = 'selected';
-                }
-                ?>
-                <div class="filter-item <?= $selectedClass ?>" data-memberid="<?= $member['id'] ?>"><?= $member['name'] ?>
-                </div>
-                <?php
-              }
-              ?>
+          <div class="error-box">
+            <div class="error-message">
+              <i class="fa-solid fa-exclamation-circle"></i>
+              <?= translate('cant_convert_currency', $i18n) ?>
             </div>
           </div>
           <?php
         }
         ?>
-        <?php
-        if (count($categories) > 1) {
-          // sort categories by order
-          usort($categories, function ($a, $b) {
-            return $a['order'] - $b['order'];
-          });
-          ?>
-          <div class="filtermenu-submenu">
-            <div class="filter-title" onClick="toggleSubMenu('category')"><?= translate("category", $i18n) ?></div>
-            <div class="filtermenu-submenu-content" id="filter-category">
+        <div class="split-header">
+          <h2>
+            <?= translate('general_statistics', $i18n) ?> <span class="header-subtitle"><?= $statsSubtitle ?></span>
+          </h2>
+          <div class="filtermenu">
+            <button class="button secondary-button" id="filtermenu-button">
+              <i class="fa-solid fa-filter"></i>
+              <?= translate("filter", $i18n) ?>
+            </button>
+            <div class="filtermenu-content">
               <?php
-              foreach ($categories as $category) {
-                if ($category['count'] > 0) {
-                  if ($category['name'] == "No category") {
-                    $category['name'] = translate("no_category", $i18n);
-                  }
-                  $selectedClass = '';
-                  if (isset($_GET['category']) && $_GET['category'] == $category['id']) {
-                    $selectedClass = 'selected';
-                  }
-                  ?>
-                  <div class="filter-item <?= $selectedClass ?>" data-categoryid="<?= $category['id'] ?>">
-                    <?= $category['name'] ?>
+              if (count($members) > 1) {
+                ?>
+                <div class="filtermenu-submenu">
+                  <div class="filter-title" onClick="toggleSubMenu('member')"><?= translate("member", $i18n) ?></div>
+                  <div class="filtermenu-submenu-content" id="filter-member">
+                    <?php
+                    foreach ($members as $member) {
+                      if ($member['count'] == 0) {
+                        continue;
+                      }
+                      $selectedClass = '';
+                      if (isset($_GET['member']) && $_GET['member'] == $member['id']) {
+                        $selectedClass = 'selected';
+                      }
+                      ?>
+                      <div class="filter-item <?= $selectedClass ?>" data-memberid="<?= $member['id'] ?>"><?= $member['name'] ?>
+                      </div>
+                      <?php
+                    }
+                    ?>
                   </div>
-                  <?php
-                }
+                </div>
+                <?php
               }
               ?>
-            </div>
-          </div>
-          <?php
-        }
-        ?>
-        <?php
-        if (count($paymentMethods) > 1) {
-
-          usort($paymentMethods, function ($a, $b) {
-            return $a['order'] <=> $b['order'];
-          });
-          ?>
-          <div class="filtermenu-submenu">
-            <div class="filter-title" onClick="toggleSubMenu('payment')"><?= translate("payment_method", $i18n) ?></div>
-            <div class="filtermenu-submenu-content" id="filter-payment">
               <?php
-              foreach ($paymentMethods as $payment) {
-                if ($payment['count'] == 0) {
-                  continue;
-                }
-                $selectedClass = '';
-                if (isset($_GET['payment']) && $_GET['payment'] == $payment['id']) {
-                  $selectedClass = 'selected';
-                }
+              if (count($categories) > 1) {
+                // sort categories by order
+                usort($categories, function ($a, $b) {
+                  return $a['order'] - $b['order'];
+                });
                 ?>
-                <div class="filter-item <?= $selectedClass ?>" data-paymentid="<?= $payment['id'] ?>">
-                  <?= $payment['name'] ?>
+                <div class="filtermenu-submenu">
+                  <div class="filter-title" onClick="toggleSubMenu('category')"><?= translate("category", $i18n) ?></div>
+                  <div class="filtermenu-submenu-content" id="filter-category">
+                    <?php
+                    foreach ($categories as $category) {
+                      if ($category['count'] > 0) {
+                        if ($category['name'] == "No category") {
+                          $category['name'] = translate("no_category", $i18n);
+                        }
+                        $selectedClass = '';
+                        if (isset($_GET['category']) && $_GET['category'] == $category['id']) {
+                          $selectedClass = 'selected';
+                        }
+                        ?>
+                        <div class="filter-item <?= $selectedClass ?>" data-categoryid="<?= $category['id'] ?>">
+                          <?= $category['name'] ?>
+                        </div>
+                        <?php
+                      }
+                    }
+                    ?>
+                  </div>
+                </div>
+                <?php
+              }
+              ?>
+              <?php
+              if (count($paymentMethods) > 1) {
+
+                usort($paymentMethods, function ($a, $b) {
+                  return $a['order'] <=> $b['order'];
+                });
+                ?>
+                <div class="filtermenu-submenu">
+                  <div class="filter-title" onClick="toggleSubMenu('payment')"><?= translate("payment_method", $i18n) ?></div>
+                  <div class="filtermenu-submenu-content" id="filter-payment">
+                    <?php
+                    foreach ($paymentMethods as $payment) {
+                      if ($payment['count'] == 0) {
+                        continue;
+                      }
+                      $selectedClass = '';
+                      if (isset($_GET['payment']) && $_GET['payment'] == $payment['id']) {
+                        $selectedClass = 'selected';
+                      }
+                      ?>
+                      <div class="filter-item <?= $selectedClass ?>" data-paymentid="<?= $payment['id'] ?>">
+                        <?= $payment['name'] ?>
+                      </div>
+                      <?php
+                    }
+                    ?>
+                  </div>
+                </div>
+                <?php
+              }
+              ?>
+              <?php
+              if (isset($_GET['member']) || isset($_GET['category']) || isset($_GET['payment'])) {
+                ?>
+                <div class="filtermenu-submenu">
+                  <div class="filter-title filter-clear" onClick="clearFilters()">
+                    <i class="fa-solid fa-times-circle"></i> <?= translate("clear", $i18n) ?>
+                  </div>
                 </div>
                 <?php
               }
               ?>
             </div>
           </div>
-          <?php
-        }
-        ?>
-        <?php
-        if (isset($_GET['member']) || isset($_GET['category']) || isset($_GET['payment'])) {
-          ?>
-          <div class="filtermenu-submenu">
-            <div class="filter-title filter-clear" onClick="clearFilters()">
-              <i class="fa-solid fa-times-circle"></i> <?= translate("clear", $i18n) ?>
-            </div>
-          </div>
-          <?php
-        }
-        ?>
-      </div>
-    </div>
-  </div>
-  </div>
-  </div>
-  <div class="statistics">
+        </div>
+        <div class="statistics">
     <div class="statistic">
       <span><?= $activeSubscriptions ?></span>
       <div class="title"><?= translate('active_subscriptions', $i18n) ?></div>
@@ -230,52 +282,14 @@ require_once 'includes/stats_calculations.php';
       }
     }
     ?>
-  </div>
-  <?php
-  $categoryDataPoints = [];
-  if (isset($categoryCost)) {
-    foreach ($categoryCost as $category) {
-      if ($category['cost'] != 0) {
-        $categoryDataPoints[] = [
-          "label" => html_entity_decode($category['name']),
-          "y" => $category["cost"],
-        ];
-      }
-    }
-  }
-
-  $showCategoryCostGraph = count($categoryDataPoints) > 1;
-
-  $memberDataPoints = [];
-  if (isset($memberCost)) {
-    foreach ($memberCost as $member) {
-      if ($member['cost'] != 0) {
-        $memberDataPoints[] = [
-          "label" => html_entity_decode($member['name']),
-          "y" => $member["cost"],
-        ];
-
-      }
-    }
-  }
-
-  $showMemberCostGraph = count($memberDataPoints) > 1;
-
-  $paymentMethodDataPoints = [];
-  foreach ($paymentMethodsCount as $paymentMethod) {
-    if ($paymentMethod['count'] != 0) {
-      $paymentMethodDataPoints[] = [
-        "label" => html_entity_decode($paymentMethod['name']),
-        "y" => $paymentMethod["count"],
-      ];
-    }
-  }
-
-  $showPaymentMethodsGraph = count($paymentMethodDataPoints) > 1;
-  if ($showCategoryCostGraph || $showMemberCostGraph || $showPaymentMethodsGraph || $showTotalMonthlyCostGraph || $showVsBudgetGraph) {
-    ?>
-    <h2><?= translate('split_views', $i18n) ?></h2>
-    <div class="graphs">
+        </div>
+      </section>
+      <?php
+      if ($showStatsGraphs) {
+        ?>
+        <section class="account-section" id="stats-graphs" data-page-section>
+          <h2><?= translate('split_views', $i18n) ?></h2>
+          <div class="graphs">
       <?php
 
       if ($showTotalMonthlyCostGraph) {
@@ -337,14 +351,17 @@ require_once 'includes/stats_calculations.php';
       }
 
       ?>
-    </div>
-    <?php
-  }
-  ?>
+          </div>
+        </section>
+        <?php
+      }
+      ?>
 
+    </div>
+  </div>
 </section>
 <?php
-if ($showCategoryCostGraph || $showMemberCostGraph || $showPaymentMethodsGraph || $showTotalMonthlyCostGraph || $showVsBudgetGraph) {
+if ($showStatsGraphs) {
   ?>
   <script src="scripts/libs/chart.js"></script>
   <script type="text/javascript">

@@ -5,6 +5,7 @@ require_once 'includes/checkuser.php';
 require_once 'includes/i18n/languages.php';
 require_once 'includes/i18n/getlang.php';
 require_once 'includes/i18n/' . $lang . '.php';
+require_once 'includes/default_user_seed.php';
 
 require_once 'includes/version.php';
 
@@ -62,96 +63,9 @@ if (isset($_COOKIE['colorTheme'])) {
     $colorTheme = $_COOKIE['colorTheme'];
 }
 
-$currencies = [
-    ['id' => 1, 'name' => 'Euro', 'symbol' => '€', 'code' => 'EUR'],
-    ['id' => 2, 'name' => 'US Dollar', 'symbol' => '$', 'code' => 'USD'],
-    ['id' => 3, 'name' => 'Japanese Yen', 'symbol' => '¥', 'code' => 'JPY'],
-    ['id' => 4, 'name' => 'Bulgarian Lev', 'symbol' => 'лв', 'code' => 'BGN'],
-    ['id' => 5, 'name' => 'Czech Republic Koruna', 'symbol' => 'Kč', 'code' => 'CZK'],
-    ['id' => 6, 'name' => 'Danish Krone', 'symbol' => 'kr', 'code' => 'DKK'],
-    ['id' => 7, 'name' => 'British Pound Sterling', 'symbol' => '£', 'code' => 'GBP'],
-    ['id' => 8, 'name' => 'Hungarian Forint', 'symbol' => 'Ft', 'code' => 'HUF'],
-    ['id' => 9, 'name' => 'Polish Zloty', 'symbol' => 'zł', 'code' => 'PLN'],
-    ['id' => 10, 'name' => 'Romanian Leu', 'symbol' => 'lei', 'code' => 'RON'],
-    ['id' => 11, 'name' => 'Swedish Krona', 'symbol' => 'kr', 'code' => 'SEK'],
-    ['id' => 12, 'name' => 'Swiss Franc', 'symbol' => 'Fr', 'code' => 'CHF'],
-    ['id' => 13, 'name' => 'Icelandic Króna', 'symbol' => 'kr', 'code' => 'ISK'],
-    ['id' => 14, 'name' => 'Norwegian Krone', 'symbol' => 'kr', 'code' => 'NOK'],
-    ['id' => 15, 'name' => 'Russian Ruble', 'symbol' => '₽', 'code' => 'RUB'],
-    ['id' => 16, 'name' => 'Turkish Lira', 'symbol' => '₺', 'code' => 'TRY'],
-    ['id' => 17, 'name' => 'Australian Dollar', 'symbol' => '$', 'code' => 'AUD'],
-    ['id' => 18, 'name' => 'Brazilian Real', 'symbol' => 'R$', 'code' => 'BRL'],
-    ['id' => 19, 'name' => 'Canadian Dollar', 'symbol' => '$', 'code' => 'CAD'],
-    ['id' => 20, 'name' => 'Chinese Yuan', 'symbol' => '¥', 'code' => 'CNY'],
-    ['id' => 21, 'name' => 'Hong Kong Dollar', 'symbol' => 'HK$', 'code' => 'HKD'],
-    ['id' => 22, 'name' => 'Indonesian Rupiah', 'symbol' => 'Rp', 'code' => 'IDR'],
-    ['id' => 23, 'name' => 'Israeli New Sheqel', 'symbol' => '₪', 'code' => 'ILS'],
-    ['id' => 24, 'name' => 'Indian Rupee', 'symbol' => '₹', 'code' => 'INR'],
-    ['id' => 25, 'name' => 'South Korean Won', 'symbol' => '₩', 'code' => 'KRW'],
-    ['id' => 26, 'name' => 'Mexican Peso', 'symbol' => 'Mex$', 'code' => 'MXN'],
-    ['id' => 27, 'name' => 'Malaysian Ringgit', 'symbol' => 'RM', 'code' => 'MYR'],
-    ['id' => 28, 'name' => 'New Zealand Dollar', 'symbol' => 'NZ$', 'code' => 'NZD'],
-    ['id' => 29, 'name' => 'Philippine Peso', 'symbol' => '₱', 'code' => 'PHP'],
-    ['id' => 30, 'name' => 'Singapore Dollar', 'symbol' => 'S$', 'code' => 'SGD'],
-    ['id' => 31, 'name' => 'Thai Baht', 'symbol' => '฿', 'code' => 'THB'],
-    ['id' => 32, 'name' => 'South African Rand', 'symbol' => 'R', 'code' => 'ZAR'],
-    ['id' => 33, 'name' => 'Ukrainian Hryvnia', 'symbol' => '₴', 'code' => 'UAH'],
-    ['id' => 34, 'name' => 'New Taiwan Dollar', 'symbol' => 'NT$', 'code' => 'TWD'],
-];
-
-$categories = [
-    ['id' => 1, 'name' => 'No category'],
-    ['id' => 2, 'name' => 'Entertainment'],
-    ['id' => 3, 'name' => 'Music'],
-    ['id' => 4, 'name' => 'Utilities'],
-    ['id' => 5, 'name' => 'Food & Beverages'],
-    ['id' => 6, 'name' => 'Health & Wellbeing'],
-    ['id' => 7, 'name' => 'Productivity'],
-    ['id' => 8, 'name' => 'Banking'],
-    ['id' => 9, 'name' => 'Transport'],
-    ['id' => 10, 'name' => 'Education'],
-    ['id' => 11, 'name' => 'Insurance'],
-    ['id' => 12, 'name' => 'Gaming'],
-    ['id' => 13, 'name' => 'News & Magazines'],
-    ['id' => 14, 'name' => 'Software'],
-    ['id' => 15, 'name' => 'Technology'],
-    ['id' => 16, 'name' => 'Cloud Services'],
-    ['id' => 17, 'name' => 'Charity & Donations'],
-];
-
-$payment_methods = [
-    ['id' => 1, 'name' => 'PayPal', 'icon' => 'images/uploads/icons/paypal.png'],
-    ['id' => 2, 'name' => 'Credit Card', 'icon' => 'images/uploads/icons/creditcard.png'],
-    ['id' => 3, 'name' => 'Bank Transfer', 'icon' => 'images/uploads/icons/banktransfer.png'],
-    ['id' => 4, 'name' => 'Direct Debit', 'icon' => 'images/uploads/icons/directdebit.png'],
-    ['id' => 5, 'name' => 'Money', 'icon' => 'images/uploads/icons/money.png'],
-    ['id' => 6, 'name' => 'Google Pay', 'icon' => 'images/uploads/icons/googlepay.png'],
-    ['id' => 7, 'name' => 'Samsung Pay', 'icon' => 'images/uploads/icons/samsungpay.png'],
-    ['id' => 8, 'name' => 'Apple Pay', 'icon' => 'images/uploads/icons/applepay.png'],
-    ['id' => 9, 'name' => 'Crypto', 'icon' => 'images/uploads/icons/crypto.png'],
-    ['id' => 10, 'name' => 'Klarna', 'icon' => 'images/uploads/icons/klarna.png'],
-    ['id' => 11, 'name' => 'Amazon Pay', 'icon' => 'images/uploads/icons/amazonpay.png'],
-    ['id' => 12, 'name' => 'SEPA', 'icon' => 'images/uploads/icons/sepa.png'],
-    ['id' => 13, 'name' => 'Skrill', 'icon' => 'images/uploads/icons/skrill.png'],
-    ['id' => 14, 'name' => 'Sofort', 'icon' => 'images/uploads/icons/sofort.png'],
-    ['id' => 15, 'name' => 'Stripe', 'icon' => 'images/uploads/icons/stripe.png'],
-    ['id' => 16, 'name' => 'Affirm', 'icon' => 'images/uploads/icons/affirm.png'],
-    ['id' => 17, 'name' => 'AliPay', 'icon' => 'images/uploads/icons/alipay.png'],
-    ['id' => 18, 'name' => 'Elo', 'icon' => 'images/uploads/icons/elo.png'],
-    ['id' => 19, 'name' => 'Facebook Pay', 'icon' => 'images/uploads/icons/facebookpay.png'],
-    ['id' => 20, 'name' => 'GiroPay', 'icon' => 'images/uploads/icons/giropay.png'],
-    ['id' => 21, 'name' => 'iDeal', 'icon' => 'images/uploads/icons/ideal.png'],
-    ['id' => 22, 'name' => 'Union Pay', 'icon' => 'images/uploads/icons/unionpay.png'],
-    ['id' => 23, 'name' => 'Interac', 'icon' => 'images/uploads/icons/interac.png'],
-    ['id' => 24, 'name' => 'WeChat', 'icon' => 'images/uploads/icons/wechat.png'],
-    ['id' => 25, 'name' => 'Paysafe', 'icon' => 'images/uploads/icons/paysafe.png'],
-    ['id' => 26, 'name' => 'Poli', 'icon' => 'images/uploads/icons/poli.png'],
-    ['id' => 27, 'name' => 'Qiwi', 'icon' => 'images/uploads/icons/qiwi.png'],
-    ['id' => 28, 'name' => 'ShopPay', 'icon' => 'images/uploads/icons/shoppay.png'],
-    ['id' => 29, 'name' => 'Venmo', 'icon' => 'images/uploads/icons/venmo.png'],
-    ['id' => 30, 'name' => 'VeriFone', 'icon' => 'images/uploads/icons/verifone.png'],
-    ['id' => 31, 'name' => 'WebMoney', 'icon' => 'images/uploads/icons/webmoney.png'],
-];
+$currencies = wallos_get_default_currencies($lang);
+$categories = wallos_get_default_categories($lang);
+$payment_methods = wallos_get_default_payment_methods($lang);
 
 $passwordMismatch = false;
 $usernameExists = false;
@@ -166,9 +80,16 @@ if (isset($_POST['username'])) {
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
     $main_currency = $_POST['main_currency'];
-    $main_currency_index = array_search($main_currency, array_column($currencies, 'code'));
-    $main_currency_id = $currencies[$main_currency_index]['id'];
-    $language = $_POST['language'];
+    $language = wallos_resolve_supported_language($_POST['language'], array_keys($languages));
+    $seedCurrencies = wallos_get_default_currencies($language);
+    $seedCategories = wallos_get_default_categories($language);
+    $seedPaymentMethods = wallos_get_default_payment_methods($language);
+    $main_currency_index = array_search($main_currency, array_column($seedCurrencies, 'code'), true);
+    if ($main_currency_index === false) {
+        $main_currency_index = 0;
+        $main_currency = $seedCurrencies[0]['code'];
+    }
+    $main_currency_id = $seedCurrencies[$main_currency_index]['id'];
     $avatar = "images/avatars/0.svg";
 
     if ($password != $confirm_password) {
@@ -230,7 +151,7 @@ if (isset($_POST['username'])) {
                 // Add categories for that user
                 $query = 'INSERT INTO categories (name, "order", user_id) VALUES (:name, :order, :user_id)';
                 $stmt = $db->prepare($query);
-                foreach ($categories as $index => $category) {
+                foreach ($seedCategories as $index => $category) {
                     $stmt->bindValue(':name', $category['name'], SQLITE3_TEXT);
                     $stmt->bindValue(':order', $index + 1, SQLITE3_INTEGER);
                     $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
@@ -240,7 +161,7 @@ if (isset($_POST['username'])) {
                 // Add payment methods for that user
                 $query = 'INSERT INTO payment_methods (name, icon, "order", user_id) VALUES (:name, :icon, :order, :user_id)';
                 $stmt = $db->prepare($query);
-                foreach ($payment_methods as $index => $payment_method) {
+                foreach ($seedPaymentMethods as $index => $payment_method) {
                     $stmt->bindValue(':name', $payment_method['name'], SQLITE3_TEXT);
                     $stmt->bindValue(':icon', $payment_method['icon'], SQLITE3_TEXT);
                     $stmt->bindValue(':order', $index + 1, SQLITE3_INTEGER);
@@ -251,7 +172,7 @@ if (isset($_POST['username'])) {
                 // Add currencies for that user
                 $query = "INSERT INTO currencies (name, symbol, code, rate, user_id) VALUES (:name, :symbol, :code, :rate, :user_id)";
                 $stmt = $db->prepare($query);
-                foreach ($currencies as $currency) {
+                foreach ($seedCurrencies as $currency) {
                     $stmt->bindValue(':name', $currency['name'], SQLITE3_TEXT);
                     $stmt->bindValue(':symbol', $currency['symbol'], SQLITE3_TEXT);
                     $stmt->bindValue(':code', $currency['code'], SQLITE3_TEXT);
@@ -378,7 +299,7 @@ if (isset($_POST['username'])) {
                 </div>
                 <div class="form-group">
                     <label for="currency"><?= translate('main_currency', $i18n) ?>:</label>
-                    <select id="currency" name="main_currency" placeholder="Currency">
+                    <select id="currency" name="main_currency" placeholder="<?= translate('currency', $i18n) ?>">
                         <?php
                         foreach ($currencies as $currency) {
                             ?>
@@ -390,7 +311,7 @@ if (isset($_POST['username'])) {
                 </div>
                 <div class="form-group">
                     <label for="language"><?= translate('language', $i18n) ?>:</label>
-                    <select id="language" name="language" placeholder="Language" onchange="changeLanguage(this.value)">
+                    <select id="language" name="language" placeholder="<?= translate('language', $i18n) ?>" onchange="changeLanguage(this.value)">
                         <?php
                         foreach ($languages as $code => $language) {
                             $selected = ($code === $lang) ? 'selected' : '';

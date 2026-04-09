@@ -332,7 +332,7 @@ $headerClass = count($subscriptions) > 0 ? "main-actions" : "main-actions hidden
               }
               ?>
             </select>
-            <select id="cycle" name="cycle" placeholder="Cycle">
+            <select id="cycle" name="cycle" placeholder="<?= translate('cycle', $i18n) ?>">
               <?php
               foreach ($cycles as $cycle) {
                 ?>

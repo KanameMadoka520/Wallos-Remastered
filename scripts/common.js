@@ -6,6 +6,59 @@ function toggleDropdown() {
   isDropdownOpen = !isDropdownOpen;
 }
 
+function setupPageNavigation() {
+  const pageNavs = document.querySelectorAll(".page-nav");
+
+  pageNavs.forEach((pageNav) => {
+    const links = [...pageNav.querySelectorAll("[data-page-nav-link]")];
+    const sections = links
+      .map((link) => document.getElementById(link.dataset.pageNavLink))
+      .filter(Boolean);
+
+    if (!links.length || !sections.length) {
+      return;
+    }
+
+    const setActiveLink = (targetId) => {
+      links.forEach((link) => {
+        const isActive = link.dataset.pageNavLink === targetId;
+        link.classList.toggle("is-active", isActive);
+      });
+    };
+
+    const initialTarget = window.location.hash ? window.location.hash.slice(1) : sections[0].id;
+    setActiveLink(initialTarget);
+
+    links.forEach((link) => {
+      link.addEventListener("click", () => {
+        setActiveLink(link.dataset.pageNavLink);
+      });
+    });
+
+    if (!("IntersectionObserver" in window)) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleSections = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+        if (visibleSections.length > 0) {
+          setActiveLink(visibleSections[0].target.id);
+        }
+      },
+      {
+        rootMargin: "-20% 0px -60% 0px",
+        threshold: [0.2, 0.5, 0.8],
+      }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+  });
+}
+
 function showErrorMessage(message) {
   const toast = document.querySelector(".toast#errorToast");
   const closeIcon = document.querySelector(".close-error");
@@ -101,6 +154,8 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelector('.dropdown-content').addEventListener('focus', function () {
     isDropdownOpen = true;
   });
+
+  setupPageNavigation();
 });
 
 function getCookie(name) {
