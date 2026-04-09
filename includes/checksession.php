@@ -1,4 +1,20 @@
 <?php
+require_once __DIR__ . '/user_status.php';
+require_once __DIR__ . '/request_logs.php';
+
+function wallos_logout_trashed_session_and_redirect(array $userData)
+{
+    $_SESSION = [];
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
+    }
+    setcookie('wallos_login', '', time() - 3600, '/');
+    setcookie('wallos_login', '', time() - 3600);
+
+    header('Location: login.php?' . wallos_prepare_trashed_login_redirect_query($userData));
+    exit();
+}
+
 // Handle OIDC first
 $secondsInMonth = 30 * 24 * 60 * 60;
 if (session_status() === PHP_SESSION_NONE) {
@@ -35,9 +51,14 @@ if (isset($_GET['code']) && isset($_GET['state'])) {
             $_SESSION['userId'] = $userData['id'];
         }
 
+        if (wallos_is_user_trashed($userData['account_status'] ?? WALLOS_USER_STATUS_ACTIVE)) {
+            wallos_logout_trashed_session_and_redirect($userData);
+        }
+
         if ($userData['avatar'] == "") {
             $userData['avatar'] = "0";
         }
+        wallos_log_request($db, $userData['id'], $userData['username'] ?? '');
     } else {
 
         if (isset($_COOKIE['wallos_login'])) {
@@ -57,6 +78,10 @@ if (isset($_GET['code']) && isset($_GET['state'])) {
                     $db->close();
                     header("Location: logout.php");
                     exit();
+                }
+
+                if (wallos_is_user_trashed($userData['account_status'] ?? WALLOS_USER_STATUS_ACTIVE)) {
+                    wallos_logout_trashed_session_and_redirect($userData);
                 }
 
                 if ($userData['avatar'] == "") {
@@ -87,6 +112,7 @@ if (isset($_GET['code']) && isset($_GET['state'])) {
                     $_SESSION['loggedin'] = true;
                     $_SESSION['main_currency'] = $main_currency;
                     $_SESSION['userId'] = $userId;
+                    wallos_log_request($db, $userData['id'], $userData['username'] ?? '');
                 } else {
                     $db->close();
                     header("Location: logout.php");

@@ -6,6 +6,9 @@ if (!file_exists($databaseFile)) {
     echo "Database does not exist. Creating it...\n";
     $db = new SQLite3($databaseFile, SQLITE3_OPEN_CREATE | SQLITE3_OPEN_READWRITE);
     $db->busyTimeout(5000);
+    $db->exec('PRAGMA journal_mode = WAL');
+    $db->exec('PRAGMA synchronous = NORMAL');
+    $db->exec('PRAGMA foreign_keys = ON');
 
     $db->exec('CREATE TABLE user (
         id INTEGER PRIMARY KEY,
@@ -236,6 +239,9 @@ if (!file_exists($databaseFile)) {
 
     $db = new SQLite3($databaseFile);
     $db->busyTimeout(5000);
+    $db->exec('PRAGMA journal_mode = WAL');
+    $db->exec('PRAGMA synchronous = NORMAL');
+    $db->exec('PRAGMA foreign_keys = ON');
 
     if (!$db) {
         die('Connection to the database failed.');

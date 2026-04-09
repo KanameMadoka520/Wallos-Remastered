@@ -349,6 +349,45 @@ function exportAsCsv() {
         });
 }
 
+function exportUploadedImages() {
+    const button = document.getElementById('export-uploaded-images');
+    if (!button) {
+        return;
+    }
+
+    button.disabled = true;
+
+    fetch('endpoints/user/export_uploaded_images.php', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-Token': window.csrfToken,
+        },
+    })
+        .then(async (response) => {
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                const data = await response.json();
+                throw new Error(data.message || translate('unknown_error'));
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = 'subscription-images.zip';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(downloadUrl);
+        })
+        .catch((error) => {
+            showErrorMessage(error.message || translate('unknown_error'));
+        })
+        .finally(() => {
+            button.disabled = false;
+        });
+}
+
 function deleteAccount(userId) {
     if (!confirm(translate('delete_account_confirmation'))) {
         return;

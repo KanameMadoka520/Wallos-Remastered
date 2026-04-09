@@ -1,5 +1,6 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_media.php';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     if (isset($_GET['id']) && $_GET['id'] != "") {
@@ -33,8 +34,11 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $subscriptionData['notify_days_before'] = $row['notify_days_before'];
             $subscriptionData['cancellation_date'] = $row['cancellation_date'];
             $subscriptionData['replacement_subscription_id'] = $row['replacement_subscription_id'];
-            $subscriptionData['detail_image'] = $row['detail_image'] ?? "";
             $subscriptionData['detail_image_urls'] = json_decode($row['detail_image_urls'] ?? '[]', true) ?: [];
+            $subscriptionData['uploaded_images'] = wallos_get_subscription_uploaded_images($db, $subscriptionId, $userId);
+            $subscriptionData['detail_image'] = !empty($subscriptionData['uploaded_images'][0]['path'])
+                ? $subscriptionData['uploaded_images'][0]['path']
+                : ($row['detail_image'] ?? "");
 
             $subscriptionJson = json_encode($subscriptionData);
             header('Content-Type: application/json');

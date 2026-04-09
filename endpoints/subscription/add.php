@@ -254,39 +254,51 @@ $inactive = isset($_POST['inactive']) ? true : false;
 $cancellationDate = $_POST['cancellation_date'] ?? null;
 $replacementSubscriptionId = $_POST['replacement_subscription_id'];
 $detailImageUrlsRaw = $_POST['detail_image_urls'] ?? '';
-$removeDetailImage = isset($_POST['remove-detail-image']) && $_POST['remove-detail-image'] === '1';
+$removeUploadedImageIds = wallos_parse_uploaded_image_ids($_POST['remove_uploaded_image_ids'] ?? []);
 
 if ($replacementSubscriptionId == 0 || $inactive == 0) {
     $replacementSubscriptionId = null;
 }
 
-$userStmt = $db->prepare('SELECT user_group FROM user WHERE id = :userId');
+$userStmt = $db->prepare('SELECT username, user_group FROM user WHERE id = :userId');
 $userStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
 $userResult = $userStmt->execute();
 $currentUser = $userResult ? $userResult->fetchArray(SQLITE3_ASSOC) : false;
 
 $isAdminUser = $userId === 1;
 $currentUserGroup = wallos_normalize_user_group($currentUser['user_group'] ?? WALLOS_USER_GROUP_FREE);
-$canUploadDetailImage = wallos_can_upload_subscription_images($isAdminUser, $currentUserGroup);
-$compressDetailImage = $isAdminUser
+$canUploadDetailImages = wallos_can_upload_subscription_images($isAdminUser, $currentUserGroup);
+$compressDetailImages = $isAdminUser
     ? (isset($_POST['compress_subscription_image']) && $_POST['compress_subscription_image'] === '1')
-    : $canUploadDetailImage;
+    : $canUploadDetailImages;
+$mediaPolicy = wallos_get_subscription_media_policy($db);
+$uploadLimit = wallos_get_subscription_upload_limit_for_user($isAdminUser, $currentUserGroup, $mediaPolicy);
 
 try {
-    $detailImageUrls = wallos_parse_subscription_image_urls($detailImageUrlsRaw, $i18n);
+    $detailImageUrls = wallos_parse_subscription_image_urls(
+        $detailImageUrlsRaw,
+        $i18n,
+        $mediaPolicy['external_url_limit']
+    );
 } catch (RuntimeException $exception) {
     subscription_error_response($exception->getMessage());
 }
 
-$existingSubscription = null;
-$detailImage = '';
-$oldDetailImage = '';
-$newDetailImage = '';
+$detailImageUrlsJson = wallos_encode_subscription_image_urls($detailImageUrls);
+$uploadedFileCount = wallos_count_effective_uploaded_files($_FILES['detail_images'] ?? null);
+
+if (!$canUploadDetailImages && $uploadedFileCount > 0) {
+    subscription_error_response(translate('subscription_image_no_upload_permission', $i18n));
+}
+
+$subscriptionId = $isEdit ? (int) $_POST['id'] : 0;
+$existingUploadedImages = [];
+$imagesPendingFileDeletion = [];
+$storedUploadedImages = [];
 
 if ($isEdit) {
-    $id = (int) $_POST['id'];
-    $existingStmt = $db->prepare('SELECT detail_image FROM subscriptions WHERE id = :id AND user_id = :userId');
-    $existingStmt->bindValue(':id', $id, SQLITE3_INTEGER);
+    $existingStmt = $db->prepare('SELECT id FROM subscriptions WHERE id = :id AND user_id = :userId');
+    $existingStmt->bindValue(':id', $subscriptionId, SQLITE3_INTEGER);
     $existingStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
     $existingResult = $existingStmt->execute();
     $existingSubscription = $existingResult ? $existingResult->fetchArray(SQLITE3_ASSOC) : false;
@@ -295,8 +307,22 @@ if ($isEdit) {
         subscription_error_response(translate('error', $i18n));
     }
 
-    $oldDetailImage = $existingSubscription['detail_image'] ?? '';
-    $detailImage = $oldDetailImage;
+    $existingUploadedImages = wallos_get_subscription_uploaded_images($db, $subscriptionId, $userId);
+}
+
+$remainingUploadedImageCount = count($existingUploadedImages);
+if (!empty($removeUploadedImageIds)) {
+    $existingImageIds = array_map(function ($image) {
+        return (int) $image['id'];
+    }, $existingUploadedImages);
+    $remainingUploadedImageCount -= count(array_intersect($existingImageIds, $removeUploadedImageIds));
+    if ($remainingUploadedImageCount < 0) {
+        $remainingUploadedImageCount = 0;
+    }
+}
+
+if ($uploadLimit !== null && ($remainingUploadedImageCount + $uploadedFileCount) > $uploadLimit) {
+    subscription_error_response(sprintf(translate('subscription_image_upload_limit_dynamic', $i18n), $uploadLimit));
 }
 
 if ($logoUrl !== "") {
@@ -316,105 +342,119 @@ if ($logoUrl !== "") {
     }
 }
 
-if (!$canUploadDetailImage && !empty($_FILES['detail_image']['name'])) {
-    subscription_error_response(translate('subscription_image_no_upload_permission', $i18n));
-}
+try {
+    $db->exec('BEGIN IMMEDIATE');
 
-if ($removeDetailImage) {
-    $detailImage = '';
-}
+    if (!$isEdit) {
+        $sql = "INSERT INTO subscriptions (
+                            name, logo, price, currency_id, next_payment, cycle, frequency, notes,
+                            payment_method_id, payer_user_id, category_id, notify, inactive, url,
+                            notify_days_before, user_id, cancellation_date, replacement_subscription_id,
+                            auto_renew, start_date, detail_image, detail_image_urls
+                        ) VALUES (
+                            :name, :logo, :price, :currencyId, :nextPayment, :cycle, :frequency, :notes,
+                            :paymentMethodId, :payerUserId, :categoryId, :notify, :inactive, :url,
+                            :notifyDaysBefore, :userId, :cancellationDate, :replacement_subscription_id,
+                            :autoRenew, :startDate, '', :detailImageUrls
+                        )";
+    } else {
+        $sql = "UPDATE subscriptions SET
+                            name = :name,
+                            price = :price,
+                            currency_id = :currencyId,
+                            next_payment = :nextPayment,
+                            auto_renew = :autoRenew,
+                            start_date = :startDate,
+                            cycle = :cycle,
+                            frequency = :frequency,
+                            notes = :notes,
+                            payment_method_id = :paymentMethodId,
+                            payer_user_id = :payerUserId,
+                            category_id = :categoryId,
+                            notify = :notify,
+                            inactive = :inactive,
+                            url = :url,
+                            notify_days_before = :notifyDaysBefore,
+                            cancellation_date = :cancellationDate,
+                            replacement_subscription_id = :replacement_subscription_id,
+                            detail_image = '',
+                            detail_image_urls = :detailImageUrls";
 
-if ($canUploadDetailImage && !empty($_FILES['detail_image']['name'])) {
-    try {
-        $newDetailImage = wallos_store_uploaded_subscription_image(
-            $_FILES['detail_image'],
+        if ($logo != "") {
+            $sql .= ", logo = :logo";
+        }
+
+        $sql .= " WHERE id = :id AND user_id = :userId";
+    }
+
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':name', $name, SQLITE3_TEXT);
+    if ($logo != "") {
+        $stmt->bindParam(':logo', $logo, SQLITE3_TEXT);
+    }
+    $stmt->bindParam(':price', $price, SQLITE3_FLOAT);
+    $stmt->bindParam(':currencyId', $currencyId, SQLITE3_INTEGER);
+    $stmt->bindParam(':nextPayment', $nextPayment, SQLITE3_TEXT);
+    $stmt->bindParam(':autoRenew', $autoRenew, SQLITE3_INTEGER);
+    $stmt->bindParam(':startDate', $startDate, SQLITE3_TEXT);
+    $stmt->bindParam(':cycle', $cycle, SQLITE3_INTEGER);
+    $stmt->bindParam(':frequency', $frequency, SQLITE3_INTEGER);
+    $stmt->bindParam(':notes', $notes, SQLITE3_TEXT);
+    $stmt->bindParam(':paymentMethodId', $paymentMethodId, SQLITE3_INTEGER);
+    $stmt->bindParam(':payerUserId', $payerUserId, SQLITE3_INTEGER);
+    $stmt->bindParam(':categoryId', $categoryId, SQLITE3_INTEGER);
+    $stmt->bindParam(':notify', $notify, SQLITE3_INTEGER);
+    $stmt->bindParam(':inactive', $inactive, SQLITE3_INTEGER);
+    $stmt->bindParam(':url', $url, SQLITE3_TEXT);
+    $stmt->bindParam(':notifyDaysBefore', $notifyDaysBefore, SQLITE3_INTEGER);
+    $stmt->bindParam(':cancellationDate', $cancellationDate, SQLITE3_TEXT);
+    if ($isEdit) {
+        $stmt->bindParam(':id', $subscriptionId, SQLITE3_INTEGER);
+    }
+    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmt->bindParam(':replacement_subscription_id', $replacementSubscriptionId, SQLITE3_INTEGER);
+    $stmt->bindParam(':detailImageUrls', $detailImageUrlsJson, SQLITE3_TEXT);
+
+    if (!$stmt->execute()) {
+        throw new RuntimeException(translate('error', $i18n) . ": " . $db->lastErrorMsg());
+    }
+
+    if (!$isEdit) {
+        $subscriptionId = $db->lastInsertRowID();
+    }
+
+    if (!empty($removeUploadedImageIds)) {
+        $imagesPendingFileDeletion = wallos_get_uploaded_images_by_ids($db, $removeUploadedImageIds, $userId, $subscriptionId);
+        if (!empty($imagesPendingFileDeletion)) {
+            $deleteStmt = $db->prepare('DELETE FROM subscription_uploaded_images WHERE id = :id AND user_id = :user_id AND subscription_id = :subscription_id');
+            foreach ($imagesPendingFileDeletion as $imageRow) {
+                $deleteStmt->bindValue(':id', (int) $imageRow['id'], SQLITE3_INTEGER);
+                $deleteStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+                $deleteStmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+                $deleteStmt->execute();
+            }
+        }
+    }
+
+    if ($uploadedFileCount > 0) {
+        $storedUploadedImages = wallos_store_subscription_uploaded_images(
+            $db,
+            $_FILES['detail_images'],
             $name,
+            $currentUser['username'] ?? ('user-' . $userId),
+            $userId,
+            $subscriptionId,
+            $compressDetailImages,
             __DIR__ . '/../../',
-            $compressDetailImage,
+            $mediaPolicy,
             $i18n
         );
-        $detailImage = $newDetailImage;
-    } catch (RuntimeException $exception) {
-        subscription_error_response($exception->getMessage());
-    }
-}
-
-$detailImageUrlsJson = wallos_encode_subscription_image_urls($detailImageUrls);
-
-if (!$isEdit) {
-    $sql = "INSERT INTO subscriptions (
-                        name, logo, price, currency_id, next_payment, cycle, frequency, notes,
-                        payment_method_id, payer_user_id, category_id, notify, inactive, url,
-                        notify_days_before, user_id, cancellation_date, replacement_subscription_id,
-                        auto_renew, start_date, detail_image, detail_image_urls
-                    ) VALUES (
-                        :name, :logo, :price, :currencyId, :nextPayment, :cycle, :frequency, :notes,
-                        :paymentMethodId, :payerUserId, :categoryId, :notify, :inactive, :url,
-                        :notifyDaysBefore, :userId, :cancellationDate, :replacement_subscription_id,
-                        :autoRenew, :startDate, :detailImage, :detailImageUrls
-                    )";
-} else {
-    $sql = "UPDATE subscriptions SET
-                        name = :name,
-                        price = :price,
-                        currency_id = :currencyId,
-                        next_payment = :nextPayment,
-                        auto_renew = :autoRenew,
-                        start_date = :startDate,
-                        cycle = :cycle,
-                        frequency = :frequency,
-                        notes = :notes,
-                        payment_method_id = :paymentMethodId,
-                        payer_user_id = :payerUserId,
-                        category_id = :categoryId,
-                        notify = :notify,
-                        inactive = :inactive,
-                        url = :url,
-                        notify_days_before = :notifyDaysBefore,
-                        cancellation_date = :cancellationDate,
-                        replacement_subscription_id = :replacement_subscription_id,
-                        detail_image = :detailImage,
-                        detail_image_urls = :detailImageUrls";
-
-    if ($logo != "") {
-        $sql .= ", logo = :logo";
     }
 
-    $sql .= " WHERE id = :id AND user_id = :userId";
-}
+    $db->exec('COMMIT');
 
-$stmt = $db->prepare($sql);
-$stmt->bindParam(':name', $name, SQLITE3_TEXT);
-if ($logo != "") {
-    $stmt->bindParam(':logo', $logo, SQLITE3_TEXT);
-}
-$stmt->bindParam(':price', $price, SQLITE3_FLOAT);
-$stmt->bindParam(':currencyId', $currencyId, SQLITE3_INTEGER);
-$stmt->bindParam(':nextPayment', $nextPayment, SQLITE3_TEXT);
-$stmt->bindParam(':autoRenew', $autoRenew, SQLITE3_INTEGER);
-$stmt->bindParam(':startDate', $startDate, SQLITE3_TEXT);
-$stmt->bindParam(':cycle', $cycle, SQLITE3_INTEGER);
-$stmt->bindParam(':frequency', $frequency, SQLITE3_INTEGER);
-$stmt->bindParam(':notes', $notes, SQLITE3_TEXT);
-$stmt->bindParam(':paymentMethodId', $paymentMethodId, SQLITE3_INTEGER);
-$stmt->bindParam(':payerUserId', $payerUserId, SQLITE3_INTEGER);
-$stmt->bindParam(':categoryId', $categoryId, SQLITE3_INTEGER);
-$stmt->bindParam(':notify', $notify, SQLITE3_INTEGER);
-$stmt->bindParam(':inactive', $inactive, SQLITE3_INTEGER);
-$stmt->bindParam(':url', $url, SQLITE3_TEXT);
-$stmt->bindParam(':notifyDaysBefore', $notifyDaysBefore, SQLITE3_INTEGER);
-$stmt->bindParam(':cancellationDate', $cancellationDate, SQLITE3_TEXT);
-if ($isEdit) {
-    $stmt->bindParam(':id', $id, SQLITE3_INTEGER);
-}
-$stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-$stmt->bindParam(':replacement_subscription_id', $replacementSubscriptionId, SQLITE3_INTEGER);
-$stmt->bindParam(':detailImage', $detailImage, SQLITE3_TEXT);
-$stmt->bindParam(':detailImageUrls', $detailImageUrlsJson, SQLITE3_TEXT);
-
-if ($stmt->execute()) {
-    if ($oldDetailImage !== '' && $oldDetailImage !== $detailImage) {
-        wallos_delete_subscription_image_if_unused($db, __DIR__ . '/../../', $oldDetailImage);
+    foreach ($imagesPendingFileDeletion as $imageRow) {
+        wallos_delete_subscription_image_file(__DIR__ . '/../../', $imageRow['path']);
     }
 
     $success['status'] = "Success";
@@ -426,11 +466,16 @@ if ($stmt->execute()) {
     header('Content-Type: application/json');
     echo json_encode($success);
     exit();
-} else {
-    if ($newDetailImage !== '') {
-        wallos_delete_subscription_image_file(__DIR__ . '/../../', $newDetailImage);
+} catch (Throwable $throwable) {
+    $db->exec('ROLLBACK');
+
+    foreach ($storedUploadedImages as $storedImage) {
+        if (!empty($storedImage['path'])) {
+            wallos_delete_subscription_image_file(__DIR__ . '/../../', $storedImage['path']);
+        }
     }
-    subscription_error_response(translate('error', $i18n) . ": " . $db->lastErrorMsg());
+
+    subscription_error_response($throwable->getMessage());
 }
 $db->close();
 ?>

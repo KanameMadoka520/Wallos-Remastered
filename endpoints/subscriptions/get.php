@@ -3,6 +3,7 @@ require_once '../../includes/connect_endpoint.php';
 
 require_once '../../includes/currency_formatter.php';
 require_once '../../includes/getdbkeys.php';
+require_once '../../includes/subscription_media.php';
 
 include_once '../../includes/list_subscriptions.php';
 
@@ -28,6 +29,7 @@ $formatter = new IntlDateFormatter(
 );
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
+  $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
 
 
   $sort = "next_payment";
@@ -180,8 +182,11 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $print[$id]['url'] = $subscription['url'] ?? "";
     $print[$id]['notes'] = $subscription['notes'] ?? "";
     $print[$id]['replacement_subscription_id'] = $subscription['replacement_subscription_id'];
-    $print[$id]['detail_image'] = $subscription['detail_image'] ?? '';
     $print[$id]['detail_image_urls'] = $subscription['detail_image_urls'] ?? '[]';
+    $print[$id]['uploaded_images'] = $uploadedImagesMap[$id] ?? [];
+    $print[$id]['detail_image'] = !empty($print[$id]['uploaded_images'][0]['path'])
+      ? $print[$id]['uploaded_images'][0]['path']
+      : ($subscription['detail_image'] ?? '');
 
     if (isset($settings['convertCurrency']) && $settings['convertCurrency'] === 'true' && $currencyId != $mainCurrencyId) {
       $print[$id]['price'] = getPriceConverted($print[$id]['price'], $currencyId, $db);

@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/user_groups.php';
 
 // Fetch the avatars belonging to the logged-in user
 $uploadedAvatars = [];
@@ -22,6 +23,8 @@ $showTotpSection = true;
 if ($loginDisabled && !$userData['totp_enabled']) {
     $showTotpSection = false;
 }
+
+$canExportUploadedImages = wallos_can_upload_subscription_images($isAdmin, $userData['user_group'] ?? WALLOS_USER_GROUP_FREE);
 
 require_once 'includes/page_navigation.php';
 
@@ -319,6 +322,19 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                         class="secondary-button thin mobile-grow" id="export-csv" <?= $demoMode ? 'disabled title="' . translate('not_available_in_demo_mode', $i18n) . '"' : '' ?>>
                 </div>
             </div>
+            <?php
+            if ($canExportUploadedImages) {
+                ?>
+                <div>
+                    <h3><?= translate('export_uploaded_subscription_images', $i18n) ?></h3>
+                    <div class="form-group-inline wrap">
+                        <input type="button" value="<?= translate('download_image_archive', $i18n) ?>" onClick="exportUploadedImages()"
+                            class="secondary-button thin mobile-grow" id="export-uploaded-images" <?= $demoMode ? 'disabled title="' . translate('not_available_in_demo_mode', $i18n) . '"' : '' ?>>
+                    </div>
+                </div>
+                <?php
+            }
+            ?>
         </div>
         <div>
             <?php

@@ -1,6 +1,7 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
+require_once '../../includes/subscription_media.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -18,6 +19,11 @@ if ($subscriptionToClone === false) {
         "message" => translate("error", $i18n)
     ]));
 }
+
+$userStmt = $db->prepare('SELECT username FROM user WHERE id = :userId');
+$userStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+$userResult = $userStmt->execute();
+$currentUser = $userResult ? $userResult->fetchArray(SQLITE3_ASSOC) : false;
 
 $query = "INSERT INTO subscriptions (
     name, logo, price, currency_id, next_payment, cycle, frequency, notes,
@@ -51,14 +57,24 @@ $cloneStmt->bindValue(':cancellation_date', $subscriptionToClone['cancellation_d
 $cloneStmt->bindValue(':replacement_subscription_id', $subscriptionToClone['replacement_subscription_id'], SQLITE3_INTEGER);
 $cloneStmt->bindValue(':start_date', $subscriptionToClone['start_date'], SQLITE3_TEXT);
 $cloneStmt->bindValue(':auto_renew', $subscriptionToClone['auto_renew'], SQLITE3_INTEGER);
-$cloneStmt->bindValue(':detail_image', $subscriptionToClone['detail_image'] ?? '', SQLITE3_TEXT);
+$cloneStmt->bindValue(':detail_image', '', SQLITE3_TEXT);
 $cloneStmt->bindValue(':detail_image_urls', $subscriptionToClone['detail_image_urls'] ?? '[]', SQLITE3_TEXT);
 
 if ($cloneStmt->execute()) {
+    $newSubscriptionId = $db->lastInsertRowID();
+    wallos_clone_subscription_uploaded_images(
+        $db,
+        __DIR__ . '/../../',
+        $subscriptionId,
+        $newSubscriptionId,
+        $userId,
+        $currentUser['username'] ?? ('user-' . $userId)
+    );
+
     $response = [
         "success" => true,
         "message" => translate('success', $i18n),
-        "id" => $db->lastInsertRowID()
+        "id" => $newSubscriptionId
     ];
     echo json_encode($response);
 } else {
