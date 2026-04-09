@@ -846,7 +846,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     submitButton.disabled = true;
     const formData = new FormData(subscriptionForm);
-    const detailImageFileInput = document.querySelector("#detail-image-upload");
     const detailImageConfig = getDetailImageConfig();
     const compressCheckbox = document.querySelector("#compress_subscription_image");
 
@@ -857,6 +856,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     formData.set("compress_subscription_image", shouldCompressDetailImage);
     formData.set("remove_uploaded_image_ids", removedUploadedImageIds.join(","));
+    formData.delete("detail_images[]");
+    selectedDetailImageFiles.forEach((file) => {
+      formData.append("detail_images[]", file, file.name);
+    });
 
     const fileInput = document.querySelector("#logo");
     const file = fileInput.files[0];
