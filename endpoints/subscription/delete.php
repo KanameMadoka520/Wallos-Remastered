@@ -7,12 +7,6 @@ $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
 
 $subscriptionId = $data["id"];
-$detailImageStmt = $db->prepare('SELECT detail_image FROM subscriptions WHERE id = :subscriptionId AND user_id = :userId');
-$detailImageStmt->bindParam(':subscriptionId', $subscriptionId, SQLITE3_INTEGER);
-$detailImageStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-$detailImageResult = $detailImageStmt->execute();
-$detailImageRow = $detailImageResult ? $detailImageResult->fetchArray(SQLITE3_ASSOC) : false;
-$detailImage = $detailImageRow['detail_image'] ?? '';
 
 $deleteQuery = "DELETE FROM subscriptions WHERE id = :subscriptionId AND user_id = :userId";
 $deleteStmt = $db->prepare($deleteQuery);
@@ -25,10 +19,7 @@ if ($deleteStmt->execute()) {
     $stmt->bindParam(':subscriptionId', $subscriptionId, SQLITE3_INTEGER);
     $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
     $stmt->execute();
-
-    if ($detailImage !== '') {
-        wallos_delete_subscription_image_if_unused($db, __DIR__ . '/../../', $detailImage);
-    }
+    wallos_delete_subscription_uploaded_images_for_subscription($db, __DIR__ . '/../../', $subscriptionId, $userId);
 
     echo json_encode([
         "success" => true,

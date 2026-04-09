@@ -156,7 +156,7 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                 if ($subscription['category_id'] == 1) {
                     echo translate('no_category', $i18n);
                 } else {
-                    echo $categories[$subscription['category_id']]['name'];
+                    echo htmlspecialchars($categories[$subscription['category_id']]['name'], ENT_QUOTES, 'UTF-8');
                 }
                 ?>
             </div>
@@ -166,7 +166,7 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
         if ($sort == "payer_user_id" && $subscription['payer_user_id'] != $currentPayerUserId) {
             ?>
             <div class="subscription-list-title">
-                <?= $members[$subscription['payer_user_id']]['name'] ?>
+                <?= htmlspecialchars($members[$subscription['payer_user_id']]['name'], ENT_QUOTES, 'UTF-8') ?>
             </div>
             <?php
             $currentPayerUserId = $subscription['payer_user_id'];
@@ -174,7 +174,7 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
         if ($sort == "payment_method_id" && $subscription['payment_method_id'] != $currentPaymentMethodId) {
             ?>
             <div class="subscription-list-title">
-                <?= $subscription['payment_method_name'] ?>
+                <?= htmlspecialchars($subscription['payment_method_name'], ENT_QUOTES, 'UTF-8') ?>
             </div>
             <?php
             $currentPaymentMethodId = $subscription['payment_method_id'];
@@ -229,20 +229,20 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
 
             <div class="subscription<?= $subscriptionExtraClasses ?>"
                 onClick="toggleOpenSubscription(<?= $subscription['id'] ?>)" data-id="<?= $subscription['id'] ?>"
-                data-name="<?= $subscription['name'] ?>">
+                data-name="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>">
                 <div class="subscription-main">
                     <span class="logo <?= !$hasLogo ? 'hideOnMobile' : '' ?>">
                         <?php
                         if ($hasLogo) {
                             ?>
-                            <img src="<?= $subscription['logo'] ?>">
+                            <img src="<?= htmlspecialchars($subscription['logo'], ENT_QUOTES, 'UTF-8') ?>">
                             <?php
                         } else {
                             include $imagePath . "images/siteicons/svg/logo.php";
                         }
                         ?>
                     </span>
-                    <span class="name <?= $hasLogo ? 'hideOnMobile' : '' ?>"><?= $subscription['name'] ?></span>
+                    <span class="name <?= $hasLogo ? 'hideOnMobile' : '' ?>"><?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?></span>
                     <span class="cycle"
                         title="<?= $subscription['auto_renew'] ? translate("automatically_renews", $i18n) : translate("manual_renewal", $i18n) ?>">
                         <?php
@@ -270,8 +270,8 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
 
                     </span>
                     <span class="payment_method">
-                        <img src="<?= $subscription['payment_method_icon'] ?>"
-                            title="<?= translate('payment_method', $i18n) ?>: <?= $subscription['payment_method_name'] ?>" />
+                        <img src="<?= htmlspecialchars($subscription['payment_method_icon'], ENT_QUOTES, 'UTF-8') ?>"
+                            title="<?= translate('payment_method', $i18n) ?>: <?= htmlspecialchars($subscription['payment_method_name'], ENT_QUOTES, 'UTF-8') ?>" />
                     </span>
                     <?php
                     $desktopMenuButtonClass = ""; {
@@ -315,11 +315,11 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                 </div>
                 <div class="subscription-secondary">
                     <span
-                        class="name"><?php include $imagePath . "images/siteicons/svg/subscription.php"; ?><?= $subscription['name'] ?></span>
+                        class="name"><?php include $imagePath . "images/siteicons/svg/subscription.php"; ?><?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?></span>
                     <span class="payer_user"
-                        title="<?= translate('paid_by', $i18n) ?>"><?php include $imagePath . "images/siteicons/svg/payment.php"; ?><?= $members[$subscription['payer_user_id']]['name'] ?></span>
+                        title="<?= translate('paid_by', $i18n) ?>"><?php include $imagePath . "images/siteicons/svg/payment.php"; ?><?= htmlspecialchars($members[$subscription['payer_user_id']]['name'], ENT_QUOTES, 'UTF-8') ?></span>
                     <span class="category"
-                        title="<?= translate('category', $i18n) ?>"><?php include $imagePath . "images/siteicons/svg/category.php"; ?><?= $categories[$subscription['category_id']]['name'] ?></span>
+                        title="<?= translate('category', $i18n) ?>"><?php include $imagePath . "images/siteicons/svg/category.php"; ?><?= htmlspecialchars($categories[$subscription['category_id']]['name'], ENT_QUOTES, 'UTF-8') ?></span>
                     <?php
                     if ($subscription['url'] != "") {
                         $url = $subscription['url'];
@@ -327,23 +327,23 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                             $url = "https://" . $url;
                         }
                         ?>
-                        <span class="url" title="<?= translate('external_url', $i18n) ?>"><a href="<?= $url ?>" target="_blank"
+                        <span class="url" title="<?= translate('external_url', $i18n) ?>"><a href="<?= htmlspecialchars($url, ENT_QUOTES, 'UTF-8') ?>" target="_blank"
                                 rel="noreferrer"><?php include $imagePath . "images/siteicons/svg/web.php"; ?></a></span>
                         <?php
                     }
                     ?>
                 </div>
                 <?php
-                $detailImage = $subscription['detail_image'] ?? '';
+                $uploadedImages = $subscription['uploaded_images'] ?? [];
                 $detailImageUrls = wallos_decode_subscription_image_urls($subscription['detail_image_urls'] ?? '[]');
-                $hasDetailImages = $detailImage !== '' || !empty($detailImageUrls);
+                $hasDetailImages = !empty($uploadedImages) || !empty($detailImageUrls);
 
                 if ($subscription['notes'] != "") {
                     ?>
                     <div class="subscription-notes">
                         <span class="notes">
                             <?php include $imagePath . "images/siteicons/svg/notes.php"; ?>
-                            <?= $subscription['notes'] ?>
+                            <?= htmlspecialchars($subscription['notes'], ENT_QUOTES, 'UTF-8') ?>
                         </span>
                     </div>
                     <?php
@@ -358,25 +358,29 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                         </span>
                         <div class="subscription-media-gallery">
                             <?php
-                            if ($detailImage !== '') {
+                            foreach ($uploadedImages as $uploadedImage) {
+                                $imagePathValue = $uploadedImage['path'] ?? '';
+                                if ($imagePathValue === '') {
+                                    continue;
+                                }
                                 ?>
-                                <a class="subscription-media-item" href="<?= htmlspecialchars($detailImage, ENT_QUOTES, 'UTF-8') ?>"
-                                    target="_blank" rel="noreferrer">
-                                    <img src="<?= htmlspecialchars($detailImage, ENT_QUOTES, 'UTF-8') ?>"
+                                <button type="button" class="subscription-media-item"
+                                    onClick='openSubscriptionImageViewer(<?= json_encode($imagePathValue, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>, <?= json_encode($imagePathValue, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>)'>
+                                    <img src="<?= htmlspecialchars($imagePathValue, ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>"
                                         loading="lazy" decoding="async" />
-                                </a>
+                                </button>
                                 <?php
                             }
 
                             foreach ($detailImageUrls as $detailImageUrl) {
                                 ?>
-                                <a class="subscription-media-item" href="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
-                                    target="_blank" rel="noreferrer" referrerpolicy="no-referrer">
+                                <button type="button" class="subscription-media-item"
+                                    onClick='openSubscriptionImageViewer(<?= json_encode($detailImageUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>, null)'>
                                     <img src="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>"
                                         loading="lazy" decoding="async" referrerpolicy="no-referrer" />
-                                </a>
+                                </button>
                                 <?php
                             }
                             ?>

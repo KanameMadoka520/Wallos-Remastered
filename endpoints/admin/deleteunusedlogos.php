@@ -7,6 +7,7 @@ $query = 'SELECT logo FROM subscriptions';
 $stmt = $db->prepare($query);
 $result = $stmt->execute();
 
+$logosOnDisk = [];
 $logosOnDB = [];
 while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $logosOnDB[] = $row['logo'];
@@ -18,7 +19,13 @@ $uploadDir = '../../images/uploads/logos/';
 $uploadFiles = scandir($uploadDir);
 
 foreach ($uploadFiles as $file) {
-    if ($file != '.' && $file != '..' && $file != 'avatars') {
+    if (
+        $file !== '.'
+        && $file !== '..'
+        && $file !== 'avatars'
+        && $file !== 'subscription-media'
+        && is_file($uploadDir . $file)
+    ) {
         $logosOnDisk[] = ['logo' => $file];
     }
 }
@@ -39,15 +46,15 @@ foreach ($uploadFiles as $file) {
 // Find and delete unused logos
 $count = 0;
 foreach ($logosOnDisk as $disk) {
+    $found = false;
     foreach ($logosOnDB as $db) {
-        $found = false;
         if ($disk['logo'] == $db) {
             $found = true;
             break;
         }
     }
     if (!$found) {
-        unlink($uploadDir . $disk['logo']);
+        @unlink($uploadDir . $disk['logo']);
         $count++;
     }
 }

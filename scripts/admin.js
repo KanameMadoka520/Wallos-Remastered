@@ -192,6 +192,7 @@ function saveAccountRegistrationsButton() {
   button.disabled = true;
 
   const open_registrations = document.getElementById('registrations').checked ? 1 : 0;
+  const invite_only_registration = document.getElementById('inviteOnlyRegistration').checked ? 1 : 0;
   const max_users = document.getElementById('maxUsers').value;
   const require_email_validation = document.getElementById('requireEmail').checked ? 1 : 0;
   const server_url = document.getElementById('serverUrl').value;
@@ -199,6 +200,7 @@ function saveAccountRegistrationsButton() {
 
   const data = {
     open_registrations: open_registrations,
+    invite_only_registration: invite_only_registration,
     max_users: max_users,
     require_email_validation: require_email_validation,
     server_url: server_url,
@@ -264,8 +266,23 @@ function saveSecuritySettingsButton() {
 }
 
 function removeUser(userId) {
+  const reason = prompt(translate('recycle_bin_reason_prompt'));
+  if (reason === null) {
+    return;
+  }
+
+  if (!reason.trim()) {
+    showErrorMessage(translate('recycle_bin_reason_required'));
+    return;
+  }
+
+  if (!confirm(translate('confirm_move_user_to_recycle_bin'))) {
+    return;
+  }
+
   const data = {
-    userId: userId
+    userId: userId,
+    reason: reason.trim()
   };
 
   fetch('endpoints/admin/deleteuser.php', {
@@ -280,16 +297,63 @@ function removeUser(userId) {
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
-        const userContainer = document.querySelector(`.form-group-inline[data-userid="${userId}"]`);
-        if (userContainer) {
-          userContainer.remove();
-        }
+        window.location.reload();
       } else {
         showErrorMessage(data.message);
       }
     })
     .catch(error => showErrorMessage('Error:', error));
 
+}
+
+function restoreUser(userId) {
+  fetch('endpoints/admin/restoreuser.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ userId })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+        window.location.reload();
+      } else {
+        showErrorMessage(data.message || translate('error'));
+      }
+    })
+    .catch(() => showErrorMessage(translate('error')));
+}
+
+function permanentlyDeleteUser(userId) {
+  if (!confirm(translate('confirm_permanently_delete_user'))) {
+    return;
+  }
+
+  if (!confirm(translate('confirm_permanently_delete_user_second'))) {
+    return;
+  }
+
+  fetch('endpoints/admin/permanentlydeleteuser.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ userId })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+        window.location.reload();
+      } else {
+        showErrorMessage(data.message || translate('error'));
+      }
+    })
+    .catch(() => showErrorMessage(translate('error')));
 }
 
 function updateUserGroup(userId, selectElement) {
@@ -365,6 +429,92 @@ function addUserButton() {
       showErrorMessage(error);
       button.disabled = false;
     });
+}
+
+function saveSubscriptionImageSettingsButton() {
+  const button = document.getElementById('saveSubscriptionImageSettingsButton');
+  button.disabled = true;
+
+  const data = {
+    subscription_image_external_url_limit: document.getElementById('subscriptionImageExternalUrlLimit').value,
+    trusted_subscription_upload_limit: document.getElementById('trustedSubscriptionUploadLimit').value,
+    subscription_image_max_size_mb: document.getElementById('subscriptionImageMaxSizeMb').value,
+  };
+
+  fetch('endpoints/admin/saveimagesettings.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify(data),
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+      } else {
+        showErrorMessage(data.message || translate('error'));
+      }
+    })
+    .catch(() => showErrorMessage(translate('error')))
+    .finally(() => {
+      button.disabled = false;
+    });
+}
+
+function generateInviteCode() {
+  const button = document.getElementById('generateInviteCodeButton');
+  button.disabled = true;
+
+  const maxUses = document.getElementById('inviteCodeMaxUses').value || 1;
+
+  fetch('endpoints/admin/generateinvitecode.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ maxUses }),
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(`${data.message} ${data.code}`);
+        window.location.reload();
+      } else {
+        showErrorMessage(data.message || translate('error'));
+      }
+    })
+    .catch(() => showErrorMessage(translate('error')))
+    .finally(() => {
+      button.disabled = false;
+    });
+}
+
+function deleteInviteCode(inviteCodeId) {
+  if (!confirm(translate('confirm_delete_invite_code'))) {
+    return;
+  }
+
+  fetch('endpoints/admin/deleteinvitecode.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ inviteCodeId }),
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+        window.location.reload();
+      } else {
+        showErrorMessage(data.message || translate('error'));
+      }
+    })
+    .catch(() => showErrorMessage(translate('error')));
 }
 
 function deleteUnusedLogos() {

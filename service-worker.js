@@ -86,7 +86,7 @@ const staticAssets = [
     'images/siteicons/svg/delete.php',
     'images/siteicons/svg/edit.php',
     'images/siteicons/svg/notes.php',
-    'images/siteicons/scg/payment.php',
+    'images/siteicons/svg/payment.php',
     'images/siteicons/svg/save.php',
     'images/siteicons/svg/subscription.php',
     'images/siteicons/svg/web.php',

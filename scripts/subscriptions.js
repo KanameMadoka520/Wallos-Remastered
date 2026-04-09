@@ -1,6 +1,8 @@
 let isSortOptionsOpen = false;
 let scrollTopBeforeOpening = 0;
 const shouldScroll = window.innerWidth <= 768;
+let currentSubscriptionImageViewerSrc = "";
+let currentSubscriptionImageDownloadUrl = "";
 
 function toggleOpenSubscription(subId) {
   const subscriptionElement = document.querySelector('.subscription[data-id="' + subId + '"]');
@@ -19,16 +21,29 @@ function toggleNotificationDays() {
   notifyDaysBefore.disabled = !notifyCheckbox.checked;
 }
 
+let selectedDetailImageFiles = [];
+let existingUploadedImages = [];
+let removedUploadedImageIds = [];
+
 function getDetailImageConfig() {
   const form = document.querySelector("#subs-form");
+  const rawUploadLimit = form?.dataset.uploadLimit;
+  const parsedUploadLimit = rawUploadLimit === "" || rawUploadLimit === undefined
+    ? null
+    : Number(rawUploadLimit);
 
   return {
     canUpload: form?.dataset.canUploadDetailImage === "1",
     compressionMode: form?.dataset.compressionMode || "disabled",
     maxBytes: Number(form?.dataset.detailImageMaxBytes || 0),
+    maxMb: Number(form?.dataset.detailImageMaxMb || 0),
+    uploadLimit: Number.isFinite(parsedUploadLimit) ? parsedUploadLimit : null,
+    externalUrlLimit: Number(form?.dataset.externalUrlLimit || 0),
+    allowedExtensions: form?.dataset.allowedExtensions || "",
     tooLargeMessage: form?.dataset.detailImageTooLarge || translate("unknown_error"),
     invalidTypeMessage: form?.dataset.detailImageInvalidType || translate("unknown_error"),
     uploadBlockedMessage: form?.dataset.detailImageUploadBlocked || translate("unknown_error"),
+    uploadLimitMessage: form?.dataset.detailImageUploadLimitMessage || translate("unknown_error"),
   };
 }
 
@@ -43,37 +58,128 @@ function resetDetailImageCompression() {
   compressCheckbox.checked = config.compressionMode !== "optional";
 }
 
-function clearDetailImagePreview() {
-  const previewWrapper = document.querySelector("#detail-image-preview-wrapper");
-  const previewImage = document.querySelector("#detail-image-preview");
-
-  if (!previewWrapper || !previewImage) {
+function rebuildDetailImageInput() {
+  const detailImageInput = document.querySelector("#detail-image-upload");
+  if (!detailImageInput || typeof DataTransfer === "undefined") {
     return;
   }
 
-  previewImage.src = "";
-  previewWrapper.dataset.persisted = "0";
-  previewWrapper.classList.add("is-hidden");
+  const dataTransfer = new DataTransfer();
+  selectedDetailImageFiles.forEach((file) => {
+    dataTransfer.items.add(file);
+  });
+  detailImageInput.files = dataTransfer.files;
 }
 
-function showDetailImagePreview(src, persisted = false) {
-  const previewWrapper = document.querySelector("#detail-image-preview-wrapper");
-  const previewImage = document.querySelector("#detail-image-preview");
-
-  if (!previewWrapper || !previewImage || !src) {
-    clearDetailImagePreview();
+function updateDetailImageSelectionMeta() {
+  const meta = document.querySelector("#detail-image-selection-meta");
+  if (!meta) {
     return;
   }
 
-  previewImage.src = src;
-  previewWrapper.dataset.persisted = persisted ? "1" : "0";
-  previewWrapper.classList.remove("is-hidden");
+  const selectedCount = selectedDetailImageFiles.length;
+  const existingCount = existingUploadedImages.length;
+
+  if (selectedCount === 0 && existingCount === 0) {
+    meta.textContent = translate("subscription_image_no_selection");
+    return;
+  }
+
+  const parts = [];
+  if (existingCount > 0) {
+    parts.push(`${translate("subscription_image_selected_existing")}: ${existingCount}`);
+  }
+  if (selectedCount > 0) {
+    parts.push(`${translate("subscription_image_selected_new")}: ${selectedCount}`);
+  }
+  meta.textContent = parts.join(" / ");
+}
+
+function renderDetailImageGallery() {
+  const gallery = document.querySelector("#detail-image-gallery");
+  if (!gallery) {
+    return;
+  }
+
+  gallery.innerHTML = "";
+  const totalCount = existingUploadedImages.length + selectedDetailImageFiles.length;
+  gallery.classList.toggle("is-empty", totalCount === 0);
+
+  existingUploadedImages.forEach((image) => {
+    gallery.appendChild(
+      createDetailImageCard({
+        src: image.path,
+        badgeText: translate("subscription_image_existing_badge"),
+        extraClassName: "existing",
+        onPreview: () => openSubscriptionImageViewer(image.path, image.path),
+        onRemove: () => removeExistingUploadedImage(image.id),
+      }),
+    );
+  });
+
+  selectedDetailImageFiles.forEach((file, index) => {
+    const objectUrl = URL.createObjectURL(file);
+    gallery.appendChild(
+      createDetailImageCard({
+        src: objectUrl,
+        badgeText: translate("subscription_image_new_badge"),
+        extraClassName: "new",
+        onPreview: () => openSubscriptionImageViewer(objectUrl, objectUrl),
+        onRemove: () => removeSelectedDetailImage(index),
+      }),
+    );
+  });
+
+  updateDetailImageSelectionMeta();
+}
+
+function createDetailImageCard({ src, badgeText, extraClassName = "", onPreview, onRemove }) {
+  const card = document.createElement("div");
+  card.className = `subscription-detail-image-card ${extraClassName}`.trim();
+
+  const previewButton = document.createElement("button");
+  previewButton.type = "button";
+  previewButton.className = "subscription-detail-image-preview";
+  previewButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (typeof onPreview === "function") {
+      onPreview();
+    }
+  });
+
+  const image = document.createElement("img");
+  image.src = src;
+  image.alt = "";
+  previewButton.appendChild(image);
+
+  const badge = document.createElement("span");
+  badge.className = "subscription-detail-image-badge";
+  badge.textContent = badgeText;
+
+  const removeButton = document.createElement("button");
+  removeButton.type = "button";
+  removeButton.className = "subscription-detail-image-remove";
+  removeButton.setAttribute("aria-label", translate("subscription_image_remove"));
+  removeButton.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+  removeButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof onRemove === "function") {
+      onRemove();
+    }
+  });
+
+  card.appendChild(previewButton);
+  card.appendChild(badge);
+  card.appendChild(removeButton);
+
+  return card;
 }
 
 function resetDetailImageControls() {
   const detailImageInput = document.querySelector("#detail-image-upload");
   const detailImageUrls = document.querySelector("#detail-image-urls");
-  const removeDetailImage = document.querySelector("#remove-detail-image");
+  const removeUploadedImageIdsInput = document.querySelector("#remove-uploaded-image-ids");
 
   if (detailImageInput) {
     detailImageInput.value = "";
@@ -81,12 +187,17 @@ function resetDetailImageControls() {
   if (detailImageUrls) {
     detailImageUrls.value = "";
   }
-  if (removeDetailImage) {
-    removeDetailImage.value = "0";
+  if (removeUploadedImageIdsInput) {
+    removeUploadedImageIdsInput.value = "";
   }
 
+  selectedDetailImageFiles = [];
+  existingUploadedImages = [];
+  removedUploadedImageIds = [];
+
   resetDetailImageCompression();
-  clearDetailImagePreview();
+  rebuildDetailImageInput();
+  renderDetailImageGallery();
 }
 
 function validateDetailImageFile(file) {
@@ -113,41 +224,120 @@ function validateDetailImageFile(file) {
 
 function handleDetailImageSelect(event) {
   const fileInput = event.target;
-  const removeDetailImage = document.querySelector("#remove-detail-image");
+  const config = getDetailImageConfig();
 
-  if (!fileInput.files || !fileInput.files[0]) {
+  if (!fileInput.files || !fileInput.files.length) {
     return;
   }
 
-  const file = fileInput.files[0];
-  if (!validateDetailImageFile(file)) {
+  const incomingFiles = Array.from(fileInput.files);
+  const validFiles = [];
+
+  for (const file of incomingFiles) {
+    if (!validateDetailImageFile(file)) {
+      continue;
+    }
+    validFiles.push(file);
+  }
+
+  if (!validFiles.length) {
     fileInput.value = "";
     return;
   }
 
-  if (removeDetailImage) {
-    removeDetailImage.value = "0";
+  if (config.uploadLimit !== null && (existingUploadedImages.length + selectedDetailImageFiles.length + validFiles.length) > config.uploadLimit) {
+    showErrorMessage(config.uploadLimitMessage);
+    fileInput.value = "";
+    rebuildDetailImageInput();
+    return;
   }
 
-  const reader = new FileReader();
-  reader.onload = function (loadEvent) {
-    showDetailImagePreview(loadEvent.target.result, false);
-  };
-  reader.readAsDataURL(file);
+  selectedDetailImageFiles = selectedDetailImageFiles.concat(validFiles);
+  fileInput.value = "";
+  rebuildDetailImageInput();
+  renderDetailImageGallery();
 }
 
-function removeDetailImagePreview() {
-  const detailImageInput = document.querySelector("#detail-image-upload");
-  const removeDetailImage = document.querySelector("#remove-detail-image");
-  const previewWrapper = document.querySelector("#detail-image-preview-wrapper");
+function removeSelectedDetailImage(index) {
+  selectedDetailImageFiles.splice(index, 1);
+  rebuildDetailImageInput();
+  renderDetailImageGallery();
+}
 
-  if (detailImageInput && detailImageInput.files && detailImageInput.files.length > 0) {
-    detailImageInput.value = "";
-  } else if (previewWrapper?.dataset.persisted === "1" && removeDetailImage) {
-    removeDetailImage.value = "1";
+function removeExistingUploadedImage(imageId) {
+  removedUploadedImageIds.push(Number(imageId));
+  existingUploadedImages = existingUploadedImages.filter((image) => Number(image.id) !== Number(imageId));
+  const removeUploadedImageIdsInput = document.querySelector("#remove-uploaded-image-ids");
+  if (removeUploadedImageIdsInput) {
+    removeUploadedImageIdsInput.value = removedUploadedImageIds.join(",");
+  }
+  renderDetailImageGallery();
+}
+
+function setExistingUploadedImages(images) {
+  existingUploadedImages = Array.isArray(images)
+    ? images.map((image) => ({ ...image, id: Number(image.id) }))
+    : [];
+  removedUploadedImageIds = [];
+  const removeUploadedImageIdsInput = document.querySelector("#remove-uploaded-image-ids");
+  if (removeUploadedImageIdsInput) {
+    removeUploadedImageIdsInput.value = "";
+  }
+  renderDetailImageGallery();
+}
+
+function openSubscriptionImageViewer(src, downloadUrl = null) {
+  const viewer = document.querySelector("#subscription-image-viewer");
+  const preview = document.querySelector("#subscription-image-viewer-preview");
+  const openLink = document.querySelector("#subscription-image-viewer-open");
+  const downloadLink = document.querySelector("#subscription-image-viewer-download");
+
+  if (!viewer || !preview || !src) {
+    return;
   }
 
-  clearDetailImagePreview();
+  preview.src = src;
+  currentSubscriptionImageViewerSrc = src;
+  currentSubscriptionImageDownloadUrl = downloadUrl || src;
+  openLink.disabled = false;
+  downloadLink.disabled = false;
+  viewer.classList.add("is-open");
+}
+
+function closeSubscriptionImageViewer() {
+  const viewer = document.querySelector("#subscription-image-viewer");
+  const preview = document.querySelector("#subscription-image-viewer-preview");
+
+  if (viewer) {
+    viewer.classList.remove("is-open");
+  }
+  if (preview) {
+    preview.src = "";
+  }
+  currentSubscriptionImageViewerSrc = "";
+  currentSubscriptionImageDownloadUrl = "";
+}
+
+function openSubscriptionImageOriginal() {
+  if (!currentSubscriptionImageViewerSrc) {
+    return;
+  }
+
+  window.open(currentSubscriptionImageViewerSrc, "_blank", "noopener,noreferrer");
+}
+
+function downloadSubscriptionImage() {
+  if (!currentSubscriptionImageDownloadUrl) {
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = currentSubscriptionImageDownloadUrl;
+  link.download = "";
+  link.rel = "noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function resetForm() {
@@ -229,20 +419,13 @@ function fillEditFormFields(subscription) {
       ? subscription.detail_image_urls.join("\n")
       : "";
   }
-  const removeDetailImage = document.querySelector("#remove-detail-image");
-  if (removeDetailImage) {
-    removeDetailImage.value = "0";
-  }
   const detailImageInput = document.querySelector("#detail-image-upload");
   if (detailImageInput) {
     detailImageInput.value = "";
   }
+  selectedDetailImageFiles = [];
   resetDetailImageCompression();
-  if (subscription.detail_image) {
-    showDetailImagePreview(subscription.detail_image, true);
-  } else {
-    clearDetailImagePreview();
-  }
+  setExistingUploadedImages(subscription.uploaded_images || []);
   const inactive = document.querySelector("#inactive");
   inactive.checked = subscription.inactive;
   const url = document.querySelector("#url");
@@ -664,14 +847,8 @@ document.addEventListener('DOMContentLoaded', function () {
     submitButton.disabled = true;
     const formData = new FormData(subscriptionForm);
     const detailImageFileInput = document.querySelector("#detail-image-upload");
-    const detailImageFile = detailImageFileInput?.files?.[0];
     const detailImageConfig = getDetailImageConfig();
     const compressCheckbox = document.querySelector("#compress_subscription_image");
-
-    if (detailImageFile && !validateDetailImageFile(detailImageFile)) {
-      submitButton.disabled = false;
-      return;
-    }
 
     const shouldCompressDetailImage =
       detailImageConfig.compressionMode === "optional"
@@ -679,9 +856,7 @@ document.addEventListener('DOMContentLoaded', function () {
         : "1";
 
     formData.set("compress_subscription_image", shouldCompressDetailImage);
-    if (!formData.get("remove-detail-image")) {
-      formData.set("remove-detail-image", "0");
-    }
+    formData.set("remove_uploaded_image_ids", removedUploadedImageIds.join(","));
 
     const fileInput = document.querySelector("#logo");
     const file = fileInput.files[0];

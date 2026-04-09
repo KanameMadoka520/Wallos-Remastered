@@ -5,8 +5,27 @@ require_once 'includes/checkuser.php';
 require_once 'includes/i18n/languages.php';
 require_once 'includes/i18n/getlang.php';
 require_once 'includes/i18n/' . $lang . '.php';
+require_once 'includes/user_status.php';
+require_once 'includes/request_logs.php';
 
 require_once 'includes/version.php';
+
+function wallos_build_recycle_bin_login_message($i18n, $reason = '', $scheduledDeleteAt = '')
+{
+    $message = translate('account_in_recycle_bin', $i18n);
+
+    $reason = trim((string) $reason);
+    if ($reason !== '') {
+        $message .= ' ' . translate('recycle_bin_reason_prefix', $i18n) . ' ' . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8');
+    }
+
+    $scheduledDeleteAt = trim((string) $scheduledDeleteAt);
+    if ($scheduledDeleteAt !== '') {
+        $message .= ' ' . translate('recycle_bin_scheduled_delete_prefix', $i18n) . ' ' . htmlspecialchars($scheduledDeleteAt, ENT_QUOTES, 'UTF-8');
+    }
+
+    return $message;
+}
 
 if ($userCount == 0) {
     header("Location: registration.php");
@@ -164,6 +183,7 @@ if ($oidcRow) {
 }
 
 $loginFailed = false;
+$trashedAccountMessage = '';
 $hasSuccessMessage = (isset($_GET['validated']) && $_GET['validated'] == "true") || (isset($_GET['registered']) && $_GET['registered'] == true) ? true : false;
 $userEmailWaitingVerification = false;
 if (isset($_POST['username']) && isset($_POST['password'])) {
@@ -183,6 +203,20 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
         $main_currency = $row['main_currency'];
         $language = $row['language'];
         if (password_verify($password, $hashedPasswordFromDb)) {
+            $statusStmt = $db->prepare('SELECT username, account_status, trash_reason, scheduled_delete_at FROM user WHERE id = :userId');
+            $statusStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+            $statusResult = $statusStmt->execute();
+            $statusRow = $statusResult ? $statusResult->fetchArray(SQLITE3_ASSOC) : false;
+
+            if ($statusRow && wallos_is_user_trashed($statusRow['account_status'] ?? WALLOS_USER_STATUS_ACTIVE)) {
+                $trashedAccountMessage = wallos_build_recycle_bin_login_message(
+                    $i18n,
+                    $statusRow['trash_reason'] ?? '',
+                    $statusRow['scheduled_delete_at'] ?? ''
+                );
+                $loginFailed = true;
+                $userEmailWaitingVerification = false;
+            } else {
 
             // Check if the user is in the email_verification table
             $query = "SELECT 1 FROM email_verification WHERE user_id = :userId";
@@ -259,6 +293,7 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
                 header("Location: .");
                 exit();
             }
+            }
 
         } else {
             $loginFailed = true;
@@ -281,8 +316,10 @@ if (!$password_login_disabled) {
     if ($registrationsOpen == 1 && $maxUsers == 0) {
         $registrations = true;
     } else if ($registrationsOpen == 1 && $maxUsers > 0) {
-        $userCountQuery = "SELECT COUNT(id) as userCount FROM user";
-        $userCountResult = $db->query($userCountQuery);
+        $userCountQuery = "SELECT COUNT(id) as userCount FROM user WHERE account_status = :account_status";
+        $userCountStmt = $db->prepare($userCountQuery);
+        $userCountStmt->bindValue(':account_status', WALLOS_USER_STATUS_ACTIVE, SQLITE3_TEXT);
+        $userCountResult = $userCountStmt->execute();
         $userCountRow = $userCountResult->fetchArray(SQLITE3_ASSOC);
         $userCount = $userCountRow['userCount'];
         if ($userCount < $maxUsers) {
@@ -299,6 +336,17 @@ if (!$password_login_disabled) {
 if (isset($_GET['error']) && $_GET['error'] == "oidc_user_not_found") {
     $loginFailed = true;
 }
+
+if (isset($_GET['error']) && $_GET['error'] === 'account_trashed') {
+    $loginFailed = true;
+    $trashedAccountMessage = wallos_build_recycle_bin_login_message(
+        $i18n,
+        $_GET['reason'] ?? '',
+        $_GET['scheduled_delete_at'] ?? ''
+    );
+}
+
+wallos_log_request($db, 0, '');
 
 ?>
 <!DOCTYPE html>
@@ -392,6 +440,10 @@ if (isset($_GET['error']) && $_GET['error'] == "oidc_user_not_found") {
                             <li><i
                                     class="fa-solid fa-triangle-exclamation"></i><?= translate('user_email_waiting_verification', $i18n) ?>
                             </li>
+                            <?php
+                        } else if ($trashedAccountMessage !== '') {
+                            ?>
+                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= $trashedAccountMessage ?></li>
                             <?php
                         } else {
                             ?>

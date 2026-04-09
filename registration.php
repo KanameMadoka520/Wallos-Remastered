@@ -6,6 +6,9 @@ require_once 'includes/i18n/languages.php';
 require_once 'includes/i18n/getlang.php';
 require_once 'includes/i18n/' . $lang . '.php';
 require_once 'includes/default_user_seed.php';
+require_once 'includes/invite_codes.php';
+require_once 'includes/request_logs.php';
+require_once 'includes/user_status.php';
 
 require_once 'includes/version.php';
 
@@ -25,15 +28,18 @@ if (!file_exists('images/uploads/logos')) {
 }
 
 // If there's already a user on the database, redirect to login page if registrations are closed or maxn users is reached
-$stmt = $db->prepare('SELECT COUNT(*) as userCount FROM user');
+$stmt = $db->prepare('SELECT COUNT(*) as userCount FROM user WHERE account_status = :account_status');
+$stmt->bindValue(':account_status', WALLOS_USER_STATUS_ACTIVE, SQLITE3_TEXT);
 $result = $stmt->execute();
 $userCountResult = $result->fetchArray(SQLITE3_ASSOC);
 $userCount = $userCountResult['userCount'];
+$inviteOnlyRegistrationEnabled = false;
 
 if ($userCount > 0) {
     $stmt = $db->prepare('SELECT * FROM admin');
     $result = $stmt->execute();
     $settings = $result->fetchArray(SQLITE3_ASSOC);
+    $inviteOnlyRegistrationEnabled = !empty($settings['invite_only_registration']);
 
     if ($settings['registrations_open'] == 0) {
         header("Location: login.php");
@@ -71,6 +77,8 @@ $passwordMismatch = false;
 $usernameExists = false;
 $emailExists = false;
 $registrationFailed = false;
+$inviteCodeRequired = false;
+$inviteCodeInvalid = false;
 $hasErrors = false;
 if (isset($_POST['username'])) {
     $username = validate($_POST['username']);
@@ -80,7 +88,9 @@ if (isset($_POST['username'])) {
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
     $main_currency = $_POST['main_currency'];
+    $invite_code = validate($_POST['invite_code'] ?? '');
     $language = wallos_resolve_supported_language($_POST['language'], array_keys($languages));
+    $inviteCodeRow = false;
     $seedCurrencies = wallos_get_default_currencies($language);
     $seedCategories = wallos_get_default_categories($language);
     $seedPaymentMethods = wallos_get_default_payment_methods($language);
@@ -117,29 +127,45 @@ if (isset($_POST['username'])) {
         $hasErrors = true;
     }
 
+    if ($inviteOnlyRegistrationEnabled) {
+        if ($invite_code === '') {
+            $inviteCodeRequired = true;
+            $hasErrors = true;
+        } else {
+            $inviteCodeRow = wallos_find_available_invite_code($db, $invite_code);
+            if ($inviteCodeRow === false) {
+                $inviteCodeInvalid = true;
+                $hasErrors = true;
+            }
+        }
+    }
+
     $requireValidation = false;
 
     if ($hasErrors == false) {
-        $query = "INSERT INTO user (username, firstname, lastname, email, password, main_currency, avatar, language, budget) VALUES (:username, :firstname, :lastname, :email, :password, :main_currency, :avatar, :language, :budget)";
-        $stmt = $db->prepare($query);
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt->bindValue(':username', $username, SQLITE3_TEXT);
-        $stmt->bindValue(':firstname', $firstname, SQLITE3_TEXT);
-        $stmt->bindValue(':lastname', $lastname, SQLITE3_TEXT);
-        $stmt->bindValue(':email', $email, SQLITE3_TEXT);
-        $stmt->bindValue(':password', $hashedPassword, SQLITE3_TEXT);
-        $stmt->bindValue(':main_currency', $main_currency_id, SQLITE3_TEXT);
-        $stmt->bindValue(':avatar', $avatar, SQLITE3_TEXT);
-        $stmt->bindValue(':language', $language, SQLITE3_TEXT);
-        $stmt->bindValue(':budget', 0, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        try {
+            $db->exec('BEGIN IMMEDIATE');
 
-        if ($result) {
+            $query = "INSERT INTO user (username, firstname, lastname, email, password, main_currency, avatar, language, budget) VALUES (:username, :firstname, :lastname, :email, :password, :main_currency, :avatar, :language, :budget)";
+            $stmt = $db->prepare($query);
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $stmt->bindValue(':username', $username, SQLITE3_TEXT);
+            $stmt->bindValue(':firstname', $firstname, SQLITE3_TEXT);
+            $stmt->bindValue(':lastname', $lastname, SQLITE3_TEXT);
+            $stmt->bindValue(':email', $email, SQLITE3_TEXT);
+            $stmt->bindValue(':password', $hashedPassword, SQLITE3_TEXT);
+            $stmt->bindValue(':main_currency', $main_currency_id, SQLITE3_TEXT);
+            $stmt->bindValue(':avatar', $avatar, SQLITE3_TEXT);
+            $stmt->bindValue(':language', $language, SQLITE3_TEXT);
+            $stmt->bindValue(':budget', 0, SQLITE3_INTEGER);
+            $result = $stmt->execute();
 
-            // Get id of the newly created user
+            if (!$result) {
+                throw new RuntimeException('failed');
+            }
+
             $userId = $db->lastInsertRowID();
 
-            // Add username as household member for that user
             $query = "INSERT INTO household (name, user_id) VALUES (:name, :user_id)";
             $stmt = $db->prepare($query);
             $stmt->bindValue(':name', $username, SQLITE3_TEXT);
@@ -147,8 +173,6 @@ if (isset($_POST['username'])) {
             $stmt->execute();
 
             if ($userId > 1) {
-
-                // Add categories for that user
                 $query = 'INSERT INTO categories (name, "order", user_id) VALUES (:name, :order, :user_id)';
                 $stmt = $db->prepare($query);
                 foreach ($seedCategories as $index => $category) {
@@ -158,7 +182,6 @@ if (isset($_POST['username'])) {
                     $stmt->execute();
                 }
 
-                // Add payment methods for that user
                 $query = 'INSERT INTO payment_methods (name, icon, "order", user_id) VALUES (:name, :icon, :order, :user_id)';
                 $stmt = $db->prepare($query);
                 foreach ($seedPaymentMethods as $index => $payment_method) {
@@ -169,7 +192,6 @@ if (isset($_POST['username'])) {
                     $stmt->execute();
                 }
 
-                // Add currencies for that user
                 $query = "INSERT INTO currencies (name, symbol, code, rate, user_id) VALUES (:name, :symbol, :code, :rate, :user_id)";
                 $stmt = $db->prepare($query);
                 foreach ($seedCurrencies as $currency) {
@@ -181,7 +203,6 @@ if (isset($_POST['username'])) {
                     $stmt->execute();
                 }
 
-                // Retrieve main currency id
                 $query = "SELECT id FROM currencies WHERE code = :code AND user_id = :user_id";
                 $stmt = $db->prepare($query);
                 $stmt->bindValue(':code', $main_currency, SQLITE3_TEXT);
@@ -189,21 +210,18 @@ if (isset($_POST['username'])) {
                 $result = $stmt->execute();
                 $currency = $result->fetchArray(SQLITE3_ASSOC);
 
-                // Update user main currency
                 $query = "UPDATE user SET main_currency = :main_currency WHERE id = :user_id";
                 $stmt = $db->prepare($query);
                 $stmt->bindValue(':main_currency', $currency['id'], SQLITE3_INTEGER);
                 $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
                 $stmt->execute();
 
-                // Add settings for that user
                 $query = "INSERT INTO settings (dark_theme, monthly_price, convert_currency, remove_background, color_theme, hide_disabled, user_id, disabled_to_bottom, show_original_price, mobile_nav) 
                           VALUES (2, 0, 0, 0, 'blue', 0, :user_id, 0, 0, 0)";
                 $stmt = $db->prepare($query);
                 $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
                 $stmt->execute();
 
-                // If email verification is required add the user to the email_verification table
                 $query = "SELECT * FROM admin";
                 $stmt = $db->prepare($query);
                 $result = $stmt->execute();
@@ -222,14 +240,28 @@ if (isset($_POST['username'])) {
                 }
             }
 
+            if ($inviteOnlyRegistrationEnabled && $inviteCodeRow !== false) {
+                if (!wallos_consume_invite_code($db, (int) $inviteCodeRow['id'], $userId, $username, $email)) {
+                    throw new RuntimeException('invite_code_invalid');
+                }
+            }
+
+            $db->exec('COMMIT');
             $db->close();
             header("Location: login.php?registered=true&requireValidation=$requireValidation");
             exit();
-        } else {
-            $registrationFailed = true;
+        } catch (Throwable $throwable) {
+            $db->exec('ROLLBACK');
+            if ($throwable->getMessage() === 'invite_code_invalid') {
+                $inviteCodeInvalid = true;
+            } else {
+                $registrationFailed = true;
+            }
         }
     }
 }
+
+wallos_log_request($db, 0, '');
 ?>
 <!DOCTYPE html>
 <html dir="<?= $languages[$lang]['dir'] ?>">
@@ -322,6 +354,22 @@ if (isset($_POST['username'])) {
                         ?>
                     </select>
                 </div>
+                <?php
+                if ($inviteOnlyRegistrationEnabled) {
+                    ?>
+                    <div class="form-group">
+                        <label for="invite_code"><?= translate('invite_code', $i18n) ?>:</label>
+                        <input type="text" id="invite_code" name="invite_code" autocomplete="off" required>
+                    </div>
+                    <div class="settings-notes">
+                        <p>
+                            <i class="fa-solid fa-circle-info"></i>
+                            <?= translate('invite_only_registration_notice', $i18n) ?>
+                        </p>
+                    </div>
+                    <?php
+                }
+                ?>
 
                 <?php
                 if ($hasErrors) {
@@ -346,6 +394,20 @@ if (isset($_POST['username'])) {
                         if ($emailExists) {
                             ?>
                             <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('email_exists', $i18n) ?></li>
+                            <?php
+                        }
+                        ?>
+                        <?php
+                        if ($inviteCodeRequired) {
+                            ?>
+                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('invite_code_required', $i18n) ?></li>
+                            <?php
+                        }
+                        ?>
+                        <?php
+                        if ($inviteCodeInvalid) {
+                            ?>
+                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('invite_code_invalid', $i18n) ?></li>
                             <?php
                         }
                         ?>
