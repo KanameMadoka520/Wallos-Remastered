@@ -11,6 +11,30 @@ $result = $stmt->execute();
 while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $uploadedAvatars[] = $row['path'];
 }
+
+$sql = "SELECT login_disabled FROM admin";
+$stmt = $db->prepare($sql);
+$result = $stmt->execute();
+$row = $result->fetchArray(SQLITE3_ASSOC);
+$loginDisabled = $row['login_disabled'];
+
+$showTotpSection = true;
+if ($loginDisabled && !$userData['totp_enabled']) {
+    $showTotpSection = false;
+}
+
+require_once 'includes/page_navigation.php';
+
+$pageSections = [
+    ['id' => 'profile-details', 'label' => translate('user_details', $i18n)],
+];
+
+if ($showTotpSection) {
+    $pageSections[] = ['id' => 'profile-2fa', 'label' => translate('two_factor_authentication', $i18n)];
+}
+
+$pageSections[] = ['id' => 'profile-api', 'label' => translate('api_key', $i18n)];
+$pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i18n)];
 ?>
 
 <script src="scripts/libs/sortable.min.js"></script>
@@ -20,8 +44,11 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         content: '<?= translate('upload_logo', $i18n) ?>';
     }
 </style>
-<section class="contain settings">
-    <section class="account-section">
+<section class="contain settings has-page-nav">
+    <div class="page-layout">
+        <?php render_page_navigation(translate('profile', $i18n), $pageSections); ?>
+        <div class="page-content">
+    <section class="account-section" id="profile-details" data-page-section>
         <header>
             <h2><?= translate('user_details', $i18n) ?></h2>
         </header>
@@ -32,7 +59,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                         <div class="user-avatar">
                             <img src="<?= htmlspecialchars($userData['avatar'], ENT_QUOTES, 'UTF-8') ?>" alt="avatar" class="avatar" id="avatarImg"
                                 onClick="toggleAvatarSelect()" />
-                            <span class="edit-avatar" onClick="toggleAvatarSelect()" title="Change Avatar">
+                            <span class="edit-avatar" onClick="toggleAvatarSelect()" title="<?= translate('change_avatar', $i18n) ?>">
                                 <i class="fa-solid fa-pencil"></i>
                             </span>
                         </div>
@@ -56,7 +83,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                             class="avatar-option" data-src="<?= $path ?>">
                                         
                                         <div class="remove-avatar" onclick="deleteAvatar('<?= $filename ?>')"
-                                            title="Delete avatar">
+                                            title="<?= translate('delete_avatar', $i18n) ?>">
                                             <i class="fa-solid fa-xmark"></i>
                                         </div>
                                     </div>
@@ -97,12 +124,12 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                         <div class="form-group">
                             <label for="password"><?= translate('password', $i18n) ?>:</label>
                             <input type="password" id="password" name="password" autocomplete="new-password"
-                                <?= $demoMode ? 'disabled title="Not available on Demo Mode"' : '' ?>>
+                                <?= $demoMode ? 'disabled title="' . translate('not_available_in_demo_mode', $i18n) . '"' : '' ?>>
                         </div>
                         <div class="form-group">
                             <label for="confirm_password"><?= translate('confirm_password', $i18n) ?>:</label>
                             <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password"
-                                <?= $demoMode ? 'disabled title="Not available on Demo Mode"' : '' ?>>
+                                <?= $demoMode ? 'disabled title="' . translate('not_available_in_demo_mode', $i18n) . '"' : '' ?>>
                         </div>
                         <?php
                         $currencies = array();
@@ -118,7 +145,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                         ?>
                         <div class="form-group">
                             <label for="currency"><?= translate('main_currency', $i18n) ?>:</label>
-                            <select id="currency" name="main_currency" placeholder="Currency">
+                            <select id="currency" name="main_currency" placeholder="<?= translate('currency', $i18n) ?>">
                                 <?php
                                 foreach ($currencies as $currency) {
                                     $selected = "";
@@ -135,7 +162,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                         </div>
                         <div class="form-group">
                             <label for="language"><?= translate('language', $i18n) ?>:</label>
-                            <select id="language" name="language" placeholder="Language">
+                            <select id="language" name="language" placeholder="<?= translate('language', $i18n) ?>">
                                 <?php
                                 foreach ($languages as $code => $language) {
                                     $selected = ($code === $lang) ? 'selected' : '';
@@ -157,20 +184,9 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     </section>
 
     <?php
-    $sql = "SELECT login_disabled FROM admin";
-    $stmt = $db->prepare($sql);
-    $result = $stmt->execute();
-    $row = $result->fetchArray(SQLITE3_ASSOC);
-    $loginDisabled = $row['login_disabled'];
-
-    $showTotpSection = true;
-    if ($loginDisabled && !$userData['totp_enabled']) {
-        $showTotpSection = false;
-    }
-
     if ($showTotpSection) {
         ?>
-        <section class="account-section">
+        <section class="account-section" id="profile-2fa" data-page-section>
             <header>
                 <h2><?= translate("two_factor_authentication", $i18n) ?></h2>
             </header>
@@ -234,7 +250,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                             <div class="totp-popup-content">
                                 <div class="form-group-inline">
                                     <input type="text" id="totp-disable" name="totp-disable" autocomplete="one-time-code"
-                                        placeholder="totp" />
+                                        placeholder="<?= translate('totp_code', $i18n) ?>" />
                                     <input type="button" value="<?= translate('disable', $i18n) ?>" id="disableTotpButton"
                                         onClick="submitDisableTotp()" />
                                 </div>
@@ -263,13 +279,13 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 
     ?>
 
-    <section class="account-section">
+    <section class="account-section" id="profile-api" data-page-section>
         <header>
             <h2><?= translate('api_key', $i18n) ?></h2>
         </header>
         <div class="account-api-key">
             <div class="form-group-inline">
-                <input type="text" id="apikey" name="apikey" value="<?= $userData['api_key'] ?>" placeholder="API Key" readonly>
+                <input type="text" id="apikey" name="apikey" value="<?= $userData['api_key'] ?>" placeholder="<?= translate('api_key', $i18n) ?>" readonly>
                 <input type="submit" value="<?= translate('regenerate', $i18n) ?>" id="regenerateApiKey" onClick="regenerateApiKey()" />
             </div>
             <div class="settings-notes">
@@ -280,7 +296,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         </div>
     </section>
 
-    <section class="account-section">
+    <section class="account-section" id="profile-account" data-page-section>
         <header>
             <h2><?= translate('account', $i18n) ?></h2>
         </header>
@@ -289,9 +305,9 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 <h3><?= translate('export_subscriptions', $i18n) ?></h3>
                 <div class="form-group-inline wrap">
                     <input type="button" value="<?= translate('export_as_json', $i18n) ?>" onClick="exportAsJson()"
-                        class="secondary-button thin mobile-grow" id="export-json" <?= $demoMode ? 'disabled title="Not available on Demo Mode"' : '' ?>>
+                        class="secondary-button thin mobile-grow" id="export-json" <?= $demoMode ? 'disabled title="' . translate('not_available_in_demo_mode', $i18n) . '"' : '' ?>>
                     <input type="button" value="<?= translate('export_as_csv', $i18n) ?>" onClick="exportAsCsv()"
-                        class="secondary-button thin mobile-grow" id="export-csv" <?= $demoMode ? 'disabled title="Not available on Demo Mode"' : '' ?>>
+                        class="secondary-button thin mobile-grow" id="export-csv" <?= $demoMode ? 'disabled title="' . translate('not_available_in_demo_mode', $i18n) . '"' : '' ?>>
                 </div>
             </div>
         </div>
@@ -318,6 +334,8 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 
    
 
+        </div>
+    </div>
 </section>
 <script src="scripts/profile.js?<?= $version ?>"></script>
 <script src="scripts/theme.js?<?= $version ?>"></script>

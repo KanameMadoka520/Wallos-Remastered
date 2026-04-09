@@ -11,6 +11,21 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $currencies[$currencyId] = $row;
 }
 $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
+require_once 'includes/page_navigation.php';
+
+$pageSections = [
+    ['id' => 'settings-budget', 'label' => translate('monthly_budget', $i18n)],
+    ['id' => 'settings-household', 'label' => translate('household', $i18n)],
+    ['id' => 'settings-notifications', 'label' => translate('notifications', $i18n)],
+    ['id' => 'settings-categories', 'label' => translate('categories', $i18n)],
+    ['id' => 'settings-currencies', 'label' => translate('currencies', $i18n)],
+    ['id' => 'settings-fixer', 'label' => translate('fixer_api_key', $i18n)],
+    ['id' => 'settings-ai', 'label' => translate('ai_recommendations', $i18n)],
+    ['id' => 'settings-payments', 'label' => translate('payment_methods', $i18n)],
+    ['id' => 'settings-theme', 'label' => translate('theme_settings', $i18n)],
+    ['id' => 'settings-display', 'label' => translate('display_settings', $i18n)],
+    ['id' => 'settings-experimental', 'label' => translate('experimental_settings', $i18n)],
+];
 
 ?>
 
@@ -21,9 +36,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
         content: '<?= translate('upload_logo', $i18n) ?>';
     }
 </style>
-<section class="contain settings">
+<section class="contain settings has-page-nav">
+    <div class="page-layout">
+        <?php render_page_navigation(translate('settings', $i18n), $pageSections); ?>
+        <div class="page-content">
 
-    <section class="account-section">
+    <section class="account-section" id="settings-budget" data-page-section>
         <header>
             <h2><?= translate('monthly_budget', $i18n) ?></h2>
         </header>
@@ -31,7 +49,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
             <div class="form-group-inline">
                 <label for="budget"><?= $userData['currency_symbol'] ?></label>
                 <input type="number" id="budget" name="budget" autocomplete="off" value="<?= $userData['budget'] ?>"
-                    placeholder="Budget">
+                    placeholder="<?= translate('budget', $i18n) ?>">
                 <input type="submit" value="<?= translate('save', $i18n) ?>" id="saveBudget" onClick="saveBudget()" />
             </div>
             <div class="settings-notes">
@@ -56,7 +74,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     }
     ?>
 
-    <section class="account-section">
+    <section class="account-section" id="settings-household" data-page-section>
         <header>
             <h2><?= translate('household', $i18n) ?></h2>
         </header>
@@ -67,7 +85,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
                     ?>
                     <div class="form-group-inline" data-memberid="<?= $member['id'] ?>">
                         <input type="text" name="member" autocomplete="off" value="<?= $member['name'] ?>"
-                            placeholder="Member">
+                            placeholder="<?= translate('member', $i18n) ?>">
                         <?php
                         if ($index !== 0) {
                             ?>
@@ -368,7 +386,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     ?>
 
-    <section class="account-section">
+    <section class="account-section" id="settings-notifications" data-page-section>
         <header>
             <h2><?= translate('notifications', $i18n) ?></h2>
         </header>
@@ -824,7 +842,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     }
     ?>
 
-    <section class="account-section">
+    <section class="account-section" id="settings-categories" data-page-section>
         <header>
             <h2><?= translate('categories', $i18n) ?></h2>
         </header>
@@ -850,7 +868,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
                         <div class="form-group-inline" data-categoryid="<?= $category['id'] ?>">
                             <div class=" drag-icon"><i class="fa-solid fa-grip-vertical"></i></div>
                             <input type="text" name="category" autocomplete="off" value="<?= $category['name'] ?>"
-                                placeholder="Category">
+                                placeholder="<?= translate('category', $i18n) ?>">
                             <button class="image-button medium" onClick="editCategory(<?= $category['id'] ?>)" name="save"
                                 title="<?= translate('save_category', $i18n) ?>">
                                 <?php include "images/siteicons/svg/save.php"; ?>
@@ -910,7 +928,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     ?>
 
-    <section class="account-section">
+    <section class="account-section" id="settings-currencies" data-page-section>
         <header>
             <h2><?= translate('currencies', $i18n) ?></h2>
         </header>
@@ -941,9 +959,9 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
                         <input type="text" class="short" name="symbol" autocomplete="off" value="<?= $currency['symbol'] ?>"
                             placeholder="$">
                         <input type="text" name="currency" autocomplete="off" value="<?= $currency['name'] ?>"
-                            placeholder="Currency Name">
+                            placeholder="<?= translate('currency_name', $i18n) ?>">
                         <input type="text" name="code" autocomplete="off" value="<?= $currency['code'] ?>"
-                            placeholder="Currency Code" <?= !$canDelete ? 'disabled' : '' ?>>
+                            placeholder="<?= translate('currency_code', $i18n) ?>" <?= !$canDelete ? 'disabled' : '' ?>>
                         <button class="image-button medium" onClick="editCurrency(<?= $currency['id'] ?>)" name="save"
                             title="<?= translate('save_currency', $i18n) ?>">
                             <?php include "images/siteicons/svg/save.php"; ?>
@@ -988,7 +1006,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
                     <?= translate('currency_info', $i18n) ?>
                     <span>
                         fixer.io
-                        <a href="https://fixer.io/symbols" target="_blank" title="Currency codes">
+                        <a href="https://fixer.io/symbols" target="_blank" title="<?= translate('currency_codes', $i18n) ?>">
                             <i class="fa-solid fa-arrow-up-right-from-square"></i>
                         </a>
                     </span>
@@ -1017,14 +1035,14 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     }
     ?>
 
-    <section class="account-section">
+    <section class="account-section" id="settings-fixer" data-page-section>
         <header>
-            <h2>Fixer API Key</h2>
+            <h2><?= translate('fixer_api_key', $i18n) ?></h2>
         </header>
         <div class="account-fixer">
             <div class="form-group">
                 <input type="text" name="fixer-key" id="fixerKey" autocomplete="off" value="<?= $apiKey ?>"
-                    placeholder="<?= translate('api_key', $i18n) ?>" <?= $demoMode ? 'disabled title="Not available on Demo Mode"' : '' ?>>
+                    placeholder="<?= translate('api_key', $i18n) ?>" <?= $demoMode ? 'disabled title="' . translate('not_available_in_demo_mode', $i18n) . '"' : '' ?>>
             </div>
             <div class="form-group">
                 <label for="fixerProvider"><?= translate('provider', $i18n) ?>:</label>
@@ -1074,7 +1092,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     }
     ?>
 
-    <section class="account-section">
+    <section class="account-section" id="settings-ai" data-page-section>
         <header>
             <h2><?= translate('ai_recommendations', $i18n) ?></h2>
         </header>
@@ -1174,7 +1192,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     }
     ?>
 
-    <section class="account-section">
+    <section class="account-section" id="settings-payments" data-page-section>
         <header>
             <h2><?= translate('payment_methods', $i18n) ?></h2>
         </header>
@@ -1262,7 +1280,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
         </div>
     </section>
 
-    <section class="account-section">
+    <section class="account-section" id="settings-theme" data-page-section>
         <header>
             <h2><?= translate('theme_settings', $i18n) ?></h2>
         </header>
@@ -1394,7 +1412,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
             ?>
     </section>
 
-    <section class="account-section">
+    <section class="account-section" id="settings-display" data-page-section>
         <header>
             <h2><?= translate('display_settings', $i18n) ?></h2>
         </header>
@@ -1462,7 +1480,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
         </div>
     </section>
 
-    <section class="account-section">
+    <section class="account-section" id="settings-experimental" data-page-section>
         <header>
             <h2><?= translate('experimental_settings', $i18n) ?></h2>
         </header>
@@ -1483,6 +1501,8 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
         </div>
     </section>
 
+        </div>
+    </div>
 </section>
 <script src="scripts/settings.js?<?= $version ?>"></script>
 <script src="scripts/theme.js?<?= $version ?>"></script>
