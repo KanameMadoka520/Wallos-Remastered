@@ -71,6 +71,8 @@ let i18n = {
     subscription_image_existing_badge: "已存",
     subscription_image_new_badge: "待傳",
     subscription_image_click_to_enlarge: "點擊縮圖可放大查看。",
+    subscription_image_layout_focus: "聚焦",
+    subscription_image_layout_grid: "網格",
     subscription_image_source_server: "已存伺服器",
     subscription_image_source_external: "外鏈圖片",
     subscription_image_source_new: "待上傳",

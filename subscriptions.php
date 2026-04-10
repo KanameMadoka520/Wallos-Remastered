@@ -495,6 +495,23 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
       <label for="detail-image-urls"><?= translate('subscription_images', $i18n) ?></label>
       <div class="subscription-detail-image-panel">
         <div class="subscription-detail-image-gallery-shell">
+          <div class="subscription-detail-image-toolbar">
+            <span class="subscription-detail-image-toolbar-hint"><?= translate('subscription_image_click_to_enlarge', $i18n) ?></span>
+            <div class="media-layout-toggle" data-image-layout-scope="form">
+              <button type="button" class="media-layout-button" data-mode="focus"
+                title="<?= translate('subscription_image_layout_focus', $i18n) ?>"
+                onClick="setSubscriptionImageLayoutMode('form', 'focus', this)">
+                <i class="fa-solid fa-images"></i>
+                <span><?= translate('subscription_image_layout_focus', $i18n) ?></span>
+              </button>
+              <button type="button" class="media-layout-button" data-mode="grid"
+                title="<?= translate('subscription_image_layout_grid', $i18n) ?>"
+                onClick="setSubscriptionImageLayoutMode('form', 'grid', this)">
+                <i class="fa-solid fa-table-cells"></i>
+                <span><?= translate('subscription_image_layout_grid', $i18n) ?></span>
+              </button>
+            </div>
+          </div>
           <div class="subscription-detail-image-gallery is-empty" id="detail-image-gallery"
             data-empty="<?= htmlspecialchars(translate('subscription_image_no_selection', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
         </div>
