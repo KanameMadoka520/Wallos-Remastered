@@ -459,6 +459,39 @@ function showGeneratedPasswordModal(username, temporaryPassword) {
   passwordInput.select();
 }
 
+function toggleAdminSection(button) {
+  const targetId = button.dataset.target;
+  const target = document.getElementById(targetId);
+  if (!target) {
+    return;
+  }
+
+  const isExpanded = button.getAttribute('aria-expanded') === 'true';
+  button.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+  target.classList.toggle('is-collapsed', isExpanded);
+
+  const icon = button.querySelector('i');
+  if (icon) {
+    icon.classList.toggle('fa-chevron-up', !isExpanded);
+    icon.classList.toggle('fa-chevron-down', isExpanded);
+  }
+}
+
+function switchAdminTab(group, tabId, button) {
+  document.querySelectorAll(`[data-tab-panel="${group}"]`).forEach((panel) => {
+    panel.classList.toggle('is-active', panel.dataset.tabId === tabId);
+  });
+
+  const tabContainer = button.closest(`[data-tab-group="${group}"]`);
+  if (!tabContainer) {
+    return;
+  }
+
+  tabContainer.querySelectorAll('.section-tab-button').forEach((tabButton) => {
+    tabButton.classList.toggle('is-active', tabButton === button);
+  });
+}
+
 function restoreUser(userId) {
   fetch('endpoints/admin/restoreuser.php', {
     method: 'POST',
@@ -668,6 +701,87 @@ function deleteInviteCode(inviteCodeId) {
       }
     })
     .catch(() => showErrorMessage(translate('error')));
+}
+
+function permanentlyDeleteInviteCode(inviteCodeId, button) {
+  const confirmMessage = button?.dataset.confirmMessage || 'Permanently delete this invite code?';
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  fetch('endpoints/admin/permanentlydeleteinvitecode.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ inviteCodeId }),
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+        window.location.reload();
+      } else {
+        showErrorMessage(data.message || translate('error'));
+      }
+    })
+    .catch(() => showErrorMessage(translate('error')))
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+      }
+    });
+}
+
+function updateScheduledDeleteAt(userId, button) {
+  const card = button.closest('.ban-user-card');
+  if (!card) {
+    showErrorMessage(translate('error'));
+    return;
+  }
+
+  const input = card.querySelector('.scheduled-delete-input');
+  const display = card.querySelector('[data-scheduled-delete-display]');
+  const scheduledDeleteAt = input?.value?.trim() || '';
+
+  if (!scheduledDeleteAt) {
+    showErrorMessage(translate('error'));
+    return;
+  }
+
+  button.disabled = true;
+
+  fetch('endpoints/admin/updatescheduleddeleteat.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ userId, scheduledDeleteAt }),
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+        if (display && data.scheduledDeleteAt) {
+          display.textContent = data.scheduledDeleteAt;
+        }
+        if (input && data.datetimeLocal) {
+          input.value = data.datetimeLocal;
+        }
+      } else {
+        showErrorMessage(data.message || translate('error'));
+      }
+    })
+    .catch(() => showErrorMessage(translate('error')))
+    .finally(() => {
+      button.disabled = false;
+    });
 }
 
 function deleteUnusedLogos() {

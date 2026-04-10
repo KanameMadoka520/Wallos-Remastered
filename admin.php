@@ -39,6 +39,25 @@ if ($oidcSettings === false) {
     ];
 }
 
+function wallos_format_datetime_local_value($value)
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '';
+    }
+
+    $dateTime = DateTime::createFromFormat('Y-m-d H:i:s', $value);
+    if (!$dateTime) {
+        try {
+            $dateTime = new DateTime($value);
+        } catch (Throwable $throwable) {
+            return '';
+        }
+    }
+
+    return $dateTime->format('Y-m-d\TH:i');
+}
+
 // get active user accounts
 $stmt = $db->prepare('SELECT id, username, email, user_group, account_status FROM user WHERE account_status = :status ORDER BY id ASC');
 $stmt->bindValue(':status', WALLOS_USER_STATUS_ACTIVE, SQLITE3_TEXT);
@@ -51,7 +70,34 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 $userCount = is_array($users) ? count($users) : 0;
 
 // get trashed user accounts
-$stmt = $db->prepare('SELECT id, username, email, user_group, trash_reason, trashed_at, scheduled_delete_at FROM user WHERE account_status = :status ORDER BY trashed_at DESC');
+$stmt = $db->prepare('
+    SELECT
+        user.id,
+        user.username,
+        user.email,
+        user.user_group,
+        user.trash_reason,
+        user.trashed_at,
+        user.scheduled_delete_at,
+        (
+            SELECT COUNT(*)
+            FROM subscriptions
+            WHERE subscriptions.user_id = user.id
+        ) AS subscription_count,
+        (
+            SELECT COUNT(*)
+            FROM subscription_uploaded_images
+            WHERE subscription_uploaded_images.user_id = user.id
+        ) AS subscription_image_count,
+        (
+            SELECT COUNT(*)
+            FROM uploaded_avatars
+            WHERE uploaded_avatars.user_id = user.id
+        ) AS avatar_count
+    FROM user
+    WHERE account_status = :status
+    ORDER BY trashed_at DESC
+');
 $stmt->bindValue(':status', WALLOS_USER_STATUS_TRASHED, SQLITE3_TEXT);
 $result = $stmt->execute();
 
@@ -73,6 +119,14 @@ $result = $stmt->execute();
 while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
     $inviteCodes[] = $row;
 }
+
+$activeInviteCodes = array_values(array_filter($inviteCodes, function ($inviteCode) {
+    return (int) ($inviteCode['deleted'] ?? 0) !== 1;
+}));
+
+$deletedInviteCodes = array_values(array_filter($inviteCodes, function ($inviteCode) {
+    return (int) ($inviteCode['deleted'] ?? 0) === 1;
+}));
 
 $usageQuery = $db->query("
     SELECT invite_code_id,
@@ -100,6 +154,10 @@ while ($logsResult && ($row = $logsResult->fetchArray(SQLITE3_ASSOC))) {
 }
 
 $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
+$trashedUserCount = count($trashedUsers);
+$activeInviteCodeCount = count($activeInviteCodes);
+$deletedInviteCodeCount = count($deletedInviteCodes);
+$recentRequestLogCount = count($recentRequestLogs);
 require_once 'includes/page_navigation.php';
 
 $pageSections = [
@@ -333,59 +391,93 @@ $pageSections = [
     ?>
 
     <section class="account-section" id="admin-recycle-bin" data-page-section>
-        <header>
-            <h2><?= translate('recycle_bin', $i18n) ?></h2>
+        <header class="collapsible-section-header">
+            <button type="button" class="collapsible-section-toggle" data-target="admin-recycle-bin-body"
+                aria-expanded="true" onClick="toggleAdminSection(this)">
+                <span class="collapsible-section-heading">
+                    <span><?= translate('recycle_bin', $i18n) ?></span>
+                    <span class="section-count-badge"><?= $trashedUserCount ?></span>
+                </span>
+                <i class="fa-solid fa-chevron-up"></i>
+            </button>
         </header>
-        <?php
-        if (!empty($trashedUsers)) {
-            ?>
-            <div class="user-list recycle-bin-list">
-                <?php
-                foreach ($trashedUsers as $trashedUser) {
-                    ?>
-                    <div class="form-group-inline" data-trashed-userid="<?= $trashedUser['id'] ?>">
-                        <div class="user-list-row">
-                            <div>
-                                <div class="user-list-icon">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </div>
-                                <?= htmlspecialchars($trashedUser['username'], ENT_QUOTES, 'UTF-8') ?>
-                            </div>
-                            <div>
-                                <div class="user-list-icon">
-                                    <i class="fa-solid fa-envelope"></i>
-                                </div>
-                                <a href="mailto:<?= htmlspecialchars($trashedUser['email'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($trashedUser['email'], ENT_QUOTES, 'UTF-8') ?></a>
-                            </div>
-                        </div>
-                        <div class="recycle-bin-user-meta">
-                            <p><strong><?= translate('recycle_bin_reason_label', $i18n) ?>:</strong> <?= htmlspecialchars($trashedUser['trash_reason'], ENT_QUOTES, 'UTF-8') ?></p>
-                            <p><strong><?= translate('recycle_bin_trashed_at', $i18n) ?>:</strong> <?= htmlspecialchars($trashedUser['trashed_at'], ENT_QUOTES, 'UTF-8') ?></p>
-                            <p><strong><?= translate('recycle_bin_scheduled_delete_at', $i18n) ?>:</strong> <?= htmlspecialchars($trashedUser['scheduled_delete_at'], ENT_QUOTES, 'UTF-8') ?></p>
-                        </div>
-                        <div class="user-list-actions">
-                            <input type="button" class="secondary-button thin" value="<?= translate('restore_user', $i18n) ?>"
-                                onClick="restoreUser(<?= (int) $trashedUser['id'] ?>)" />
-                            <input type="button" class="warning-button thin" value="<?= translate('permanently_delete_user', $i18n) ?>"
-                                onClick="permanentlyDeleteUser(<?= (int) $trashedUser['id'] ?>)" />
-                        </div>
-                    </div>
-                    <?php
-                }
+        <div class="collapsible-section-body" id="admin-recycle-bin-body">
+            <?php
+            if (!empty($trashedUsers)) {
                 ?>
-            </div>
-            <?php
-        } else {
+                <div class="ban-user-list">
+                    <?php
+                    foreach ($trashedUsers as $trashedUser) {
+                        $scheduledDeleteLocalValue = wallos_format_datetime_local_value($trashedUser['scheduled_delete_at'] ?? '');
+                        $userGroupLabel = wallos_get_user_group_label($trashedUser['user_group'] ?? WALLOS_USER_GROUP_FREE, $i18n, false);
+                        ?>
+                        <div class="ban-user-card" data-trashed-userid="<?= (int) $trashedUser['id'] ?>">
+                            <div class="user-list-row">
+                                <div>
+                                    <div class="user-list-icon">
+                                        <i class="fa-solid fa-user-lock"></i>
+                                    </div>
+                                    <?= htmlspecialchars($trashedUser['username'], ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                                <div>
+                                    <div class="user-list-icon">
+                                        <i class="fa-solid fa-envelope"></i>
+                                    </div>
+                                    <a href="mailto:<?= htmlspecialchars($trashedUser['email'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($trashedUser['email'], ENT_QUOTES, 'UTF-8') ?></a>
+                                </div>
+                            </div>
+                            <div class="recycle-bin-user-meta">
+                                <div class="ban-user-stats">
+                                    <div class="ban-user-stat">
+                                        <span><?= translate('user_group', $i18n) ?></span>
+                                        <strong><?= htmlspecialchars($userGroupLabel, ENT_QUOTES, 'UTF-8') ?></strong>
+                                    </div>
+                                    <div class="ban-user-stat">
+                                        <span><?= translate('banned_user_subscription_count', $i18n) ?></span>
+                                        <strong><?= (int) ($trashedUser['subscription_count'] ?? 0) ?></strong>
+                                    </div>
+                                    <div class="ban-user-stat">
+                                        <span><?= translate('banned_user_uploaded_image_count', $i18n) ?></span>
+                                        <strong><?= (int) ($trashedUser['subscription_image_count'] ?? 0) ?></strong>
+                                    </div>
+                                    <div class="ban-user-stat">
+                                        <span><?= translate('banned_user_avatar_count', $i18n) ?></span>
+                                        <strong><?= (int) ($trashedUser['avatar_count'] ?? 0) ?></strong>
+                                    </div>
+                                </div>
+                                <p><strong><?= translate('recycle_bin_reason_label', $i18n) ?>:</strong> <?= htmlspecialchars($trashedUser['trash_reason'], ENT_QUOTES, 'UTF-8') ?></p>
+                                <p><strong><?= translate('recycle_bin_trashed_at', $i18n) ?>:</strong> <?= htmlspecialchars($trashedUser['trashed_at'], ENT_QUOTES, 'UTF-8') ?></p>
+                                <p><strong><?= translate('recycle_bin_scheduled_delete_at', $i18n) ?>:</strong> <span data-scheduled-delete-display><?= htmlspecialchars($trashedUser['scheduled_delete_at'], ENT_QUOTES, 'UTF-8') ?></span></p>
+                                <div class="ban-user-schedule-controls">
+                                    <input type="datetime-local" class="scheduled-delete-input" value="<?= htmlspecialchars($scheduledDeleteLocalValue, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="button" class="secondary-button thin" value="<?= translate('save_scheduled_delete_time', $i18n) ?>"
+                                        onClick="updateScheduledDeleteAt(<?= (int) $trashedUser['id'] ?>, this)" />
+                                </div>
+                            </div>
+                            <div class="user-list-actions">
+                                <input type="button" class="secondary-button thin" value="<?= translate('restore_user', $i18n) ?>"
+                                    onClick="restoreUser(<?= (int) $trashedUser['id'] ?>)" />
+                                <input type="button" class="warning-button thin" value="<?= translate('permanently_delete_user', $i18n) ?>"
+                                    onClick="permanentlyDeleteUser(<?= (int) $trashedUser['id'] ?>)" />
+                            </div>
+                        </div>
+                        <?php
+                    }
+                    ?>
+                </div>
+                <?php
+            } else {
+                ?>
+                <div class="settings-notes">
+                    <p>
+                        <i class="fa-solid fa-circle-info"></i>
+                        <?= translate('recycle_bin_empty', $i18n) ?>
+                    </p>
+                </div>
+                <?php
+            }
             ?>
-            <div class="settings-notes">
-                <p>
-                    <i class="fa-solid fa-circle-info"></i>
-                    <?= translate('recycle_bin_empty', $i18n) ?>
-                </p>
-            </div>
-            <?php
-        }
-        ?>
+        </div>
     </section>
 
     <section class="account-section" id="admin-image-settings" data-page-section>
@@ -425,9 +517,17 @@ $pageSections = [
     </section>
 
     <section class="account-section" id="admin-invite-codes" data-page-section>
-        <header>
-            <h2><?= translate('invite_code_management', $i18n) ?></h2>
+        <header class="collapsible-section-header">
+            <button type="button" class="collapsible-section-toggle" data-target="admin-invite-codes-body"
+                aria-expanded="true" onClick="toggleAdminSection(this)">
+                <span class="collapsible-section-heading">
+                    <span><?= translate('invite_code_management', $i18n) ?></span>
+                    <span class="section-count-badge"><?= $activeInviteCodeCount + $deletedInviteCodeCount ?></span>
+                </span>
+                <i class="fa-solid fa-chevron-up"></i>
+            </button>
         </header>
+        <div class="collapsible-section-body" id="admin-invite-codes-body">
         <div class="admin-form">
             <div class="form-group-inline">
                 <div class="grow">
@@ -443,50 +543,101 @@ $pageSections = [
                     <?= translate('invite_code_usage_info', $i18n) ?>
                 </p>
             </div>
-            <?php
-            if (!empty($inviteCodes)) {
-                ?>
-                <div class="invite-code-list">
-                    <?php
-                    foreach ($inviteCodes as $inviteCode) {
-                        $usageSummary = $inviteCodeUsageMap[(int) $inviteCode['id']] ?? translate('invite_code_unused', $i18n);
-                        ?>
-                        <div class="invite-code-card<?= (int) $inviteCode['deleted'] === 1 ? ' is-deleted' : '' ?>" data-invite-code-id="<?= (int) $inviteCode['id'] ?>">
-                            <div class="invite-code-header">
-                                <code><?= htmlspecialchars($inviteCode['code'], ENT_QUOTES, 'UTF-8') ?></code>
-                                <span class="invite-code-status"><?= (int) $inviteCode['deleted'] === 1 ? translate('invite_code_deleted_status', $i18n) : translate('invite_code_active_status', $i18n) ?></span>
-                            </div>
-                            <p><?= translate('invite_code_max_uses', $i18n) ?>: <?= (int) $inviteCode['max_uses'] ?></p>
-                            <p><?= translate('invite_code_uses_count', $i18n) ?>: <?= (int) $inviteCode['uses_count'] ?></p>
-                            <p><?= translate('created_by', $i18n) ?>: <?= htmlspecialchars($inviteCode['creator_name'] ?? 'admin', ENT_QUOTES, 'UTF-8') ?></p>
-                            <p><?= translate('used_by', $i18n) ?>: <?= htmlspecialchars($usageSummary, ENT_QUOTES, 'UTF-8') ?></p>
-                            <?php
-                            if ((int) $inviteCode['deleted'] !== 1) {
-                                ?>
+            <div class="section-tabs" data-tab-group="invite-codes">
+                <button type="button" class="section-tab-button is-active"
+                    onClick="switchAdminTab('invite-codes', 'active', this)">
+                    <span><?= translate('active_invite_codes', $i18n) ?></span>
+                    <span class="section-count-badge"><?= $activeInviteCodeCount ?></span>
+                </button>
+                <button type="button" class="section-tab-button"
+                    onClick="switchAdminTab('invite-codes', 'deleted', this)">
+                    <span><?= translate('deleted_invite_codes', $i18n) ?></span>
+                    <span class="section-count-badge"><?= $deletedInviteCodeCount ?></span>
+                </button>
+            </div>
+            <div class="section-tab-panel is-active" data-tab-panel="invite-codes" data-tab-id="active">
+                <?php
+                if (!empty($activeInviteCodes)) {
+                    ?>
+                    <div class="invite-code-list">
+                        <?php
+                        foreach ($activeInviteCodes as $inviteCode) {
+                            $usageSummary = $inviteCodeUsageMap[(int) $inviteCode['id']] ?? translate('invite_code_unused', $i18n);
+                            ?>
+                            <div class="invite-code-card" data-invite-code-id="<?= (int) $inviteCode['id'] ?>">
+                                <div class="invite-code-header">
+                                    <code><?= htmlspecialchars($inviteCode['code'], ENT_QUOTES, 'UTF-8') ?></code>
+                                    <span class="invite-code-status"><?= translate('invite_code_active_status', $i18n) ?></span>
+                                </div>
+                                <p><?= translate('invite_code_max_uses', $i18n) ?>: <?= (int) $inviteCode['max_uses'] ?></p>
+                                <p><?= translate('invite_code_uses_count', $i18n) ?>: <?= (int) $inviteCode['uses_count'] ?></p>
+                                <p><?= translate('created_by', $i18n) ?>: <?= htmlspecialchars($inviteCode['creator_name'] ?? 'admin', ENT_QUOTES, 'UTF-8') ?></p>
+                                <p><?= translate('used_by', $i18n) ?>: <?= htmlspecialchars($usageSummary, ENT_QUOTES, 'UTF-8') ?></p>
                                 <div class="buttons">
                                     <input type="button" class="warning-button thin" value="<?= translate('delete_invite_code', $i18n) ?>"
                                         onClick="deleteInviteCode(<?= (int) $inviteCode['id'] ?>)" />
                                 </div>
-                                <?php
-                            }
-                            ?>
-                        </div>
-                        <?php
-                    }
+                            </div>
+                            <?php
+                        }
+                        ?>
+                    </div>
+                    <?php
+                } else {
                     ?>
-                </div>
-                <?php
-            } else {
+                    <div class="settings-notes">
+                        <p>
+                            <i class="fa-solid fa-circle-info"></i>
+                            <?= translate('active_invite_code_list_empty', $i18n) ?>
+                        </p>
+                    </div>
+                    <?php
+                }
                 ?>
-                <div class="settings-notes">
-                    <p>
-                        <i class="fa-solid fa-circle-info"></i>
-                        <?= translate('invite_code_list_empty', $i18n) ?>
-                    </p>
-                </div>
+            </div>
+            <div class="section-tab-panel" data-tab-panel="invite-codes" data-tab-id="deleted">
                 <?php
-            }
-            ?>
+                if (!empty($deletedInviteCodes)) {
+                    ?>
+                    <div class="invite-code-list">
+                        <?php
+                        foreach ($deletedInviteCodes as $inviteCode) {
+                            $usageSummary = $inviteCodeUsageMap[(int) $inviteCode['id']] ?? translate('invite_code_unused', $i18n);
+                            ?>
+                            <div class="invite-code-card is-deleted" data-invite-code-id="<?= (int) $inviteCode['id'] ?>">
+                                <div class="invite-code-header">
+                                    <code><?= htmlspecialchars($inviteCode['code'], ENT_QUOTES, 'UTF-8') ?></code>
+                                    <span class="invite-code-status"><?= translate('invite_code_deleted_status', $i18n) ?></span>
+                                </div>
+                                <p><?= translate('invite_code_max_uses', $i18n) ?>: <?= (int) $inviteCode['max_uses'] ?></p>
+                                <p><?= translate('invite_code_uses_count', $i18n) ?>: <?= (int) $inviteCode['uses_count'] ?></p>
+                                <p><?= translate('created_by', $i18n) ?>: <?= htmlspecialchars($inviteCode['creator_name'] ?? 'admin', ENT_QUOTES, 'UTF-8') ?></p>
+                                <p><?= translate('used_by', $i18n) ?>: <?= htmlspecialchars($usageSummary, ENT_QUOTES, 'UTF-8') ?></p>
+                                <p><?= translate('deleted_at', $i18n) ?>: <?= htmlspecialchars($inviteCode['deleted_at'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                                <div class="buttons">
+                                    <input type="button" class="warning-button thin" value="<?= translate('permanently_delete_invite_code', $i18n) ?>"
+                                        data-confirm-message="<?= htmlspecialchars(translate('confirm_permanently_delete_invite_code', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+                                        onClick="permanentlyDeleteInviteCode(<?= (int) $inviteCode['id'] ?>, this)" />
+                                </div>
+                            </div>
+                            <?php
+                        }
+                        ?>
+                    </div>
+                    <?php
+                } else {
+                    ?>
+                    <div class="settings-notes">
+                        <p>
+                            <i class="fa-solid fa-circle-info"></i>
+                            <?= translate('deleted_invite_code_list_empty', $i18n) ?>
+                        </p>
+                    </div>
+                    <?php
+                }
+                ?>
+            </div>
+        </div>
         </div>
     </section>
 
@@ -711,47 +862,56 @@ $pageSections = [
     ?>
 
     <section class="account-section" id="admin-access-logs" data-page-section>
-        <header>
-            <h2><?= translate('access_logs', $i18n) ?></h2>
+        <header class="collapsible-section-header">
+            <button type="button" class="collapsible-section-toggle" data-target="admin-access-logs-body"
+                aria-expanded="true" onClick="toggleAdminSection(this)">
+                <span class="collapsible-section-heading">
+                    <span><?= translate('access_logs', $i18n) ?></span>
+                    <span class="section-count-badge"><?= $recentRequestLogCount ?></span>
+                </span>
+                <i class="fa-solid fa-chevron-up"></i>
+            </button>
         </header>
-        <?php
-        if (!empty($recentRequestLogs)) {
-            ?>
-            <div class="access-log-list">
-                <?php
-                foreach ($recentRequestLogs as $log) {
-                    ?>
-                    <div class="access-log-card">
-                        <div class="access-log-header">
-                            <strong><?= htmlspecialchars($log['method'], ENT_QUOTES, 'UTF-8') ?></strong>
-                            <span><?= htmlspecialchars($log['path'], ENT_QUOTES, 'UTF-8') ?></span>
-                        </div>
-                        <p><?= translate('username', $i18n) ?>: <?= htmlspecialchars($log['username'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
-                        <p>IP: <?= htmlspecialchars($log['ip_address'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
-                        <p><?= translate('forwarded_for', $i18n) ?>: <?= htmlspecialchars($log['forwarded_for'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
-                        <p><?= translate('user_agent', $i18n) ?>: <?= htmlspecialchars($log['user_agent'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
-                        <p><?= translate('time', $i18n) ?>: <?= htmlspecialchars($log['created_at'], ENT_QUOTES, 'UTF-8') ?></p>
-                        <details>
-                            <summary><?= translate('request_headers', $i18n) ?></summary>
-                            <pre><?= htmlspecialchars($log['headers_json'], ENT_QUOTES, 'UTF-8') ?></pre>
-                        </details>
-                    </div>
-                    <?php
-                }
+        <div class="collapsible-section-body" id="admin-access-logs-body">
+            <?php
+            if (!empty($recentRequestLogs)) {
                 ?>
-            </div>
-            <?php
-        } else {
+                <div class="access-log-list">
+                    <?php
+                    foreach ($recentRequestLogs as $log) {
+                        ?>
+                        <div class="access-log-card">
+                            <div class="access-log-header">
+                                <strong><?= htmlspecialchars($log['method'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                <span><?= htmlspecialchars($log['path'], ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                            <p><?= translate('username', $i18n) ?>: <?= htmlspecialchars($log['username'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                            <p>IP: <?= htmlspecialchars($log['ip_address'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                            <p><?= translate('forwarded_for', $i18n) ?>: <?= htmlspecialchars($log['forwarded_for'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                            <p><?= translate('user_agent', $i18n) ?>: <?= htmlspecialchars($log['user_agent'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                            <p><?= translate('time', $i18n) ?>: <?= htmlspecialchars($log['created_at'], ENT_QUOTES, 'UTF-8') ?></p>
+                            <details>
+                                <summary><?= translate('request_headers', $i18n) ?></summary>
+                                <pre><?= htmlspecialchars($log['headers_json'], ENT_QUOTES, 'UTF-8') ?></pre>
+                            </details>
+                        </div>
+                        <?php
+                    }
+                    ?>
+                </div>
+                <?php
+            } else {
+                ?>
+                <div class="settings-notes">
+                    <p>
+                        <i class="fa-solid fa-circle-info"></i>
+                        <?= translate('access_logs_empty', $i18n) ?>
+                    </p>
+                </div>
+                <?php
+            }
             ?>
-            <div class="settings-notes">
-                <p>
-                    <i class="fa-solid fa-circle-info"></i>
-                    <?= translate('access_logs_empty', $i18n) ?>
-                </p>
-            </div>
-            <?php
-        }
-        ?>
+        </div>
     </section>
 
     <section class="account-section" id="admin-maintenance" data-page-section>

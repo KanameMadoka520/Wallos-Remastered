@@ -14,10 +14,10 @@ if ($inviteCodeId <= 0) {
     ]));
 }
 
-$stmt = $db->prepare('UPDATE invite_codes SET deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = :id');
+$stmt = $db->prepare('UPDATE invite_codes SET deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = :id AND deleted != 1');
 $stmt->bindValue(':id', $inviteCodeId, SQLITE3_INTEGER);
 
-if ($stmt->execute()) {
+if ($stmt->execute() && $db->changes() > 0) {
     die(json_encode([
         'success' => true,
         'message' => translate('invite_code_deleted', $i18n)
