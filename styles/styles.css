@@ -2860,8 +2860,106 @@ button.dark-theme-button i {
   margin: 0;
 }
 
+.collapsible-section-header {
+  margin-bottom: 12px;
+}
+
+.collapsible-section-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.collapsible-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.section-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: rgba(var(--main-color-rgb), 0.12);
+  color: var(--main-color);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.collapsible-section-toggle i {
+  transition: transform 0.18s ease;
+}
+
+.collapsible-section-body.is-collapsed {
+  display: none;
+}
+
+.section-tabs {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.section-tab-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--box-border-color);
+  border-radius: 999px;
+  background-color: rgba(var(--main-color-rgb), 0.04);
+  color: inherit;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.section-tab-button.is-active {
+  border-color: rgba(var(--main-color-rgb), 0.28);
+  background-color: rgba(var(--main-color-rgb), 0.14);
+  color: var(--main-color);
+}
+
+.section-tab-panel {
+  display: none;
+}
+
+.section-tab-panel.is-active {
+  display: block;
+}
+
+.ban-user-list,
 .recycle-bin-user-meta {
   width: 100%;
+}
+
+.ban-user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ban-user-card {
+  border: 1px solid var(--box-border-color);
+  border-radius: 14px;
+  padding: 16px;
+  background-color: rgba(var(--main-color-rgb), 0.03);
+}
+
+.recycle-bin-user-meta {
   margin-top: 10px;
   padding: 12px 14px;
   border: 1px dashed var(--box-border-color);
@@ -2871,6 +2969,42 @@ button.dark-theme-button i {
 
 .recycle-bin-user-meta p {
   margin: 6px 0;
+}
+
+.ban-user-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ban-user-stat {
+  border: 1px solid rgba(var(--main-color-rgb), 0.14);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background-color: rgba(var(--main-color-rgb), 0.05);
+}
+
+.ban-user-stat span {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 5px;
+}
+
+.ban-user-stat strong {
+  font-size: 15px;
+}
+
+.ban-user-schedule-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.ban-user-schedule-controls input[type="datetime-local"] {
+  min-width: min(280px, 100%);
 }
 
 .invite-code-list,
@@ -2986,6 +3120,14 @@ button.dark-theme-button i {
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 6px;
+}
+
+@media (max-width: 768px) {
+  .section-tab-button,
+  .ban-user-schedule-controls input,
+  .ban-user-schedule-controls .secondary-button {
+    width: 100%;
+  }
 }
 
 .calendar-nav {
