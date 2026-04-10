@@ -3,6 +3,10 @@ let scrollTopBeforeOpening = 0;
 const shouldScroll = window.innerWidth <= 768;
 let currentSubscriptionImageViewerSrc = "";
 let currentSubscriptionImageDownloadUrl = "";
+const SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS = {
+  form: "wallos-subscription-image-layout-form",
+  detail: "wallos-subscription-image-layout-detail",
+};
 
 function toggleOpenSubscription(subId) {
   const subscriptionElement = document.querySelector('.subscription[data-id="' + subId + '"]');
@@ -24,6 +28,73 @@ function toggleNotificationDays() {
 let selectedDetailImageFiles = [];
 let existingUploadedImages = [];
 let removedUploadedImageIds = [];
+
+function getSubscriptionImageLayoutMode(scope) {
+  const storageKey = SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS[scope];
+  if (!storageKey) {
+    return "focus";
+  }
+
+  try {
+    const stored = localStorage.getItem(storageKey);
+    return stored === "grid" ? "grid" : "focus";
+  } catch (error) {
+    return "focus";
+  }
+}
+
+function getSubscriptionImageGalleryTargets(scope) {
+  if (scope === "form") {
+    return Array.from(document.querySelectorAll("#detail-image-gallery"));
+  }
+
+  if (scope === "detail") {
+    return Array.from(document.querySelectorAll(".subscription-media-gallery"));
+  }
+
+  return [];
+}
+
+function updateSubscriptionImageLayoutButtons(scope, mode) {
+  document.querySelectorAll(`.media-layout-toggle[data-image-layout-scope="${scope}"] .media-layout-button`).forEach((button) => {
+    const isActive = button.dataset.mode === mode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function applySubscriptionImageLayoutMode(scope, mode = null) {
+  const resolvedMode = mode || getSubscriptionImageLayoutMode(scope);
+  getSubscriptionImageGalleryTargets(scope).forEach((gallery) => {
+    gallery.classList.remove("layout-focus", "layout-grid");
+    gallery.classList.add(`layout-${resolvedMode}`);
+  });
+  updateSubscriptionImageLayoutButtons(scope, resolvedMode);
+}
+
+function setSubscriptionImageLayoutMode(scope, mode, button = null) {
+  const resolvedMode = mode === "grid" ? "grid" : "focus";
+  const storageKey = SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS[scope];
+
+  if (storageKey) {
+    try {
+      localStorage.setItem(storageKey, resolvedMode);
+    } catch (error) {
+      // Ignore localStorage write failures.
+    }
+  }
+
+  applySubscriptionImageLayoutMode(scope, resolvedMode);
+
+  if (button) {
+    button.blur();
+  }
+}
+
+function applyAllSubscriptionImageLayoutModes() {
+  applySubscriptionImageLayoutMode("form");
+  applySubscriptionImageLayoutMode("detail");
+}
 
 function getDetailImageConfig() {
   const form = document.querySelector("#subs-form");
@@ -113,6 +184,7 @@ function renderDetailImageGallery() {
   gallery.innerHTML = "";
   const totalCount = existingUploadedImages.length + selectedDetailImageFiles.length;
   gallery.classList.toggle("is-empty", totalCount === 0);
+  gallery.classList.toggle("has-multiple", totalCount > 1);
 
   existingUploadedImages.forEach((image) => {
     gallery.appendChild(
@@ -144,6 +216,7 @@ function renderDetailImageGallery() {
   });
 
   updateDetailImageSelectionMeta();
+  applySubscriptionImageLayoutMode("form");
 }
 
 function createDetailImageCard({ src, badgeText, fileName = "", sourceText = "", extraClassName = "", onPreview, onRemove }) {
@@ -777,6 +850,7 @@ function fetchSubscriptions(id, event, initiator) {
       }
 
       setSwipeElements();
+      applySubscriptionImageLayoutMode("detail");
       if (initiator === "add") {
         if (document.getElementsByClassName('subscription').length === 1) {
           setTimeout(() => {
@@ -937,6 +1011,8 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelector('#sort-options').addEventListener('focus', function () {
     isSortOptionsOpen = true;
   });
+
+  applyAllSubscriptionImageLayoutModes();
 });
 
 function searchSubscriptions() {

@@ -358,7 +358,23 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                                 <i class="fa-regular fa-image"></i>
                                 <?= translate('subscription_images', $i18n) ?>
                             </span>
-                            <span class="subscription-media-hint"><?= translate('subscription_image_click_to_enlarge', $i18n) ?></span>
+                            <div class="subscription-media-header-actions">
+                                <span class="subscription-media-hint"><?= translate('subscription_image_click_to_enlarge', $i18n) ?></span>
+                                <div class="media-layout-toggle" data-image-layout-scope="detail">
+                                    <button type="button" class="media-layout-button" data-mode="focus"
+                                        title="<?= translate('subscription_image_layout_focus', $i18n) ?>"
+                                        onClick="setSubscriptionImageLayoutMode('detail', 'focus', this); event.stopPropagation();">
+                                        <i class="fa-solid fa-images"></i>
+                                        <span><?= translate('subscription_image_layout_focus', $i18n) ?></span>
+                                    </button>
+                                    <button type="button" class="media-layout-button" data-mode="grid"
+                                        title="<?= translate('subscription_image_layout_grid', $i18n) ?>"
+                                        onClick="setSubscriptionImageLayoutMode('detail', 'grid', this); event.stopPropagation();">
+                                        <i class="fa-solid fa-table-cells"></i>
+                                        <span><?= translate('subscription_image_layout_grid', $i18n) ?></span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div class="subscription-media-gallery<?= $mediaItemCount > 1 ? ' has-multiple' : '' ?>">
                             <?php

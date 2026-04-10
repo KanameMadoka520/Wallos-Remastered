@@ -71,6 +71,8 @@ let i18n = {
   subscription_image_existing_badge: "Current",
   subscription_image_new_badge: "Selected",
   subscription_image_click_to_enlarge: "Click a thumbnail to enlarge it.",
+  subscription_image_layout_focus: "Focus",
+  subscription_image_layout_grid: "Grid",
   subscription_image_source_server: "Stored On Server",
   subscription_image_source_external: "External Link",
   subscription_image_source_new: "Ready To Upload",

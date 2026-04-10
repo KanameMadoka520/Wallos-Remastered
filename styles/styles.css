@@ -855,6 +855,14 @@ button.mobile-action-renew {
   flex-wrap: wrap;
 }
 
+.subscription-media-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .subscription-media-title {
   display: flex;
   align-items: center;
@@ -877,6 +885,11 @@ button.mobile-action-renew {
 .subscription-media-gallery.has-multiple .subscription-media-item:first-child {
   grid-column: span 2;
   aspect-ratio: 16 / 10;
+}
+
+.subscription-media-gallery.layout-grid .subscription-media-item:first-child {
+  grid-column: span 1;
+  aspect-ratio: 4 / 3;
 }
 
 .subscription-media-item {
@@ -1911,6 +1924,21 @@ button.dark-theme-button i {
   min-height: 168px;
   display: flex;
   align-items: stretch;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.subscription-detail-image-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.subscription-detail-image-toolbar-hint {
+  font-size: 12px;
+  color: #777;
 }
 
 .subscription-detail-image-gallery {
@@ -1919,6 +1947,14 @@ button.dark-theme-button i {
   gap: 12px;
   align-content: start;
   width: 100%;
+}
+
+.subscription-detail-image-gallery.has-multiple.layout-focus .subscription-detail-image-card:first-child {
+  grid-column: span 2;
+}
+
+.subscription-detail-image-gallery.layout-grid .subscription-detail-image-card:first-child {
+  grid-column: span 1;
 }
 
 .subscription-detail-image-gallery.is-empty::before {
@@ -2029,6 +2065,42 @@ button.dark-theme-button i {
   line-height: 1.5;
 }
 
+.media-layout-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.media-layout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--box-border-color);
+  background-color: rgba(var(--main-color-rgb), 0.04);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.media-layout-button i {
+  font-size: 14px;
+}
+
+.media-layout-button span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.media-layout-button.is-active {
+  border-color: rgba(var(--main-color-rgb), 0.32);
+  background-color: rgba(var(--main-color-rgb), 0.14);
+  color: var(--main-color);
+}
+
 .subscription-detail-image-actions {
   display: flex;
   flex: 0 0 250px;
@@ -2122,6 +2194,12 @@ button.dark-theme-button i {
   .subscription-media-gallery.has-multiple .subscription-media-item:first-child {
     grid-column: span 1;
     aspect-ratio: 4 / 3;
+  }
+
+  .subscription-media-header-actions,
+  .subscription-detail-image-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
