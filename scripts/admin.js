@@ -236,9 +236,11 @@ function saveSecuritySettingsButton() {
   button.disabled = true;
 
   const allowlist = document.getElementById('local_webhook_notifications_allowlist').value;
+  const loginRateLimitMaxAttempts = document.getElementById('login_rate_limit_max_attempts').value;
 
   const data = {
-    local_webhook_notifications_allowlist: allowlist
+    local_webhook_notifications_allowlist: allowlist,
+    login_rate_limit_max_attempts: loginRateLimitMaxAttempts
   };
 
   fetch('endpoints/admin/savesecuritysettings.php', {

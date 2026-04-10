@@ -2733,6 +2733,49 @@ button.dark-theme-button i {
   justify-content: space-between;
 }
 
+.user-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+.user-card {
+  border: 1px solid var(--box-border-color);
+  border-radius: 14px;
+  padding: 16px;
+  background-color: rgba(var(--main-color-rgb), 0.03);
+}
+
+.user-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.user-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.user-role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background-color: rgba(var(--main-color-rgb), 0.12);
+  color: var(--main-color);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .user-list>div {
   display: flex;
   flex-direction: row;
@@ -2744,6 +2787,8 @@ button.dark-theme-button i {
   display: flex;
   flex-direction: row;
   flex-grow: 1;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 @media (max-width: 768px) {
@@ -2769,9 +2814,17 @@ button.dark-theme-button i {
 
 .user-list .user-list-row>div {
   display: flex;
+  flex-direction: column;
   flex-basis: 50%;
   gap: 12px;
-  align-items: baseline;
+  align-items: flex-start;
+}
+
+.user-card-label {
+  font-size: 12px;
+  opacity: 0.78;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .user-list a {
@@ -3127,6 +3180,10 @@ button.dark-theme-button i {
   .ban-user-schedule-controls input,
   .ban-user-schedule-controls .secondary-button {
     width: 100%;
+  }
+
+  .user-card-grid {
+    grid-template-columns: 1fr;
   }
 }
 

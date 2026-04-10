@@ -280,27 +280,46 @@ $pageSections = [
         ?>
 
         <section class="account-section" id="admin-users" data-page-section>
-            <header>
-                <h2><?= translate('user_management', $i18n) ?></h2>
+            <header class="collapsible-section-header">
+                <button type="button" class="collapsible-section-toggle" data-target="admin-users-body"
+                    aria-expanded="true" onClick="toggleAdminSection(this)">
+                    <span class="collapsible-section-heading">
+                        <span><?= translate('user_management', $i18n) ?></span>
+                        <span class="section-count-badge"><?= $userCount ?></span>
+                    </span>
+                    <i class="fa-solid fa-chevron-up"></i>
+                </button>
             </header>
-            <div class="user-list">
+            <div class="collapsible-section-body" id="admin-users-body">
+            <div class="user-card-grid">
                 <?php
                 foreach ($users as $user) {
                     $userIcon = $user['id'] == 1 ? 'fa-user-tie' : 'fa-id-badge';
                     $isPrimaryAdmin = (int) $user['id'] === 1;
                     ?>
-                    <div class="form-group-inline" data-userid="<?= $user['id'] ?>">
-                        <div class="user-list-row">
-                            <div title="<?= translate('username', $i18n) ?>">
+                    <div class="user-card" data-userid="<?= $user['id'] ?>">
+                        <div class="user-card-header">
+                            <div class="user-card-title">
                                 <div class="user-list-icon">
                                     <i class="fa-solid <?= $userIcon ?>"></i>
                                 </div>
-                                <?= $user['username'] ?>
+                                <span><?= htmlspecialchars($user['username'], ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                            <?php
+                            if ($isPrimaryAdmin) {
+                                ?>
+                                <span class="user-role-badge"><?= translate('administrator_user_group', $i18n) ?></span>
+                                <?php
+                            }
+                            ?>
+                        </div>
+                        <div class="user-list-row">
+                            <div title="<?= translate('username', $i18n) ?>">
+                                <span class="user-card-label"><?= translate('username', $i18n) ?></span>
+                                <strong><?= htmlspecialchars($user['username'], ENT_QUOTES, 'UTF-8') ?></strong>
                             </div>
                             <div title="<?= translate('email', $i18n) ?>">
-                                <div class="user-list-icon">
-                                    <i class="fa-solid fa-envelope"></i>
-                                </div>
+                                <span class="user-card-label"><?= translate('email', $i18n) ?></span>
                                 <a href="mailto:<?= $user['email'] ?>"><?= $user['email'] ?></a>
                             </div>
                         </div>
@@ -383,6 +402,7 @@ $pageSections = [
                     placeholder="<?= translate('password', $i18n) ?>" />
                 <input type="submit" class="thin" value="<?= translate('add', $i18n) ?>" id="addUserButton"
                     onClick="addUserButton()" />
+            </div>
             </div>
         </section>
 
@@ -774,6 +794,11 @@ $pageSections = [
     <header>
         <h2><?= translate('security_settings', $i18n) ?></h2> </header>
     <div class="admin-form">
+        <div class="form-group">
+            <label for="login_rate_limit_max_attempts"><?= translate('login_rate_limit_max_attempts', $i18n) ?></label>
+            <input type="number" name="login_rate_limit_max_attempts" id="login_rate_limit_max_attempts" min="1" max="50"
+                autocomplete="off" value="<?= (int) ($settings['login_rate_limit_max_attempts'] ?? 8) ?>" />
+        </div>
         <div class="form-group-inline">
             <input type="text" name="local_webhook_notifications_allowlist" id="local_webhook_notifications_allowlist" autocomplete="off"
                 placeholder="<?= translate('local_webhook_allowlist_placeholder', $i18n) ?>" value="<?= htmlspecialchars($settings['local_webhook_notifications_allowlist'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
@@ -785,6 +810,10 @@ $pageSections = [
         </div>
         
         <div class="settings-notes">
+            <p>
+                <i class="fa-solid fa-circle-info"></i> 
+                <?= translate('login_rate_limit_max_attempts_info', $i18n) ?>
+            </p>
             <p>
                 <i class="fa-solid fa-circle-info"></i> 
                 <?= translate('ssrf_protection_info', $i18n) ?>
