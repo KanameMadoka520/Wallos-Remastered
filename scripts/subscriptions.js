@@ -92,7 +92,16 @@ function updateDetailImageSelectionMeta() {
   if (selectedCount > 0) {
     parts.push(`${translate("subscription_image_selected_new")}: ${selectedCount}`);
   }
-  meta.textContent = parts.join(" / ");
+  meta.textContent = `${parts.join(" / ")}. ${translate("subscription_image_click_to_enlarge")}`;
+}
+
+function getUploadedImageDisplayName(image) {
+  const candidate = String(image?.original_name || image?.file_name || "").trim();
+  if (candidate !== "") {
+    return candidate;
+  }
+
+  return translate("subscription_image_source_server");
 }
 
 function renderDetailImageGallery() {
@@ -110,6 +119,8 @@ function renderDetailImageGallery() {
       createDetailImageCard({
         src: image.path,
         badgeText: translate("subscription_image_existing_badge"),
+        fileName: getUploadedImageDisplayName(image),
+        sourceText: translate("subscription_image_source_server"),
         extraClassName: "existing",
         onPreview: () => openSubscriptionImageViewer(image.path, image.path),
         onRemove: () => removeExistingUploadedImage(image.id),
@@ -123,6 +134,8 @@ function renderDetailImageGallery() {
       createDetailImageCard({
         src: objectUrl,
         badgeText: translate("subscription_image_new_badge"),
+        fileName: file.name,
+        sourceText: translate("subscription_image_source_new"),
         extraClassName: "new",
         onPreview: () => openSubscriptionImageViewer(objectUrl, objectUrl),
         onRemove: () => removeSelectedDetailImage(index),
@@ -133,7 +146,7 @@ function renderDetailImageGallery() {
   updateDetailImageSelectionMeta();
 }
 
-function createDetailImageCard({ src, badgeText, extraClassName = "", onPreview, onRemove }) {
+function createDetailImageCard({ src, badgeText, fileName = "", sourceText = "", extraClassName = "", onPreview, onRemove }) {
   const card = document.createElement("div");
   card.className = `subscription-detail-image-card ${extraClassName}`.trim();
 
@@ -149,12 +162,25 @@ function createDetailImageCard({ src, badgeText, extraClassName = "", onPreview,
 
   const image = document.createElement("img");
   image.src = src;
-  image.alt = "";
+  image.alt = fileName || sourceText || "";
   previewButton.appendChild(image);
 
   const badge = document.createElement("span");
   badge.className = "subscription-detail-image-badge";
   badge.textContent = badgeText;
+
+  const zoom = document.createElement("span");
+  zoom.className = "subscription-detail-image-zoom";
+  zoom.innerHTML = '<i class="fa-solid fa-magnifying-glass-plus"></i>';
+
+  const meta = document.createElement("div");
+  meta.className = "subscription-detail-image-card-meta";
+
+  const nameElement = document.createElement("strong");
+  nameElement.textContent = fileName || sourceText || badgeText;
+
+  const sourceElement = document.createElement("span");
+  sourceElement.textContent = sourceText || badgeText;
 
   const removeButton = document.createElement("button");
   removeButton.type = "button";
@@ -170,7 +196,11 @@ function createDetailImageCard({ src, badgeText, extraClassName = "", onPreview,
   });
 
   card.appendChild(previewButton);
+  previewButton.appendChild(zoom);
   card.appendChild(badge);
+  meta.appendChild(nameElement);
+  meta.appendChild(sourceElement);
+  card.appendChild(meta);
   card.appendChild(removeButton);
 
   return card;
