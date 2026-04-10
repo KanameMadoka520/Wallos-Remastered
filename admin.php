@@ -118,6 +118,14 @@ $pageSections = [
 ?>
 
 <section class="contain settings has-page-nav">
+    <div id="admin-generated-password-ui" style="display:none;"
+        data-title="<?= htmlspecialchars(translate('temporary_password_modal_title', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-password-label="<?= htmlspecialchars(translate('password', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-username-label="<?= htmlspecialchars(translate('username', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-copy-label="<?= htmlspecialchars(translate('copy_to_clipboard', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-close-label="<?= htmlspecialchars(translate('cancel', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-notice="<?= htmlspecialchars(translate('temporary_password_notice', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-copy-success="<?= htmlspecialchars(translate('copied_to_clipboard', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
     <div class="page-layout">
         <?php render_page_navigation(translate('admin', $i18n), $pageSections); ?>
         <div class="page-content">
@@ -265,6 +273,10 @@ $pageSections = [
                                 }
                                 ?>
                             </div>
+                            <input type="button" class="secondary-button thin"
+                                value="<?= translate('reset_and_generate_temporary_password', $i18n) ?>"
+                                data-confirm-message="<?= htmlspecialchars(translate('confirm_reset_and_generate_temporary_password', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+                                onClick="resetUserPassword(<?= (int) $user['id'] ?>, this)" />
                             <?php
                             if (!$isPrimaryAdmin) {
                                 ?>

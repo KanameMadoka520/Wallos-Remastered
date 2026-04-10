@@ -2937,6 +2937,57 @@ button.dark-theme-button i {
   overflow: auto;
 }
 
+.generated-password-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: rgba(0, 0, 0, 0.38);
+  z-index: 2000;
+}
+
+.generated-password-modal {
+  width: min(560px, 100%);
+  border: 1px solid var(--box-border-color);
+  border-radius: 18px;
+  padding: 22px;
+  background-color: var(--box-background-color);
+  box-shadow: var(--box-shadow);
+}
+
+.generated-password-modal h3 {
+  margin: 0 0 12px;
+}
+
+.generated-password-notice {
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+
+.generated-password-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.generated-password-field input {
+  width: 100%;
+  font-family: monospace;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+
+.generated-password-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
 .calendar-nav {
   display: flex;
   flex-direction: row;

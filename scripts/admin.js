@@ -306,6 +306,159 @@ function removeUser(userId) {
 
 }
 
+function resetUserPassword(userId, button) {
+  const confirmMessage = button?.dataset.confirmMessage || 'Generate a new temporary password for this user now?';
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  fetch('endpoints/admin/resetuserpassword.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ userId })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+        showGeneratedPasswordModal(data.username || '', data.temporaryPassword || '');
+      } else {
+        showErrorMessage(data.message || translate('error'));
+      }
+    })
+    .catch(() => showErrorMessage(translate('error')))
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+      }
+    });
+}
+
+function removeGeneratedPasswordModal() {
+  const existingModal = document.getElementById('generated-password-backdrop');
+  if (existingModal) {
+    existingModal.remove();
+  }
+}
+
+function copyGeneratedPassword(password, input) {
+  const ui = document.getElementById('admin-generated-password-ui');
+  const copySuccess = ui?.dataset.copySuccess || translate('copied_to_clipboard');
+
+  const fallbackCopy = () => {
+    input.focus();
+    input.select();
+    input.setSelectionRange(0, input.value.length);
+    if (document.execCommand('copy')) {
+      showSuccessMessage(copySuccess);
+    } else {
+      showErrorMessage(translate('error'));
+    }
+  };
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(password)
+      .then(() => showSuccessMessage(copySuccess))
+      .catch(() => fallbackCopy());
+    return;
+  }
+
+  fallbackCopy();
+}
+
+function showGeneratedPasswordModal(username, temporaryPassword) {
+  if (!temporaryPassword) {
+    showErrorMessage(translate('error'));
+    return;
+  }
+
+  removeGeneratedPasswordModal();
+
+  const ui = document.getElementById('admin-generated-password-ui');
+  if (!ui) {
+    showErrorMessage(translate('error'));
+    return;
+  }
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'generated-password-backdrop';
+  backdrop.className = 'generated-password-backdrop';
+
+  const modal = document.createElement('div');
+  modal.className = 'generated-password-modal';
+
+  const title = document.createElement('h3');
+  title.textContent = ui.dataset.title || 'Temporary Password Ready';
+
+  const notice = document.createElement('p');
+  notice.className = 'generated-password-notice';
+  notice.textContent = ui.dataset.notice || '';
+
+  const userField = document.createElement('div');
+  userField.className = 'generated-password-field';
+  const userLabel = document.createElement('label');
+  userLabel.textContent = ui.dataset.usernameLabel || 'Username';
+  const userInput = document.createElement('input');
+  userInput.type = 'text';
+  userInput.readOnly = true;
+  userInput.value = username;
+  userField.appendChild(userLabel);
+  userField.appendChild(userInput);
+
+  const passwordField = document.createElement('div');
+  passwordField.className = 'generated-password-field';
+  const passwordLabel = document.createElement('label');
+  passwordLabel.textContent = ui.dataset.passwordLabel || 'Password';
+  const passwordInput = document.createElement('input');
+  passwordInput.type = 'text';
+  passwordInput.readOnly = true;
+  passwordInput.value = temporaryPassword;
+  passwordField.appendChild(passwordLabel);
+  passwordField.appendChild(passwordInput);
+
+  const actions = document.createElement('div');
+  actions.className = 'generated-password-actions';
+
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.className = 'secondary-button thin';
+  closeButton.textContent = ui.dataset.closeLabel || 'Close';
+  closeButton.addEventListener('click', removeGeneratedPasswordModal);
+
+  const copyButton = document.createElement('button');
+  copyButton.type = 'button';
+  copyButton.className = 'thin';
+  copyButton.textContent = ui.dataset.copyLabel || 'Copy';
+  copyButton.addEventListener('click', () => copyGeneratedPassword(temporaryPassword, passwordInput));
+
+  actions.appendChild(closeButton);
+  actions.appendChild(copyButton);
+
+  modal.appendChild(title);
+  modal.appendChild(notice);
+  modal.appendChild(userField);
+  modal.appendChild(passwordField);
+  modal.appendChild(actions);
+
+  backdrop.appendChild(modal);
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      removeGeneratedPasswordModal();
+    }
+  });
+
+  document.body.appendChild(backdrop);
+  passwordInput.focus();
+  passwordInput.select();
+}
+
 function restoreUser(userId) {
   fetch('endpoints/admin/restoreuser.php', {
     method: 'POST',
