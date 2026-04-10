@@ -24,6 +24,7 @@ $i18n = [
     "login_with" => "使用以下方式登入",
     "or" => "或",
     "login_failed" => "登入資訊錯誤",
+    "login_rate_limited" => "登入嘗試過於頻繁，請在 %s 之後再試。",
     "registration_successful" => "註冊成功",
     "user_email_waiting_verification" => "您的電子郵件需要驗證。請檢查您的電子郵件信箱。",
     // 密碼重設頁面

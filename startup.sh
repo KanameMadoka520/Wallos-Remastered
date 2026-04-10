@@ -96,5 +96,11 @@ crontab -d -u root
 # Run checkforupdates.php
 /usr/local/bin/php /var/www/html/endpoints/cronjobs/checkforupdates.php
 
+# Run cleanuprequestlogs.php
+/usr/local/bin/php /var/www/html/endpoints/cronjobs/cleanuprequestlogs.php
+
+# Run cleanupbannedusers.php
+/usr/local/bin/php /var/www/html/endpoints/cronjobs/cleanupbannedusers.php
+
 # Essentially wait until all child processes exit
 wait
