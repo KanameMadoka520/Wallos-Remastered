@@ -350,25 +350,36 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                 }
 
                 if ($hasDetailImages) {
+                    $mediaItemCount = count($uploadedImages) + count($detailImageUrls);
                     ?>
                     <div class="subscription-media">
-                        <span class="subscription-media-title">
-                            <i class="fa-regular fa-image"></i>
-                            <?= translate('subscription_images', $i18n) ?>
-                        </span>
-                        <div class="subscription-media-gallery">
+                        <div class="subscription-media-header">
+                            <span class="subscription-media-title">
+                                <i class="fa-regular fa-image"></i>
+                                <?= translate('subscription_images', $i18n) ?>
+                            </span>
+                            <span class="subscription-media-hint"><?= translate('subscription_image_click_to_enlarge', $i18n) ?></span>
+                        </div>
+                        <div class="subscription-media-gallery<?= $mediaItemCount > 1 ? ' has-multiple' : '' ?>">
                             <?php
                             foreach ($uploadedImages as $uploadedImage) {
                                 $imagePathValue = $uploadedImage['path'] ?? '';
                                 if ($imagePathValue === '') {
                                     continue;
                                 }
+                                $uploadedImageName = trim((string) ($uploadedImage['original_name'] ?? $uploadedImage['file_name'] ?? ''));
+                                if ($uploadedImageName === '') {
+                                    $uploadedImageName = translate('subscription_image_source_server', $i18n);
+                                }
                                 ?>
                                 <button type="button" class="subscription-media-item"
+                                    title="<?= translate('subscription_image_click_to_enlarge', $i18n) ?>"
                                     onClick='openSubscriptionImageViewer(<?= json_encode($imagePathValue, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>, <?= json_encode($imagePathValue, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>)'>
                                     <img src="<?= htmlspecialchars($imagePathValue, ENT_QUOTES, 'UTF-8') ?>"
-                                        alt="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>"
+                                        alt="<?= htmlspecialchars($uploadedImageName, ENT_QUOTES, 'UTF-8') ?>"
                                         loading="lazy" decoding="async" />
+                                    <span class="subscription-media-badge server"><?= translate('subscription_image_source_server', $i18n) ?></span>
+                                    <span class="subscription-media-zoom"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
                                 </button>
                                 <?php
                             }
@@ -376,10 +387,13 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                             foreach ($detailImageUrls as $detailImageUrl) {
                                 ?>
                                 <button type="button" class="subscription-media-item"
+                                    title="<?= translate('subscription_image_click_to_enlarge', $i18n) ?>"
                                     onClick='openSubscriptionImageViewer(<?= json_encode($detailImageUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>, null)'>
                                     <img src="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>"
                                         loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+                                    <span class="subscription-media-badge external"><?= translate('subscription_image_source_external', $i18n) ?></span>
+                                    <span class="subscription-media-zoom"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
                                 </button>
                                 <?php
                             }
