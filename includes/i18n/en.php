@@ -24,6 +24,7 @@ $i18n = [
     "login_with" => "Login with",
     "or" => "or",
     "login_failed" => "Login details are incorrect",
+    "login_rate_limited" => "Too many login attempts. Please try again after %s.",
     "registration_successful" => "Registration successful",
     "user_email_waiting_verification" => "Your email needs to be verified. Please check your email.",
     // Password Reset Page

@@ -25,6 +25,7 @@ $i18n = [
     "login_with" => "使用以下方式登录",
     "or" => "或",
     "login_failed" => "登录信息错误",
+    "login_rate_limited" => "登录尝试过于频繁，请在 %s 之后再试。",
     "registration_successful" => "注册成功",
     "user_email_waiting_verification" => "您的电子邮件需要验证。请检查您的电子邮件",
 

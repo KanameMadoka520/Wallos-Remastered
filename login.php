@@ -7,6 +7,7 @@ require_once 'includes/i18n/getlang.php';
 require_once 'includes/i18n/' . $lang . '.php';
 require_once 'includes/user_status.php';
 require_once 'includes/request_logs.php';
+require_once 'includes/login_rate_limit.php';
 
 require_once 'includes/version.php';
 
@@ -25,6 +26,11 @@ function wallos_build_recycle_bin_login_message($i18n, $reason = '', $scheduledD
     }
 
     return $message;
+}
+
+function wallos_mark_login_failed(&$loginFailed)
+{
+    $loginFailed = true;
 }
 
 if ($userCount == 0) {
@@ -184,12 +190,23 @@ if ($oidcRow) {
 
 $loginFailed = false;
 $trashedAccountMessage = '';
+$loginRateLimitMessage = '';
 $hasSuccessMessage = (isset($_GET['validated']) && $_GET['validated'] == "true") || (isset($_GET['registered']) && $_GET['registered'] == true) ? true : false;
 $userEmailWaitingVerification = false;
 if (isset($_POST['username']) && isset($_POST['password'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
     $rememberMe = isset($_POST['remember']) ? true : false;
+    $loginRateLimitIp = wallos_get_login_rate_limit_ip();
+    $loginRateLimitUsername = wallos_normalize_login_rate_limit_username($username);
+
+    wallos_prune_login_attempts($db);
+    $blockedUntil = wallos_get_login_rate_limit_block($db, $loginRateLimitIp, $loginRateLimitUsername);
+
+    if ($blockedUntil !== '') {
+        wallos_mark_login_failed($loginFailed);
+        $loginRateLimitMessage = wallos_build_login_rate_limit_message($i18n, $blockedUntil);
+    } else {
 
     $query = "SELECT id, password, main_currency, language FROM user WHERE username = :username";
     $stmt = $db->prepare($query);
@@ -203,6 +220,7 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
         $main_currency = $row['main_currency'];
         $language = $row['language'];
         if (password_verify($password, $hashedPasswordFromDb)) {
+            wallos_clear_login_attempts($db, $loginRateLimitIp, $loginRateLimitUsername);
             $statusStmt = $db->prepare('SELECT username, account_status, trash_reason, scheduled_delete_at FROM user WHERE id = :userId');
             $statusStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
             $statusResult = $statusStmt->execute();
@@ -296,10 +314,19 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
             }
 
         } else {
-            $loginFailed = true;
+            $blockedUntil = wallos_record_failed_login_attempt($db, $loginRateLimitIp, $loginRateLimitUsername);
+            wallos_mark_login_failed($loginFailed);
+            if ($blockedUntil !== '') {
+                $loginRateLimitMessage = wallos_build_login_rate_limit_message($i18n, $blockedUntil);
+            }
         }
     } else {
-        $loginFailed = true;
+        $blockedUntil = wallos_record_failed_login_attempt($db, $loginRateLimitIp, $loginRateLimitUsername);
+        wallos_mark_login_failed($loginFailed);
+        if ($blockedUntil !== '') {
+            $loginRateLimitMessage = wallos_build_login_rate_limit_message($i18n, $blockedUntil);
+        }
+    }
     }
 }
 
@@ -440,6 +467,10 @@ wallos_log_request($db, 0, '');
                             <li><i
                                     class="fa-solid fa-triangle-exclamation"></i><?= translate('user_email_waiting_verification', $i18n) ?>
                             </li>
+                            <?php
+                        } else if ($loginRateLimitMessage !== '') {
+                            ?>
+                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= $loginRateLimitMessage ?></li>
                             <?php
                         } else if ($trashedAccountMessage !== '') {
                             ?>
