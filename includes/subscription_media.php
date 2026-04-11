@@ -326,6 +326,74 @@ function wallos_prepare_subscription_image_canvas($width, $height, $mimeType)
     return $canvas;
 }
 
+function wallos_parse_memory_limit_to_bytes($value)
+{
+    $value = trim((string) $value);
+    if ($value === '' || $value === '-1') {
+        return -1;
+    }
+
+    $unit = strtolower(substr($value, -1));
+    $bytes = (int) $value;
+
+    switch ($unit) {
+        case 'g':
+            $bytes *= 1024;
+        case 'm':
+            $bytes *= 1024;
+        case 'k':
+            $bytes *= 1024;
+            break;
+    }
+
+    return $bytes;
+}
+
+function wallos_estimate_subscription_image_processing_bytes(array $metadata, $compressImage)
+{
+    $sourcePixels = max(1, (int) (($metadata['width'] ?? 0) * ($metadata['height'] ?? 0)));
+    $targetPixels = $sourcePixels;
+
+    if ($compressImage) {
+        $scale = min(
+            1,
+            WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION / max((int) ($metadata['width'] ?? 1), 1),
+            WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION / max((int) ($metadata['height'] ?? 1), 1)
+        );
+
+        $targetWidth = max(1, (int) floor(((int) ($metadata['width'] ?? 1)) * $scale));
+        $targetHeight = max(1, (int) floor(((int) ($metadata['height'] ?? 1)) * $scale));
+        $targetPixels = $targetWidth * $targetHeight;
+    }
+
+    $bytesPerPixel = 5;
+    $baseOverhead = 16 * 1024 * 1024;
+    $sourceBytes = $sourcePixels * $bytesPerPixel;
+    $targetBytes = $targetPixels * $bytesPerPixel;
+
+    if (!$compressImage) {
+        $targetBytes = 0;
+    }
+
+    return $baseOverhead + $sourceBytes + $targetBytes;
+}
+
+function wallos_ensure_subscription_image_memory_budget(array $metadata, $compressImage, $i18n)
+{
+    $memoryLimitBytes = wallos_parse_memory_limit_to_bytes(ini_get('memory_limit'));
+    if ($memoryLimitBytes <= 0) {
+        return;
+    }
+
+    $estimatedBytes = wallos_estimate_subscription_image_processing_bytes($metadata, $compressImage);
+    $currentUsage = memory_get_usage(true);
+    $safeLimit = (int) floor($memoryLimitBytes * 0.9);
+
+    if (($currentUsage + $estimatedBytes) > $safeLimit) {
+        throw new RuntimeException(translate('subscription_image_memory_limit_error', $i18n));
+    }
+}
+
 function wallos_write_subscription_image_resource($image, $destination, $mimeType, $compressImage)
 {
     if ($mimeType === 'image/jpeg') {
@@ -451,6 +519,8 @@ function wallos_store_subscription_uploaded_images(
             if ($metadata === null) {
                 continue;
             }
+
+            wallos_ensure_subscription_image_memory_budget($metadata, $compressImage, $i18n);
 
             $sourceImage = wallos_load_subscription_image_resource($uploadedFile['tmp_name'], $metadata['mime']);
             if ($sourceImage === false) {

@@ -204,6 +204,7 @@ $i18n = [
     "subscription_image_url_limit" => "每个订阅最多只能填写 10 个图片外链。",
     "subscription_image_processing_failed" => "图片处理失败，请换一个文件后重试。",
     "subscription_image_dimensions_error" => "图片尺寸过大，请上传更小的图片。",
+    "subscription_image_memory_limit_error" => "这张图片处理时需要的服务器内存超过了当前上传流程允许的范围。请降低图片分辨率、开启压缩，或让管理员提高服务器内存上限。",
     "subscription_image_too_large_dynamic" => "上传图片超过了 %d MB 限制。",
     "subscription_image_url_limit_dynamic" => "每个订阅最多只能填写 %d 个图片外链。",
     "subscription_image_upload_limit_dynamic" => "当前订阅最多只能上传 %d 张图片到服务器。",

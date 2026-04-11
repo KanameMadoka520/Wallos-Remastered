@@ -195,6 +195,7 @@ $i18n = [
     "subscription_image_url_limit" => "每個訂閱最多只能填寫 10 個圖片外鏈。",
     "subscription_image_processing_failed" => "圖片處理失敗，請換一個檔案後重試。",
     "subscription_image_dimensions_error" => "圖片尺寸過大，請上傳更小的圖片。",
+    "subscription_image_memory_limit_error" => "這張圖片在處理時需要的伺服器記憶體超過了目前上傳流程允許的範圍。請降低圖片解析度、開啟壓縮，或請管理員提高伺服器記憶體上限。",
     "subscription_image_too_large_dynamic" => "上傳圖片超過了 %d MB 限制。",
     "subscription_image_url_limit_dynamic" => "每個訂閱最多只能填寫 %d 個圖片外鏈。",
     "subscription_image_upload_limit_dynamic" => "目前這個訂閱最多只能上傳 %d 張圖片到伺服器。",
