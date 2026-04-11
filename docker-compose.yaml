@@ -10,4 +10,5 @@ services:
     volumes:
       - './db:/var/www/html/db'
       - './logos:/var/www/html/images/uploads/logos'
+      - './backups:/var/www/html/backups'
     restart: unless-stopped

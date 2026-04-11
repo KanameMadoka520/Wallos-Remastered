@@ -80,10 +80,13 @@ chmod -R 755 /var/www/html/db/
 chown -R www-data:www-data /var/www/html/db/
 
 mkdir -p /var/www/html/images/uploads/logos/avatars
+mkdir -p /var/www/html/backups
 
 # Change permissions on the logos directory
 chmod -R 755 /var/www/html/images/uploads/logos
 chown -R www-data:www-data /var/www/html/images/uploads/logos
+chmod -R 755 /var/www/html/backups
+chown -R www-data:www-data /var/www/html/backups
 
 # Remove crontab for the user
 crontab -d -u root
@@ -102,6 +105,9 @@ crontab -d -u root
 
 # Run cleanupbannedusers.php
 /usr/local/bin/php /var/www/html/endpoints/cronjobs/cleanupbannedusers.php
+
+# Run backup cleanup once on startup
+/usr/local/bin/php /var/www/html/endpoints/cronjobs/createbackup.php cleanup || true
 
 # Essentially wait until all child processes exit
 wait
