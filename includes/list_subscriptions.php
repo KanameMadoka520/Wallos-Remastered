@@ -390,7 +390,10 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                                 ?>
                                 <button type="button" class="subscription-media-item"
                                     title="<?= translate('subscription_image_click_to_enlarge', $i18n) ?>"
-                                    onClick='openSubscriptionImageViewer(<?= json_encode($imagePathValue, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>, <?= json_encode($imagePathValue, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>)'>
+                                    data-viewer-src="<?= htmlspecialchars($imagePathValue, ENT_QUOTES, 'UTF-8') ?>"
+                                    data-viewer-download="<?= htmlspecialchars($imagePathValue, ENT_QUOTES, 'UTF-8') ?>"
+                                    data-viewer-label="<?= htmlspecialchars($uploadedImageName, ENT_QUOTES, 'UTF-8') ?>"
+                                    onClick="event.stopPropagation(); openSubscriptionImageViewerFromElement(this)">
                                     <img src="<?= htmlspecialchars($imagePathValue, ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($uploadedImageName, ENT_QUOTES, 'UTF-8') ?>"
                                         loading="lazy" decoding="async" />
@@ -404,7 +407,10 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                                 ?>
                                 <button type="button" class="subscription-media-item"
                                     title="<?= translate('subscription_image_click_to_enlarge', $i18n) ?>"
-                                    onClick='openSubscriptionImageViewer(<?= json_encode($detailImageUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>, null)'>
+                                    data-viewer-src="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                    data-viewer-download="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                    data-viewer-label="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>"
+                                    onClick="event.stopPropagation(); openSubscriptionImageViewerFromElement(this)">
                                     <img src="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>"
                                         loading="lazy" decoding="async" referrerpolicy="no-referrer" />
