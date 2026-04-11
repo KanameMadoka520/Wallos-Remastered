@@ -36,8 +36,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $subscriptionData['replacement_subscription_id'] = $row['replacement_subscription_id'];
             $subscriptionData['detail_image_urls'] = json_decode($row['detail_image_urls'] ?? '[]', true) ?: [];
             $subscriptionData['uploaded_images'] = wallos_get_subscription_uploaded_images($db, $subscriptionId, $userId);
-            $subscriptionData['detail_image'] = !empty($subscriptionData['uploaded_images'][0]['path'])
-                ? $subscriptionData['uploaded_images'][0]['path']
+            $subscriptionData['detail_image'] = !empty($subscriptionData['uploaded_images'][0]['access_url'])
+                ? $subscriptionData['uploaded_images'][0]['access_url']
                 : ($row['detail_image'] ?? "");
 
             $subscriptionJson = json_encode($subscriptionData);

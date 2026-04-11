@@ -184,8 +184,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $print[$id]['replacement_subscription_id'] = $subscription['replacement_subscription_id'];
     $print[$id]['detail_image_urls'] = $subscription['detail_image_urls'] ?? '[]';
     $print[$id]['uploaded_images'] = $uploadedImagesMap[$id] ?? [];
-    $print[$id]['detail_image'] = !empty($print[$id]['uploaded_images'][0]['path'])
-      ? $print[$id]['uploaded_images'][0]['path']
+    $print[$id]['detail_image'] = !empty($print[$id]['uploaded_images'][0]['access_url'])
+      ? $print[$id]['uploaded_images'][0]['access_url']
       : ($subscription['detail_image'] ?? '');
 
     if (isset($settings['convertCurrency']) && $settings['convertCurrency'] === 'true' && $currencyId != $mainCurrencyId) {

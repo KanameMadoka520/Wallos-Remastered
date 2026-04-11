@@ -18,6 +18,30 @@ function wallos_get_subscription_media_relative_dir()
     return 'images/uploads/logos/subscription-media/';
 }
 
+function wallos_get_subscription_uploaded_image_access_url($imageId, $download = false)
+{
+    $query = ['id' => (int) $imageId];
+    if ($download) {
+        $query['download'] = 1;
+    }
+
+    return 'endpoints/media/subscriptionimage.php?' . http_build_query($query);
+}
+
+function wallos_append_subscription_uploaded_image_urls(array $image)
+{
+    $imageId = (int) ($image['id'] ?? 0);
+    if ($imageId > 0) {
+        $image['access_url'] = wallos_get_subscription_uploaded_image_access_url($imageId, false);
+        $image['download_url'] = wallos_get_subscription_uploaded_image_access_url($imageId, true);
+    } else {
+        $image['access_url'] = '';
+        $image['download_url'] = '';
+    }
+
+    return $image;
+}
+
 function wallos_get_subscription_media_disk_dir($basePath, $userId = null)
 {
     $baseDirectory = rtrim($basePath, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, wallos_get_subscription_media_relative_dir());
@@ -447,7 +471,7 @@ function wallos_get_subscription_uploaded_images($db, $subscriptionId, $userId =
 
     $images = [];
     while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
-        $images[] = $row;
+        $images[] = wallos_append_subscription_uploaded_image_urls($row);
     }
 
     return $images;
@@ -470,7 +494,7 @@ function wallos_get_subscription_uploaded_images_map($db, $userId)
         if (!isset($map[$subscriptionId])) {
             $map[$subscriptionId] = [];
         }
-        $map[$subscriptionId][] = $row;
+        $map[$subscriptionId][] = wallos_append_subscription_uploaded_image_urls($row);
     }
 
     return $map;
@@ -596,7 +620,7 @@ function wallos_store_subscription_uploaded_images(
             $insertStmt->bindValue(':upload_sequence', $sequence, SQLITE3_INTEGER);
             $insertStmt->execute();
 
-            $storedImages[] = [
+            $storedImages[] = wallos_append_subscription_uploaded_image_urls([
                 'id' => $db->lastInsertRowID(),
                 'path' => $relativePath,
                 'file_name' => $fileName,
@@ -604,7 +628,7 @@ function wallos_store_subscription_uploaded_images(
                 'width' => $targetWidth,
                 'height' => $targetHeight,
                 'compressed' => $compressImage ? 1 : 0,
-            ];
+            ]);
 
             $sequence++;
         }
@@ -695,7 +719,7 @@ function wallos_delete_uploaded_image_records_and_files($db, $basePath, array $i
 
     $rows = [];
     while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
-        $rows[] = $row;
+        $rows[] = wallos_append_subscription_uploaded_image_urls($row);
     }
 
     if (empty($rows)) {

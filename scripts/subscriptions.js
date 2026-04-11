@@ -185,13 +185,15 @@ function buildFormDetailImageViewerItems() {
   const items = [];
 
   existingUploadedImages.forEach((image) => {
-    if (!image?.path) {
+    const accessUrl = image?.access_url || image?.path || "";
+    const downloadUrl = image?.download_url || accessUrl;
+    if (!accessUrl) {
       return;
     }
 
     items.push({
-      src: image.path,
-      downloadUrl: image.path,
+      src: accessUrl,
+      downloadUrl,
       label: getUploadedImageDisplayName(image),
     });
   });
@@ -302,10 +304,12 @@ function renderDetailImageGallery() {
   gallery.classList.toggle("has-multiple", totalCount > 1);
 
   existingUploadedImages.forEach((image) => {
+    const accessUrl = image?.access_url || image?.path || "";
+    const downloadUrl = image?.download_url || accessUrl;
     gallery.appendChild(
       createDetailImageCard({
-        src: image.path,
-        downloadUrl: image.path,
+        src: accessUrl,
+        downloadUrl,
         badgeText: translate("subscription_image_existing_badge"),
         fileName: getUploadedImageDisplayName(image),
         sourceText: translate("subscription_image_source_server"),
@@ -500,7 +504,9 @@ function removeExistingUploadedImage(imageId) {
 
 function setExistingUploadedImages(images) {
   existingUploadedImages = Array.isArray(images)
-    ? images.map((image) => ({ ...image, id: Number(image.id) }))
+    ? images
+      .filter((image) => image && (image.access_url || image.path))
+      .map((image) => ({ ...image, id: Number(image.id) }))
     : [];
   removedUploadedImageIds = [];
   const removeUploadedImageIdsInput = document.querySelector("#remove-uploaded-image-ids");

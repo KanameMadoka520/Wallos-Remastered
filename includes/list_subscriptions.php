@@ -379,8 +379,9 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                         <div class="subscription-media-gallery<?= $mediaItemCount > 1 ? ' has-multiple' : '' ?>">
                             <?php
                             foreach ($uploadedImages as $uploadedImage) {
-                                $imagePathValue = $uploadedImage['path'] ?? '';
-                                if ($imagePathValue === '') {
+                                $imageAccessUrl = trim((string) ($uploadedImage['access_url'] ?? ''));
+                                $imageDownloadUrl = trim((string) ($uploadedImage['download_url'] ?? ''));
+                                if ($imageAccessUrl === '') {
                                     continue;
                                 }
                                 $uploadedImageName = trim((string) ($uploadedImage['original_name'] ?? $uploadedImage['file_name'] ?? ''));
@@ -390,11 +391,11 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                                 ?>
                                 <button type="button" class="subscription-media-item"
                                     title="<?= translate('subscription_image_click_to_enlarge', $i18n) ?>"
-                                    data-viewer-src="<?= htmlspecialchars($imagePathValue, ENT_QUOTES, 'UTF-8') ?>"
-                                    data-viewer-download="<?= htmlspecialchars($imagePathValue, ENT_QUOTES, 'UTF-8') ?>"
+                                    data-viewer-src="<?= htmlspecialchars($imageAccessUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                    data-viewer-download="<?= htmlspecialchars($imageDownloadUrl !== '' ? $imageDownloadUrl : $imageAccessUrl, ENT_QUOTES, 'UTF-8') ?>"
                                     data-viewer-label="<?= htmlspecialchars($uploadedImageName, ENT_QUOTES, 'UTF-8') ?>"
                                     onClick="event.stopPropagation(); openSubscriptionImageViewerFromElement(this)">
-                                    <img src="<?= htmlspecialchars($imagePathValue, ENT_QUOTES, 'UTF-8') ?>"
+                                    <img src="<?= htmlspecialchars($imageAccessUrl, ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($uploadedImageName, ENT_QUOTES, 'UTF-8') ?>"
                                         loading="lazy" decoding="async" />
                                     <span class="subscription-media-badge server"><?= translate('subscription_image_source_server', $i18n) ?></span>
