@@ -3,6 +3,7 @@ require_once 'includes/header.php';
 require_once 'includes/user_groups.php';
 require_once 'includes/user_status.php';
 require_once 'includes/subscription_media.php';
+require_once 'includes/backup_manager.php';
 
 if ($isAdmin != 1) {
     header('Location: index.php');
@@ -158,6 +159,10 @@ $trashedUserCount = count($trashedUsers);
 $activeInviteCodeCount = count($activeInviteCodes);
 $deletedInviteCodeCount = count($deletedInviteCodes);
 $recentRequestLogCount = count($recentRequestLogs);
+$backupRetentionDays = wallos_get_backup_retention_days($db);
+$recentBackups = wallos_list_backups($db, 20, __DIR__);
+$recentBackupCount = count($recentBackups);
+$latestBackup = $recentBackups[0] ?? null;
 require_once 'includes/page_navigation.php';
 
 $pageSections = [
@@ -1045,15 +1050,94 @@ $pageSections = [
         <header>
             <h2><?= translate('backup_and_restore', $i18n) ?></h2>
         </header>
-        <div class="form-group-inline">
-            <input type="button" class="button thin mobile-grow" value="<?= translate('backup', $i18n) ?>" id="backupDB"
-                onClick="backupDB()" />
-            <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('restore', $i18n) ?>"
-                id="restoreDB" onClick="openRestoreDBFileSelect()" />
-            <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="restoreDB()"
-                accept=".zip">
+        <div class="admin-form backup-admin-panel">
+            <div class="backup-summary-grid">
+                <div class="backup-summary-card">
+                    <span><?= translate('recent_backups', $i18n) ?></span>
+                    <strong><?= (int) $recentBackupCount ?></strong>
+                </div>
+                <div class="backup-summary-card">
+                    <span><?= translate('latest_backup_time', $i18n) ?></span>
+                    <strong><?= htmlspecialchars($latestBackup['created_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></strong>
+                </div>
+                <div class="backup-summary-card">
+                    <span><?= translate('backup_retention_days', $i18n) ?></span>
+                    <strong><?= (int) $backupRetentionDays ?></strong>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="backupRetentionDays"><?= translate('backup_retention_days', $i18n) ?></label>
+                <input type="number" id="backupRetentionDays" min="1" max="365" autocomplete="off"
+                    value="<?= (int) $backupRetentionDays ?>" />
+            </div>
+            <div class="buttons backup-action-row">
+                <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('save', $i18n) ?>"
+                    id="saveBackupSettingsButton" onClick="saveBackupSettingsButton()" />
+                <input type="button" class="button thin mobile-grow" value="<?= translate('backup', $i18n) ?>" id="backupDB"
+                    onClick="backupDB()" />
+                <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('cleanup_old_backups', $i18n) ?>"
+                    id="cleanupOldBackupsButton"
+                    data-confirm-message="<?= htmlspecialchars(translate('cleanup_old_backups_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+                    onClick="cleanupOldBackupsButton(this)" />
+                <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('restore', $i18n) ?>"
+                    id="restoreDB" onClick="openRestoreDBFileSelect()" />
+                <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="restoreDB()"
+                    accept=".zip">
+            </div>
+            <?php
+            if (!empty($recentBackups)) {
+                ?>
+                <div class="backup-list">
+                    <?php
+                    foreach ($recentBackups as $backup) {
+                        $modeClass = $backup['mode'] === 'auto' ? 'auto' : 'manual';
+                        $modeLabel = $backup['mode'] === 'auto'
+                            ? translate('backup_type_auto', $i18n)
+                            : translate('backup_type_manual', $i18n);
+                        ?>
+                        <div class="backup-card">
+                            <div class="backup-card-header">
+                                <div class="backup-card-title">
+                                    <code><?= htmlspecialchars($backup['name'], ENT_QUOTES, 'UTF-8') ?></code>
+                                    <span class="backup-mode-badge <?= $modeClass ?>"><?= $modeLabel ?></span>
+                                </div>
+                                <a class="secondary-button thin backup-download-button"
+                                    href="<?= htmlspecialchars($backup['download_url'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <i class="fa-solid fa-download"></i>
+                                    <span><?= translate('download_backup', $i18n) ?></span>
+                                </a>
+                            </div>
+                            <div class="backup-card-meta">
+                                <p><?= translate('backup_created_at', $i18n) ?>: <?= htmlspecialchars($backup['created_at'], ENT_QUOTES, 'UTF-8') ?></p>
+                                <p><?= translate('backup_size', $i18n) ?>: <?= htmlspecialchars($backup['size_label'], ENT_QUOTES, 'UTF-8') ?></p>
+                            </div>
+                        </div>
+                        <?php
+                    }
+                    ?>
+                </div>
+                <?php
+            } else {
+                ?>
+                <div class="settings-notes">
+                    <p>
+                        <i class="fa-solid fa-circle-info"></i>
+                        <?= translate('backup_no_files_yet', $i18n) ?>
+                    </p>
+                </div>
+                <?php
+            }
+            ?>
         </div>
         <div class="settings-notes">
+            <p>
+                <i class="fa-solid fa-circle-info"></i>
+                <?= sprintf(translate('backup_retention_notice_dynamic', $i18n), (int) $backupRetentionDays) ?>
+            </p>
+            <p>
+                <i class="fa-solid fa-circle-info"></i>
+                <?= translate('backup_auto_schedule_info', $i18n) ?>
+            </p>
             <p>
                 <i class="fa-solid fa-circle-info"></i>
                 <?= translate('restore_info', $i18n) ?>

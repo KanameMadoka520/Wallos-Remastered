@@ -3224,6 +3224,99 @@ button.dark-theme-button i {
   display: block;
 }
 
+.backup-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.backup-summary-card {
+  border: 1px solid rgba(var(--main-color-rgb), 0.14);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background-color: rgba(var(--main-color-rgb), 0.04);
+}
+
+.backup-summary-card span {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.backup-summary-card strong {
+  font-size: 16px;
+}
+
+.backup-action-row {
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.backup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.backup-card {
+  border: 1px solid var(--box-border-color);
+  border-radius: 14px;
+  padding: 16px;
+  background-color: rgba(var(--main-color-rgb), 0.03);
+}
+
+.backup-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.backup-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.backup-card-title code {
+  font-size: 14px;
+  background-color: rgba(0, 0, 0, 0.08);
+  padding: 6px 10px;
+  border-radius: 8px;
+  word-break: break-all;
+}
+
+.backup-mode-badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.backup-mode-badge.auto {
+  background-color: rgba(23, 154, 103, 0.12);
+  color: #14744d;
+}
+
+.backup-mode-badge.manual {
+  background-color: rgba(var(--main-color-rgb), 0.12);
+  color: var(--main-color);
+}
+
+.backup-download-button {
+  white-space: nowrap;
+}
+
+.backup-card-meta p {
+  margin: 7px 0;
+}
+
 .ban-user-list,
 .recycle-bin-user-meta {
   width: 100%;
@@ -3408,7 +3501,8 @@ button.dark-theme-button i {
 @media (max-width: 768px) {
   .section-tab-button,
   .ban-user-schedule-controls input,
-  .ban-user-schedule-controls .secondary-button {
+  .ban-user-schedule-controls .secondary-button,
+  .backup-download-button {
     width: 100%;
   }
 

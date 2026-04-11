@@ -96,7 +96,7 @@ function backupDB() {
   const button = document.getElementById("backupDB");
   button.disabled = true;
 
-  fetch("endpoints/db/backup.php", {
+  fetch("endpoints/admin/createbackup.php", {
     method: "POST",
     headers: {
       "X-CSRF-Token": window.csrfToken,
@@ -105,22 +105,14 @@ function backupDB() {
     .then(response => response.json())
     .then(data => {
       if (data.success) {
+        showSuccessMessage(data.message);
         const link = document.createElement("a");
-        const filename = data.file;
-        link.href = ".tmp/" + filename;
-
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        const timestamp = `${year}${month}${day}-${hours}${minutes}`;
-        link.download = `Wallos-Backup-${timestamp}.zip`;
-
+        link.href = data.downloadUrl;
+        link.rel = "noreferrer";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        setTimeout(() => window.location.reload(), 600);
       } else {
         showErrorMessage(data.message || translate("backup_failed"));
       }
@@ -672,6 +664,65 @@ function saveSubscriptionImageSettingsButton() {
       }
     })
     .catch(() => showErrorMessage(translate('error')))
+    .finally(() => {
+      button.disabled = false;
+    });
+}
+
+function saveBackupSettingsButton() {
+  const button = document.getElementById("saveBackupSettingsButton");
+  button.disabled = true;
+
+  const data = {
+    backup_retention_days: document.getElementById("backupRetentionDays").value,
+  };
+
+  fetch("endpoints/admin/savebackupsettings.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": window.csrfToken,
+    },
+    body: JSON.stringify(data),
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+      } else {
+        showErrorMessage(data.message || translate("error"));
+      }
+    })
+    .catch(() => showErrorMessage(translate("error")))
+    .finally(() => {
+      button.disabled = false;
+    });
+}
+
+function cleanupOldBackupsButton(button) {
+  const confirmMessage = button?.dataset.confirmMessage || "Clean up old backups now?";
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+
+  button.disabled = true;
+
+  fetch("endpoints/admin/cleanupbackups.php", {
+    method: "POST",
+    headers: {
+      "X-CSRF-Token": window.csrfToken,
+    },
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        showErrorMessage(data.message || translate("error"));
+      }
+    })
+    .catch(() => showErrorMessage(translate("error")))
     .finally(() => {
       button.disabled = false;
     });
