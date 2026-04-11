@@ -10,6 +10,7 @@ PUID=${PUID:-82}
 PGID=${PGID:-82}
 
 cat <<'EOF' > /usr/local/etc/php/conf.d/zz-upload-limits.ini
+memory_limit=512M
 upload_max_filesize=64M
 post_max_size=256M
 max_file_uploads=50

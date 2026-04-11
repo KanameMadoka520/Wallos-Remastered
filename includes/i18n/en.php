@@ -195,6 +195,7 @@ $i18n = [
     "subscription_image_url_limit" => "You can add at most 10 external image URLs per subscription.",
     "subscription_image_processing_failed" => "The image could not be processed. Please try a different file.",
     "subscription_image_dimensions_error" => "The image dimensions are too large. Please upload a smaller image.",
+    "subscription_image_memory_limit_error" => "This image requires more server memory than the current upload pipeline allows. Reduce the image resolution, enable compression, or ask the administrator to raise the server memory limit.",
     "subscription_image_too_large_dynamic" => "The uploaded image exceeds the %d MB limit.",
     "subscription_image_url_limit_dynamic" => "You can add at most %d external image URLs per subscription.",
     "subscription_image_upload_limit_dynamic" => "You can upload at most %d images to the server for this subscription.",
