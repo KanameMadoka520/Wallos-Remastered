@@ -1,84 +1,145 @@
-# Contributing to wallos
+# Wallos-Remastered 贡献指南
 
-We welcome contributions from the community and look forward to working with you to improve this project!
+## 目标
 
-## How to Contribute
+`Wallos-Remastered` 不是单纯的上游镜像仓库，而是一个已经进入长期维护阶段的重制分支。
 
-1.  **Fork the repository:** Start by forking the wallos repository to your own GitHub account.
-2.  **Clone your fork:** Clone the forked repository to your local machine (replace <YOUR_USERNAME> with your actual github username):
+提交代码前请默认遵循以下原则：
 
-    ```bash
-    git clone https://github.com/<YOUR_USERNAME>/wallos.git
-    cd wallos
-    ```
+- 先理解现有行为，再修改
+- 以可运维、可回滚、可验证为优先
+- 不引入明文密码、裸链下载、未鉴权资源访问等高风险实现
+- 新功能必须同步考虑数据迁移、历史数据兼容与文档更新
 
-3.  **Create a branch:** Create a new branch for your changes:
+## 开发流程
 
-    ```bash
-    git checkout -b feature/your-feature-name
-    ```
+### 1. 拉取与分支
 
-    or
+建议在新的功能分支上工作：
 
-    ```bash
-    git checkout -b fix/your-bug-fix-name
-    ```
+```bash
+git checkout -b feature/your-change
+```
 
-4.  **Make your changes:** Implement your feature or bug fix.
-5.  **Test your changes:** Ensure that your changes work as expected.
-6.  **Commit your changes:** Commit your changes with a clear and concise message:
+### 2. 开发前必须确认的内容
 
-    ```bash
-    git add .
-    git commit -m "Add your feature or fix"
-    ```
+- 当前工作树是否干净
+- 当前容器和运行目录是否对应正确源码目录
+- 本次改动是否需要数据库 migration
+- 是否需要补充 Nginx、Cron、Docker 挂载或后台管理入口
 
-7.  **Push your changes:** Push your branch to your forked repository:
+### 3. 提交规范
 
-    ```bash
-    git push origin feature/your-feature-name
-    ```
+本项目本地提交建议使用中文、且尽量写清楚目的，而不是只写“fix”或“update”。
 
-8.  **Create a Pull Request:** Go to the wallos repository on GitHub (https://github.com/ellite/wallos) and create a pull request from your branch to the `main` branch.
+推荐风格：
 
-## Pull Request Guidelines
+```text
+补齐自动备份闭环并接入后台列表下载与清理能力
+收紧订阅图片访问权限并阻断原始静态直链
+重构订阅图片派生图管线并接入拖拽排序与历史补图
+```
 
-* **One feature/fix per pull request:** Please keep pull requests focused on a single feature or bug fix.
-* **Clear and descriptive title and description:** Provide a clear title and description of your changes.
-* **Include relevant tests:** If possible, include tests for your changes.
-* **Follow the project's coding style:** Adhere to the project's coding style and conventions.
-* **Keep your pull request up to date:** If changes are requested, please update your pull request accordingly.
+## 代码要求
 
-## Issues
+### 后端
 
-* **Bug Reports:** If you find a bug, please open an issue with a clear description of the problem and steps to reproduce it.
-* **Feature Requests:** If you have a feature request, please open an issue with a clear description of the feature and its benefits.
-* **Priority:** Bug fixes will take priority over feature requests.
+- 任何会新增持久字段的功能，都必须补 migration。
+- 新增端点必须明确鉴权边界。
+- 优先复用现有 helper，不要在不同端点里复制同一套业务逻辑。
+- 文件删除要考虑关联派生文件是否一起清理。
 
-## Translations
+### 前端
 
-If you want to contribute with a translation of wallos:
+- 保持现有页面风格，不要引入突兀的新视觉体系。
+- 如果按钮、交互或卡片结构发生变化，必须同步补移动端样式。
+- 图片、预览和原图等重资源交互，需要优先考虑带宽与加载分层。
 
-1.  **Add your language code:**
-    * Open `includes/i18n/languages.php`.
-    * Add your language code in the format: `"<language_code>" => ["name" => "<Language Name>", "dir" => "<ltr or rtl>"],`.
-    * Please use the original language name and not the English translation.
-    * Example: `"pt" => ["name" => "Português", "dir" => "ltr"],`.
+### 运维
 
-2.  **Create language files:**
-    * Copy `includes/i18n/en.php` and rename it to your language code (e.g., `pt.php`).
-    * Translate all the values in the new language file.
-    * Copy `scripts/i18n/en.js` and rename it to your language code (e.g., `pt.js`).
-    * Translate all the values in the new javascript language file.
-    * **Note:** Incomplete translations will not be accepted.
+- 新能力如果依赖持久化目录，必须同步更新 Docker Compose。
+- 新的定时任务要补到 `cronjobs`。
+- 高风险运维功能要考虑是否需要校验或二次确认。
 
-3.  **Create a Pull Request:** Follow the Pull Request Guidelines above.
+## 必做验证清单
 
-## Contributors
+提交前至少完成以下检查：
 
-<a href="https://github.com/ellite/wallos/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ellite/wallos" />
-</a>
+### PHP 语法检查
 
+```bash
+docker exec wallos-local php -l /var/www/html/<file>.php
+```
 
-Thank you for your contributions!
+### 前端脚本检查
+
+```bash
+node --check D:\_Plana_Docker\Wallos_custom\scripts\subscriptions.js
+```
+
+### 容器与健康状态
+
+```bash
+docker ps --filter name=wallos-local
+curl.exe http://127.0.0.1:18282/health.php
+```
+
+### 功能级验证
+
+按改动范围至少抽测以下一项或多项：
+
+- 用户与管理员权限边界
+- 订阅图片上传 / 删除 / 访问
+- 备份创建 / 校验 / 恢复
+- 后台配置保存与刷新后持久化
+- 历史数据迁移后的兼容性
+
+## 文档要求
+
+凡是涉及以下内容的改动，必须同步更新文档：
+
+- 部署方式变化
+- 安全策略变化
+- 数据结构变化
+- 管理员后台能力变化
+- 备份 / 恢复 / 图片 / 认证相关的核心行为变化
+
+必须同步维护的文件：
+
+- `README.md`
+- `CONTRIBUTING.md`
+- `CHANGELOG.md`
+- `SECURITY.md`
+
+## 安全红线
+
+以下做法默认不接受：
+
+- 存储或展示明文密码
+- 允许未鉴权访问订阅图片、备份文件等私有资源
+- 直接信任用户上传文件的 MIME 与扩展名
+- 高危功能没有二次确认或最小权限控制
+- 只改界面、不处理后端权限与数据清理
+
+## 针对图片功能的特别要求
+
+图片相关改动必须始终遵守以下约束：
+
+- 主文件、预览图、缩略图必须分层
+- 页面列表默认不能直接加载原图
+- 删除主图时必须同时删除派生图
+- 排序必须写库，而不是只在前端临时排序
+- 历史图片要有补派生图机制
+
+## 针对备份功能的特别要求
+
+备份相关改动必须遵守以下约束：
+
+- 备份目录必须持久化挂载
+- 后台下载必须经过鉴权端点
+- 恢复前必须有可解释的校验逻辑
+- 自动备份、清理策略、后台面板要保持一致
+
+## 最后要求
+
+如果你改了代码但没有更新文档，这个改动在 `Wallos-Remastered` 里视为未完成。

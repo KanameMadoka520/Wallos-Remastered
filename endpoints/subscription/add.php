@@ -255,6 +255,7 @@ $cancellationDate = $_POST['cancellation_date'] ?? null;
 $replacementSubscriptionId = $_POST['replacement_subscription_id'];
 $detailImageUrlsRaw = $_POST['detail_image_urls'] ?? '';
 $removeUploadedImageIds = wallos_parse_uploaded_image_ids($_POST['remove_uploaded_image_ids'] ?? []);
+$detailImageOrderTokens = wallos_parse_subscription_image_order_tokens($_POST['detail_image_order'] ?? []);
 
 if ($replacementSubscriptionId == 0 || $inactive == 0) {
     $replacementSubscriptionId = null;
@@ -324,6 +325,16 @@ if (!empty($removeUploadedImageIds)) {
 if ($uploadLimit !== null && ($remainingUploadedImageCount + $uploadedFileCount) > $uploadLimit) {
     subscription_error_response(sprintf(translate('subscription_image_upload_limit_dynamic', $i18n), $uploadLimit));
 }
+
+$retainedUploadedImages = array_values(array_filter($existingUploadedImages, function ($image) use ($removeUploadedImageIds) {
+    return !in_array((int) ($image['id'] ?? 0), $removeUploadedImageIds, true);
+}));
+
+$imageSortPlan = wallos_build_subscription_image_sort_plan(
+    $detailImageOrderTokens,
+    $retainedUploadedImages,
+    $uploadedFileCount
+);
 
 if ($logoUrl !== "") {
     $result = getLogoFromUrl($logoUrl, '../../images/uploads/logos/', $name, $settings, $i18n);
@@ -436,6 +447,17 @@ try {
         }
     }
 
+    if (!empty($imageSortPlan['existing'])) {
+        $existingSortUpdateStmt = $db->prepare('UPDATE subscription_uploaded_images SET sort_order = :sort_order WHERE id = :id AND user_id = :user_id AND subscription_id = :subscription_id');
+        foreach ($imageSortPlan['existing'] as $imageId => $sortOrder) {
+            $existingSortUpdateStmt->bindValue(':sort_order', (int) $sortOrder, SQLITE3_INTEGER);
+            $existingSortUpdateStmt->bindValue(':id', (int) $imageId, SQLITE3_INTEGER);
+            $existingSortUpdateStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+            $existingSortUpdateStmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+            $existingSortUpdateStmt->execute();
+        }
+    }
+
     if ($uploadedFileCount > 0) {
         $storedUploadedImages = wallos_store_subscription_uploaded_images(
             $db,
@@ -447,14 +469,15 @@ try {
             $compressDetailImages,
             __DIR__ . '/../../',
             $mediaPolicy,
-            $i18n
+            $i18n,
+            $imageSortPlan['new']
         );
     }
 
     $db->exec('COMMIT');
 
     foreach ($imagesPendingFileDeletion as $imageRow) {
-        wallos_delete_subscription_image_file(__DIR__ . '/../../', $imageRow['path']);
+        wallos_delete_subscription_image_related_files(__DIR__ . '/../../', $imageRow);
     }
 
     $success['status'] = "Success";
@@ -470,9 +493,7 @@ try {
     $db->exec('ROLLBACK');
 
     foreach ($storedUploadedImages as $storedImage) {
-        if (!empty($storedImage['path'])) {
-            wallos_delete_subscription_image_file(__DIR__ . '/../../', $storedImage['path']);
-        }
+        wallos_delete_subscription_image_related_files(__DIR__ . '/../../', $storedImage);
     }
 
     subscription_error_response($throwable->getMessage());

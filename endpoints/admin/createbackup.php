@@ -3,6 +3,8 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint_admin.php';
 require_once '../../includes/backup_manager.php';
 
+set_time_limit(0);
+
 try {
     $backup = wallos_create_backup_archive($db, 'manual', __DIR__ . '/../../');
 

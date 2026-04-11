@@ -12,15 +12,34 @@ define('WALLOS_SUBSCRIPTION_IMAGE_MAX_WIDTH', 8000);
 define('WALLOS_SUBSCRIPTION_IMAGE_MAX_HEIGHT', 8000);
 define('WALLOS_SUBSCRIPTION_IMAGE_MAX_PIXELS', 40000000);
 define('WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION', 2200);
+define('WALLOS_SUBSCRIPTION_IMAGE_PREVIEW_MAX_DIMENSION', 1600);
+define('WALLOS_SUBSCRIPTION_IMAGE_THUMBNAIL_MAX_DIMENSION', 420);
 
 function wallos_get_subscription_media_relative_dir()
 {
     return 'images/uploads/logos/subscription-media/';
 }
 
-function wallos_get_subscription_uploaded_image_access_url($imageId, $download = false)
+function wallos_normalize_subscription_image_variant($variant)
 {
-    $query = ['id' => (int) $imageId];
+    $variant = strtolower(trim((string) $variant));
+    if ($variant === 'thumb' || $variant === 'thumbnail') {
+        return 'thumbnail';
+    }
+
+    if ($variant === 'preview') {
+        return 'preview';
+    }
+
+    return 'original';
+}
+
+function wallos_get_subscription_uploaded_image_access_url($imageId, $variant = 'original', $download = false)
+{
+    $query = [
+        'id' => (int) $imageId,
+        'variant' => wallos_normalize_subscription_image_variant($variant),
+    ];
     if ($download) {
         $query['download'] = 1;
     }
@@ -32,9 +51,15 @@ function wallos_append_subscription_uploaded_image_urls(array $image)
 {
     $imageId = (int) ($image['id'] ?? 0);
     if ($imageId > 0) {
-        $image['access_url'] = wallos_get_subscription_uploaded_image_access_url($imageId, false);
-        $image['download_url'] = wallos_get_subscription_uploaded_image_access_url($imageId, true);
+        $image['thumbnail_url'] = wallos_get_subscription_uploaded_image_access_url($imageId, 'thumbnail', false);
+        $image['preview_url'] = wallos_get_subscription_uploaded_image_access_url($imageId, 'preview', false);
+        $image['original_url'] = wallos_get_subscription_uploaded_image_access_url($imageId, 'original', false);
+        $image['access_url'] = $image['preview_url'];
+        $image['download_url'] = wallos_get_subscription_uploaded_image_access_url($imageId, 'original', true);
     } else {
+        $image['thumbnail_url'] = '';
+        $image['preview_url'] = '';
+        $image['original_url'] = '';
         $image['access_url'] = '';
         $image['download_url'] = '';
     }
@@ -53,6 +78,11 @@ function wallos_get_subscription_media_disk_dir($basePath, $userId = null)
     return $baseDirectory . 'user-' . (int) $userId . DIRECTORY_SEPARATOR;
 }
 
+function wallos_get_subscription_media_variant_disk_dir($basePath, $userId)
+{
+    return wallos_get_subscription_media_disk_dir($basePath, $userId) . 'derived' . DIRECTORY_SEPARATOR;
+}
+
 function wallos_ensure_subscription_media_directory($basePath, $userId = null)
 {
     $directory = wallos_get_subscription_media_disk_dir($basePath, $userId);
@@ -62,6 +92,33 @@ function wallos_ensure_subscription_media_directory($basePath, $userId = null)
     }
 
     return $directory;
+}
+
+function wallos_ensure_subscription_media_variant_directory($basePath, $userId)
+{
+    $directory = wallos_get_subscription_media_variant_disk_dir($basePath, $userId);
+
+    if (!is_dir($directory)) {
+        mkdir($directory, 0755, true);
+    }
+
+    return $directory;
+}
+
+function wallos_get_subscription_media_variant_relative_path($userId, $fileName, $variant)
+{
+    $variant = wallos_normalize_subscription_image_variant($variant);
+    $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+    $baseName = pathinfo($fileName, PATHINFO_FILENAME);
+
+    return wallos_get_subscription_media_relative_dir()
+        . 'user-' . (int) $userId
+        . '/derived/'
+        . $baseName
+        . '--'
+        . $variant
+        . '.'
+        . $extension;
 }
 
 function wallos_get_subscription_media_allowed_extensions()
@@ -266,6 +323,27 @@ function wallos_parse_uploaded_image_ids($rawValue)
     return array_values(array_unique($ids));
 }
 
+function wallos_parse_subscription_image_order_tokens($rawValue)
+{
+    if (is_array($rawValue)) {
+        $tokens = $rawValue;
+    } else {
+        $tokens = explode(',', (string) $rawValue);
+    }
+
+    $normalizedTokens = [];
+    foreach ($tokens as $token) {
+        $token = trim((string) $token);
+        if ($token === '' || !preg_match('/^(existing:\d+|new:[A-Za-z0-9_-]+)$/', $token)) {
+            continue;
+        }
+
+        $normalizedTokens[] = $token;
+    }
+
+    return array_values(array_unique($normalizedTokens));
+}
+
 function wallos_validate_uploaded_subscription_image(array $uploadedFile, $i18n, $maxBytes)
 {
     if (!isset($uploadedFile['error']) || $uploadedFile['error'] === UPLOAD_ERR_NO_FILE) {
@@ -348,6 +426,47 @@ function wallos_prepare_subscription_image_canvas($width, $height, $mimeType)
     }
 
     return $canvas;
+}
+
+function wallos_calculate_subscription_image_dimensions($width, $height, $maxDimension)
+{
+    $width = max(1, (int) $width);
+    $height = max(1, (int) $height);
+    $maxDimension = max(1, (int) $maxDimension);
+
+    $scale = min(
+        1,
+        $maxDimension / $width,
+        $maxDimension / $height
+    );
+
+    return [
+        'width' => max(1, (int) floor($width * $scale)),
+        'height' => max(1, (int) floor($height * $scale)),
+    ];
+}
+
+function wallos_get_subscription_image_variant_settings($variant)
+{
+    $variant = wallos_normalize_subscription_image_variant($variant);
+
+    if ($variant === 'thumbnail') {
+        return [
+            'variant' => 'thumbnail',
+            'max_dimension' => WALLOS_SUBSCRIPTION_IMAGE_THUMBNAIL_MAX_DIMENSION,
+            'jpeg_quality' => 76,
+            'png_quality' => 7,
+            'webp_quality' => 80,
+        ];
+    }
+
+    return [
+        'variant' => 'preview',
+        'max_dimension' => WALLOS_SUBSCRIPTION_IMAGE_PREVIEW_MAX_DIMENSION,
+        'jpeg_quality' => 84,
+        'png_quality' => 6,
+        'webp_quality' => 86,
+    ];
 }
 
 function wallos_parse_memory_limit_to_bytes($value)
@@ -435,6 +554,117 @@ function wallos_write_subscription_image_resource($image, $destination, $mimeTyp
     return false;
 }
 
+function wallos_write_subscription_image_variant_resource($image, $destination, $mimeType, array $variantSettings)
+{
+    if ($mimeType === 'image/jpeg') {
+        return imagejpeg($image, $destination, (int) $variantSettings['jpeg_quality']);
+    }
+
+    if ($mimeType === 'image/png') {
+        return imagepng($image, $destination, (int) $variantSettings['png_quality']);
+    }
+
+    if ($mimeType === 'image/webp') {
+        return imagewebp($image, $destination, (int) $variantSettings['webp_quality']);
+    }
+
+    return false;
+}
+
+function wallos_generate_subscription_image_variant_from_resource(
+    $basePath,
+    $userId,
+    $fileName,
+    $mimeType,
+    $sourceImage,
+    $sourceWidth,
+    $sourceHeight,
+    $variant
+) {
+    $variantSettings = wallos_get_subscription_image_variant_settings($variant);
+    $variantDimensions = wallos_calculate_subscription_image_dimensions(
+        $sourceWidth,
+        $sourceHeight,
+        $variantSettings['max_dimension']
+    );
+
+    $variantRelativePath = wallos_get_subscription_media_variant_relative_path($userId, $fileName, $variant);
+    $variantDirectory = wallos_ensure_subscription_media_variant_directory($basePath, $userId);
+    $variantFileName = basename(str_replace('\\', '/', $variantRelativePath));
+    $variantDestination = $variantDirectory . $variantFileName;
+
+    $variantCanvas = wallos_prepare_subscription_image_canvas(
+        $variantDimensions['width'],
+        $variantDimensions['height'],
+        $mimeType
+    );
+
+    imagecopyresampled(
+        $variantCanvas,
+        $sourceImage,
+        0,
+        0,
+        0,
+        0,
+        $variantDimensions['width'],
+        $variantDimensions['height'],
+        $sourceWidth,
+        $sourceHeight
+    );
+
+    $writeResult = wallos_write_subscription_image_variant_resource(
+        $variantCanvas,
+        $variantDestination,
+        $mimeType,
+        $variantSettings
+    );
+    imagedestroy($variantCanvas);
+
+    if (!$writeResult) {
+        throw new RuntimeException('Failed to write subscription image variant');
+    }
+
+    return [
+        'path' => $variantRelativePath,
+        'width' => $variantDimensions['width'],
+        'height' => $variantDimensions['height'],
+        'file_size' => (int) filesize($variantDestination),
+    ];
+}
+
+function wallos_generate_subscription_image_variants_from_resource(
+    $basePath,
+    $userId,
+    $fileName,
+    $mimeType,
+    $sourceImage,
+    $sourceWidth,
+    $sourceHeight
+) {
+    return [
+        'preview' => wallos_generate_subscription_image_variant_from_resource(
+            $basePath,
+            $userId,
+            $fileName,
+            $mimeType,
+            $sourceImage,
+            $sourceWidth,
+            $sourceHeight,
+            'preview'
+        ),
+        'thumbnail' => wallos_generate_subscription_image_variant_from_resource(
+            $basePath,
+            $userId,
+            $fileName,
+            $mimeType,
+            $sourceImage,
+            $sourceWidth,
+            $sourceHeight,
+            'thumbnail'
+        ),
+    ];
+}
+
 function wallos_get_subscription_upload_limit_for_user($isAdmin, $userGroup, array $policy)
 {
     if ($isAdmin) {
@@ -460,7 +690,7 @@ function wallos_get_subscription_uploaded_images($db, $subscriptionId, $userId =
         $query .= ' AND user_id = :user_id';
     }
 
-    $query .= ' ORDER BY id ASC';
+    $query .= ' ORDER BY sort_order ASC, id ASC';
 
     $stmt = $db->prepare($query);
     $stmt->bindValue(':subscription_id', (int) $subscriptionId, SQLITE3_INTEGER);
@@ -483,7 +713,7 @@ function wallos_get_subscription_uploaded_images_map($db, $userId)
         SELECT *
         FROM subscription_uploaded_images
         WHERE user_id = :user_id
-        ORDER BY subscription_id ASC, id ASC
+        ORDER BY subscription_id ASC, sort_order ASC, id ASC
     ');
     $stmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
     $result = $stmt->execute();
@@ -509,6 +739,69 @@ function wallos_get_next_subscription_image_sequence($db, $userId)
     return ((int) ($row['max_sequence'] ?? 0)) + 1;
 }
 
+function wallos_get_next_subscription_image_sort_order($db, $subscriptionId, $userId)
+{
+    $stmt = $db->prepare('SELECT MAX(sort_order) AS max_sort_order FROM subscription_uploaded_images WHERE subscription_id = :subscription_id AND user_id = :user_id');
+    $stmt->bindValue(':subscription_id', (int) $subscriptionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $row = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+    return ((int) ($row['max_sort_order'] ?? 0)) + 1;
+}
+
+function wallos_build_subscription_image_sort_plan(array $orderTokens, array $existingImages, $newImageCount)
+{
+    $retainedExistingImages = [];
+    foreach ($existingImages as $image) {
+        $imageId = (int) ($image['id'] ?? 0);
+        if ($imageId > 0) {
+            $retainedExistingImages[$imageId] = $image;
+        }
+    }
+
+    $existingSortOrders = [];
+    $newSortOrders = [];
+    $usedExistingImageIds = [];
+    $nextSortOrder = 1;
+    $remainingNewImages = max(0, (int) $newImageCount);
+
+    foreach ($orderTokens as $token) {
+        if (preg_match('/^existing:(\d+)$/', $token, $matches)) {
+            $imageId = (int) $matches[1];
+            if (!isset($retainedExistingImages[$imageId]) || isset($usedExistingImageIds[$imageId])) {
+                continue;
+            }
+
+            $existingSortOrders[$imageId] = $nextSortOrder++;
+            $usedExistingImageIds[$imageId] = true;
+            continue;
+        }
+
+        if (strpos($token, 'new:') === 0 && $remainingNewImages > 0) {
+            $newSortOrders[] = $nextSortOrder++;
+            $remainingNewImages--;
+        }
+    }
+
+    foreach ($retainedExistingImages as $imageId => $image) {
+        if (isset($usedExistingImageIds[$imageId])) {
+            continue;
+        }
+
+        $existingSortOrders[$imageId] = $nextSortOrder++;
+    }
+
+    while ($remainingNewImages > 0) {
+        $newSortOrders[] = $nextSortOrder++;
+        $remainingNewImages--;
+    }
+
+    return [
+        'existing' => $existingSortOrders,
+        'new' => $newSortOrders,
+    ];
+}
+
 function wallos_generate_subscription_uploaded_image_name($username, $sequence, $extension)
 {
     return sprintf(
@@ -531,106 +824,147 @@ function wallos_store_subscription_uploaded_images(
     $compressImage,
     $basePath,
     array $policy,
-    $i18n
+    $i18n,
+    array $sortOrders = []
 ) {
     $files = wallos_restructure_uploaded_files_array($filesField);
     $storedImages = [];
     $sequence = wallos_get_next_subscription_image_sequence($db, $userId);
+    $nextSortOrder = wallos_get_next_subscription_image_sort_order($db, $subscriptionId, $userId);
+    $sortOrderIndex = 0;
 
     try {
         foreach ($files as $uploadedFile) {
-            $metadata = wallos_validate_uploaded_subscription_image($uploadedFile, $i18n, $policy['max_size_bytes']);
-            if ($metadata === null) {
-                continue;
-            }
+            $pathsPendingCleanup = [];
 
-            wallos_ensure_subscription_image_memory_budget($metadata, $compressImage, $i18n);
+            try {
+                $metadata = wallos_validate_uploaded_subscription_image($uploadedFile, $i18n, $policy['max_size_bytes']);
+                if ($metadata === null) {
+                    continue;
+                }
 
-            $sourceImage = wallos_load_subscription_image_resource($uploadedFile['tmp_name'], $metadata['mime']);
-            if ($sourceImage === false) {
-                throw new RuntimeException(translate('subscription_image_processing_failed', $i18n));
-            }
+                wallos_ensure_subscription_image_memory_budget($metadata, $compressImage, $i18n);
 
-            $targetWidth = $metadata['width'];
-            $targetHeight = $metadata['height'];
+                $sourceImage = wallos_load_subscription_image_resource($uploadedFile['tmp_name'], $metadata['mime']);
+                if ($sourceImage === false) {
+                    throw new RuntimeException(translate('subscription_image_processing_failed', $i18n));
+                }
 
-            if ($compressImage) {
-                $scale = min(
-                    1,
-                    WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION / max($metadata['width'], 1),
-                    WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION / max($metadata['height'], 1)
+                $targetWidth = $metadata['width'];
+                $targetHeight = $metadata['height'];
+
+                if ($compressImage) {
+                    $scale = min(
+                        1,
+                        WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION / max($metadata['width'], 1),
+                        WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION / max($metadata['height'], 1)
+                    );
+
+                    $targetWidth = max(1, (int) floor($metadata['width'] * $scale));
+                    $targetHeight = max(1, (int) floor($metadata['height'] * $scale));
+                }
+
+                $imageToWrite = $sourceImage;
+                if ($targetWidth !== $metadata['width'] || $targetHeight !== $metadata['height']) {
+                    $resizedImage = wallos_prepare_subscription_image_canvas($targetWidth, $targetHeight, $metadata['mime']);
+                    imagecopyresampled(
+                        $resizedImage,
+                        $sourceImage,
+                        0,
+                        0,
+                        0,
+                        0,
+                        $targetWidth,
+                        $targetHeight,
+                        $metadata['width'],
+                        $metadata['height']
+                    );
+                    $imageToWrite = $resizedImage;
+                }
+
+                $directory = wallos_ensure_subscription_media_directory($basePath, $userId);
+                $fileName = wallos_generate_subscription_uploaded_image_name($username, $sequence, $metadata['extension']);
+                $destination = $directory . $fileName;
+                $sortOrder = isset($sortOrders[$sortOrderIndex]) ? max(1, (int) $sortOrders[$sortOrderIndex]) : $nextSortOrder;
+                $relativePath = wallos_get_subscription_media_relative_dir() . 'user-' . (int) $userId . '/' . $fileName;
+                $pathsPendingCleanup = [
+                    'path' => $relativePath,
+                    'preview_path' => wallos_get_subscription_media_variant_relative_path($userId, $fileName, 'preview'),
+                    'thumbnail_path' => wallos_get_subscription_media_variant_relative_path($userId, $fileName, 'thumbnail'),
+                ];
+
+                $writeResult = wallos_write_subscription_image_resource($imageToWrite, $destination, $metadata['mime'], $compressImage);
+                if (!$writeResult) {
+                    if ($imageToWrite !== $sourceImage) {
+                        imagedestroy($imageToWrite);
+                    }
+                    imagedestroy($sourceImage);
+                    throw new RuntimeException(translate('subscription_image_processing_failed', $i18n));
+                }
+
+                $masterResource = $imageToWrite;
+                $variantSourceWidth = $targetWidth;
+                $variantSourceHeight = $targetHeight;
+                $variants = wallos_generate_subscription_image_variants_from_resource(
+                    $basePath,
+                    $userId,
+                    $fileName,
+                    $metadata['mime'],
+                    $masterResource,
+                    $variantSourceWidth,
+                    $variantSourceHeight
                 );
 
-                $targetWidth = max(1, (int) floor($metadata['width'] * $scale));
-                $targetHeight = max(1, (int) floor($metadata['height'] * $scale));
+                if ($imageToWrite !== $sourceImage) {
+                    imagedestroy($imageToWrite);
+                }
+                imagedestroy($sourceImage);
+
+                $insertStmt = $db->prepare('
+                    INSERT INTO subscription_uploaded_images (
+                        user_id, subscription_id, path, preview_path, thumbnail_path, file_name, original_name, mime_type, file_size, width, height, compressed, upload_sequence, sort_order
+                    ) VALUES (
+                        :user_id, :subscription_id, :path, :preview_path, :thumbnail_path, :file_name, :original_name, :mime_type, :file_size, :width, :height, :compressed, :upload_sequence, :sort_order
+                    )
+                ');
+                $insertStmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
+                $insertStmt->bindValue(':subscription_id', (int) $subscriptionId, SQLITE3_INTEGER);
+                $insertStmt->bindValue(':path', $relativePath, SQLITE3_TEXT);
+                $insertStmt->bindValue(':preview_path', $variants['preview']['path'], SQLITE3_TEXT);
+                $insertStmt->bindValue(':thumbnail_path', $variants['thumbnail']['path'], SQLITE3_TEXT);
+                $insertStmt->bindValue(':file_name', $fileName, SQLITE3_TEXT);
+                $insertStmt->bindValue(':original_name', substr($metadata['original_name'], 0, 255), SQLITE3_TEXT);
+                $insertStmt->bindValue(':mime_type', $metadata['mime'], SQLITE3_TEXT);
+                $insertStmt->bindValue(':file_size', (int) filesize($destination), SQLITE3_INTEGER);
+                $insertStmt->bindValue(':width', $targetWidth, SQLITE3_INTEGER);
+                $insertStmt->bindValue(':height', $targetHeight, SQLITE3_INTEGER);
+                $insertStmt->bindValue(':compressed', $compressImage ? 1 : 0, SQLITE3_INTEGER);
+                $insertStmt->bindValue(':upload_sequence', $sequence, SQLITE3_INTEGER);
+                $insertStmt->bindValue(':sort_order', $sortOrder, SQLITE3_INTEGER);
+                $insertStmt->execute();
+
+                $storedImages[] = wallos_append_subscription_uploaded_image_urls([
+                    'id' => $db->lastInsertRowID(),
+                    'path' => $relativePath,
+                    'preview_path' => $variants['preview']['path'],
+                    'thumbnail_path' => $variants['thumbnail']['path'],
+                    'file_name' => $fileName,
+                    'mime_type' => $metadata['mime'],
+                    'width' => $targetWidth,
+                    'height' => $targetHeight,
+                    'compressed' => $compressImage ? 1 : 0,
+                ]);
+
+                $sequence++;
+                $nextSortOrder = max($nextSortOrder, $sortOrder + 1);
+                $sortOrderIndex++;
+            } catch (Throwable $throwable) {
+                if (!empty($pathsPendingCleanup)) {
+                    wallos_delete_subscription_image_related_files($basePath, $pathsPendingCleanup);
+                }
+
+                throw $throwable;
             }
-
-            $imageToWrite = $sourceImage;
-            if ($targetWidth !== $metadata['width'] || $targetHeight !== $metadata['height']) {
-                $resizedImage = wallos_prepare_subscription_image_canvas($targetWidth, $targetHeight, $metadata['mime']);
-                imagecopyresampled(
-                    $resizedImage,
-                    $sourceImage,
-                    0,
-                    0,
-                    0,
-                    0,
-                    $targetWidth,
-                    $targetHeight,
-                    $metadata['width'],
-                    $metadata['height']
-                );
-                $imageToWrite = $resizedImage;
-            }
-
-            $directory = wallos_ensure_subscription_media_directory($basePath, $userId);
-            $fileName = wallos_generate_subscription_uploaded_image_name($username, $sequence, $metadata['extension']);
-            $destination = $directory . $fileName;
-
-            $writeResult = wallos_write_subscription_image_resource($imageToWrite, $destination, $metadata['mime'], $compressImage);
-
-            if ($imageToWrite !== $sourceImage) {
-                imagedestroy($imageToWrite);
-            }
-            imagedestroy($sourceImage);
-
-            if (!$writeResult) {
-                throw new RuntimeException(translate('subscription_image_processing_failed', $i18n));
-            }
-
-            $relativePath = wallos_get_subscription_media_relative_dir() . 'user-' . (int) $userId . '/' . $fileName;
-
-            $insertStmt = $db->prepare('
-                INSERT INTO subscription_uploaded_images (
-                    user_id, subscription_id, path, file_name, original_name, mime_type, file_size, width, height, compressed, upload_sequence
-                ) VALUES (
-                    :user_id, :subscription_id, :path, :file_name, :original_name, :mime_type, :file_size, :width, :height, :compressed, :upload_sequence
-                )
-            ');
-            $insertStmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
-            $insertStmt->bindValue(':subscription_id', (int) $subscriptionId, SQLITE3_INTEGER);
-            $insertStmt->bindValue(':path', $relativePath, SQLITE3_TEXT);
-            $insertStmt->bindValue(':file_name', $fileName, SQLITE3_TEXT);
-            $insertStmt->bindValue(':original_name', substr($metadata['original_name'], 0, 255), SQLITE3_TEXT);
-            $insertStmt->bindValue(':mime_type', $metadata['mime'], SQLITE3_TEXT);
-            $insertStmt->bindValue(':file_size', (int) filesize($destination), SQLITE3_INTEGER);
-            $insertStmt->bindValue(':width', $targetWidth, SQLITE3_INTEGER);
-            $insertStmt->bindValue(':height', $targetHeight, SQLITE3_INTEGER);
-            $insertStmt->bindValue(':compressed', $compressImage ? 1 : 0, SQLITE3_INTEGER);
-            $insertStmt->bindValue(':upload_sequence', $sequence, SQLITE3_INTEGER);
-            $insertStmt->execute();
-
-            $storedImages[] = wallos_append_subscription_uploaded_image_urls([
-                'id' => $db->lastInsertRowID(),
-                'path' => $relativePath,
-                'file_name' => $fileName,
-                'mime_type' => $metadata['mime'],
-                'width' => $targetWidth,
-                'height' => $targetHeight,
-                'compressed' => $compressImage ? 1 : 0,
-            ]);
-
-            $sequence++;
         }
     } catch (Throwable $throwable) {
         foreach ($storedImages as $storedImage) {
@@ -639,9 +973,7 @@ function wallos_store_subscription_uploaded_images(
                 $deleteStmt->bindValue(':id', (int) $storedImage['id'], SQLITE3_INTEGER);
                 $deleteStmt->execute();
             }
-            if (!empty($storedImage['path'])) {
-                wallos_delete_subscription_image_file($basePath, $storedImage['path']);
-            }
+            wallos_delete_subscription_image_related_files($basePath, $storedImage);
         }
 
         throw $throwable;
@@ -654,6 +986,70 @@ function wallos_subscription_image_path_is_within_media_dir($relativePath)
 {
     $relativePath = str_replace('\\', '/', trim((string) $relativePath));
     return $relativePath !== '' && strpos($relativePath, wallos_get_subscription_media_relative_dir()) === 0;
+}
+
+function wallos_resolve_subscription_image_absolute_path($basePath, $relativePath)
+{
+    if (!wallos_subscription_image_path_is_within_media_dir($relativePath)) {
+        return '';
+    }
+
+    $absolutePath = rtrim($basePath, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+    return is_file($absolutePath) ? $absolutePath : '';
+}
+
+function wallos_generate_subscription_image_variants_for_existing_image($basePath, array $imageRow, $force = false)
+{
+    $masterPath = wallos_resolve_subscription_image_absolute_path($basePath, $imageRow['path'] ?? '');
+    if ($masterPath === '') {
+        throw new RuntimeException('Original subscription image file does not exist');
+    }
+
+    $previewPath = trim((string) ($imageRow['preview_path'] ?? ''));
+    $thumbnailPath = trim((string) ($imageRow['thumbnail_path'] ?? ''));
+
+    $previewAbsolutePath = $previewPath !== '' ? wallos_resolve_subscription_image_absolute_path($basePath, $previewPath) : '';
+    $thumbnailAbsolutePath = $thumbnailPath !== '' ? wallos_resolve_subscription_image_absolute_path($basePath, $thumbnailPath) : '';
+
+    if (!$force && $previewAbsolutePath !== '' && $thumbnailAbsolutePath !== '') {
+        return [
+            'preview_path' => $previewPath,
+            'thumbnail_path' => $thumbnailPath,
+        ];
+    }
+
+    $mimeType = trim((string) ($imageRow['mime_type'] ?? ''));
+    if ($mimeType === '') {
+        $detectedMimeType = @mime_content_type($masterPath);
+        $mimeType = is_string($detectedMimeType) ? $detectedMimeType : '';
+    }
+
+    $sourceImage = wallos_load_subscription_image_resource($masterPath, $mimeType);
+    if ($sourceImage === false) {
+        throw new RuntimeException('Cannot load subscription image');
+    }
+
+    $width = (int) imagesx($sourceImage);
+    $height = (int) imagesy($sourceImage);
+
+    try {
+        $variants = wallos_generate_subscription_image_variants_from_resource(
+            $basePath,
+            (int) $imageRow['user_id'],
+            (string) $imageRow['file_name'],
+            $mimeType,
+            $sourceImage,
+            $width,
+            $height
+        );
+    } finally {
+        imagedestroy($sourceImage);
+    }
+
+    return [
+        'preview_path' => $variants['preview']['path'],
+        'thumbnail_path' => $variants['thumbnail']['path'],
+    ];
 }
 
 function wallos_delete_subscription_image_file($basePath, $relativePath)
@@ -686,6 +1082,19 @@ function wallos_delete_subscription_image_file($basePath, $relativePath)
     }
 }
 
+function wallos_delete_subscription_image_related_files($basePath, array $imageRow)
+{
+    $paths = array_filter([
+        $imageRow['thumbnail_path'] ?? '',
+        $imageRow['preview_path'] ?? '',
+        $imageRow['path'] ?? '',
+    ]);
+
+    foreach ($paths as $relativePath) {
+        wallos_delete_subscription_image_file($basePath, $relativePath);
+    }
+}
+
 function wallos_delete_uploaded_image_records_and_files($db, $basePath, array $imageIds, $userId, $subscriptionId = null)
 {
     if (empty($imageIds)) {
@@ -702,7 +1111,7 @@ function wallos_delete_uploaded_image_records_and_files($db, $basePath, array $i
         $placeholders[] = ':image_id_' . $index;
     }
 
-    $query = 'SELECT id, path FROM subscription_uploaded_images WHERE user_id = :user_id AND id IN (' . implode(',', $placeholders) . ')';
+    $query = 'SELECT id, path, preview_path, thumbnail_path FROM subscription_uploaded_images WHERE user_id = :user_id AND id IN (' . implode(',', $placeholders) . ')';
     if ($subscriptionId !== null) {
         $query .= ' AND subscription_id = :subscription_id';
     }
@@ -731,7 +1140,7 @@ function wallos_delete_uploaded_image_records_and_files($db, $basePath, array $i
         $deleteStmt->bindValue(':id', (int) $row['id'], SQLITE3_INTEGER);
         $deleteStmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
         $deleteStmt->execute();
-        wallos_delete_subscription_image_file($basePath, $row['path']);
+        wallos_delete_subscription_image_related_files($basePath, $row);
     }
 }
 
@@ -755,7 +1164,7 @@ function wallos_get_uploaded_images_by_ids($db, array $imageIds, $userId, $subsc
     if ($subscriptionId !== null) {
         $query .= ' AND subscription_id = :subscription_id';
     }
-    $query .= ' ORDER BY id ASC';
+    $query .= ' ORDER BY sort_order ASC, id ASC';
 
     $stmt = $db->prepare($query);
     $stmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
@@ -801,16 +1210,114 @@ function wallos_delete_subscription_uploaded_images_for_subscription($db, $baseP
 
 function wallos_collect_user_subscription_images($db, $userId)
 {
-    $stmt = $db->prepare('SELECT path FROM subscription_uploaded_images WHERE user_id = :user_id');
+    $stmt = $db->prepare('SELECT path, preview_path, thumbnail_path FROM subscription_uploaded_images WHERE user_id = :user_id');
     $stmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
     $result = $stmt->execute();
 
     $images = [];
     while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
-        $images[] = $row['path'];
+        foreach (['path', 'preview_path', 'thumbnail_path'] as $column) {
+            if (!empty($row[$column])) {
+                $images[] = $row[$column];
+            }
+        }
     }
 
     return array_values(array_unique($images));
+}
+
+function wallos_update_subscription_uploaded_image_order($db, $subscriptionId, $userId, array $orderedImageIds)
+{
+    $normalizedImageIds = array_values(array_unique(array_filter(array_map('intval', $orderedImageIds))));
+    if (empty($normalizedImageIds)) {
+        return;
+    }
+
+    $placeholders = [];
+    foreach ($normalizedImageIds as $index => $imageId) {
+        $placeholders[] = ':image_id_' . $index;
+    }
+
+    $query = 'SELECT id FROM subscription_uploaded_images WHERE subscription_id = :subscription_id AND user_id = :user_id AND id IN (' . implode(',', $placeholders) . ')';
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':subscription_id', (int) $subscriptionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
+    foreach ($normalizedImageIds as $index => $imageId) {
+        $stmt->bindValue(':image_id_' . $index, $imageId, SQLITE3_INTEGER);
+    }
+    $result = $stmt->execute();
+
+    $existingImageIds = [];
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $existingImageIds[] = (int) $row['id'];
+    }
+
+    if (empty($existingImageIds)) {
+        return;
+    }
+
+    $existingImageIds = array_values(array_unique($existingImageIds));
+    $sortOrder = 1;
+    $updateStmt = $db->prepare('UPDATE subscription_uploaded_images SET sort_order = :sort_order WHERE id = :id AND subscription_id = :subscription_id AND user_id = :user_id');
+
+    foreach ($normalizedImageIds as $imageId) {
+        if (!in_array($imageId, $existingImageIds, true)) {
+            continue;
+        }
+
+        $updateStmt->bindValue(':sort_order', $sortOrder++, SQLITE3_INTEGER);
+        $updateStmt->bindValue(':id', $imageId, SQLITE3_INTEGER);
+        $updateStmt->bindValue(':subscription_id', (int) $subscriptionId, SQLITE3_INTEGER);
+        $updateStmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
+        $updateStmt->execute();
+    }
+}
+
+function wallos_generate_missing_subscription_image_variants($db, $userId, $basePath, $force = false)
+{
+    $stmt = $db->prepare('
+        SELECT *
+        FROM subscription_uploaded_images
+        WHERE user_id = :user_id
+        ORDER BY subscription_id ASC, sort_order ASC, id ASC
+    ');
+    $stmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+
+    $generatedCount = 0;
+    $skippedCount = 0;
+    $failedCount = 0;
+
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $previewPath = trim((string) ($row['preview_path'] ?? ''));
+        $thumbnailPath = trim((string) ($row['thumbnail_path'] ?? ''));
+        $previewExists = $previewPath !== '' && wallos_resolve_subscription_image_absolute_path($basePath, $previewPath) !== '';
+        $thumbnailExists = $thumbnailPath !== '' && wallos_resolve_subscription_image_absolute_path($basePath, $thumbnailPath) !== '';
+
+        if (!$force && $previewExists && $thumbnailExists) {
+            $skippedCount++;
+            continue;
+        }
+
+        try {
+            $variants = wallos_generate_subscription_image_variants_for_existing_image($basePath, $row, $force);
+            $updateStmt = $db->prepare('UPDATE subscription_uploaded_images SET preview_path = :preview_path, thumbnail_path = :thumbnail_path WHERE id = :id AND user_id = :user_id');
+            $updateStmt->bindValue(':preview_path', $variants['preview_path'], SQLITE3_TEXT);
+            $updateStmt->bindValue(':thumbnail_path', $variants['thumbnail_path'], SQLITE3_TEXT);
+            $updateStmt->bindValue(':id', (int) $row['id'], SQLITE3_INTEGER);
+            $updateStmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
+            $updateStmt->execute();
+            $generatedCount++;
+        } catch (Throwable $throwable) {
+            $failedCount++;
+        }
+    }
+
+    return [
+        'generated_count' => $generatedCount,
+        'skipped_count' => $skippedCount,
+        'failed_count' => $failedCount,
+    ];
 }
 
 function wallos_clone_subscription_uploaded_images($db, $basePath, $fromSubscriptionId, $toSubscriptionId, $userId, $username)
@@ -837,25 +1344,57 @@ function wallos_clone_subscription_uploaded_images($db, $basePath, $fromSubscrip
             continue;
         }
 
+        $mimeType = trim((string) ($image['mime_type'] ?? ''));
+        if ($mimeType === '') {
+            $detectedMimeType = @mime_content_type($destinationPath);
+            $mimeType = is_string($detectedMimeType) ? $detectedMimeType : '';
+        }
+
+        $previewPath = '';
+        $thumbnailPath = '';
+        if ($mimeType !== '') {
+            $clonedImage = wallos_load_subscription_image_resource($destinationPath, $mimeType);
+            if ($clonedImage !== false) {
+                try {
+                    $variants = wallos_generate_subscription_image_variants_from_resource(
+                        $basePath,
+                        $userId,
+                        $fileName,
+                        $mimeType,
+                        $clonedImage,
+                        (int) imagesx($clonedImage),
+                        (int) imagesy($clonedImage)
+                    );
+                    $previewPath = $variants['preview']['path'];
+                    $thumbnailPath = $variants['thumbnail']['path'];
+                } finally {
+                    imagedestroy($clonedImage);
+                }
+            }
+        }
+
         $relativePath = wallos_get_subscription_media_relative_dir() . 'user-' . (int) $userId . '/' . $fileName;
         $insertStmt = $db->prepare('
             INSERT INTO subscription_uploaded_images (
-                user_id, subscription_id, path, file_name, original_name, mime_type, file_size, width, height, compressed, upload_sequence
+                user_id, subscription_id, path, preview_path, thumbnail_path, file_name, original_name, mime_type, file_size, width, height, compressed, upload_sequence, sort_order
             ) VALUES (
-                :user_id, :subscription_id, :path, :file_name, :original_name, :mime_type, :file_size, :width, :height, :compressed, :upload_sequence
+                :user_id, :subscription_id, :path, :preview_path, :thumbnail_path, :file_name, :original_name, :mime_type, :file_size, :width, :height, :compressed, :upload_sequence, :sort_order
             )
         ');
         $insertStmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
         $insertStmt->bindValue(':subscription_id', (int) $toSubscriptionId, SQLITE3_INTEGER);
         $insertStmt->bindValue(':path', $relativePath, SQLITE3_TEXT);
+        $insertStmt->bindValue(':preview_path', $previewPath, SQLITE3_TEXT);
+        $insertStmt->bindValue(':thumbnail_path', $thumbnailPath, SQLITE3_TEXT);
         $insertStmt->bindValue(':file_name', $fileName, SQLITE3_TEXT);
         $insertStmt->bindValue(':original_name', $image['original_name'] ?? $image['file_name'], SQLITE3_TEXT);
-        $insertStmt->bindValue(':mime_type', $image['mime_type'] ?? '', SQLITE3_TEXT);
+        $insertStmt->bindValue(':mime_type', $mimeType, SQLITE3_TEXT);
         $insertStmt->bindValue(':file_size', (int) filesize($destinationPath), SQLITE3_INTEGER);
         $insertStmt->bindValue(':width', (int) ($image['width'] ?? 0), SQLITE3_INTEGER);
         $insertStmt->bindValue(':height', (int) ($image['height'] ?? 0), SQLITE3_INTEGER);
         $insertStmt->bindValue(':compressed', (int) ($image['compressed'] ?? 1), SQLITE3_INTEGER);
         $insertStmt->bindValue(':upload_sequence', $sequence, SQLITE3_INTEGER);
+        $insertStmt->bindValue(':sort_order', (int) ($image['sort_order'] ?? $sequence), SQLITE3_INTEGER);
         $insertStmt->execute();
 
         $sequence++;

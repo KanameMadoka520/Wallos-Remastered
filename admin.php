@@ -1101,15 +1101,32 @@ $pageSections = [
                                     <code><?= htmlspecialchars($backup['name'], ENT_QUOTES, 'UTF-8') ?></code>
                                     <span class="backup-mode-badge <?= $modeClass ?>"><?= $modeLabel ?></span>
                                 </div>
+                            </div>
+                            <div class="backup-card-meta">
+                                <p><?= translate('backup_created_at', $i18n) ?>: <?= htmlspecialchars($backup['created_at'], ENT_QUOTES, 'UTF-8') ?></p>
+                                <p><?= translate('backup_size', $i18n) ?>: <?= htmlspecialchars($backup['size_label'], ENT_QUOTES, 'UTF-8') ?></p>
+                            </div>
+                            <div class="backup-card-actions">
                                 <a class="secondary-button thin backup-download-button"
                                     href="<?= htmlspecialchars($backup['download_url'], ENT_QUOTES, 'UTF-8') ?>">
                                     <i class="fa-solid fa-download"></i>
                                     <span><?= translate('download_backup', $i18n) ?></span>
                                 </a>
+                                <button type="button" class="secondary-button thin backup-verify-button"
+                                    onClick="verifyBackup('<?= htmlspecialchars($backup['name'], ENT_QUOTES, 'UTF-8') ?>', this)">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                    <span><?= translate('verify_backup', $i18n) ?></span>
+                                </button>
+                                <button type="button" class="thin backup-restore-button"
+                                    data-confirm-message="<?= htmlspecialchars(translate('restore_selected_backup_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+                                    data-confirm-second-message="<?= htmlspecialchars(translate('restore_selected_backup_confirm_second', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+                                    onClick="restoreBackup('<?= htmlspecialchars($backup['name'], ENT_QUOTES, 'UTF-8') ?>', this)">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                    <span><?= translate('restore_selected_backup', $i18n) ?></span>
+                                </button>
                             </div>
-                            <div class="backup-card-meta">
-                                <p><?= translate('backup_created_at', $i18n) ?>: <?= htmlspecialchars($backup['created_at'], ENT_QUOTES, 'UTF-8') ?></p>
-                                <p><?= translate('backup_size', $i18n) ?>: <?= htmlspecialchars($backup['size_label'], ENT_QUOTES, 'UTF-8') ?></p>
+                            <div class="backup-card-status is-pending" data-backup-status>
+                                <?= translate('backup_verification_not_run', $i18n) ?>
                             </div>
                         </div>
                         <?php
@@ -1137,6 +1154,10 @@ $pageSections = [
             <p>
                 <i class="fa-solid fa-circle-info"></i>
                 <?= translate('backup_auto_schedule_info', $i18n) ?>
+            </p>
+            <p>
+                <i class="fa-solid fa-circle-info"></i>
+                <?= translate('backup_restore_from_list_info', $i18n) ?>
             </p>
             <p>
                 <i class="fa-solid fa-circle-info"></i>

@@ -1,19 +1,9 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint_admin.php';
+require_once '../../includes/backup_manager.php';
 
-function emptyRestoreFolder()
-{
-    $files = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator('../../.tmp', RecursiveDirectoryIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::CHILD_FIRST
-    );
-
-    foreach ($files as $fileinfo) {
-        $removeFunction = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
-        $removeFunction($fileinfo->getRealPath());
-    }
-}
+set_time_limit(0);
 
 if (isset($_FILES['file'])) {
     $file = $_FILES['file'];
@@ -21,73 +11,48 @@ if (isset($_FILES['file'])) {
     $fileError = $file['error'];
 
     if ($fileError === 0) {
-        $fileDestination = '../../.tmp/restore.zip';
-        move_uploaded_file($fileTmpName, $fileDestination);
-
-        $zip = new ZipArchive();
-        if ($zip->open($fileDestination) === true) {
-            $zip->extractTo('../../.tmp/restore/');
-            $zip->close();
-        } else {
-            die(json_encode([
-                "success" => false,
-                "message" => "Failed to extract the uploaded file"
-            ]));
+        $restoreTempDirectory = __DIR__ . '/../../.tmp';
+        if (!is_dir($restoreTempDirectory)) {
+            mkdir($restoreTempDirectory, 0755, true);
         }
 
-        if (file_exists('../../.tmp/restore/wallos.db')) {
-            if (file_exists('../../db/wallos.db')) {
-                unlink('../../db/wallos.db');
-            }
-            rename('../../.tmp/restore/wallos.db', '../../db/wallos.db');
+        $fileDestination = $restoreTempDirectory . '/restore-' . bin2hex(random_bytes(6)) . '.zip';
 
-            if (file_exists('../../.tmp/restore/logos/')) {
-                $dir = '../../images/uploads/logos/';
-                $di = new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS);
-                $ri = new RecursiveIteratorIterator($di, RecursiveIteratorIterator::CHILD_FIRST);
+        if (!move_uploaded_file($fileTmpName, $fileDestination)) {
+            echo json_encode([
+                "success" => false,
+                "message" => translate('restore_failed', $i18n)
+            ]);
+            exit;
+        }
 
-                foreach ($ri as $file) {
-                    if ($file->isDir()) {
-                        rmdir($file->getPathname());
-                    } else {
-                        unlink($file->getPathname());
-                    }
-                }
-
-                $dir = new RecursiveDirectoryIterator('../../.tmp/restore/logos/');
-                $ite = new RecursiveIteratorIterator($dir);
-                $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
-
-                foreach ($ite as $filePath) {
-                    if (in_array(pathinfo($filePath, PATHINFO_EXTENSION), $allowedExtensions)) {
-                        $destination = str_replace('../../.tmp/restore/', '../../images/uploads/', $filePath);
-                        $destinationDir = pathinfo($destination, PATHINFO_DIRNAME);
-
-                        if (!is_dir($destinationDir)) {
-                            mkdir($destinationDir, 0755, true);
-                        }
-
-                        copy($filePath, $destination);
-                    }
-                }
+        try {
+            $verification = wallos_verify_backup_archive($fileDestination);
+            if (!$verification['is_valid']) {
+                echo json_encode([
+                    "success" => false,
+                    "message" => translate('backup_verification_failed', $i18n)
+                ]);
+                exit;
             }
 
-            emptyRestoreFolder();
+            $db->close();
+            wallos_restore_backup_archive($fileDestination, __DIR__ . '/../../');
 
             echo json_encode([
                 "success" => true,
                 "message" => translate("success", $i18n)
             ]);
-        } else {
-            emptyRestoreFolder();
-
-            die(json_encode([
+        } catch (Throwable $throwable) {
+            echo json_encode([
                 "success" => false,
-                "message" => "wallos.db does not exist in the backup file"
-            ]));
+                "message" => translate('restore_failed', $i18n)
+            ]);
+        } finally {
+            if (file_exists($fileDestination)) {
+                @unlink($fileDestination);
+            }
         }
-
-
     } else {
         echo json_encode([
             "success" => false,

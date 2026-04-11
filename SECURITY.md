@@ -1,31 +1,108 @@
-# Security Policy
+# Wallos-Remastered 安全策略
 
-## Reporting a Vulnerability
+## 适用范围
 
-If you discover any security vulnerabilities in this project, please report them to the developer by emailing [wallos@henrique.pt](mailto:wallos@henrique.pt). I appreciate your help in keeping the project secure.
+本文件适用于 `Wallos-Remastered` 定制分支，而不是上游原始项目的默认安全边界说明。
 
-## Supported Versions
+## 安全目标
 
-This project is currently supported with security updates for the following versions:
+本项目当前的安全设计重点是：
 
-| Version | Supported          |
-| ------- | ------------------ |
-| latest  | :white_check_mark: |
-| main    | :white_check_mark: |
-| 1.x.x   | :x:                |
+- 私有资源必须鉴权访问
+- 管理员高危操作必须可控、可审计
+- 上传文件必须限制格式并重新编码
+- 备份、恢复、图片等重资源能力必须走受保护通道
+- 不为了“方便”牺牲账号与数据安全
 
-## Security Measures
+## 当前已落实的安全措施
 
-I take security seriously and am working on ways to implement security measures to protect the project.
+### 1. 账号与会话
 
-What is being done currenty:
-- Periodically scan the docker image for vulnerabilities with trivy.
+- 登录失败限速已启用
+- 登录失败阈值可由管理员配置
+- 管理员重置用户密码时只生成临时密码，不提供明文密码查看
+- 登录令牌与相关状态会在密码重置时同步失效
 
-## Reporting a Security Concern
+### 2. 请求与端点保护
 
-If you have any security concerns or questions regarding the security of this project, please contact the developer at [wallos@henrique.pt](mailto:wallos@henrique.pt).
+- 关键写操作端点要求登录态
+- 关键后台端点要求管理员权限
+- 写操作采用 CSRF 校验
+- 多数敏感功能采用 POST 请求而非裸 GET 提交
 
-## Responsible Disclosure
+### 3. 订阅图片安全
 
-I kindly request that you follow responsible disclosure practices and give me reasonable time to address any reported vulnerabilities before making them public.
+- 订阅图片原始静态目录被 Nginx 拦截
+- 所有订阅图片访问统一走鉴权媒体端点
+- 普通用户只能访问自己的订阅图片
+- 管理员可跨用户查看图片以便审核
+- 原图、预览图、缩略图三层资源都遵循同一套权限边界
 
+### 4. 上传文件安全
+
+- 订阅图片上传只允许受支持格式
+- 服务端会重新解码与重新编码图片
+- 图片尺寸与像素总量受到限制
+- 图片处理前有内存预算估算，避免大图直接打爆 PHP
+- 删除图片时会同步删除派生图，避免残留可访问资源
+
+### 5. 邀请码与用户状态管理
+
+- 邀请码支持软删除与彻底删除
+- 封禁用户进入“封禁用户名单”而不是直接无痕清空
+- 封禁用户保留计划删除时间，便于审计与缓冲恢复
+
+### 6. 本地网络与 SSRF 风险控制
+
+- 本地 Webhook 目标通过允许名单控制
+- 图片 URL 获取逻辑和通知相关逻辑已纳入更严格限制
+
+### 7. 备份与恢复安全
+
+- 备份目录原始静态访问被 Nginx 拦截
+- 后台下载备份走受保护端点
+- 恢复前要求备份通过可解释的校验逻辑
+- 新备份包含校验清单，旧备份至少走基础结构校验
+
+### 8. 审计与清理
+
+- 请求日志已接入后台查看
+- 请求日志支持定时清理
+- 封禁名单支持定时清理
+
+## 运行环境建议
+
+建议至少满足以下条件：
+
+- PHP 内存限制不低于 `512M`
+- `db`、`logos`、`backups` 使用持久化挂载
+- 定期抽测备份校验与恢复链路
+- 避免直接暴露未受反向代理保护的调试端口
+
+## 漏洞处理建议
+
+如果你在 `Wallos-Remastered` 中发现安全问题，建议按以下顺序处理：
+
+1. 先在私有维护渠道反馈，不要直接公开可利用细节
+2. 提供最小复现步骤
+3. 明确影响范围：
+   - 普通用户
+   - 管理员
+   - 未登录访客
+4. 说明是否涉及：
+   - 鉴权绕过
+   - 明文凭据泄露
+   - 任意文件访问
+   - 任意文件上传
+   - SSRF / XSS / SQL 注入
+   - 备份与恢复链路
+
+## 不接受的危险实现
+
+以下实现方向在本项目中默认视为不可接受：
+
+- 查看所有用户明文密码
+- 用静态文件裸链直接暴露私有图片或备份
+- 为了省事跳过上传重编码
+- 恢复链路不做备份校验
+- 高危管理按钮没有确认或权限边界

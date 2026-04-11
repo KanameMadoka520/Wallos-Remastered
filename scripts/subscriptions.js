@@ -3,11 +3,16 @@ let scrollTopBeforeOpening = 0;
 const shouldScroll = window.innerWidth <= 768;
 const SUBSCRIPTION_IMAGE_VIEWER_SWIPE_THRESHOLD = 50;
 let currentSubscriptionImageViewerSrc = "";
+let currentSubscriptionImageOriginalUrl = "";
 let currentSubscriptionImageDownloadUrl = "";
 let currentSubscriptionImageViewerItems = [];
 let currentSubscriptionImageViewerIndex = -1;
+let currentSubscriptionImageOriginalRequest = null;
 let subscriptionImageViewerTouchStartX = 0;
 let subscriptionImageViewerTouchStartY = 0;
+let detailImageGallerySortable = null;
+let detailSubscriptionGallerySortables = [];
+let detailImageTempIdCounter = 0;
 const SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS = {
   form: "wallos-subscription-image-layout-form",
   detail: "wallos-subscription-image-layout-detail",
@@ -123,6 +128,85 @@ function getDetailImageConfig() {
   };
 }
 
+function ensureSelectedDetailImageFileToken(file) {
+  if (!file) {
+    return "";
+  }
+
+  if (!file._wallosTempId) {
+    detailImageTempIdCounter += 1;
+    file._wallosTempId = `temp-${Date.now()}-${detailImageTempIdCounter}`;
+  }
+
+  return file._wallosTempId;
+}
+
+function setDetailImageUploadProgress(percentage, label) {
+  const container = document.querySelector("#detail-image-upload-progress");
+  const fill = document.querySelector("#detail-image-upload-progress-bar-fill");
+  const value = document.querySelector("#detail-image-upload-progress-value");
+  const labelElement = document.querySelector("#detail-image-upload-progress-label");
+
+  if (!container || !fill || !value || !labelElement) {
+    return;
+  }
+
+  const safePercentage = Math.max(0, Math.min(100, Math.round(percentage)));
+  container.classList.remove("is-hidden");
+  fill.style.width = `${safePercentage}%`;
+  value.textContent = `${safePercentage}%`;
+  labelElement.textContent = label || translate("subscription_image_upload_progress_idle");
+}
+
+function hideDetailImageUploadProgress() {
+  const container = document.querySelector("#detail-image-upload-progress");
+  const fill = document.querySelector("#detail-image-upload-progress-bar-fill");
+  const value = document.querySelector("#detail-image-upload-progress-value");
+  const labelElement = document.querySelector("#detail-image-upload-progress-label");
+
+  if (!container || !fill || !value || !labelElement) {
+    return;
+  }
+
+  container.classList.add("is-hidden");
+  fill.style.width = "0%";
+  value.textContent = "0%";
+  labelElement.textContent = translate("subscription_image_upload_progress_idle");
+}
+
+function setOriginalImageProgress(percentage, label) {
+  const container = document.querySelector("#subscription-image-original-progress");
+  const fill = document.querySelector("#subscription-image-original-progress-fill");
+  const value = document.querySelector("#subscription-image-original-progress-value");
+  const labelElement = document.querySelector("#subscription-image-original-progress-label");
+
+  if (!container || !fill || !value || !labelElement) {
+    return;
+  }
+
+  const safePercentage = Math.max(0, Math.min(100, Math.round(percentage)));
+  container.classList.remove("is-hidden");
+  fill.style.width = `${safePercentage}%`;
+  value.textContent = `${safePercentage}%`;
+  labelElement.textContent = label || translate("subscription_image_original_loading");
+}
+
+function hideOriginalImageProgress() {
+  const container = document.querySelector("#subscription-image-original-progress");
+  const fill = document.querySelector("#subscription-image-original-progress-fill");
+  const value = document.querySelector("#subscription-image-original-progress-value");
+  const labelElement = document.querySelector("#subscription-image-original-progress-label");
+
+  if (!container || !fill || !value || !labelElement) {
+    return;
+  }
+
+  container.classList.add("is-hidden");
+  fill.style.width = "0%";
+  value.textContent = "0%";
+  labelElement.textContent = translate("subscription_image_original_loading");
+}
+
 function resetDetailImageCompression() {
   const compressCheckbox = document.querySelector("#compress_subscription_image");
   const config = getDetailImageConfig();
@@ -172,6 +256,142 @@ function updateDetailImageSelectionMeta() {
   meta.textContent = `${parts.join(" / ")}. ${translate("subscription_image_click_to_enlarge")}`;
 }
 
+function updateDetailImageOrderField() {
+  const orderInput = document.querySelector("#detail-image-order");
+  const gallery = document.querySelector("#detail-image-gallery");
+
+  if (!orderInput || !gallery) {
+    return;
+  }
+
+  const tokens = Array.from(gallery.querySelectorAll(".subscription-detail-image-card"))
+    .map((card) => card.dataset.orderToken || "")
+    .filter((token) => token !== "");
+
+  orderInput.value = tokens.join(",");
+}
+
+function syncDetailImageStateFromGallery() {
+  const gallery = document.querySelector("#detail-image-gallery");
+  if (!gallery) {
+    return;
+  }
+
+  const orderedCards = Array.from(gallery.querySelectorAll(".subscription-detail-image-card"));
+  const existingById = new Map(existingUploadedImages.map((image) => [Number(image.id), image]));
+  const newFilesByToken = new Map(selectedDetailImageFiles.map((file) => [ensureSelectedDetailImageFileToken(file), file]));
+
+  const nextExistingImages = [];
+  const nextSelectedFiles = [];
+
+  orderedCards.forEach((card) => {
+    const orderToken = card.dataset.orderToken || "";
+    if (orderToken.startsWith("existing:")) {
+      const imageId = Number(orderToken.split(":")[1]);
+      const image = existingById.get(imageId);
+      if (image) {
+        nextExistingImages.push(image);
+      }
+    } else if (orderToken.startsWith("new:")) {
+      const token = orderToken.split(":")[1];
+      const file = newFilesByToken.get(token);
+      if (file) {
+        nextSelectedFiles.push(file);
+      }
+    }
+  });
+
+  existingUploadedImages = nextExistingImages;
+  selectedDetailImageFiles = nextSelectedFiles;
+  rebuildDetailImageInput();
+  updateDetailImageOrderField();
+}
+
+function initializeDetailImageGallerySortable() {
+  const gallery = document.querySelector("#detail-image-gallery");
+  if (!gallery || typeof Sortable === "undefined") {
+    return;
+  }
+
+  if (detailImageGallerySortable) {
+    detailImageGallerySortable.destroy();
+    detailImageGallerySortable = null;
+  }
+
+  detailImageGallerySortable = new Sortable(gallery, {
+    animation: 150,
+    draggable: ".subscription-detail-image-card",
+    onEnd: () => {
+      syncDetailImageStateFromGallery();
+      renderDetailImageGallery();
+    },
+  });
+}
+
+function normalizeDetailGalleryOrderAfterDrag(gallery) {
+  const uploadedItems = Array.from(gallery.querySelectorAll('.subscription-media-item[data-uploaded-image-id]'));
+  const externalItems = Array.from(gallery.querySelectorAll('.subscription-media-item:not([data-uploaded-image-id])'));
+  uploadedItems.forEach((item) => gallery.appendChild(item));
+  externalItems.forEach((item) => gallery.appendChild(item));
+}
+
+function persistSubscriptionImageOrder(gallery) {
+  const subscriptionId = Number(gallery?.dataset.subscriptionId || 0);
+  const imageIds = Array.from(gallery.querySelectorAll('.subscription-media-item[data-uploaded-image-id]'))
+    .map((item) => Number(item.dataset.uploadedImageId || 0))
+    .filter((imageId) => imageId > 0);
+
+  if (!subscriptionId || imageIds.length < 2) {
+    return;
+  }
+
+  fetch("endpoints/subscription/reorderimages.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": window.csrfToken,
+    },
+    body: JSON.stringify({
+      subscriptionId,
+      imageIds,
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (!data.success) {
+        showErrorMessage(data.message || translate("error"));
+      }
+    })
+    .catch(() => showErrorMessage(translate("error")));
+}
+
+function initializeSubscriptionMediaSortables() {
+  detailSubscriptionGallerySortables.forEach((sortableInstance) => sortableInstance.destroy());
+  detailSubscriptionGallerySortables = [];
+
+  if (typeof Sortable === "undefined") {
+    return;
+  }
+
+  document.querySelectorAll(".subscription-media-gallery[data-subscription-id]").forEach((gallery) => {
+    const uploadedItems = gallery.querySelectorAll('.subscription-media-item[data-uploaded-image-id]');
+    if (uploadedItems.length < 2) {
+      return;
+    }
+
+    const sortableInstance = new Sortable(gallery, {
+      animation: 150,
+      draggable: '.subscription-media-item[data-uploaded-image-id]',
+      onEnd: () => {
+        normalizeDetailGalleryOrderAfterDrag(gallery);
+        persistSubscriptionImageOrder(gallery);
+      },
+    });
+
+    detailSubscriptionGallerySortables.push(sortableInstance);
+  });
+}
+
 function getUploadedImageDisplayName(image) {
   const candidate = String(image?.original_name || image?.file_name || "").trim();
   if (candidate !== "") {
@@ -185,22 +405,26 @@ function buildFormDetailImageViewerItems() {
   const items = [];
 
   existingUploadedImages.forEach((image) => {
-    const accessUrl = image?.access_url || image?.path || "";
-    const downloadUrl = image?.download_url || accessUrl;
-    if (!accessUrl) {
+    const previewUrl = image?.preview_url || image?.access_url || image?.path || "";
+    const originalUrl = image?.original_url || previewUrl;
+    const downloadUrl = image?.download_url || originalUrl || previewUrl;
+    if (!previewUrl) {
       return;
     }
 
     items.push({
-      src: accessUrl,
+      src: previewUrl,
+      originalUrl,
       downloadUrl,
       label: getUploadedImageDisplayName(image),
     });
   });
 
   selectedDetailImageFiles.forEach((file) => {
+    const objectUrl = URL.createObjectURL(file);
     items.push({
-      src: URL.createObjectURL(file),
+      src: objectUrl,
+      originalUrl: objectUrl,
       downloadUrl: null,
       label: file.name || translate("subscription_image_source_new"),
     });
@@ -217,6 +441,7 @@ function getViewerItemsFromGallery(gallery) {
   const itemButtons = Array.from(gallery.querySelectorAll("[data-viewer-src]"));
   return itemButtons.map((button) => ({
     src: button.dataset.viewerSrc || "",
+    originalUrl: button.dataset.viewerOriginal || button.dataset.viewerSrc || "",
     downloadUrl: button.dataset.viewerDownload || button.dataset.viewerSrc || "",
     label: button.dataset.viewerLabel || "",
   })).filter((item) => item.src !== "");
@@ -269,8 +494,14 @@ function renderCurrentSubscriptionImageViewerItem() {
 
   const item = currentSubscriptionImageViewerItems[currentSubscriptionImageViewerIndex];
   currentSubscriptionImageViewerSrc = item.src || "";
+  currentSubscriptionImageOriginalUrl = item.originalUrl || item.src || "";
   currentSubscriptionImageDownloadUrl = item.downloadUrl || item.src || "";
 
+  if (currentSubscriptionImageOriginalRequest) {
+    currentSubscriptionImageOriginalRequest.abort();
+    currentSubscriptionImageOriginalRequest = null;
+  }
+  hideOriginalImageProgress();
   preview.src = currentSubscriptionImageViewerSrc;
   preview.alt = item.label || "";
   viewer.classList.add("is-open");
@@ -304,16 +535,21 @@ function renderDetailImageGallery() {
   gallery.classList.toggle("has-multiple", totalCount > 1);
 
   existingUploadedImages.forEach((image) => {
-    const accessUrl = image?.access_url || image?.path || "";
-    const downloadUrl = image?.download_url || accessUrl;
+    const thumbUrl = image?.thumbnail_url || image?.preview_url || image?.access_url || image?.path || "";
+    const previewUrl = image?.preview_url || image?.access_url || thumbUrl;
+    const originalUrl = image?.original_url || previewUrl;
+    const downloadUrl = image?.download_url || originalUrl;
     gallery.appendChild(
       createDetailImageCard({
-        src: accessUrl,
+        src: thumbUrl,
+        viewerSrc: previewUrl,
+        originalUrl,
         downloadUrl,
         badgeText: translate("subscription_image_existing_badge"),
         fileName: getUploadedImageDisplayName(image),
         sourceText: translate("subscription_image_source_server"),
         extraClassName: "existing",
+        orderToken: `existing:${Number(image.id)}`,
         onRemove: () => removeExistingUploadedImage(image.id),
       }),
     );
@@ -324,29 +560,47 @@ function renderDetailImageGallery() {
     gallery.appendChild(
       createDetailImageCard({
         src: objectUrl,
+        viewerSrc: objectUrl,
+        originalUrl: objectUrl,
         downloadUrl: objectUrl,
         badgeText: translate("subscription_image_new_badge"),
         fileName: file.name,
         sourceText: translate("subscription_image_source_new"),
         extraClassName: "new",
+        orderToken: `new:${ensureSelectedDetailImageFileToken(file)}`,
         onRemove: () => removeSelectedDetailImage(index),
       }),
     );
   });
 
   updateDetailImageSelectionMeta();
+  updateDetailImageOrderField();
   applySubscriptionImageLayoutMode("form");
+  initializeDetailImageGallerySortable();
 }
 
-function createDetailImageCard({ src, downloadUrl = "", badgeText, fileName = "", sourceText = "", extraClassName = "", onRemove }) {
+function createDetailImageCard({
+  src,
+  viewerSrc = "",
+  originalUrl = "",
+  downloadUrl = "",
+  badgeText,
+  fileName = "",
+  sourceText = "",
+  extraClassName = "",
+  orderToken = "",
+  onRemove,
+}) {
   const card = document.createElement("div");
   card.className = `subscription-detail-image-card ${extraClassName}`.trim();
+  card.dataset.orderToken = orderToken;
 
   const previewButton = document.createElement("button");
   previewButton.type = "button";
   previewButton.className = "subscription-detail-image-preview";
-  previewButton.dataset.viewerSrc = src;
-  previewButton.dataset.viewerDownload = downloadUrl || src;
+  previewButton.dataset.viewerSrc = viewerSrc || src;
+  previewButton.dataset.viewerOriginal = originalUrl || viewerSrc || src;
+  previewButton.dataset.viewerDownload = downloadUrl || originalUrl || viewerSrc || src;
   previewButton.dataset.viewerLabel = fileName || sourceText || badgeText;
   previewButton.addEventListener("click", (event) => {
     event.preventDefault();
@@ -419,6 +673,7 @@ function resetDetailImageControls() {
   removedUploadedImageIds = [];
 
   resetDetailImageCompression();
+  hideDetailImageUploadProgress();
   rebuildDetailImageInput();
   renderDetailImageGallery();
 }
@@ -547,9 +802,15 @@ function closeSubscriptionImageViewer() {
   if (nextButton) {
     nextButton.disabled = true;
   }
+  if (currentSubscriptionImageOriginalRequest) {
+    currentSubscriptionImageOriginalRequest.abort();
+    currentSubscriptionImageOriginalRequest = null;
+  }
+  hideOriginalImageProgress();
   currentSubscriptionImageViewerItems = [];
   currentSubscriptionImageViewerIndex = -1;
   currentSubscriptionImageViewerSrc = "";
+  currentSubscriptionImageOriginalUrl = "";
   currentSubscriptionImageDownloadUrl = "";
 }
 
@@ -568,11 +829,84 @@ function showNextSubscriptionImage() {
 }
 
 function openSubscriptionImageOriginal() {
-  if (!currentSubscriptionImageViewerSrc) {
+  if (!currentSubscriptionImageOriginalUrl) {
     return;
   }
 
-  window.open(currentSubscriptionImageViewerSrc, "_blank", "noopener,noreferrer");
+  const popup = window.open("", "_blank", "noopener,noreferrer");
+
+  if (currentSubscriptionImageOriginalRequest) {
+    currentSubscriptionImageOriginalRequest.abort();
+    currentSubscriptionImageOriginalRequest = null;
+  }
+
+  const request = new XMLHttpRequest();
+  currentSubscriptionImageOriginalRequest = request;
+  request.open("GET", currentSubscriptionImageOriginalUrl, true);
+  request.responseType = "blob";
+
+  setOriginalImageProgress(0, translate("subscription_image_original_loading"));
+
+  request.onprogress = (event) => {
+    if (event.lengthComputable && event.total > 0) {
+      setOriginalImageProgress((event.loaded / event.total) * 100, translate("subscription_image_original_loading"));
+    } else {
+      setOriginalImageProgress(50, translate("subscription_image_original_loading"));
+    }
+  };
+
+  request.onload = () => {
+    currentSubscriptionImageOriginalRequest = null;
+
+    if (request.status >= 200 && request.status < 300) {
+      setOriginalImageProgress(100, translate("subscription_image_original_loading"));
+      const blobUrl = URL.createObjectURL(request.response);
+      if (popup && !popup.closed) {
+        popup.location.href = blobUrl;
+      } else {
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.target = "_blank";
+        link.rel = "noopener,noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 60000);
+      setTimeout(() => {
+        hideOriginalImageProgress();
+      }, 300);
+      return;
+    }
+
+    hideOriginalImageProgress();
+    if (popup && !popup.closed) {
+      popup.close();
+    }
+    showErrorMessage(translate("error"));
+  };
+
+  request.onerror = () => {
+    currentSubscriptionImageOriginalRequest = null;
+    hideOriginalImageProgress();
+    if (popup && !popup.closed) {
+      popup.close();
+    }
+    showErrorMessage(translate("error"));
+  };
+
+  request.onabort = () => {
+    currentSubscriptionImageOriginalRequest = null;
+    hideOriginalImageProgress();
+    if (popup && !popup.closed) {
+      popup.close();
+    }
+  };
+
+  request.send();
 }
 
 function downloadSubscriptionImage() {
@@ -1035,6 +1369,7 @@ function fetchSubscriptions(id, event, initiator) {
 
       setSwipeElements();
       applySubscriptionImageLayoutMode("detail");
+      initializeSubscriptionMediaSortables();
       if (initiator === "add") {
         if (document.getElementsByClassName('subscription').length === 1) {
           setTimeout(() => {
@@ -1103,45 +1438,80 @@ function dataURLtoFile(dataurl, filename) {
 }
 
 function submitFormData(formData, submitButton, endpoint) {
-  fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: formData,
-  })
-    .then(async (response) => {
-      const rawResponse = await response.text();
-      let data = null;
+  const request = new XMLHttpRequest();
+  let processingProgress = 82;
+  let processingTimer = null;
 
-      try {
-        data = JSON.parse(rawResponse);
-      } catch (error) {
-        throw new Error(rawResponse || translate("unknown_error"));
-      }
+  const stopProcessingTimer = () => {
+    if (processingTimer) {
+      clearInterval(processingTimer);
+      processingTimer = null;
+    }
+  };
 
-      if (!response.ok) {
-        throw new Error(data.message || translate("unknown_error"));
-      }
+  request.open("POST", endpoint, true);
+  request.setRequestHeader("X-CSRF-Token", window.csrfToken);
 
-      return data;
-    })
-    .then((data) => {
-      if (data.status === "Success") {
-        showSuccessMessage(data.message);
-        fetchSubscriptions(null, null, "add");
-        closeAddSubscription();
-      } else {
-        showErrorMessage(data.message || translate("unknown_error"));
-      }
-    })
-    .catch((error) => {
+  setDetailImageUploadProgress(0, translate("subscription_image_upload_progress_uploading"));
+
+  request.upload.onprogress = (event) => {
+    if (!event.lengthComputable || event.total <= 0) {
+      return;
+    }
+
+    const uploadProgress = (event.loaded / event.total) * 78;
+    setDetailImageUploadProgress(uploadProgress, translate("subscription_image_upload_progress_uploading"));
+  };
+
+  request.upload.onload = () => {
+    setDetailImageUploadProgress(82, translate("subscription_image_upload_progress_processing"));
+    processingTimer = setInterval(() => {
+      processingProgress = Math.min(98, processingProgress + 2);
+      setDetailImageUploadProgress(processingProgress, translate("subscription_image_upload_progress_processing"));
+    }, 220);
+  };
+
+  request.onload = () => {
+    stopProcessingTimer();
+    setDetailImageUploadProgress(100, translate("subscription_image_upload_progress_processing"));
+
+    let data = null;
+    try {
+      data = JSON.parse(request.responseText || "{}");
+    } catch (error) {
       console.error(error);
-      showErrorMessage(error.message || translate("unknown_error"));
-    })
-    .finally(() => {
+      showErrorMessage(request.responseText || translate("unknown_error"));
+      hideDetailImageUploadProgress();
       submitButton.disabled = false;
-    });
+      return;
+    }
+
+    if (request.status >= 200 && request.status < 300 && data.status === "Success") {
+      showSuccessMessage(data.message);
+      fetchSubscriptions(null, null, "add");
+      closeAddSubscription();
+    } else {
+      showErrorMessage(data.message || translate("unknown_error"));
+    }
+
+    hideDetailImageUploadProgress();
+    submitButton.disabled = false;
+  };
+
+  request.onerror = () => {
+    stopProcessingTimer();
+    hideDetailImageUploadProgress();
+    submitButton.disabled = false;
+    showErrorMessage(translate("unknown_error"));
+  };
+
+  request.onabort = () => {
+    stopProcessingTimer();
+    hideDetailImageUploadProgress();
+    submitButton.disabled = false;
+  };
+
+  request.send(formData);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -1205,6 +1575,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener("keydown", handleSubscriptionImageViewerKeydown);
   applyAllSubscriptionImageLayoutModes();
   closeSubscriptionImageViewer();
+  initializeSubscriptionMediaSortables();
 });
 
 function searchSubscriptions() {
@@ -1234,6 +1605,35 @@ function clearSearch() {
 
   searchInput.value = "";
   searchSubscriptions();
+}
+
+function generateSubscriptionImageVariants() {
+  const button = document.querySelector("#generateSubscriptionImageVariantsButton");
+  if (!button) {
+    return;
+  }
+
+  button.disabled = true;
+
+  fetch("endpoints/subscription/generatevariants.php", {
+    method: "POST",
+    headers: {
+      "X-CSRF-Token": window.csrfToken,
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+        fetchSubscriptions(null, null, "variants");
+      } else {
+        showErrorMessage(data.message || translate("error"));
+      }
+    })
+    .catch(() => showErrorMessage(translate("error")))
+    .finally(() => {
+      button.disabled = false;
+    });
 }
 
 function closeSubMenus() {

@@ -110,13 +110,29 @@ if (!$isAdmin && (int) ($image['user_id'] ?? 0) !== (int) ($currentUser['id'] ??
     wallos_media_deny(403);
 }
 
+$download = (string) ($_GET['download'] ?? '') === '1';
+$variant = wallos_normalize_subscription_image_variant($_GET['variant'] ?? 'original');
+
 $relativePath = (string) ($image['path'] ?? '');
+if (!$download) {
+    if ($variant === 'thumbnail' && !empty($image['thumbnail_path'])) {
+        $relativePath = (string) $image['thumbnail_path'];
+    } elseif ($variant === 'preview' && !empty($image['preview_path'])) {
+        $relativePath = (string) $image['preview_path'];
+    }
+}
+
 if (!wallos_subscription_image_path_is_within_media_dir($relativePath)) {
     wallos_media_deny(403);
 }
 
 $mediaRoot = realpath(__DIR__ . '/../../' . wallos_get_subscription_media_relative_dir());
 $absolutePath = realpath(__DIR__ . '/../../' . str_replace('/', DIRECTORY_SEPARATOR, $relativePath));
+
+if ($absolutePath === false && $relativePath !== (string) ($image['path'] ?? '')) {
+    $relativePath = (string) ($image['path'] ?? '');
+    $absolutePath = realpath(__DIR__ . '/../../' . str_replace('/', DIRECTORY_SEPARATOR, $relativePath));
+}
 
 if ($mediaRoot === false || $absolutePath === false || !is_file($absolutePath)) {
     wallos_media_deny(404);
@@ -134,7 +150,6 @@ if ($mimeType === '') {
     $mimeType = is_string($detectedMimeType) && $detectedMimeType !== '' ? $detectedMimeType : 'application/octet-stream';
 }
 
-$download = (string) ($_GET['download'] ?? '') === '1';
 $originalName = trim((string) ($image['original_name'] ?? ''));
 $downloadName = $originalName !== '' ? $originalName : (trim((string) ($image['file_name'] ?? '')) ?: ('subscription-image-' . $imageId));
 $safeFallbackName = preg_replace('/[^A-Za-z0-9._-]/', '-', $downloadName);

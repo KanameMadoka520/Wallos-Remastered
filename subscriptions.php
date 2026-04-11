@@ -161,10 +161,17 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
 
 <section class="contain">
   <header class="<?= $headerClass ?>" id="main-actions">
-    <button class="button" onClick="addSubscription()">
-      <i class="fa-solid fa-circle-plus"></i>
-      <?= translate('new_subscription', $i18n) ?>
-    </button>
+    <div class="inline-row">
+      <button class="button" onClick="addSubscription()">
+        <i class="fa-solid fa-circle-plus"></i>
+        <?= translate('new_subscription', $i18n) ?>
+      </button>
+      <button class="button secondary-button tiny mobile-grow" type="button" id="generateSubscriptionImageVariantsButton"
+        onClick="generateSubscriptionImageVariants()">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <?= translate('subscription_image_generate_variants', $i18n) ?>
+      </button>
+    </div>
     <div class="top-actions">
       <div class="search">
         <input type="text" autocomplete="off" name="search" id="search" placeholder="<?= translate('search', $i18n) ?>"
@@ -527,8 +534,18 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
             onchange="handleDetailImageSelect(event)" class="hidden-input"
             <?= $canUploadSubscriptionImages ? '' : 'disabled' ?>>
           <input type="hidden" id="remove-uploaded-image-ids" name="remove_uploaded_image_ids" value="">
+          <input type="hidden" id="detail-image-order" name="detail_image_order" value="">
           <div class="subscription-image-selection-meta" id="detail-image-selection-meta">
             <?= translate('subscription_image_no_selection', $i18n) ?>
+          </div>
+          <div class="subscription-image-upload-progress is-hidden" id="detail-image-upload-progress">
+            <div class="subscription-image-upload-progress-label" id="detail-image-upload-progress-label">
+              <?= translate('subscription_image_upload_progress_idle', $i18n) ?>
+            </div>
+            <div class="subscription-image-upload-progress-bar">
+              <span id="detail-image-upload-progress-bar-fill"></span>
+            </div>
+            <div class="subscription-image-upload-progress-value" id="detail-image-upload-progress-value">0%</div>
           </div>
           <div class="form-group-inline grow subscription-image-compress-inline">
             <input type="checkbox" id="compress_subscription_image" name="compress_subscription_image"
@@ -630,6 +647,15 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
   </header>
   <div class="subscription-image-viewer-content">
     <img src="" alt="<?= translate('subscription_image_viewer_title', $i18n) ?>" id="subscription-image-viewer-preview">
+    <div class="subscription-image-original-progress is-hidden" id="subscription-image-original-progress">
+      <div class="subscription-image-original-progress-label" id="subscription-image-original-progress-label">
+        <?= translate('subscription_image_original_loading', $i18n) ?>
+      </div>
+      <div class="subscription-image-upload-progress-bar">
+        <span id="subscription-image-original-progress-fill"></span>
+      </div>
+      <div class="subscription-image-upload-progress-value" id="subscription-image-original-progress-value">0%</div>
+    </div>
   </div>
   <div class="buttons">
     <button type="button" class="secondary-button thin subscription-image-action-button"
@@ -649,6 +675,7 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
     </button>
   </div>
 </section>
+<script src="scripts/libs/sortable.min.js"></script>
 <script src="scripts/subscriptions.js?<?= $version ?>"></script>
 <?php
 if (isset($_GET['add'])) {

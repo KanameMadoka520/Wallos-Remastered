@@ -41,6 +41,7 @@ let i18n = {
     failed_save_user: '儲存使用者資料失敗',
     failed_sort_payment_methods: '儲存付款方式排序失敗',
     backup_failed: '備份失敗',
+    backup_verification_status_failed: '校驗失敗',
     restore_failed: '還原失敗',
     no_file_selected: '尚未選擇檔案',
     error: '錯誤',
@@ -78,4 +79,8 @@ let i18n = {
     subscription_image_source_server: "已存伺服器",
     subscription_image_source_external: "外鏈圖片",
     subscription_image_source_new: "待上傳",
+    subscription_image_upload_progress_idle: "上傳與處理進度會顯示在這裡。",
+    subscription_image_upload_progress_uploading: "正在上傳圖片到伺服器",
+    subscription_image_upload_progress_processing: "伺服器正在生成壓縮預覽圖與縮圖",
+    subscription_image_original_loading: "正在載入原圖",
 };

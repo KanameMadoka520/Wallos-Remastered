@@ -41,6 +41,7 @@ let i18n = {
   failed_save_user: "Failed to save user details",
   failed_sort_payment_methods: "Failed to save payment method order",
   backup_failed: "Backup failed",
+  backup_verification_status_failed: "Verification failed",
   restore_failed: "Restore failed",
   no_file_selected: "No file selected",
   error: "Error",
@@ -78,4 +79,8 @@ let i18n = {
   subscription_image_source_server: "Stored On Server",
   subscription_image_source_external: "External Link",
   subscription_image_source_new: "Ready To Upload",
+  subscription_image_upload_progress_idle: "Upload and processing progress will appear here.",
+  subscription_image_upload_progress_uploading: "Uploading images to the server",
+  subscription_image_upload_progress_processing: "Generating compressed previews and thumbnails on the server",
+  subscription_image_original_loading: "Loading the original image",
 };

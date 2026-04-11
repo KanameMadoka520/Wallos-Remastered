@@ -41,6 +41,7 @@ let i18n = {
     'failed_save_user': '保存用户信息失败',
     'failed_sort_payment_methods': '保存支付方式排序失败',
     'backup_failed': '备份失败',
+    'backup_verification_status_failed': '校验失败',
     'restore_failed': '恢复失败',
     'no_file_selected': '未选择文件',
     'error': '错误',
@@ -78,4 +79,8 @@ let i18n = {
     subscription_image_source_server: "已存服务器",
     subscription_image_source_external: "外链图片",
     subscription_image_source_new: "待上传",
+    subscription_image_upload_progress_idle: "上传和处理进度会显示在这里。",
+    subscription_image_upload_progress_uploading: "正在上传图片到服务器",
+    subscription_image_upload_progress_processing: "服务器正在生成压缩预览图和缩略图",
+    subscription_image_original_loading: "正在加载原图",
 };
