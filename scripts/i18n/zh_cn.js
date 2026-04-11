@@ -73,6 +73,8 @@ let i18n = {
     subscription_image_click_to_enlarge: "点击缩略图可放大查看。",
     subscription_image_layout_focus: "聚焦",
     subscription_image_layout_grid: "网格",
+    subscription_image_previous: "上一张",
+    subscription_image_next: "下一张",
     subscription_image_source_server: "已存服务器",
     subscription_image_source_external: "外链图片",
     subscription_image_source_new: "待上传",

@@ -2151,6 +2151,44 @@ button.dark-theme-button i {
   display: block;
 }
 
+.subscription-image-viewer header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.subscription-image-viewer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.subscription-image-viewer-header h3 {
+  margin-bottom: 6px;
+}
+
+.subscription-image-viewer-counter {
+  font-size: 14px;
+  color: #777;
+}
+
+.subscription-image-viewer-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.subscription-image-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .subscription-image-viewer-content {
   padding: 16px 0 20px;
   display: flex;
@@ -2200,6 +2238,14 @@ button.dark-theme-button i {
   .subscription-detail-image-toolbar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .subscription-image-viewer header,
+  .subscription-image-viewer-header,
+  .subscription-image-viewer-header-actions,
+  .subscription-image-viewer .buttons {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

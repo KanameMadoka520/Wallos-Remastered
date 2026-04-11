@@ -608,19 +608,45 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
 </section>
 <section class="subscription-image-viewer" id="subscription-image-viewer">
   <header>
-    <h3><?= translate('subscription_image_viewer_title', $i18n) ?></h3>
+    <div class="subscription-image-viewer-header">
+      <div>
+        <h3><?= translate('subscription_image_viewer_title', $i18n) ?></h3>
+        <div class="subscription-image-viewer-counter" id="subscription-image-viewer-counter">1 / 1</div>
+      </div>
+      <div class="subscription-image-viewer-header-actions">
+        <button type="button" class="secondary-button thin subscription-image-action-button" id="subscription-image-viewer-prev"
+          onClick="showPreviousSubscriptionImage()">
+          <i class="fa-solid fa-chevron-left"></i>
+          <span><?= translate('subscription_image_previous', $i18n) ?></span>
+        </button>
+        <button type="button" class="secondary-button thin subscription-image-action-button" id="subscription-image-viewer-next"
+          onClick="showNextSubscriptionImage()">
+          <span><?= translate('subscription_image_next', $i18n) ?></span>
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
     <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionImageViewer()"></span>
   </header>
   <div class="subscription-image-viewer-content">
     <img src="" alt="<?= translate('subscription_image_viewer_title', $i18n) ?>" id="subscription-image-viewer-preview">
   </div>
   <div class="buttons">
-    <input type="button" value="<?= translate('cancel', $i18n) ?>" class="secondary-button thin"
+    <button type="button" class="secondary-button thin subscription-image-action-button"
       onClick="closeSubscriptionImageViewer()">
-    <input type="button" value="<?= translate('subscription_image_open_original', $i18n) ?>" class="secondary-button thin"
+      <i class="fa-solid fa-xmark"></i>
+      <span><?= translate('cancel', $i18n) ?></span>
+    </button>
+    <button type="button" class="secondary-button thin subscription-image-action-button"
       id="subscription-image-viewer-open" onClick="openSubscriptionImageOriginal()">
-    <input type="button" value="<?= translate('subscription_image_download', $i18n) ?>" class="thin"
+      <i class="fa-solid fa-up-right-from-square"></i>
+      <span><?= translate('subscription_image_open_original', $i18n) ?></span>
+    </button>
+    <button type="button" class="thin subscription-image-action-button"
       id="subscription-image-viewer-download" onClick="downloadSubscriptionImage()">
+      <i class="fa-solid fa-download"></i>
+      <span><?= translate('subscription_image_download', $i18n) ?></span>
+    </button>
   </div>
 </section>
 <script src="scripts/subscriptions.js?<?= $version ?>"></script>

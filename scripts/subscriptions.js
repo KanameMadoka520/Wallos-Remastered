@@ -1,8 +1,13 @@
 let isSortOptionsOpen = false;
 let scrollTopBeforeOpening = 0;
 const shouldScroll = window.innerWidth <= 768;
+const SUBSCRIPTION_IMAGE_VIEWER_SWIPE_THRESHOLD = 50;
 let currentSubscriptionImageViewerSrc = "";
 let currentSubscriptionImageDownloadUrl = "";
+let currentSubscriptionImageViewerItems = [];
+let currentSubscriptionImageViewerIndex = -1;
+let subscriptionImageViewerTouchStartX = 0;
+let subscriptionImageViewerTouchStartY = 0;
 const SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS = {
   form: "wallos-subscription-image-layout-form",
   detail: "wallos-subscription-image-layout-detail",
@@ -175,6 +180,115 @@ function getUploadedImageDisplayName(image) {
   return translate("subscription_image_source_server");
 }
 
+function buildFormDetailImageViewerItems() {
+  const items = [];
+
+  existingUploadedImages.forEach((image) => {
+    if (!image?.path) {
+      return;
+    }
+
+    items.push({
+      src: image.path,
+      downloadUrl: image.path,
+      label: getUploadedImageDisplayName(image),
+    });
+  });
+
+  selectedDetailImageFiles.forEach((file) => {
+    items.push({
+      src: URL.createObjectURL(file),
+      downloadUrl: null,
+      label: file.name || translate("subscription_image_source_new"),
+    });
+  });
+
+  return items;
+}
+
+function getViewerItemsFromGallery(gallery) {
+  if (!gallery) {
+    return [];
+  }
+
+  const itemButtons = Array.from(gallery.querySelectorAll("[data-viewer-src]"));
+  return itemButtons.map((button) => ({
+    src: button.dataset.viewerSrc || "",
+    downloadUrl: button.dataset.viewerDownload || button.dataset.viewerSrc || "",
+    label: button.dataset.viewerLabel || "",
+  })).filter((item) => item.src !== "");
+}
+
+function openSubscriptionImageViewerItems(items, startIndex = 0) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return;
+  }
+
+  currentSubscriptionImageViewerItems = items;
+  currentSubscriptionImageViewerIndex = Math.max(0, Math.min(startIndex, items.length - 1));
+  renderCurrentSubscriptionImageViewerItem();
+}
+
+function openSubscriptionImageViewerFromElement(element) {
+  if (!element) {
+    return;
+  }
+
+  const formPreview = element.closest("#detail-image-gallery");
+  if (formPreview) {
+    const items = buildFormDetailImageViewerItems();
+    const previewButtons = Array.from(formPreview.querySelectorAll(".subscription-detail-image-preview"));
+    const index = Math.max(0, previewButtons.indexOf(element));
+    openSubscriptionImageViewerItems(items, index);
+    return;
+  }
+
+  const gallery = element.closest(".subscription-media-gallery");
+  if (gallery) {
+    const itemButtons = Array.from(gallery.querySelectorAll(".subscription-media-item"));
+    const index = Math.max(0, itemButtons.indexOf(element));
+    openSubscriptionImageViewerItems(getViewerItemsFromGallery(gallery), index);
+  }
+}
+
+function renderCurrentSubscriptionImageViewerItem() {
+  const viewer = document.querySelector("#subscription-image-viewer");
+  const preview = document.querySelector("#subscription-image-viewer-preview");
+  const openLink = document.querySelector("#subscription-image-viewer-open");
+  const downloadLink = document.querySelector("#subscription-image-viewer-download");
+  const previousButton = document.querySelector("#subscription-image-viewer-prev");
+  const nextButton = document.querySelector("#subscription-image-viewer-next");
+  const counter = document.querySelector("#subscription-image-viewer-counter");
+
+  if (!viewer || !preview || currentSubscriptionImageViewerIndex < 0 || !currentSubscriptionImageViewerItems.length) {
+    return;
+  }
+
+  const item = currentSubscriptionImageViewerItems[currentSubscriptionImageViewerIndex];
+  currentSubscriptionImageViewerSrc = item.src || "";
+  currentSubscriptionImageDownloadUrl = item.downloadUrl || item.src || "";
+
+  preview.src = currentSubscriptionImageViewerSrc;
+  preview.alt = item.label || "";
+  viewer.classList.add("is-open");
+
+  if (openLink) {
+    openLink.disabled = currentSubscriptionImageViewerSrc === "";
+  }
+  if (downloadLink) {
+    downloadLink.disabled = currentSubscriptionImageDownloadUrl === "";
+  }
+  if (previousButton) {
+    previousButton.disabled = currentSubscriptionImageViewerIndex <= 0;
+  }
+  if (nextButton) {
+    nextButton.disabled = currentSubscriptionImageViewerIndex >= currentSubscriptionImageViewerItems.length - 1;
+  }
+  if (counter) {
+    counter.textContent = `${currentSubscriptionImageViewerIndex + 1} / ${currentSubscriptionImageViewerItems.length}`;
+  }
+}
+
 function renderDetailImageGallery() {
   const gallery = document.querySelector("#detail-image-gallery");
   if (!gallery) {
@@ -190,11 +304,11 @@ function renderDetailImageGallery() {
     gallery.appendChild(
       createDetailImageCard({
         src: image.path,
+        downloadUrl: image.path,
         badgeText: translate("subscription_image_existing_badge"),
         fileName: getUploadedImageDisplayName(image),
         sourceText: translate("subscription_image_source_server"),
         extraClassName: "existing",
-        onPreview: () => openSubscriptionImageViewer(image.path, image.path),
         onRemove: () => removeExistingUploadedImage(image.id),
       }),
     );
@@ -205,11 +319,11 @@ function renderDetailImageGallery() {
     gallery.appendChild(
       createDetailImageCard({
         src: objectUrl,
+        downloadUrl: objectUrl,
         badgeText: translate("subscription_image_new_badge"),
         fileName: file.name,
         sourceText: translate("subscription_image_source_new"),
         extraClassName: "new",
-        onPreview: () => openSubscriptionImageViewer(objectUrl, objectUrl),
         onRemove: () => removeSelectedDetailImage(index),
       }),
     );
@@ -219,18 +333,19 @@ function renderDetailImageGallery() {
   applySubscriptionImageLayoutMode("form");
 }
 
-function createDetailImageCard({ src, badgeText, fileName = "", sourceText = "", extraClassName = "", onPreview, onRemove }) {
+function createDetailImageCard({ src, downloadUrl = "", badgeText, fileName = "", sourceText = "", extraClassName = "", onRemove }) {
   const card = document.createElement("div");
   card.className = `subscription-detail-image-card ${extraClassName}`.trim();
 
   const previewButton = document.createElement("button");
   previewButton.type = "button";
   previewButton.className = "subscription-detail-image-preview";
+  previewButton.dataset.viewerSrc = src;
+  previewButton.dataset.viewerDownload = downloadUrl || src;
+  previewButton.dataset.viewerLabel = fileName || sourceText || badgeText;
   previewButton.addEventListener("click", (event) => {
     event.preventDefault();
-    if (typeof onPreview === "function") {
-      onPreview();
-    }
+    openSubscriptionImageViewerFromElement(previewButton);
   });
 
   const image = document.createElement("img");
@@ -394,36 +509,55 @@ function setExistingUploadedImages(images) {
   renderDetailImageGallery();
 }
 
-function openSubscriptionImageViewer(src, downloadUrl = null) {
-  const viewer = document.querySelector("#subscription-image-viewer");
-  const preview = document.querySelector("#subscription-image-viewer-preview");
-  const openLink = document.querySelector("#subscription-image-viewer-open");
-  const downloadLink = document.querySelector("#subscription-image-viewer-download");
-
-  if (!viewer || !preview || !src) {
-    return;
-  }
-
-  preview.src = src;
-  currentSubscriptionImageViewerSrc = src;
-  currentSubscriptionImageDownloadUrl = downloadUrl || src;
-  openLink.disabled = false;
-  downloadLink.disabled = false;
-  viewer.classList.add("is-open");
-}
-
 function closeSubscriptionImageViewer() {
   const viewer = document.querySelector("#subscription-image-viewer");
   const preview = document.querySelector("#subscription-image-viewer-preview");
+  const counter = document.querySelector("#subscription-image-viewer-counter");
+  const openLink = document.querySelector("#subscription-image-viewer-open");
+  const downloadLink = document.querySelector("#subscription-image-viewer-download");
+  const previousButton = document.querySelector("#subscription-image-viewer-prev");
+  const nextButton = document.querySelector("#subscription-image-viewer-next");
 
   if (viewer) {
     viewer.classList.remove("is-open");
   }
   if (preview) {
     preview.src = "";
+    preview.alt = "";
   }
+  if (counter) {
+    counter.textContent = "1 / 1";
+  }
+  if (openLink) {
+    openLink.disabled = true;
+  }
+  if (downloadLink) {
+    downloadLink.disabled = true;
+  }
+  if (previousButton) {
+    previousButton.disabled = true;
+  }
+  if (nextButton) {
+    nextButton.disabled = true;
+  }
+  currentSubscriptionImageViewerItems = [];
+  currentSubscriptionImageViewerIndex = -1;
   currentSubscriptionImageViewerSrc = "";
   currentSubscriptionImageDownloadUrl = "";
+}
+
+function showPreviousSubscriptionImage() {
+  if (currentSubscriptionImageViewerIndex > 0) {
+    currentSubscriptionImageViewerIndex -= 1;
+    renderCurrentSubscriptionImageViewerItem();
+  }
+}
+
+function showNextSubscriptionImage() {
+  if (currentSubscriptionImageViewerIndex >= 0 && currentSubscriptionImageViewerIndex < currentSubscriptionImageViewerItems.length - 1) {
+    currentSubscriptionImageViewerIndex += 1;
+    renderCurrentSubscriptionImageViewerItem();
+  }
 }
 
 function openSubscriptionImageOriginal() {
@@ -446,6 +580,49 @@ function downloadSubscriptionImage() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+function handleSubscriptionImageViewerKeydown(event) {
+  const viewer = document.querySelector("#subscription-image-viewer");
+  if (!viewer || !viewer.classList.contains("is-open")) {
+    return;
+  }
+
+  if (event.key === "Escape") {
+    closeSubscriptionImageViewer();
+  } else if (event.key === "ArrowLeft") {
+    showPreviousSubscriptionImage();
+  } else if (event.key === "ArrowRight") {
+    showNextSubscriptionImage();
+  }
+}
+
+function handleSubscriptionImageViewerTouchStart(event) {
+  if (!event.touches || event.touches.length === 0) {
+    return;
+  }
+
+  subscriptionImageViewerTouchStartX = event.touches[0].clientX;
+  subscriptionImageViewerTouchStartY = event.touches[0].clientY;
+}
+
+function handleSubscriptionImageViewerTouchEnd(event) {
+  if (!event.changedTouches || event.changedTouches.length === 0) {
+    return;
+  }
+
+  const deltaX = event.changedTouches[0].clientX - subscriptionImageViewerTouchStartX;
+  const deltaY = event.changedTouches[0].clientY - subscriptionImageViewerTouchStartY;
+
+  if (Math.abs(deltaX) < SUBSCRIPTION_IMAGE_VIEWER_SWIPE_THRESHOLD || Math.abs(deltaX) <= Math.abs(deltaY)) {
+    return;
+  }
+
+  if (deltaX > 0) {
+    showPreviousSubscriptionImage();
+  } else {
+    showNextSubscriptionImage();
+  }
 }
 
 function resetForm() {
@@ -1012,7 +1189,15 @@ document.addEventListener('DOMContentLoaded', function () {
     isSortOptionsOpen = true;
   });
 
+  const subscriptionImageViewerContent = document.querySelector("#subscription-image-viewer .subscription-image-viewer-content");
+  if (subscriptionImageViewerContent) {
+    subscriptionImageViewerContent.addEventListener("touchstart", handleSubscriptionImageViewerTouchStart, { passive: true });
+    subscriptionImageViewerContent.addEventListener("touchend", handleSubscriptionImageViewerTouchEnd, { passive: true });
+  }
+
+  document.addEventListener("keydown", handleSubscriptionImageViewerKeydown);
   applyAllSubscriptionImageLayoutModes();
+  closeSubscriptionImageViewer();
 });
 
 function searchSubscriptions() {
