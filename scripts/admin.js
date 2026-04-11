@@ -350,11 +350,16 @@ function removeGeneratedPasswordModal() {
   }
 }
 
-function copyGeneratedPassword(password, input) {
+function copyTextToClipboard(text, input = null) {
   const ui = document.getElementById('admin-generated-password-ui');
   const copySuccess = ui?.dataset.copySuccess || translate('copied_to_clipboard');
 
   const fallbackCopy = () => {
+    if (!input) {
+      showErrorMessage(translate('error'));
+      return;
+    }
+
     input.focus();
     input.select();
     input.setSelectionRange(0, input.value.length);
@@ -366,13 +371,34 @@ function copyGeneratedPassword(password, input) {
   };
 
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(password)
+    navigator.clipboard.writeText(text)
       .then(() => showSuccessMessage(copySuccess))
       .catch(() => fallbackCopy());
     return;
   }
 
   fallbackCopy();
+}
+
+function copyGeneratedPassword(password, input) {
+  copyTextToClipboard(password, input);
+}
+
+function copyUserId(userId, button) {
+  const hiddenInput = document.createElement('input');
+  hiddenInput.type = 'text';
+  hiddenInput.value = String(userId);
+  hiddenInput.readOnly = true;
+  hiddenInput.style.position = 'fixed';
+  hiddenInput.style.opacity = '0';
+  hiddenInput.style.pointerEvents = 'none';
+  document.body.appendChild(hiddenInput);
+  copyTextToClipboard(String(userId), hiddenInput);
+  document.body.removeChild(hiddenInput);
+
+  if (button) {
+    button.blur();
+  }
 }
 
 function showGeneratedPasswordModal(username, temporaryPassword) {

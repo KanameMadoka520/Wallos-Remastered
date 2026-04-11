@@ -5,6 +5,7 @@ $i18n = [
     "create_account" => "请创建帐号后登录",
     "username" => "用户名",
     "user_id" => "用户 ID",
+    "copy_user_id" => "复制用户 ID",
     "password" => "密码",
     "email" => "电子邮箱",
     "firstname" => "名",

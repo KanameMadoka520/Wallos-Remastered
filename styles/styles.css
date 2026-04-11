@@ -3038,6 +3038,25 @@ button.dark-theme-button i {
   letter-spacing: 0.04em;
 }
 
+.user-card-meta-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.user-id-copy-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
+.user-id-copy-button span {
+  font-size: 13px;
+}
+
 .user-list a {
   color: var(--main-color);
   text-decoration: none;

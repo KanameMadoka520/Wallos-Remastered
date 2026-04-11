@@ -5,6 +5,7 @@ $i18n = [
     "create_account" => "您需要先建立帳號才能登入",
     "username" => "使用者名稱",
     "user_id" => "使用者 ID",
+    "copy_user_id" => "複製使用者 ID",
     "password" => "密碼",
     "email" => "電子郵件",
     "firstname" => "名",

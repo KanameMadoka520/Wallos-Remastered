@@ -5,6 +5,7 @@ $i18n = [
     "create_account" => "You need to create an account before you're able to login",
     "username" => "Username",
     "user_id" => "User ID",
+    "copy_user_id" => "Copy User ID",
     "password" => "Password",
     "firstname" => "First name",
     "lastname" => "Last name",
