@@ -314,6 +314,10 @@ $pageSections = [
                             ?>
                         </div>
                         <div class="user-list-row">
+                            <div title="<?= translate('user_id', $i18n) ?>">
+                                <span class="user-card-label"><?= translate('user_id', $i18n) ?></span>
+                                <strong><?= (int) $user['id'] ?></strong>
+                            </div>
                             <div title="<?= translate('username', $i18n) ?>">
                                 <span class="user-card-label"><?= translate('username', $i18n) ?></span>
                                 <strong><?= htmlspecialchars($user['username'], ENT_QUOTES, 'UTF-8') ?></strong>
