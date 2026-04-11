@@ -19,7 +19,7 @@ if (!wallos_can_upload_subscription_images($isAdminUser, $currentUser['user_grou
     ]));
 }
 
-$stmt = $db->prepare('SELECT path, file_name, original_name, created_at FROM subscription_uploaded_images WHERE user_id = :userId ORDER BY id ASC');
+$stmt = $db->prepare('SELECT subscription_id, path, file_name, original_name, created_at FROM subscription_uploaded_images WHERE user_id = :userId ORDER BY id ASC');
 $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
 $result = $stmt->execute();
 
@@ -58,6 +58,7 @@ foreach ($images as $image) {
 
     $zip->addFile($fullPath, 'images/' . basename($image['file_name']));
     $metadata[] = [
+        'subscription_id' => (int) ($image['subscription_id'] ?? 0),
         'file_name' => $image['file_name'],
         'original_name' => $image['original_name'],
         'created_at' => $image['created_at'],
@@ -65,9 +66,20 @@ foreach ($images as $image) {
     ];
 }
 
+$manifest = [
+    'exported_at' => date('c'),
+    'user' => [
+        'id' => (int) $userId,
+        'username' => $currentUser['username'] ?? ('user-' . $userId),
+        'storage_directory' => 'user-' . (int) $userId,
+    ],
+    'image_count' => count($metadata),
+    'images' => $metadata,
+];
+
 $zip->addFromString(
     'metadata.json',
-    json_encode($metadata, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+    json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
 );
 $zip->close();
 

@@ -316,7 +316,14 @@ $pageSections = [
                         <div class="user-list-row">
                             <div title="<?= translate('user_id', $i18n) ?>">
                                 <span class="user-card-label"><?= translate('user_id', $i18n) ?></span>
-                                <strong><?= (int) $user['id'] ?></strong>
+                                <div class="user-card-meta-inline">
+                                    <strong><?= (int) $user['id'] ?></strong>
+                                    <button type="button" class="secondary-button thin user-id-copy-button"
+                                        onClick="copyUserId(<?= (int) $user['id'] ?>, this)">
+                                        <i class="fa-regular fa-copy"></i>
+                                        <span><?= translate('copy_user_id', $i18n) ?></span>
+                                    </button>
+                                </div>
                             </div>
                             <div title="<?= translate('username', $i18n) ?>">
                                 <span class="user-card-label"><?= translate('username', $i18n) ?></span>
@@ -452,6 +459,10 @@ $pageSections = [
                             </div>
                             <div class="recycle-bin-user-meta">
                                 <div class="ban-user-stats">
+                                    <div class="ban-user-stat">
+                                        <span><?= translate('user_id', $i18n) ?></span>
+                                        <strong><?= (int) $trashedUser['id'] ?></strong>
+                                    </div>
                                     <div class="ban-user-stat">
                                         <span><?= translate('user_group', $i18n) ?></span>
                                         <strong><?= htmlspecialchars($userGroupLabel, ENT_QUOTES, 'UTF-8') ?></strong>
