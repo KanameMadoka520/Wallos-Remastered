@@ -900,7 +900,7 @@ button.mobile-action-renew {
   background-color: rgba(var(--main-color-rgb), 0.04);
   aspect-ratio: 4 / 3;
   padding: 0;
-  cursor: pointer;
+  cursor: grab;
   position: relative;
 }
 
@@ -1974,6 +1974,7 @@ button.dark-theme-button i {
   padding: 0;
   display: flex;
   flex-direction: column;
+  cursor: grab;
 }
 
 .subscription-detail-image-preview {
@@ -2063,6 +2064,45 @@ button.dark-theme-button i {
   color: #666;
   font-size: 14px;
   line-height: 1.5;
+}
+
+.subscription-image-upload-progress,
+.subscription-image-original-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subscription-image-upload-progress.is-hidden,
+.subscription-image-original-progress.is-hidden {
+  display: none;
+}
+
+.subscription-image-upload-progress-label,
+.subscription-image-original-progress-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.subscription-image-upload-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background-color: rgba(var(--main-color-rgb), 0.12);
+}
+
+.subscription-image-upload-progress-bar span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(var(--main-color-rgb), 0.7), var(--main-color));
+  transition: width 0.18s ease;
+}
+
+.subscription-image-upload-progress-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
 }
 
 .media-layout-toggle {
@@ -2156,6 +2196,7 @@ button.dark-theme-button i {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  padding-right: 52px;
 }
 
 .subscription-image-viewer-header {
@@ -2193,6 +2234,7 @@ button.dark-theme-button i {
   padding: 16px 0 20px;
   display: flex;
   justify-content: center;
+  position: relative;
 }
 
 .subscription-image-viewer-content img {
@@ -2206,6 +2248,26 @@ button.dark-theme-button i {
   gap: 12px;
   justify-content: flex-end;
   flex-wrap: wrap;
+}
+
+.subscription-image-viewer .close-form {
+  top: 18px;
+  right: 18px;
+}
+
+.subscription-image-original-progress {
+  position: absolute;
+  inset: auto 24px 24px 24px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background-color: rgba(0, 0, 0, 0.76);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+.subscription-image-original-progress .subscription-image-upload-progress-label,
+.subscription-image-original-progress .subscription-image-upload-progress-value {
+  color: #fff;
 }
 
 @media (max-width: 768px) {
@@ -3313,6 +3375,41 @@ button.dark-theme-button i {
   white-space: nowrap;
 }
 
+.backup-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.backup-card-status {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid rgba(var(--main-color-rgb), 0.12);
+  background-color: rgba(var(--main-color-rgb), 0.05);
+}
+
+.backup-card-status.is-success {
+  color: #14744d;
+  border-color: rgba(23, 154, 103, 0.24);
+  background-color: rgba(23, 154, 103, 0.08);
+}
+
+.backup-card-status.is-warning {
+  color: #9a6700;
+  border-color: rgba(199, 143, 0, 0.26);
+  background-color: rgba(199, 143, 0, 0.1);
+}
+
+.backup-card-status.is-error {
+  color: #b42318;
+  border-color: rgba(180, 35, 24, 0.22);
+  background-color: rgba(180, 35, 24, 0.08);
+}
+
 .backup-card-meta p {
   margin: 7px 0;
 }
@@ -3502,6 +3599,8 @@ button.dark-theme-button i {
   .section-tab-button,
   .ban-user-schedule-controls input,
   .ban-user-schedule-controls .secondary-button,
+  .backup-card-actions .secondary-button,
+  .backup-card-actions .thin,
   .backup-download-button {
     width: 100%;
   }

@@ -126,6 +126,112 @@ function backupDB() {
     });
 }
 
+function runPostRestoreActions() {
+  fetch('endpoints/db/migrate.php')
+    .then(() => {
+      window.location.href = 'logout.php';
+    })
+    .catch(() => {
+      window.location.href = 'logout.php';
+    });
+}
+
+function updateBackupCardStatus(button, statusLabel, statusTone = "pending") {
+  const card = button?.closest('.backup-card');
+  const status = card?.querySelector('[data-backup-status]');
+  if (!status) {
+    return;
+  }
+
+  status.textContent = statusLabel;
+  status.classList.remove('is-pending', 'is-success', 'is-warning', 'is-error');
+
+  if (statusTone === 'success') {
+    status.classList.add('is-success');
+  } else if (statusTone === 'warning') {
+    status.classList.add('is-warning');
+  } else if (statusTone === 'error') {
+    status.classList.add('is-error');
+  } else {
+    status.classList.add('is-pending');
+  }
+}
+
+function verifyBackup(backupName, button) {
+  if (!backupName || !button) {
+    showErrorMessage(translate('error'));
+    return;
+  }
+
+  button.disabled = true;
+
+  fetch('endpoints/admin/verifybackup.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ name: backupName })
+  })
+    .then(response => response.json())
+    .then(data => {
+      const verification = data.verification || {};
+      if (verification.statusLabel) {
+        updateBackupCardStatus(button, verification.statusLabel, verification.statusTone || 'pending');
+      }
+
+      if (data.success) {
+        showSuccessMessage(data.message);
+      } else {
+        showErrorMessage(data.message || translate('error'));
+      }
+    })
+    .catch(() => {
+      updateBackupCardStatus(button, translate('backup_verification_status_failed'), 'error');
+      showErrorMessage(translate('error'));
+    })
+    .finally(() => {
+      button.disabled = false;
+    });
+}
+
+function restoreBackup(backupName, button) {
+  const confirmMessage = button?.dataset.confirmMessage || 'Restore from this backup now?';
+  const confirmSecondMessage = button?.dataset.confirmSecondMessage || 'Please confirm again.';
+
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+
+  if (!confirm(confirmSecondMessage)) {
+    return;
+  }
+
+  button.disabled = true;
+
+  fetch('endpoints/admin/restorebackup.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ name: backupName })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message);
+        runPostRestoreActions();
+      } else {
+        showErrorMessage(data.message || translate('restore_failed'));
+      }
+    })
+    .catch(() => showErrorMessage(translate('restore_failed')))
+    .finally(() => {
+      button.disabled = false;
+    });
+}
+
 
 function openRestoreDBFileSelect() {
   document.getElementById('restoreDBFile').click();
@@ -157,15 +263,7 @@ function restoreDB() {
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
-
-        // After restoring, run migrations then log out (force re-login)
-        fetch('endpoints/db/migrate.php')
-          .then(() => {
-            window.location.href = 'logout.php';
-          })
-          .catch(() => {
-            window.location.href = 'logout.php';
-          });
+        runPostRestoreActions();
       } else {
         showErrorMessage(data.message || translate('restore_failed'));
       }

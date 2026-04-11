@@ -1,253 +1,273 @@
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./images/siteicons/walloswhite.png">
-    <source media="(prefers-color-scheme: light)" srcset="./images/siteicons/wallos.png">
-    <img alt="Wallos" src="./images/siteicons/wallos.png">
-  </picture>
+# Wallos-Remastered
 
-  <p>Wallos: Open-Source Personal Subscription Tracker</p>
+## 项目定位
 
-  [![Stars](https://img.shields.io/github/stars/ellite/Wallos?style=flat-square)](https://github.com/ellite/Wallos)
-  [![Docker](https://img.shields.io/docker/pulls/bellamy/wallos?style=flat-square)](https://hub.docker.com/r/bellamy/wallos)
-  [![GitHub contributors](https://img.shields.io/github/contributors/ellite/Wallos?style=flat-square)](https://github.com/ellite/Wallos/graphs/contributors)
-  [![GitHub Sponsors](https://img.shields.io/github/sponsors/ellite?style=flat-square)](https://github.com/sponsors/ellite)
-  [![Discord](https://img.shields.io/discord/1237073478910214235?logo=discord&style=flat-square)](https://discord.gg/anex9GUrPW)
-</div>
+`Wallos-Remastered` 是基于上游 `Wallos` 深度重制的自托管订阅管理系统分支。
 
+这个分支的目标不是只做少量界面修补，而是把原项目补到更适合长期私有化部署、管理员集中运维和多用户受控使用的状态。当前分支已经在以下方向完成了较大幅度增强：
 
-## Table of Contents
+- 管理员后台重构
+- 用户分组与账号回收站
+- 邀请码生命周期管理
+- 登录限速与日志留存
+- 订阅图片多图上传、鉴权访问、预览分层与资源治理
+- 自动备份、备份校验、后台恢复闭环
 
-- [Introduction](#introduction)
-- [Features](#features)
-- [Demo](#demo)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-    - [Baremetal](#baremetal)
-    - [Docker](#docker)
-  - [Installation](#installation)
-    - [Baremetal](#baremetal-1)
-      - [Updating](#updating)
-    - [Docker](#docker-1)
-    - [Docker-Compose](#docker-compose)
-- [Usage](#usage)
-- [Screenshots](#screenshots)
-- [OIDC](#oidc)
-- [API Documentation](#api-documentation)
-- [Contributing](#contributing)
-  - [Contributors](#contributors)
-  - [Translations](#translations)
-- [License](#license)
-- [Links](#links)
+项目正式名称统一为 `Wallos-Remastered`。
 
-## Introduction
+## 已完成的重制内容
 
-Wallos is a powerful, open-source, and self-hostable web application designed to empower you in managing your finances with ease. Say goodbye to complicated spreadsheets and expensive financial software – Wallos simplifies the process of tracking expenses and helps you gain better control over your financial life.
+### 1. 管理员后台能力增强
 
-## Features
+- 新增用户管理折叠区，用户以独立卡片形式展示。
+- 管理员卡片中展示用户 ID，并支持一键复制用户 ID。
+- 管理员可以直接为用户重置并生成临时密码，由管理员复制后转发给用户。
+- 不提供明文密码查看能力，密码只以哈希形式保存在数据库中。
+- 登录失败限速阈值已接入管理员后台配置。
+- 访问日志区域改为可折叠展示。
 
-- Subscription Management: Keep track of your recurring subscriptions and payments, ensuring you never miss a due date.
-- Category Management: Organize your expenses into customizable categories, enabling you to gain insights into your spending habits.
-- Multi-Currency support: Wallos supports multiple currencies, allowing you to manage your finances in the currency of your choice.
-- Currency Conversion: Integrates with the Fixer API so you can get exchange rates and see all your subscriptions on your main currency.
-- Data Privacy: As a self-hosted application, Wallos ensures that your financial data remains private and secure on your own server.
-- Customization: Tailor Wallos to your needs with customizable categories, currencies, themes and other display options.
-- Sorting Options: Allowing you to view your subscriptions from different perspectives.
-- Logo Search: Wallos can search the web for the logo of your subscriptions if you don't have them available for upload.
-- Mobile view: Wallos on the go.
-- Statistics: Another perspective into your spendings.
-- Notifications:  Wallos supports multiple notification methods (email, discord, pushover, telegram, gotify and webhooks). Get notified about your upcoming payments.
-- Multi Language support.
-- OIDC with OAuth
-- AI Recommendations with ChatGPT, Gemini or Local Ollama
+### 2. 邀请码与用户封禁名单
 
-## Demo
+- 邀请码管理区域支持折叠。
+- 邀请码区分“有效 / 已删除”两个分页。
+- 已删除的邀请码支持彻底删除，不再在页面显示。
+- 原回收站已重构为“封禁用户名单”。
+- 封禁名单区域支持折叠。
+- 封禁用户卡片显示用户基础数据与关联统计，包括订阅数量、上传图片数量、头像数量等。
+- 支持修改计划删除时间。
 
-If you want to try Wallos, a demo is available at [https://demo.wallosapp.com](https://demo.wallosapp.com).  
-The database is reset every 2 hours.  
-To access the demo use the following credentials:
+### 3. 用户分组与图片上传权限
 
-```python
-Username: demo  
-Password: demo
-```
+- 用户分组支持 `free / trusted / admin` 的实际管理语义。
+- `free` 用户不能向服务器上传订阅图片，只能使用外链。
+- `trusted` 用户可按管理员设定的数量上限上传订阅图片。
+- 管理员和受信用户在上传时可选择“是否压缩作为主文件保存”。
 
-## Getting Started
+### 4. 登录安全与运行期维护
 
-See instructions to run Wallos below.
+- 增加登录失败次数追踪与限速。
+- 增加请求日志清理任务。
+- 增加封禁用户到期清理任务。
+- 本地 Webhook 允许名单已接入后台设置。
+- 相关安全设置已统一进入管理员后台维护。
 
-### Prerequisites
+### 5. 订阅图片能力重做
 
-#### Baremetal
+#### 多图与展示
 
-- NGINX or APACHE websever running
-- PHP 8.3 with the following modules enabled:
-    - curl
-    - dom
-    - gd
-    - imagick
-    - intl
-    - openssl
-    - sqlite3
-    - zip
-    - mbstring
-    - fpm
+- 订阅支持多张服务器图片。
+- 添加/编辑订阅时，服务器图片选择后立即显示缩略图，不再出现“当前没有选中服务器图片”的误导。
+- 订阅详情区支持多图展示。
+- 支持布局切换：聚焦视图 / 网格视图。
+- 图片查看器支持整组浏览、上一张/下一张、键盘左右切换、移动端滑动。
 
-#### Docker
+#### 图片资源分层
 
-- Docker
+服务器图片现在分成三层资源：
 
-### Installation
+- 主文件：保存在 `subscription_uploaded_images.path`
+  - 如果上传时勾选压缩，则这里保存“第一次上传压缩后的主文件”
+  - 如果上传时不勾选压缩，则这里保存“第一次上传处理后的高清主文件”
+- 预览图：保存在 `subscription_uploaded_images.preview_path`
+  - 页面里的图片预览弹窗默认使用预览图
+- 缩略图：保存在 `subscription_uploaded_images.thumbnail_path`
+  - 订阅列表卡片与表单卡片默认使用缩略图
 
-#### Baremetal
+这意味着：
 
-1. Download or clone this repo and move the files into your web root - usually `/var/www/html`
-2. Rename `/db/wallos.empty.db` to `/db/wallos.db`
-3. Run `http://domain.example/endpoints/db/migrate.php` on your browser
-4. Add the following scripts to your cronjobs with `crontab -e`
+- 即使上传时没有勾选压缩，页面展示仍不会直接加载原始主文件。
+- 只有点击“打开原图”或下载原图时，才会请求主文件。
+- 如果上传时已经选择压缩主文件，预览图/缩略图仍会从主文件继续派生一次，但不会进入无限重复压缩链。
 
-```bash
-0 1 * * * php /var/www/html/endpoints/cronjobs/updatenextpayment.php >> /var/log/cron/updatenextpayment.log 2>&1
-0 2 * * * php /var/www/html/endpoints/cronjobs/updateexchange.php >> /var/log/cron/updateexchange.log 2>&1
-0 8 * * * php /var/www/html/endpoints/cronjobs/sendcancellationnotifications.php >> /var/log/cron/sendcancellationnotifications.log 2>&1
-0 9 * * * php /var/www/html/endpoints/cronjobs/sendnotifications.php >> /var/log/cron/sendnotifications.log 2>&1
-*/2 * * * * php /var/www/html/endpoints/cronjobs/sendverificationemails.php >> /var/log/cron/sendverificationemail.log 2>&1
-*/2 * * * * php /var/www/html/endpoints/cronjobs/sendresetpasswordemails.php >> /var/log/cron/sendresetpasswordemails.log 2>&1
-0 */6 * * * php /var/www/html/endpoints/cronjobs/checkforupdates.php >> /var/log/cron/checkforupdates.log 2>&1
-30 1 * * 1 php /var/www/html/endpoints/cronjobs/storetotalyearlycost.php >> /var/log/cron/storetotalyearlycost.log 2>&1
-30 3 * * 1 php /var/www/html/endpoints/cronjobs/generaterecommendations.php weekly >> /var/log/cron/generaterecommendations.log 2>&1
-0 4 1 * * php /var/www/html/endpoints/cronjobs/generaterecommendations.php monthly >> /var/log/cron/generaterecommendations.log 2>&1
-```
+#### 图片访问控制
 
-5. If your web root is not `/var/www/html/` adjust the cronjobs above accordingly.
+- 服务器图片的原始静态直链已经被 Nginx 拦截。
+- 订阅图片必须通过受保护的媒体端点访问。
+- 普通用户只能访问自己的图片。
+- 管理员可以跨用户查看图片，用于审核违规内容。
+- 预览图、缩略图、原图都遵循同一套权限校验规则。
 
-#### Updating
+#### 图片删除与派生清理
 
-1. Re-download the repo and move the files into the correct folder or do `git pull` (if you used git clone before)
-2. Check the [Prerequisites](#baremetal) and install / enable the missing ones, if any.
-3. Run `http://domain.example/endpoints/db/migrate.php`
+- 删除订阅图片时，会同时删除：
+  - 主文件
+  - 预览图
+  - 缩略图
+- 避免磁盘遗留脏文件。
 
-#### Docker
+#### 历史图片补图
 
-```bash
-docker run -d --name wallos -v /path/to/config/wallos/db:/var/www/html/db \
--v /path/to/config/wallos/logos:/var/www/html/images/uploads/logos \
--e TZ=Europe/Berlin -p 8282:80 --restart unless-stopped \
-bellamy/wallos:latest
-```
+- 订阅页面新增“一键生成图片缩略图”按钮。
+- 会扫描当前用户的历史服务器图片。
+- 如果某张图片已经存在缩略图和预览图，则自动跳过。
+- 如果缺失，则补生成对应派生图。
 
-Disable healthcheck (optional, e.g., for Docker <25 or faster startup reporting):
+#### 图片顺序
 
-```bash
-docker run -d --name wallos -v /path/to/config/wallos/db:/var/www/html/db \
--v /path/to/config/wallos/logos:/var/www/html/images/uploads/logos \
--e TZ=Europe/Berlin -p 8282:80 --restart unless-stopped \
---health-cmd=NONE \
-bellamy/wallos:latest
-```
+- 订阅添加/编辑页的服务器图片卡片支持拖拽排序。
+- 订阅详情页中的服务器图片也支持拖拽排序。
+- 排序结果会写回数据库的 `sort_order` 字段并在后续刷新后保持。
 
-### Docker Compose
+#### 上传与原图加载进度
 
-```
+- 订阅图片上传改为带进度的请求流程。
+- 页面会区分显示：
+  - 上传进度
+  - 服务端生成预览图/缩略图的处理阶段
+- 点击“打开原图”时，会以单独请求拉取主文件，并显示加载进度提示。
+
+#### 资源与内存控制
+
+- PHP `memory_limit` 已提高到 `512M`。
+- 图片处理流程增加了内存预算估算，避免大图直接把 PHP 打爆。
+- 对用户而言，建议继续使用缩略图/预览图浏览，减少带宽与服务器负担。
+
+### 6. 自动备份与恢复闭环
+
+#### 自动备份
+
+- 已实现每日自动备份。
+- 备份内容包含：
+  - `db`
+  - `logos`
+- 备份目录独立持久化挂载到 `backups`。
+
+#### 后台运维面板
+
+- 后台显示最近备份列表。
+- 支持手动创建备份并立即下载。
+- 支持一键清理超过保留周期的旧备份。
+- 支持直接从最近备份列表发起恢复，不再要求先手工上传 zip。
+
+#### 备份安全
+
+- `/backups/` 原始静态目录已被 Nginx 拦截，不能直接裸链下载。
+- 备份文件必须通过受保护后台端点下载。
+
+#### 备份校验
+
+- 新备份会写入校验清单。
+- 后台列表支持对单个备份执行校验。
+- 恢复前会再次校验，避免用明显损坏的备份覆盖线上数据。
+- 对旧格式备份会降级为基础校验，而不是直接拒绝。
+
+### 7. 数据导出增强
+
+- 导出已上传订阅图片时，压缩包中的 `metadata.json` 会补充归属信息：
+  - 用户 ID
+  - 用户名
+  - 存储目录名（例如 `user-1`）
+  - 每张图片所属订阅 ID
+  - 图片总数
+
+## 当前运行结构
+
+核心持久化目录如下：
+
+- `db/`
+- `logos/`
+- `backups/`
+
+如果你使用 Docker Compose，建议至少挂载这三类目录：
+
+```yaml
 services:
   wallos:
-    container_name: wallos
-    image: bellamy/wallos:latest
-    ports:
-      - "8282:80/tcp"
-    environment:
-      TZ: 'America/Toronto'
-    # Volumes store your data between container upgrades
-    volumes:
-      - './db:/var/www/html/db'
-      - './logos:/var/www/html/images/uploads/logos'
+    build:
+      context: ${WALLOS_BUILD_CONTEXT}
+      dockerfile: Dockerfile.local
+    image: ${WALLOS_IMAGE}
+    container_name: wallos-local
     restart: unless-stopped
-```
-
-Disable healthcheck (optional, e.g., for Docker <25 or faster startup reporting):
-
-```
-services:
-  wallos:
-    container_name: wallos
-    image: bellamy/wallos:latest
     ports:
-      - "8282:80/tcp"
+      - "${WALLOS_PORT}:80"
     environment:
-      TZ: 'America/Toronto'
+      TZ: ${WALLOS_TZ}
     volumes:
-      - './db:/var/www/html/db'
-      - './logos:/var/www/html/images/uploads/logos'
-    restart: unless-stopped
-    healthcheck:
-      test: ["NONE"]
+      - type: bind
+        source: ./db
+        target: /var/www/html/db
+      - type: bind
+        source: ./logos
+        target: /var/www/html/images/uploads/logos
+      - type: bind
+        source: ./backups
+        target: /var/www/html/backups
 ```
 
-## Usage
+## 推荐运维流程
 
-Just open the browser and open `ip:port` of the machine running wallos.  
-On the first time you run wallos a user account must be created.  
-Go to settings and personalise your Avatar and add members of your household. While there add / remove any categories and currencies.  
-Get a free API Key from [Fixer](https://fixer.io/#pricing_plan) and add it in the settings.  
-If you want to trigger an Update of the exchange rates, change your main currency after adding the API Key, and then change it back to your preferred one.  
+### 启动 / 重建
 
-## Screenshots
+```powershell
+cd D:\_Plana_Docker\Wallos
+docker compose up -d --build
+```
 
-![Screenshot](screenshots/wallos-subscriptions-light.png)
+### 健康检查
 
-![Screenshot](screenshots/wallos-subscriptions-dark.png)
+```powershell
+curl.exe http://127.0.0.1:18282/health.php
+```
 
-![Screenshot](screenshots/wallos-stats.png)
+返回 `OK` 即表示主服务存活。
 
-![Screenshot](screenshots/wallos-calendar.png)
+### 语法检查
 
-![Screenshot](screenshots/wallos-form.png)
+对改动过的 PHP 文件，建议在容器内执行：
 
-![Screenshot](screenshots/wallos-subscriptions-mobile-light.png) ![Screenshot](screenshots/wallos-subscriptions-mobile-dark.png)
+```powershell
+docker exec wallos-local php -l /var/www/html/<relative-path>.php
+```
 
-![Screenshot](screenshots/wallos-dashboard-mobile-light.png) ![Screenshot](screenshots/wallos-dashboard-mobile-dark.png)
+### 备份检查
 
-## OIDC
+- 进入后台查看最近备份列表
+- 抽样执行备份校验
+- 定期抽测“从列表恢复”链路
 
-OIDC can be enabled on the Admin page and can be used with providers that support OAuth.
+## 重要目录与文件
 
-## API Documentation
+### 管理后台
 
-Wallos provides a comprehensive API that allows you to interact with the application programmatically. The API documentation is available at [https://api.wallosapp.com/](https://api.wallosapp.com/).
+- `admin.php`
+- `scripts/admin.js`
+- `styles/styles.css`
 
-## Contributing
+### 订阅图片
 
-Feel free to open Pull requests with bug fixes and features. I'll do my best to keep an eye on those.  
-Feel free to open issues with bug reports or feature requests. Bug fixes will take priority.  
-I welcome contributions from the community and look forward to working with you to improve this project.
+- `subscriptions.php`
+- `includes/list_subscriptions.php`
+- `scripts/subscriptions.js`
+- `includes/subscription_media.php`
+- `endpoints/media/subscriptionimage.php`
+- `endpoints/subscription/add.php`
+- `endpoints/subscription/reorderimages.php`
+- `endpoints/subscription/generatevariants.php`
 
-### Contributors
+### 备份闭环
 
-<a href="https://github.com/ellite/wallos/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ellite/wallos" />
-</a>
+- `includes/backup_manager.php`
+- `endpoints/admin/createbackup.php`
+- `endpoints/admin/verifybackup.php`
+- `endpoints/admin/restorebackup.php`
+- `endpoints/admin/downloadbackup.php`
+- `endpoints/admin/cleanupbackups.php`
+- `endpoints/cronjobs/createbackup.php`
 
-### Translations
+### 安全相关
 
-If you want to contribute with a translation of wallos:
-- Add your language code to `includes/i18n/languages.php` in the format `"en" => ["name" => "English", "dir" => "ltr"],`. Please use the original language name and not the english translation.
-- Create a copy of the file `includes/i18n/en.php` and rename it to the language code you used above. Example: pt.php for "pt" => ["name" => "Português", "dir" => "ltr"],.
-- Translate all the values on the language file to the new language. (Incomplete translations will not be accepted).
-- Create a copy of the file `scripts/i18n/en.js` and rename it to the language code you used above. Example: pt.js for "pt" => ["name" => "Português", "dir" => "ltr"],.
-- Translate all the values on the language file to the new language. (Incomplete translations will not be accepted).
+- `includes/login_rate_limit.php`
+- `includes/security_maintenance.php`
+- `login.php`
+- `nginx.conf`
 
-## License
+## 注意事项
 
-This project is licensed under the [GNU General Public License, Version 3](LICENSE.md) - see the [LICENSE.md](LICENSE.md) file for details.
-
-### Why GPLv3?
-
-I chose the GNU General Public License version 3 (GPLv3) for this project because it ensures that the software remains open source and freely available to the community. GPLv3 mandates that any derivative works or modifications must also be released under the same license, promoting the principles of software freedom.
-
-I strongly believe in the importance of open source software and the collaborative nature of development, and I invite contributors to help improve this project.
-
-## Links
-
-- The author: [henrique.pt](https://henrique.pt)
-- Wallos Landingpage: [wallosapp.com](https://wallosapp.com)
-- Join the conversation: [Discord Server](https://discord.gg/anex9GUrPW)
-
+- 本分支是定制化分支，不再等同于上游原始 `Wallos` 行为。
+- 文档、变更说明与安全策略均以 `Wallos-Remastered` 为准。
+- 如果继续扩展功能，必须同步更新：
+  - `README.md`
+  - `CONTRIBUTING.md`
+  - `CHANGELOG.md`
+  - `SECURITY.md`
