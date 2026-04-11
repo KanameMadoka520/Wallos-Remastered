@@ -131,7 +131,8 @@ function resetDetailImageCompression() {
     return;
   }
 
-  compressCheckbox.checked = config.compressionMode !== "optional";
+  compressCheckbox.checked = config.compressionMode !== "disabled";
+  compressCheckbox.disabled = config.compressionMode === "disabled";
 }
 
 function rebuildDetailImageInput() {

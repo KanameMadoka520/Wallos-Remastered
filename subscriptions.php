@@ -290,7 +290,7 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
   <form action="endpoints/subscription/add.php" method="post" id="subs-form" enctype="multipart/form-data"
     data-effective-user-group="<?= $effectiveUserGroup ?>"
     data-can-upload-detail-image="<?= $canUploadSubscriptionImages ? '1' : '0' ?>"
-    data-compression-mode="<?= $isAdmin ? 'optional' : ($canUploadSubscriptionImages ? 'required' : 'disabled') ?>"
+    data-compression-mode="<?= $canUploadSubscriptionImages ? 'optional' : 'disabled' ?>"
     data-detail-image-max-bytes="<?= (int) $subscriptionImagePolicy['max_size_bytes'] ?>"
     data-detail-image-max-mb="<?= (int) $subscriptionImagePolicy['max_size_mb'] ?>"
     data-external-url-limit="<?= (int) $subscriptionImagePolicy['external_url_limit'] ?>"
@@ -532,7 +532,7 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
           </div>
           <div class="form-group-inline grow subscription-image-compress-inline">
             <input type="checkbox" id="compress_subscription_image" name="compress_subscription_image"
-              value="1" <?= $isAdmin ? '' : 'checked' ?> <?= $isAdmin ? '' : 'disabled' ?>>
+              value="1" <?= $canUploadSubscriptionImages ? 'checked' : '' ?> <?= $canUploadSubscriptionImages ? '' : 'disabled' ?>>
             <label for="compress_subscription_image" class="grow">
               <?= translate('subscription_image_compress_toggle', $i18n) ?>
             </label>
