@@ -85,6 +85,7 @@ $decorativeBackgroundEnabled = !isset($settings['decorative_background']) || (in
 $decorativeBackgroundClass = $decorativeBackgroundEnabled ? "decorative-background-enabled" : "decorative-background-disabled";
 setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   'expires' => $cookieExpire,
+  'path' => '/',
   'samesite' => 'Lax'
 ]);
 
@@ -275,5 +276,11 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   }
   ?>
 
+  <div class="custom-edition-banner">
+    <div class="contain">
+      <span class="custom-edition-badge">tcymc自建服务版</span>
+      <span class="custom-edition-text">以自己物理机为后端，日本东京vps作为网关</span>
+    </div>
+  </div>
 
   <main>

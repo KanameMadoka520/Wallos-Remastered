@@ -53,6 +53,7 @@ function wallos_render_decorative_background($variant = 'app')
         <div class="wallos-bg-plate wallos-bg-plate-b"></div>
         <div class="wallos-bg-plate wallos-bg-plate-c"></div>
         <div class="wallos-bg-float-layer"></div>
+        <div class="wallos-bg-meteor-layer"></div>
         <div class="wallos-bg-token-layer">
             <?php foreach ($tokens as $token): ?>
                 <span class="wallos-bg-token <?= $token['type'] === 'icon' ? 'is-icon' : 'is-text' ?>"
