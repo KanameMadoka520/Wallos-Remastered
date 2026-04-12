@@ -29,6 +29,7 @@ if ($settings !== false) {
     $settings['showOriginalPrice'] = $settings['show_original_price'] ? 'true': 'false';
     $settings['mobileNavigation'] = $settings['mobile_nav'] ? 'true': 'false';
     $settings['showSubscriptionProgress'] = $settings['show_subscription_progress'] ? 'true': 'false';
+    $settings['decorativeBackground'] = !isset($settings['decorative_background']) || $settings['decorative_background'] ? 'true' : 'false';
 }
 
 $query = "SELECT * FROM custom_colors WHERE user_id = :userId";

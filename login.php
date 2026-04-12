@@ -8,6 +8,7 @@ require_once 'includes/i18n/' . $lang . '.php';
 require_once 'includes/user_status.php';
 require_once 'includes/request_logs.php';
 require_once 'includes/login_rate_limit.php';
+require_once 'includes/decorative_background.php';
 
 require_once 'includes/version.php';
 
@@ -144,6 +145,9 @@ $colorTheme = "blue";
 if (isset($_COOKIE['colorTheme'])) {
     $colorTheme = $_COOKIE['colorTheme'];
 }
+
+$decorativeBackgroundEnabled = wallos_is_public_decorative_background_enabled();
+$decorativeBackgroundClass = $decorativeBackgroundEnabled ? 'decorative-background-enabled' : 'decorative-background-disabled';
 
 // Check if OIDC is Enabled
 $password_login_disabled = false;
@@ -394,12 +398,14 @@ wallos_log_request($db, 0, '');
     <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
+    <link rel="stylesheet" href="styles/decorative-background.css?<?= $version ?>">
     <link rel="stylesheet" href="styles/login.css?<?= $loginCssVersion ?>">
     <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/green.css?<?= $version ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/yellow.css?<?= $version ?>" id="yellow-theme" <?= $colorTheme != "yellow" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/purple.css?<?= $version ?>" id="purple-theme" <?= $colorTheme != "purple" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/font-awesome.min.css">
+    <link rel="stylesheet" href="styles/brands.css">
     <link rel="stylesheet" href="styles/barlow.css">
     <link rel="stylesheet" href="styles/login-dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme == "light" ? "disabled" : "" ?>>
     <script type="text/javascript">
@@ -409,7 +415,8 @@ wallos_log_request($db, 0, '');
     <script type="text/javascript" src="scripts/login.js?<?= $loginJsVersion ?>"></script>
 </head>
 
-<body class="<?= $languages[$lang]['dir'] ?>">
+<body class="<?= $languages[$lang]['dir'] ?> public-page login-page <?= $decorativeBackgroundClass ?>">
+    <?php wallos_render_decorative_background('public'); ?>
     <div class="content">
         <section class="container">
             <div class="public-page-toolbar">

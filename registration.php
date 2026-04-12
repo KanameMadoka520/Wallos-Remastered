@@ -9,6 +9,7 @@ require_once 'includes/default_user_seed.php';
 require_once 'includes/invite_codes.php';
 require_once 'includes/request_logs.php';
 require_once 'includes/user_status.php';
+require_once 'includes/decorative_background.php';
 
 require_once 'includes/version.php';
 
@@ -71,6 +72,9 @@ $colorTheme = "blue";
 if (isset($_COOKIE['colorTheme'])) {
     $colorTheme = $_COOKIE['colorTheme'];
 }
+
+$decorativeBackgroundEnabled = wallos_is_public_decorative_background_enabled();
+$decorativeBackgroundClass = $decorativeBackgroundEnabled ? 'decorative-background-enabled' : 'decorative-background-disabled';
 
 $currencies = wallos_get_default_currencies($lang);
 $categories = wallos_get_default_categories($lang);
@@ -287,6 +291,7 @@ wallos_log_request($db, 0, '');
     <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
+    <link rel="stylesheet" href="styles/decorative-background.css?<?= $version ?>">
     <link rel="stylesheet" href="styles/login.css?<?= $loginCssVersion ?>">
     <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/green.css?<?= $version ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
@@ -294,6 +299,7 @@ wallos_log_request($db, 0, '');
     <link rel="stylesheet" href="styles/themes/purple.css?<?= $version ?>" id="purple-theme" <?= $colorTheme != "purple" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/login-dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme == "light" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/font-awesome.min.css">
+    <link rel="stylesheet" href="styles/brands.css">
     <link rel="stylesheet" href="styles/barlow.css">
     <script type="text/javascript">
         window.update_theme_settings = "<?= $updateThemeSettings ?>";
@@ -302,9 +308,10 @@ wallos_log_request($db, 0, '');
     <script type="text/javascript" src="scripts/registration.js?<?= $registrationJsVersion ?>"></script>
 </head>
 
-<body class="<?= $languages[$lang]['dir'] ?>">
+<body class="<?= $languages[$lang]['dir'] ?> public-page registration-page <?= $decorativeBackgroundClass ?>">
+    <?php wallos_render_decorative_background('public'); ?>
     <div class="content">
-        <section class="container">
+        <section class="container registration-container">
             <div class="public-page-toolbar">
                 <div class="public-page-language-switcher">
                     <span class="public-page-language-icon" aria-hidden="true">
@@ -331,56 +338,68 @@ wallos_log_request($db, 0, '');
                     <?= translate('create_account', $i18n) ?>
                 </p>
             </header>
-            <form action="registration.php" method="post">
+            <div class="registration-page-notice">
+                <i class="fa-solid fa-circle-info"></i>
+                <span><?= translate('registration_form_notice', $i18n) ?></span>
+            </div>
+            <form action="registration.php" method="post" class="registration-form">
                 <input type="hidden" id="registration-language" name="language" value="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>">
-                <div class="form-group">
-                    <label for="username"><?= translate('username', $i18n) ?>:</label>
-                    <input type="text" id="username" name="username" autocomplete="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="firstname"><?= translate('firstname', $i18n) ?>:</label>
-                    <input type="text" id="firstname" name="firstname" autocomplete="given-name">
-                </div>
-                <div class="form-group">
-                    <label for="lastname"><?= translate('lastname', $i18n) ?>:</label>
-                    <input type="text" id="lastname" name="lastname" autocomplete="family-name">
-                </div>
-                <div class="form-group">
-                    <label for="email"><?= translate('email', $i18n) ?>:</label>
-                    <input type="email" id="email" name="email" autocomplete="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="password"><?= translate('password', $i18n) ?>:</label>
-                    <input type="password" id="password" name="password" autocomplete="new-password" required>
-                </div>
-                <div class="form-group">
-                    <label for="confirm_password"><?= translate('confirm_password', $i18n) ?>:</label>
-                    <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
-                </div>
-                <div class="form-group">
-                    <label for="currency"><?= translate('main_currency', $i18n) ?>:</label>
-                    <select id="currency" name="main_currency" placeholder="<?= translate('currency', $i18n) ?>">
-                        <?php
-                        $selectedMainCurrencyCode = isset($_POST['main_currency']) && trim((string) $_POST['main_currency']) !== ''
-                            ? (string) $_POST['main_currency']
-                            : $defaultMainCurrencyCode;
-                        foreach ($currencies as $currency) {
-                            $selected = $currency['code'] === $selectedMainCurrencyCode ? 'selected' : '';
-                            ?>
-                            <option value="<?= $currency['code'] ?>" <?= $selected ?>><?= $currency['name'] ?></option>
+                <div class="registration-form-grid">
+                    <div class="form-group">
+                        <label for="username"><?= translate('username', $i18n) ?>:</label>
+                        <input type="text" id="username" name="username" autocomplete="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email"><?= translate('email', $i18n) ?>:</label>
+                        <input type="email" id="email" name="email" autocomplete="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="firstname"><?= translate('firstname', $i18n) ?>:</label>
+                        <input type="text" id="firstname" name="firstname" autocomplete="given-name">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastname"><?= translate('lastname', $i18n) ?>:</label>
+                        <input type="text" id="lastname" name="lastname" autocomplete="family-name">
+                    </div>
+                    <div class="form-group">
+                        <label for="password"><?= translate('password', $i18n) ?>:</label>
+                        <input type="password" id="password" name="password" autocomplete="new-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password"><?= translate('confirm_password', $i18n) ?>:</label>
+                        <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="currency"><?= translate('main_currency', $i18n) ?>:</label>
+                        <select id="currency" name="main_currency" placeholder="<?= translate('currency', $i18n) ?>">
                             <?php
-                        }
+                            $selectedMainCurrencyCode = isset($_POST['main_currency']) && trim((string) $_POST['main_currency']) !== ''
+                                ? (string) $_POST['main_currency']
+                                : $defaultMainCurrencyCode;
+                            foreach ($currencies as $currency) {
+                                $selected = $currency['code'] === $selectedMainCurrencyCode ? 'selected' : '';
+                                ?>
+                                <option value="<?= $currency['code'] ?>" <?= $selected ?>><?= $currency['name'] ?></option>
+                                <?php
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <?php
+                    if ($inviteOnlyRegistrationEnabled) {
                         ?>
-                    </select>
+                        <div class="form-group">
+                            <label for="invite_code"><?= translate('invite_code', $i18n) ?>:</label>
+                            <input type="text" id="invite_code" name="invite_code" autocomplete="off" required>
+                        </div>
+                        <?php
+                    }
+                    ?>
                 </div>
                 <?php
                 if ($inviteOnlyRegistrationEnabled) {
                     ?>
-                    <div class="form-group">
-                        <label for="invite_code"><?= translate('invite_code', $i18n) ?>:</label>
-                        <input type="text" id="invite_code" name="invite_code" autocomplete="off" required>
-                    </div>
-                    <div class="settings-notes">
+                    <div class="settings-notes registration-settings-notes">
                         <p>
                             <i class="fa-solid fa-circle-info"></i>
                             <?= translate('invite_only_registration_notice', $i18n) ?>
@@ -444,7 +463,7 @@ wallos_log_request($db, 0, '');
                 ?>
 
 
-                <div class="form-group">
+                <div class="form-group form-group-submit">
                     <input type="submit" value="<?= translate('register', $i18n) ?>">
                 </div>
             </form>
@@ -469,8 +488,5 @@ wallos_log_request($db, 0, '');
         </section>
     </div>
     <?php
-    require_once 'includes/footer.php';
+    require_once 'includes/public_footer.php';
     ?>
-</body>
-
-</html>

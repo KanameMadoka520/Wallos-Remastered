@@ -17,6 +17,8 @@ $i18n = [
     "username_exists" => "使用者名稱已存在",
     "email_exists" => "電子郵件已存在",
     "registration_failed" => "註冊失敗，請再試一次。",
+    "registration_form_notice" => "無需填寫真實資訊，姓名可以隨意填寫。",
+    "tcy_selfhost_notice" => "tcymc自建服務版，如有問題請及時回報給 tcy 修復。",
     "register" => "註冊",
     "restore_database" => "還原資料庫",
     // 登入頁面
@@ -394,6 +396,8 @@ $i18n = [
     "main_color" => "主要顏色",
     "accent_color" => "強調顏色",
     "hover_color" => "游標停留顏色",
+    "decorative_background" => "頁面背景效果",
+    "decorative_background_info" => "在頁面背景中渲染幾何圖形、程式碼片段、中文文字與支付圖示等裝飾元素。如果你偏好更乾淨的背景，可以關閉。",
     "save_custom_colors" => "儲存自訂顏色",
     "reset_custom_colors" => "重設自訂顏色",
     "custom_css" => "自訂 CSS",
