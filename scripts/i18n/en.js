@@ -7,6 +7,7 @@ let i18n = {
   confirm_permanently_delete_subscription: "Permanently delete this subscription and all related images now?",
   error_deleting_subscription: "Error deleting subscription",
   subscription_record_payment: "Record Payment",
+  confirm_delete_subscription_payment_record: "Delete this actual payment record now?",
   metric_explanation_title: "Calculation Details",
   metric_explanation_formula_label: "Formula",
   metric_explanation_items_label: "Included Items",

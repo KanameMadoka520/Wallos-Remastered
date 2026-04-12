@@ -7,6 +7,7 @@ let i18n = {
     'confirm_permanently_delete_subscription': '现在彻底删除这个订阅及其相关图片吗？',
     'error_deleting_subscription': "删除订阅时出错",
     'subscription_record_payment': '记录支付',
+    'confirm_delete_subscription_payment_record': '现在删除这条实际支付记录吗？',
     'metric_explanation_title': '计算说明',
     'metric_explanation_formula_label': '计算公式',
     'metric_explanation_items_label': '纳入项',

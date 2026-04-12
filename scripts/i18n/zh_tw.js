@@ -7,6 +7,7 @@ let i18n = {
     confirm_permanently_delete_subscription: '現在徹底刪除這個訂閱及其相關圖片嗎？',
     error_deleting_subscription: "刪除訂閱時發生錯誤",
     subscription_record_payment: '記錄支付',
+    confirm_delete_subscription_payment_record: '現在刪除這筆實際支付記錄嗎？',
     metric_explanation_title: '計算說明',
     metric_explanation_formula_label: '計算公式',
     metric_explanation_items_label: '納入項',

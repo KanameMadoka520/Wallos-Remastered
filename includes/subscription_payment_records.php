@@ -51,17 +51,23 @@ function wallos_convert_amount_to_main_snapshot($amountOriginal, $rateToMain)
 
 function wallos_get_subscription_payment_records($db, $subscriptionId, $userId, $limit = 10)
 {
-    $stmt = $db->prepare('
-        SELECT id, subscription_id, due_date, paid_at, amount_original, currency_code_snapshot,
+    $sql = '
+        SELECT id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot,
                main_currency_code_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
         FROM subscription_payment_records
         WHERE subscription_id = :subscription_id AND user_id = :user_id
         ORDER BY paid_at DESC, id DESC
-        LIMIT :limit_value
-    ');
+    ';
+    if ((int) $limit > 0) {
+        $sql .= ' LIMIT :limit_value';
+    }
+
+    $stmt = $db->prepare($sql);
     $stmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
     $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    $stmt->bindValue(':limit_value', max(1, (int) $limit), SQLITE3_INTEGER);
+    if ((int) $limit > 0) {
+        $stmt->bindValue(':limit_value', max(1, (int) $limit), SQLITE3_INTEGER);
+    }
     $result = $stmt->execute();
 
     $records = [];
@@ -70,6 +76,23 @@ function wallos_get_subscription_payment_records($db, $subscriptionId, $userId, 
     }
 
     return $records;
+}
+
+function wallos_get_subscription_payment_record_by_id($db, $recordId, $subscriptionId, $userId)
+{
+    $stmt = $db->prepare('
+        SELECT id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot,
+               main_currency_code_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
+        FROM subscription_payment_records
+        WHERE id = :id AND subscription_id = :subscription_id AND user_id = :user_id
+        LIMIT 1
+    ');
+    $stmt->bindValue(':id', $recordId, SQLITE3_INTEGER);
+    $stmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+
+    return $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
 }
 
 function wallos_get_subscription_payment_records_map($db, $userId, $limitPerSubscription = 6)
@@ -103,6 +126,25 @@ function wallos_get_subscription_payment_records_map($db, $userId, $limitPerSubs
     }
 
     return $recordsMap;
+}
+
+function wallos_get_subscription_payment_record_count_map($db, $userId)
+{
+    $stmt = $db->prepare('
+        SELECT subscription_id, COUNT(*) AS record_count
+        FROM subscription_payment_records
+        WHERE user_id = :user_id
+        GROUP BY subscription_id
+    ');
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+
+    $counts = [];
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $counts[(int) ($row['subscription_id'] ?? 0)] = (int) ($row['record_count'] ?? 0);
+    }
+
+    return $counts;
 }
 
 function wallos_get_subscription_payment_records_for_period($db, $userId, $dateFrom, $dateTo, $respectExcludeFromStats = true)
@@ -230,6 +272,107 @@ function wallos_record_subscription_payment(
     }
 
     return (int) $db->lastInsertRowID();
+}
+
+function wallos_update_subscription_payment_record(
+    $db,
+    $userId,
+    $recordId,
+    $subscriptionId,
+    $dueDate,
+    $paidAt,
+    $amountOriginal,
+    $currencyId,
+    $paymentMethodId,
+    $note = '',
+    $status = 'paid'
+) {
+    $existingRecord = wallos_get_subscription_payment_record_by_id($db, $recordId, $subscriptionId, $userId);
+    if ($existingRecord === false) {
+        throw new RuntimeException('Payment record not found.');
+    }
+
+    $subscriptionStmt = $db->prepare('
+        SELECT id, currency_id, payment_method_id
+        FROM subscriptions
+        WHERE id = :subscription_id AND user_id = :user_id
+    ');
+    $subscriptionStmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+    $subscriptionStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $subscriptionResult = $subscriptionStmt->execute();
+    $subscription = $subscriptionResult ? $subscriptionResult->fetchArray(SQLITE3_ASSOC) : false;
+
+    if ($subscription === false) {
+        throw new RuntimeException('Subscription not found.');
+    }
+
+    $normalizedPaidAt = trim((string) $paidAt);
+    if ($normalizedPaidAt === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $normalizedPaidAt)) {
+        throw new RuntimeException('Invalid payment date.');
+    }
+
+    $normalizedDueDate = trim((string) $dueDate);
+    if ($normalizedDueDate === '') {
+        $normalizedDueDate = $normalizedPaidAt;
+    }
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $normalizedDueDate)) {
+        throw new RuntimeException('Invalid due date.');
+    }
+
+    $amountOriginal = (float) $amountOriginal;
+    if ($amountOriginal <= 0) {
+        throw new RuntimeException('Invalid payment amount.');
+    }
+
+    $currencyId = (int) $currencyId > 0 ? (int) $currencyId : (int) ($subscription['currency_id'] ?? 0);
+    $paymentMethodId = (int) $paymentMethodId > 0 ? (int) $paymentMethodId : (int) ($subscription['payment_method_id'] ?? 0);
+
+    $currencySnapshot = wallos_get_currency_snapshot($db, $userId, $currencyId);
+    $mainCurrencyCode = wallos_get_main_currency_snapshot($db, $userId);
+    $amountMainSnapshot = wallos_convert_amount_to_main_snapshot($amountOriginal, $currencySnapshot['rate']);
+
+    $stmt = $db->prepare('
+        UPDATE subscription_payment_records
+        SET due_date = :due_date,
+            paid_at = :paid_at,
+            amount_original = :amount_original,
+            currency_id = :currency_id,
+            currency_code_snapshot = :currency_code_snapshot,
+            main_currency_code_snapshot = :main_currency_code_snapshot,
+            fx_rate_to_main_snapshot = :fx_rate_to_main_snapshot,
+            amount_main_snapshot = :amount_main_snapshot,
+            payment_method_id = :payment_method_id,
+            status = :status,
+            note = :note
+        WHERE id = :id AND subscription_id = :subscription_id AND user_id = :user_id
+    ');
+    $stmt->bindValue(':due_date', $normalizedDueDate, SQLITE3_TEXT);
+    $stmt->bindValue(':paid_at', $normalizedPaidAt, SQLITE3_TEXT);
+    $stmt->bindValue(':amount_original', $amountOriginal, SQLITE3_FLOAT);
+    $stmt->bindValue(':currency_id', $currencyId, SQLITE3_INTEGER);
+    $stmt->bindValue(':currency_code_snapshot', $currencySnapshot['code'], SQLITE3_TEXT);
+    $stmt->bindValue(':main_currency_code_snapshot', $mainCurrencyCode, SQLITE3_TEXT);
+    $stmt->bindValue(':fx_rate_to_main_snapshot', (float) $currencySnapshot['rate'], SQLITE3_FLOAT);
+    $stmt->bindValue(':amount_main_snapshot', $amountMainSnapshot, SQLITE3_FLOAT);
+    $stmt->bindValue(':payment_method_id', $paymentMethodId, SQLITE3_INTEGER);
+    $stmt->bindValue(':status', $status, SQLITE3_TEXT);
+    $stmt->bindValue(':note', trim((string) $note), SQLITE3_TEXT);
+    $stmt->bindValue(':id', $recordId, SQLITE3_INTEGER);
+    $stmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+
+    if (!$stmt->execute()) {
+        throw new RuntimeException('Failed to update payment record.');
+    }
+}
+
+function wallos_delete_subscription_payment_record($db, $recordId, $subscriptionId, $userId)
+{
+    $stmt = $db->prepare('DELETE FROM subscription_payment_records WHERE id = :id AND subscription_id = :subscription_id AND user_id = :user_id');
+    $stmt->bindValue(':id', $recordId, SQLITE3_INTEGER);
+    $stmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $stmt->execute();
 }
 
 function wallos_get_subscription_payment_total($db, $userId, $dateFrom, $dateTo, $respectExcludeFromStats = true)

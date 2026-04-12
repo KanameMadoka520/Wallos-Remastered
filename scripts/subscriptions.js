@@ -10,6 +10,9 @@ let currentSubscriptionImageViewerIndex = -1;
 let currentSubscriptionImageOriginalRequest = null;
 let subscriptionImageViewerTouchStartX = 0;
 let subscriptionImageViewerTouchStartY = 0;
+let currentPaymentHistorySubscriptionId = 0;
+let currentPaymentHistorySubscriptionName = "";
+let currentPaymentHistoryRecords = [];
 let detailImageGallerySortable = null;
 let detailSubscriptionGallerySortables = [];
 let detailImageTempIdCounter = 0;
@@ -717,8 +720,12 @@ function resetSubscriptionPaymentForm() {
 
   form.reset();
   const subscriptionIdInput = document.querySelector("#subscription-payment-subscription-id");
+  const recordIdInput = document.querySelector("#subscription-payment-record-id");
   if (subscriptionIdInput) {
     subscriptionIdInput.value = "";
+  }
+  if (recordIdInput) {
+    recordIdInput.value = "";
   }
 
   const dueDateInput = document.querySelector("#subscription-payment-due-date");
@@ -739,7 +746,10 @@ function closeSubscriptionPaymentModal() {
   }
 
   modal.classList.remove("is-open");
-  document.body.classList.remove('no-scroll');
+  const historyModal = document.getElementById("subscription-payment-history-modal");
+  if (!historyModal || !historyModal.classList.contains("is-open")) {
+    document.body.classList.remove('no-scroll');
+  }
   resetSubscriptionPaymentForm();
 }
 
@@ -775,6 +785,46 @@ function fillSubscriptionPaymentForm(subscription) {
   }
 }
 
+function fillSubscriptionPaymentFormFromRecord(subscriptionId, subscriptionName, record) {
+  const title = document.querySelector("#subscription-payment-modal-title");
+  const subscriptionIdInput = document.querySelector("#subscription-payment-subscription-id");
+  const recordIdInput = document.querySelector("#subscription-payment-record-id");
+  const dueDateInput = document.querySelector("#subscription-payment-due-date");
+  const paidAtInput = document.querySelector("#subscription-payment-paid-at");
+  const amountInput = document.querySelector("#subscription-payment-amount");
+  const currencyInput = document.querySelector("#subscription-payment-currency");
+  const paymentMethodInput = document.querySelector("#subscription-payment-method");
+  const noteInput = document.querySelector("#subscription-payment-note");
+
+  if (title) {
+    title.textContent = `${translate('subscription_edit_payment')}: ${subscriptionName || ''}`;
+  }
+  if (subscriptionIdInput) {
+    subscriptionIdInput.value = subscriptionId || "";
+  }
+  if (recordIdInput) {
+    recordIdInput.value = record.id || "";
+  }
+  if (dueDateInput) {
+    dueDateInput.value = record.due_date || "";
+  }
+  if (paidAtInput) {
+    paidAtInput.value = record.paid_at || "";
+  }
+  if (amountInput) {
+    amountInput.value = record.amount_original || "";
+  }
+  if (currencyInput) {
+    currencyInput.value = String(record.currency_id || "");
+  }
+  if (paymentMethodInput) {
+    paymentMethodInput.value = String(record.payment_method_id || "");
+  }
+  if (noteInput) {
+    noteInput.value = record.note || "";
+  }
+}
+
 function openSubscriptionPaymentModal(event, id) {
   if (event) {
     event.stopPropagation();
@@ -782,12 +832,16 @@ function openSubscriptionPaymentModal(event, id) {
   }
 
   const modal = document.getElementById("subscription-payment-modal");
+  const historyModal = document.getElementById("subscription-payment-history-modal");
   if (!modal) {
     return;
   }
 
   resetSubscriptionPaymentForm();
   document.body.classList.add('no-scroll');
+  if (historyModal && historyModal.classList.contains("is-open")) {
+    historyModal.classList.remove("is-open");
+  }
 
   fetch(`endpoints/subscription/get.php?id=${id}`)
     .then((response) => {
@@ -804,6 +858,163 @@ function openSubscriptionPaymentModal(event, id) {
       document.body.classList.remove('no-scroll');
       showErrorMessage(error.message || translate("error"));
     });
+}
+
+function closeSubscriptionPaymentHistoryModal() {
+  const modal = document.getElementById("subscription-payment-history-modal");
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.remove("is-open");
+  const paymentModal = document.getElementById("subscription-payment-modal");
+  if (!paymentModal || !paymentModal.classList.contains("is-open")) {
+    document.body.classList.remove('no-scroll');
+  }
+  currentPaymentHistorySubscriptionId = 0;
+  currentPaymentHistorySubscriptionName = "";
+  currentPaymentHistoryRecords = [];
+}
+
+function renderSubscriptionPaymentHistoryModal() {
+  const content = document.getElementById("subscription-payment-history-content");
+  const title = document.getElementById("subscription-payment-history-modal-title");
+  const addButton = document.getElementById("subscription-payment-history-add-button");
+  if (!content || !title || !addButton) {
+    return;
+  }
+
+  title.textContent = `${translate('subscription_payment_history')}: ${currentPaymentHistorySubscriptionName || ''}`;
+  addButton.onclick = (event) => openSubscriptionPaymentModal(event, currentPaymentHistorySubscriptionId);
+
+  if (!currentPaymentHistoryRecords.length) {
+    content.innerHTML = `<div class="subscription-payment-record-empty">${translate('subscription_payment_history_empty')}</div>`;
+    return;
+  }
+
+  content.innerHTML = currentPaymentHistoryRecords.map((record) => {
+    const noteHtml = record.note_html || "";
+    const amountLabel = record.currency_code_snapshot
+      ? new Intl.NumberFormat(navigator.language, { style: 'currency', currency: record.currency_code_snapshot }).format(Number(record.amount_original || 0))
+      : new Intl.NumberFormat(navigator.language).format(Number(record.amount_original || 0));
+    const mainAmountLabel = record.main_currency_code_snapshot
+      ? new Intl.NumberFormat(navigator.language, { style: 'currency', currency: record.main_currency_code_snapshot }).format(Number(record.amount_main_snapshot || 0))
+      : new Intl.NumberFormat(navigator.language).format(Number(record.amount_main_snapshot || 0));
+
+    return `
+      <article class="subscription-payment-record-item">
+        <div class="subscription-payment-record-topline">
+          <strong>${record.paid_at || '-'}</strong>
+          <span>${amountLabel}</span>
+        </div>
+        <div class="subscription-payment-record-meta">
+          <span>${translate('subscription_payment_due_date')}: ${record.due_date || '-'}</span>
+          <span>${translate('subscription_payment_main_amount')}: ${mainAmountLabel}</span>
+        </div>
+        ${noteHtml ? `<div class="subscription-markdown subscription-payment-record-note">${noteHtml}</div>` : ''}
+        <div class="buttons subscription-payment-record-history-actions">
+          <button type="button" class="secondary-button thin" onclick="openEditSubscriptionPaymentModal(event, ${currentPaymentHistorySubscriptionId}, ${record.id})">
+            ${translate('edit_subscription')}
+          </button>
+          <button type="button" class="warning-button thin" onclick="deleteSubscriptionPaymentRecord(event, ${currentPaymentHistorySubscriptionId}, ${record.id})">
+            ${translate('delete')}
+          </button>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function openSubscriptionPaymentHistoryModal(event, id) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  const modal = document.getElementById("subscription-payment-history-modal");
+  if (!modal) {
+    return;
+  }
+
+  document.body.classList.add('no-scroll');
+
+  fetch(`endpoints/subscription/paymenthistory.php?id=${id}`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(translate('failed_to_load_subscription'));
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (!data.success) {
+        throw new Error(data.message || translate('error'));
+      }
+      currentPaymentHistorySubscriptionId = Number(data.subscription?.id || 0);
+      currentPaymentHistorySubscriptionName = data.subscription?.name || '';
+      currentPaymentHistoryRecords = Array.isArray(data.records) ? data.records : [];
+      renderSubscriptionPaymentHistoryModal();
+      modal.classList.add("is-open");
+    })
+    .catch((error) => {
+      document.body.classList.remove('no-scroll');
+      showErrorMessage(error.message || translate("error"));
+    });
+}
+
+function openEditSubscriptionPaymentModal(event, subscriptionId, recordId) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  const modal = document.getElementById("subscription-payment-modal");
+  const historyModal = document.getElementById("subscription-payment-history-modal");
+  if (!modal) {
+    return;
+  }
+
+  const record = currentPaymentHistoryRecords.find((item) => Number(item.id) === Number(recordId));
+  if (!record) {
+    showErrorMessage(translate("error"));
+    return;
+  }
+
+  if (historyModal && historyModal.classList.contains("is-open")) {
+    historyModal.classList.remove("is-open");
+  }
+  fillSubscriptionPaymentFormFromRecord(subscriptionId, currentPaymentHistorySubscriptionName, record);
+  modal.classList.add("is-open");
+}
+
+function deleteSubscriptionPaymentRecord(event, subscriptionId, recordId) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  if (!confirm(translate('confirm_delete_subscription_payment_record'))) {
+    return;
+  }
+
+  fetch("endpoints/subscription/deletepayment.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": window.csrfToken,
+    },
+    body: JSON.stringify({ id: subscriptionId, record_id: recordId }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        showSuccessMessage(data.message || translate("success"));
+        openSubscriptionPaymentHistoryModal(null, subscriptionId);
+        window.setTimeout(() => window.location.reload(), 400);
+      } else {
+        showErrorMessage(data.message || translate("error"));
+      }
+    })
+    .catch(() => showErrorMessage(translate("error")));
 }
 
 function getViewerItemsFromGallery(gallery) {
@@ -1967,6 +2178,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   mountSubscriptionOverlayToBody("#subscription-form");
   mountSubscriptionOverlayToBody("#subscription-payment-modal");
+  mountSubscriptionOverlayToBody("#subscription-payment-history-modal");
   mountSubscriptionOverlayToBody("#subscription-image-viewer");
 
   subscriptionForm.addEventListener("submit", function (e) {
@@ -2025,9 +2237,11 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       subscriptionPaymentSaveButton.disabled = true;
+      const recordId = Number(document.querySelector("#subscription-payment-record-id")?.value || 0);
 
       const payload = {
         id: Number(document.querySelector("#subscription-payment-subscription-id")?.value || 0),
+        record_id: recordId,
         due_date: document.querySelector("#subscription-payment-due-date")?.value || "",
         paid_at: document.querySelector("#subscription-payment-paid-at")?.value || "",
         amount_original: document.querySelector("#subscription-payment-amount")?.value || "",
@@ -2036,7 +2250,7 @@ document.addEventListener('DOMContentLoaded', function () {
         note: document.querySelector("#subscription-payment-note")?.value || "",
       };
 
-      fetch("endpoints/subscription/recordpayment.php", {
+      fetch(recordId > 0 ? "endpoints/subscription/updatepayment.php" : "endpoints/subscription/recordpayment.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
