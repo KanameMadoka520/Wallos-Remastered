@@ -2115,7 +2115,7 @@ button.dark-theme-button i {
   left: 50%;
   top: 50%;
   transform: translateX(-50%) translateY(-50%);
-  z-index: 3;
+  z-index: 3500;
   max-width: 800px;
   max-height: calc(100vh - 34px);
   overflow: auto;
