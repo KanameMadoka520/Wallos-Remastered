@@ -583,6 +583,13 @@ body.dark .wallos-bg-grid::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .wallos-bg-token-layer,
+    .wallos-bg-scene,
+    .wallos-bg-orbit,
+    .wallos-bg-plate {
+        opacity: 0.82;
+    }
+
     .wallos-bg-orbit,
     .wallos-bg-token,
     .wallos-bg-scene-drift,
@@ -591,6 +598,46 @@ body.dark .wallos-bg-grid::before {
     .wallos-bg-blackhole-scene,
     .wallos-bg-blackhole-spiral-a,
     .wallos-bg-blackhole-spiral-b {
-        animation: none;
+        animation-timing-function: linear;
+    }
+
+    .wallos-bg-orbit {
+        animation-duration: 120s;
+    }
+
+    .wallos-bg-token {
+        animation-duration: 42s;
+    }
+
+    .wallos-bg-scene-drift {
+        animation-duration: 46s;
+    }
+
+    .wallos-bg-orbit-scene-core {
+        animation-duration: 54s;
+    }
+
+    .wallos-bg-orbit-planet-a {
+        animation-duration: 36s;
+    }
+
+    .wallos-bg-orbit-planet-b {
+        animation-duration: 52s;
+    }
+
+    .wallos-bg-orbit-planet-c {
+        animation-duration: 68s;
+    }
+
+    .wallos-bg-blackhole-scene {
+        animation-duration: 38s;
+    }
+
+    .wallos-bg-blackhole-spiral-a {
+        animation-duration: 42s;
+    }
+
+    .wallos-bg-blackhole-spiral-b {
+        animation-duration: 56s;
     }
 }
