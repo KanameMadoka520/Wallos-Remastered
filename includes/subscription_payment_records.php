@@ -105,6 +105,45 @@ function wallos_get_subscription_payment_records_map($db, $userId, $limitPerSubs
     return $recordsMap;
 }
 
+function wallos_get_subscription_payment_records_for_period($db, $userId, $dateFrom, $dateTo, $respectExcludeFromStats = true)
+{
+    $sql = '
+        SELECT subscription_payment_records.id, subscription_payment_records.subscription_id,
+               subscription_payment_records.due_date, subscription_payment_records.paid_at,
+               subscription_payment_records.amount_original, subscription_payment_records.currency_code_snapshot,
+               subscription_payment_records.main_currency_code_snapshot, subscription_payment_records.amount_main_snapshot,
+               subscription_payment_records.payment_method_id, subscription_payment_records.status,
+               subscription_payment_records.note, subscription_payment_records.created_at,
+               subscriptions.name AS subscription_name
+        FROM subscription_payment_records
+        INNER JOIN subscriptions ON subscriptions.id = subscription_payment_records.subscription_id
+        WHERE subscription_payment_records.user_id = :user_id
+          AND subscription_payment_records.status = :status
+          AND subscription_payment_records.paid_at >= :date_from
+          AND subscription_payment_records.paid_at <= :date_to
+    ';
+
+    if ($respectExcludeFromStats) {
+        $sql .= ' AND subscriptions.exclude_from_stats = 0';
+    }
+
+    $sql .= ' ORDER BY subscription_payment_records.paid_at DESC, subscription_payment_records.id DESC';
+
+    $stmt = $db->prepare($sql);
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $stmt->bindValue(':status', 'paid', SQLITE3_TEXT);
+    $stmt->bindValue(':date_from', $dateFrom, SQLITE3_TEXT);
+    $stmt->bindValue(':date_to', $dateTo, SQLITE3_TEXT);
+    $result = $stmt->execute();
+
+    $records = [];
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $records[] = $row;
+    }
+
+    return $records;
+}
+
 function wallos_record_subscription_payment(
     $db,
     $userId,

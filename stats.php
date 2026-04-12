@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/metric_explanations.php';
 
 
 // Get code of main currency to display on statistics
@@ -205,10 +206,12 @@ if ($showStatsGraphs) {
     <div class="statistic">
       <span><?= CurrencyFormatter::format($totalCostPerMonth, $code) ?></span>
       <div class="title"><?= translate('monthly_cost', $i18n) ?></div>
+      <?php wallos_render_metric_explanation_trigger('monthly_cost', $metricExplanations, translate('monthly_cost', $i18n)); ?>
     </div>
     <div class="statistic">
       <span><?= CurrencyFormatter::format($totalCostPerYear, $code) ?></span>
       <div class="title"><?= translate('yearly_cost', $i18n) ?></div>
+      <?php wallos_render_metric_explanation_trigger('yearly_cost', $metricExplanations, translate('yearly_cost', $i18n)); ?>
     </div>
     <div class="statistic">
       <span><?= CurrencyFormatter::format($averageSubscriptionCost, $code) ?></span>
@@ -235,18 +238,22 @@ if ($showStatsGraphs) {
     <div class="statistic">
       <span><?= CurrencyFormatter::format($amountDueThisMonth, $code) ?></span>
       <div class="title"><?= translate('amount_due', $i18n) ?></div>
+      <?php wallos_render_metric_explanation_trigger('amount_due', $metricExplanations, translate('amount_due', $i18n)); ?>
     </div>
     <div class="statistic">
       <span><?= CurrencyFormatter::format($currentMonthActualPaid, $code) ?></span>
       <div class="title"><?= translate('actual_paid_this_month', $i18n) ?></div>
+      <?php wallos_render_metric_explanation_trigger('actual_paid_this_month', $metricExplanations, translate('actual_paid_this_month', $i18n)); ?>
     </div>
     <div class="statistic">
       <span><?= CurrencyFormatter::format($currentYearActualPaid, $code) ?></span>
       <div class="title"><?= translate('actual_paid_this_year', $i18n) ?></div>
+      <?php wallos_render_metric_explanation_trigger('actual_paid_this_year', $metricExplanations, translate('actual_paid_this_year', $i18n)); ?>
     </div>
     <div class="statistic">
       <span><?= CurrencyFormatter::format($currentYearProjectedSpend, $code) ?></span>
       <div class="title"><?= translate('projected_yearly_spend', $i18n) ?></div>
+      <?php wallos_render_metric_explanation_trigger('projected_yearly_spend', $metricExplanations, translate('projected_yearly_spend', $i18n)); ?>
     </div>
     <?php
     if (isset($budgetUsed)) {
@@ -254,6 +261,7 @@ if ($showStatsGraphs) {
       <div class="statistic">
         <span><?= number_format($budgetUsed, 2) ?>%</span>
         <div class="title"><?= translate('percentage_budget_used', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('budget_used', $metricExplanations, translate('percentage_budget_used', $i18n)); ?>
       </div>
       <?php
     }
@@ -262,6 +270,7 @@ if ($showStatsGraphs) {
       <div class="statistic">
         <span><?= CurrencyFormatter::format($budgetLeft, $code) ?></span>
         <div class="title"><?= translate('budget_remaining', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('budget_remaining', $metricExplanations, translate('budget_remaining', $i18n)); ?>
       </div>
       <?php
     }
@@ -270,6 +279,7 @@ if ($showStatsGraphs) {
       <div class="statistic">
         <span><?= CurrencyFormatter::format($overBudgetAmount, $code) ?></span>
         <div class="title"><?= translate('amount_over_budget', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('amount_over_budget', $metricExplanations, translate('amount_over_budget', $i18n)); ?>
       </div>
       <?php
     }
@@ -372,6 +382,7 @@ if ($showStatsGraphs) {
     </div>
   </div>
 </section>
+<?php wallos_render_metric_explanation_modal($i18n); ?>
 <?php
 if ($showStatsGraphs) {
   ?>
@@ -389,6 +400,7 @@ if ($showStatsGraphs) {
 }
 ?>
 <script src="scripts/stats.js?<?= $version ?>"></script>
+<script src="scripts/metric-explanations.js?<?= $version . '.' . @filemtime(__DIR__ . '/scripts/metric-explanations.js') ?>"></script>
 <?php
 require_once 'includes/footer.php';
 ?>

@@ -91,6 +91,12 @@ $currentMonthActualPaid = wallos_get_subscription_payment_total($db, $userId, $c
 $currentYearActualPaid = wallos_get_subscription_payment_total($db, $userId, $currentYearStart, $currentYearEnd, true);
 $paidDueDatesThisYear = wallos_get_paid_due_dates_map($db, $userId, $currentYearStart, $currentYearEnd, true);
 $projectedRemainingYearCost = 0;
+$mainCurrencyCode = $currencies[$userData['main_currency']]['code'] ?? '';
+$monthlyCostBreakdown = [];
+$amountDueThisMonthSummary = [];
+$projectedYearSummary = [];
+$actualPaidThisMonthRecords = wallos_get_subscription_payment_records_for_period($db, $userId, $currentMonthStart, $currentMonthEnd, true);
+$actualPaidThisYearRecords = wallos_get_subscription_payment_records_for_period($db, $userId, $currentYearStart, $currentYearEnd, true);
 // Calculate total monthly price
 $mostExpensiveSubscription = array();
 $mostExpensiveSubscription['price'] = 0;
@@ -185,6 +191,14 @@ if ($result) {
                     $mostExpensiveSubscription['logo'] = $logo;
                 }
 
+                $monthlyCostBreakdown[] = [
+                    'name' => $name,
+                    'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
+                    'price_per_charge' => round((float) $originalSubscriptionPrice, 2),
+                    'monthly_equivalent' => round((float) $price, 2),
+                    'next_payment' => $next_payment,
+                ];
+
                 // Calculate ammount due this month
                 $nextPaymentDate = DateTime::createFromFormat('Y-m-d', trim($next_payment));
                 $tomorrow = new DateTime('tomorrow');
@@ -193,21 +207,36 @@ if ($result) {
                 if ($nextPaymentDate >= $tomorrow && $nextPaymentDate <= $endOfMonth) {
                     $nextPaymentDateKey = $nextPaymentDate->format('Y-m-d');
                     if (!empty($paidDueDatesThisYear[$subscriptionId][$nextPaymentDateKey])) {
-                        continue;
-                    }
+                        // Already settled by an actual payment record.
+                    } else {
+                        $timesToPay = 1;
+                        $daysInMonth = $endOfMonth->diff($tomorrow)->days + 1;
+                        $daysRemaining = $endOfMonth->diff($nextPaymentDate)->days + 1;
+                        if ($cycle == 1) {
+                            $timesToPay = $daysRemaining / $frequency;
+                        }
+                        if ($cycle == 2) {
+                            $weeksInMonth = ceil($daysInMonth / 7);
+                            $weeksRemaining = ceil($daysRemaining / 7);
+                            $timesToPay = $weeksRemaining / $frequency;
+                        }
+                        $lineAmount = $originalSubscriptionPrice * $timesToPay;
+                        $amountDueThisMonth += $lineAmount;
 
-                    $timesToPay = 1;
-                    $daysInMonth = $endOfMonth->diff($tomorrow)->days + 1;
-                    $daysRemaining = $endOfMonth->diff($nextPaymentDate)->days + 1;
-                    if ($cycle == 1) {
-                        $timesToPay = $daysRemaining / $frequency;
+                        if (!isset($amountDueThisMonthSummary[$subscriptionId])) {
+                            $amountDueThisMonthSummary[$subscriptionId] = [
+                                'name' => $name,
+                                'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
+                                'count' => 0,
+                                'unit_amount' => round((float) $originalSubscriptionPrice, 2),
+                                'total_amount' => 0,
+                                'next_due' => $nextPaymentDateKey,
+                            ];
+                        }
+
+                        $amountDueThisMonthSummary[$subscriptionId]['count'] += $timesToPay;
+                        $amountDueThisMonthSummary[$subscriptionId]['total_amount'] += round((float) $lineAmount, 2);
                     }
-                    if ($cycle == 2) {
-                        $weeksInMonth = ceil($daysInMonth / 7);
-                        $weeksRemaining = ceil($daysRemaining / 7);
-                        $timesToPay = $weeksRemaining / $frequency;
-                    }
-                    $amountDueThisMonth += $originalSubscriptionPrice * $timesToPay;
                 }
                 if (!empty($subscription['next_payment'])) {
                     try {
@@ -221,6 +250,20 @@ if ($result) {
                             $forecastDateString = $forecastDate->format('Y-m-d');
                             if ($forecastDate >= $todayDate && empty($paidDueDatesThisYear[$subscriptionId][$forecastDateString])) {
                                 $projectedRemainingYearCost += $originalSubscriptionPrice;
+
+                                if (!isset($projectedYearSummary[$subscriptionId])) {
+                                    $projectedYearSummary[$subscriptionId] = [
+                                        'name' => $name,
+                                        'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
+                                        'count' => 0,
+                                        'unit_amount' => round((float) $originalSubscriptionPrice, 2),
+                                        'total_amount' => 0,
+                                        'next_due' => $forecastDateString,
+                                    ];
+                                }
+
+                                $projectedYearSummary[$subscriptionId]['count'] += 1;
+                                $projectedYearSummary[$subscriptionId]['total_amount'] += round((float) $originalSubscriptionPrice, 2);
                             }
                             $forecastDate->add($interval);
                         }
@@ -274,6 +317,23 @@ if ($result) {
     }
 }
 
+function wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n)
+{
+    $frequency = max(1, (int) $frequency);
+    $cycle = (int) $cycle;
+
+    switch ($cycle) {
+        case 1:
+            return $frequency === 1 ? translate('Daily', $i18n) : $frequency . ' ' . translate('days', $i18n);
+        case 2:
+            return $frequency === 1 ? translate('Weekly', $i18n) : $frequency . ' ' . translate('weeks', $i18n);
+        case 3:
+            return $frequency === 1 ? translate('Monthly', $i18n) : $frequency . ' ' . translate('months', $i18n);
+        default:
+            return $frequency === 1 ? translate('Yearly', $i18n) : $frequency . ' ' . translate('years', $i18n);
+    }
+}
+
 $showVsBudgetGraph = false;
 $vsBudgetDataPoints = [];
 if (isset($userData['budget']) && $userData['budget'] > 0) {
@@ -323,5 +383,89 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 }
 
 $showTotalMonthlyCostGraph = count($totalMonthlyCostDataPoints) > 1;
+
+$metricExplanations = [
+    'monthly_cost' => [
+        'title' => translate('monthly_cost', $i18n),
+        'formula' => translate('monthly_cost_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) $totalCostPerMonth, 2),
+        'items' => array_values($monthlyCostBreakdown),
+    ],
+    'yearly_cost' => [
+        'title' => translate('yearly_cost', $i18n),
+        'formula' => translate('yearly_cost_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) $totalCostPerYear, 2),
+        'items' => array_values($monthlyCostBreakdown),
+    ],
+    'amount_due' => [
+        'title' => translate('amount_due', $i18n),
+        'formula' => translate('amount_due_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) $amountDueThisMonth, 2),
+        'items' => array_values($amountDueThisMonthSummary),
+    ],
+    'actual_paid_this_month' => [
+        'title' => translate('actual_paid_this_month', $i18n),
+        'formula' => translate('actual_paid_this_month_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) $currentMonthActualPaid, 2),
+        'items' => $actualPaidThisMonthRecords,
+    ],
+    'actual_paid_this_year' => [
+        'title' => translate('actual_paid_this_year', $i18n),
+        'formula' => translate('actual_paid_this_year_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) $currentYearActualPaid, 2),
+        'items' => $actualPaidThisYearRecords,
+    ],
+    'projected_yearly_spend' => [
+        'title' => translate('projected_yearly_spend', $i18n),
+        'formula' => translate('projected_yearly_spend_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) $currentYearProjectedSpend, 2),
+        'items' => array_values($projectedYearSummary),
+        'actual_paid_total' => round((float) $currentYearActualPaid, 2),
+        'projected_remaining_total' => round((float) $projectedRemainingYearCost, 2),
+    ],
+];
+
+if (isset($budget) && $budget > 0) {
+    $metricExplanations['budget'] = [
+        'title' => translate('budget', $i18n),
+        'formula' => translate('budget_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) $budget, 2),
+        'items' => [],
+    ];
+    $metricExplanations['budget_used'] = [
+        'title' => translate('budget_used', $i18n),
+        'formula' => translate('budget_used_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) ($budgetUsed ?? 0), 2),
+        'reference_total' => round((float) $budget, 2),
+        'cost_total' => round((float) $totalCostPerMonth, 2),
+        'items' => array_values($monthlyCostBreakdown),
+    ];
+    $metricExplanations['budget_remaining'] = [
+        'title' => translate('budget_remaining', $i18n),
+        'formula' => translate('budget_remaining_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) ($budgetLeft ?? 0), 2),
+        'reference_total' => round((float) $budget, 2),
+        'cost_total' => round((float) $totalCostPerMonth, 2),
+        'items' => array_values($monthlyCostBreakdown),
+    ];
+    $metricExplanations['amount_over_budget'] = [
+        'title' => translate('amount_over_budget', $i18n),
+        'formula' => translate('amount_over_budget_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) ($overBudgetAmount ?? 0), 2),
+        'reference_total' => round((float) $budget, 2),
+        'cost_total' => round((float) $totalCostPerMonth, 2),
+        'items' => array_values($monthlyCostBreakdown),
+    ];
+}
 
 ?>
