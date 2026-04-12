@@ -18,7 +18,7 @@ $i18n = [
     "email_exists" => "Email already exists",
     "registration_failed" => "Registration failed, please try again.",
     "registration_form_notice" => "You do not need to provide real personal information. The name fields can be filled in freely.",
-    "tcy_selfhost_notice" => "tcymc self-hosted edition. If you notice a problem, please report it to tcy for a timely fix.",
+    "tcy_selfhost_notice" => "Subscription and budget management, but with enhanced features.",
     "register" => "Register",
     "restore_database" => "Restore Database",
     // Login Page
@@ -224,6 +224,7 @@ $i18n = [
     "subscription_image_layout_focus" => "Focus",
     "subscription_image_layout_grid" => "Grid",
     "subscription_layout_switch" => "Subscription layout",
+    "subscription_layout_single_column" => "1 Column",
     "subscription_layout_two_columns" => "2 Columns",
     "subscription_layout_three_columns" => "3 Columns",
     "subscription_image_source_server" => "Stored On Server",

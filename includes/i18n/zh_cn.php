@@ -18,7 +18,7 @@ $i18n = [
     "email_exists" => "电子邮箱已存在",
     "registration_failed" => "注册失败，请重试。",
     "registration_form_notice" => "无需填写真实信息，姓名可以随意填写。",
-    "tcy_selfhost_notice" => "tcymc自建服务版，有问题请及时反馈给 tcy 修复。",
+    "tcy_selfhost_notice" => "订阅预算管理，但功能增强版。",
     "register" => "注册",
     "restore_database" => "恢复数据库",
 
@@ -233,6 +233,7 @@ $i18n = [
     "subscription_image_layout_focus" => "聚焦",
     "subscription_image_layout_grid" => "网格",
     "subscription_layout_switch" => "订阅布局",
+    "subscription_layout_single_column" => "单列",
     "subscription_layout_two_columns" => "两列",
     "subscription_layout_three_columns" => "三列",
     "subscription_image_source_server" => "已存服务器",

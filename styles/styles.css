@@ -539,7 +539,13 @@ button:hover svg .main-color {
 .subscriptions.subscription-columns {
   display: grid;
   align-items: start;
+  align-content: start;
   gap: 18px;
+  grid-auto-rows: 8px;
+}
+
+.subscriptions.subscription-columns.subscription-columns-1 {
+  grid-template-columns: 1fr;
 }
 
 .subscriptions.subscription-columns.subscription-columns-2 {
@@ -561,10 +567,6 @@ button:hover svg .main-color {
   background-color: var(--box-background-color);
   box-shadow: var(--box-shadow);
   border-radius: 16px;
-}
-
-.subscriptions.subscription-columns .subscription-container {
-  height: 100%;
 }
 
 .subscription-container>.mobile-actions {
@@ -632,10 +634,6 @@ button.mobile-action-renew {
   justify-content: center;
 }
 
-.subscriptions.subscription-columns .subscription {
-  min-height: 100%;
-}
-
 .subscription-container.hide {
   display: none;
 }
@@ -679,7 +677,7 @@ button.mobile-action-renew {
   min-height: 40px;
 }
 
-.subscriptions.subscription-columns .subscription-main {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-main {
   display: grid;
   grid-template-columns: minmax(44px, 58px) minmax(0, 1fr) auto;
   grid-template-areas:
@@ -699,7 +697,7 @@ button.mobile-action-renew {
   cursor: pointer;
 }
 
-.subscriptions.subscription-columns .subscription-main .actions-expand {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-main .actions-expand {
   grid-area: actions;
   justify-self: end;
   align-self: start;
@@ -726,7 +724,7 @@ button.mobile-action-renew {
   margin: 0px;
 }
 
-.subscriptions.subscription-columns .subscription-main .actions {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-main .actions {
   right: 0px;
   top: calc(100% + 8px);
   z-index: 4;
@@ -776,7 +774,7 @@ button.mobile-action-renew {
   overflow: hidden;
 }
 
-.subscriptions.subscription-columns .subscription-secondary {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-secondary {
   flex-wrap: wrap;
   align-items: stretch;
   gap: 10px;
@@ -789,7 +787,7 @@ button.mobile-action-renew {
   overflow: hidden;
 }
 
-.subscriptions.subscription-columns .subscription-notes>span {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-notes>span {
   align-items: flex-start;
 }
 
@@ -814,8 +812,8 @@ button.mobile-action-renew {
   margin: 0px;
 }
 
-.subscriptions.subscription-columns .subscription-main>span,
-.subscriptions.subscription-columns .subscription-secondary>span {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-main>span,
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-secondary>span {
   justify-content: flex-start;
   text-align: left;
 }
@@ -824,7 +822,7 @@ button.mobile-action-renew {
   flex-basis: var(--logo-flex-basis);
 }
 
-.subscriptions.subscription-columns .subscription .logo {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription .logo {
   grid-area: logo;
   flex-basis: auto;
   align-self: start;
@@ -848,7 +846,7 @@ button.mobile-action-renew {
   font-weight: 600;
 }
 
-.subscriptions.subscription-columns .subscription .name {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription .name {
   grid-area: name;
   flex-basis: auto;
   min-width: 0;
@@ -862,7 +860,7 @@ button.mobile-action-renew {
   align-items: center;
 }
 
-.subscriptions.subscription-columns .subscription .cycle {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription .cycle {
   grid-area: cycle;
   flex-basis: auto;
   flex-grow: 0;
@@ -882,7 +880,7 @@ button.mobile-action-renew {
   text-transform: capitalize;
 }
 
-.subscriptions.subscription-columns .subscription .next {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription .next {
   grid-area: next;
   flex-basis: auto;
   flex-grow: 0;
@@ -896,7 +894,7 @@ button.mobile-action-renew {
   align-items: center;
 }
 
-.subscriptions.subscription-columns .subscription .payment_method {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription .payment_method {
   grid-area: payment;
   margin-left: 0px;
   justify-self: end;
@@ -921,7 +919,7 @@ button.mobile-action-renew {
   flex-direction: row;
 }
 
-.subscriptions.subscription-columns .subscription .price {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription .price {
   grid-area: price;
   flex-basis: auto;
   justify-self: end;
@@ -955,7 +953,7 @@ button.mobile-action-renew {
   gap: 10px;
 }
 
-.subscriptions.subscription-columns .subscription-secondary>span {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-secondary>span {
   flex: 1 1 calc(50% - 10px);
   min-width: min(100%, 180px);
 }
@@ -966,7 +964,7 @@ button.mobile-action-renew {
   cursor: pointer;
 }
 
-.subscriptions.subscription-columns .subscription-secondary>.url {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-secondary>.url {
   flex: 0 0 auto;
   margin-left: 0px;
 }
@@ -2334,13 +2332,14 @@ button.dark-theme-button i {
   box-sizing: border-box;
   position: fixed;
   left: 50%;
-  top: 50%;
-  transform: translateX(-50%) translateY(-50%);
-  z-index: 5;
+  top: max(18px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  z-index: 4000;
   max-width: min(1000px, 95vw);
   max-height: calc(100vh - 34px);
   width: 95%;
   display: none;
+  overflow: auto;
 }
 
 .subscription-image-viewer.is-open {
