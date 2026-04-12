@@ -57,13 +57,7 @@ $pageSections = [
                         <h3>
                             Wallos-Remastered <?= $version ?> <?= $demoMode ? "Demo" : "" ?>
                         </h3>
-                        <span>
-                            <?= translate('release_notes', $i18n) ?>
-                            <a href="https://github.com/ellite/Wallos/releases/tag/<?= $version ?>" target="_blank"
-                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                            </a>
-                        </span>
+                        <span>Current running version of the remastered build.</span>
                     </div>
                     <?php if (!$wallosIsUpToDate): ?>
                         <div class="update-available">
@@ -71,13 +65,7 @@ $pageSections = [
                                 <i class="fa-solid fa-info-circle"></i>
                                 <?= translate('update_available', $i18n) ?> <?= $latestVersion ?>
                             </h3>
-                            <span>
-                                <?= translate('release_notes', $i18n) ?>
-                                <a href="https://github.com/ellite/Wallos/releases/tag/<?= $latestVersion ?>" target="_blank"
-                                    title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                </a>
-                            </span>
+                            <span>A newer tracked upstream version is available for manual review.</span>
                         </div>
                     <?php endif; ?>
                     <div>
@@ -100,6 +88,26 @@ $pageSections = [
                             </a>
                         </span>
                     </div>
+                    <div>
+                        <h3>Original Author</h3>
+                        <span>
+                            https://henrique.pt
+                            <a href="https://henrique.pt/" target="_blank"
+                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <div>
+                        <h3>Remastered Author</h3>
+                        <span>
+                            https://github.com/KanameMadoka520
+                            <a href="https://github.com/KanameMadoka520" target="_blank"
+                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
                 </div>
             </section>
 
@@ -108,6 +116,16 @@ $pageSections = [
                     <h2><?= translate("credits", $i18n) ?></h2>
                 </header>
                 <div class="credits-list">
+                    <div>
+                        <h3>Wallos Original Project</h3>
+                        <span>
+                            https://github.com/ellite/Wallos
+                            <a href="https://github.com/ellite/Wallos" target="_blank"
+                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
                     <div>
                         <h3><?= translate('icons', $i18n) ?></h3>
                         <span>

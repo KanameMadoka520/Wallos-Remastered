@@ -12,6 +12,7 @@ require_once 'i18n/getlang.php';
 require_once 'i18n/' . $lang . '.php';
 
 require_once 'getsettings.php';
+require_once 'decorative_background.php';
 
 require_once 'version.php';
 
@@ -43,8 +44,8 @@ if (isset($settings['customCss'])) {
   $customCss = $settings['customCss'];
 }
 
+$cookieExpire = time() + (30 * 24 * 60 * 60);
 if (isset($themeValue)) {
-  $cookieExpire = time() + (30 * 24 * 60 * 60);
   setcookie('theme', $themeValue, [
     'expires' => $cookieExpire,
     'samesite' => 'Lax'
@@ -76,6 +77,12 @@ function hex2rgb($hex)
 }
 
 $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
+$decorativeBackgroundEnabled = !isset($settings['decorative_background']) || (int) $settings['decorative_background'] === 1;
+$decorativeBackgroundClass = $decorativeBackgroundEnabled ? "decorative-background-enabled" : "decorative-background-disabled";
+setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
+  'expires' => $cookieExpire,
+  'samesite' => 'Lax'
+]);
 
 ?>
 <!DOCTYPE html>
@@ -93,6 +100,7 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
   <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
   <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
   <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
+  <link rel="stylesheet" href="styles/decorative-background.css?<?= $version ?>">
   <link rel="stylesheet" href="styles/styles.css?<?= $version ?>">
   <link rel="stylesheet" href="styles/dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme != "dark" ? "disabled" : "" ?>>
   <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
@@ -161,7 +169,8 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
   </script>
 </head>
 
-<body class="<?= $theme ?> <?= $languages[$lang]['dir'] ?> <?= $mobileNavigation ?>">
+<body class="<?= $theme ?> <?= $languages[$lang]['dir'] ?> <?= $mobileNavigation ?> <?= $decorativeBackgroundClass ?>">
+  <?php wallos_render_decorative_background('app'); ?>
   <header>
     <div class="contain">
       <div class="logo">

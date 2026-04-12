@@ -17,6 +17,8 @@ $i18n = [
     "username_exists" => "用户名已存在",
     "email_exists" => "电子邮箱已存在",
     "registration_failed" => "注册失败，请重试。",
+    "registration_form_notice" => "无需填写真实信息，姓名可以随意填写。",
+    "tcy_selfhost_notice" => "tcymc自建服务版，有问题请及时反馈给 tcy 修复。",
     "register" => "注册",
     "restore_database" => "恢复数据库",
 
@@ -403,6 +405,8 @@ $i18n = [
     "main_color" => "主色",
     "accent_color" => "强调色",
     "hover_color" => "悬停颜色",
+    "decorative_background" => "页面背景效果",
+    "decorative_background_info" => "在页面背景中渲染几何图形、代码片段、中文文字和支付图标等装饰元素。如果你更喜欢纯净背景，可以关闭。",
     "save_custom_colors" => "保存自定义颜色",
     "reset_custom_colors" => "重置自定义颜色",
     "custom_css" => "自定义 CSS",

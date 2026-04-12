@@ -31,7 +31,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const themePreference = prefersDarkMode ? 'dark' : 'light';
     const darkThemeCss = document.querySelector("#dark-theme");
     darkThemeCss.disabled = themePreference === 'light';
-    document.body.className = themePreference;
+    const existingClasses = document.body.className.split(' ').filter(cls => cls && cls !== 'dark' && cls !== 'light');
+    document.body.className = [...existingClasses, themePreference].join(' ');
     const themeColorMetaTag = document.querySelector('meta[name="theme-color"]');
     themeColorMetaTag.setAttribute('content', themePreference === 'dark' ? '#222222' : '#FFFFFF');
   }

@@ -1,3 +1,17 @@
+function setBodyThemeClass(themeName) {
+  const existingClasses = document.body.className
+    .split(' ')
+    .filter(cls => cls && cls !== 'dark' && cls !== 'light');
+
+  document.body.className = [...existingClasses, themeName].join(' ');
+}
+
+function applyDecorativeBackgroundState(enabled) {
+  document.body.classList.toggle('decorative-background-enabled', enabled);
+  document.body.classList.toggle('decorative-background-disabled', !enabled);
+  document.cookie = `decorativeBackground=${enabled ? '1' : '0'}; expires=Fri, 31 Dec 9999 23:59:59 GMT; SameSite=Lax`;
+}
+
 function switchTheme() {
   const darkThemeCss = document.querySelector("#dark-theme");
   darkThemeCss.disabled = !darkThemeCss.disabled;
@@ -5,7 +19,7 @@ function switchTheme() {
   const themeChoice = darkThemeCss.disabled ? 'light' : 'dark';
   document.cookie = 'theme=' + themeValue + '; expires=Fri, 31 Dec 9999 23:59:59 GMT; SameSite=Lax';
 
-  document.body.className = themeChoice;
+  setBodyThemeClass(themeChoice);
 
   const button = document.getElementById("switchTheme");
   button.disabled = true;
@@ -66,19 +80,19 @@ function setDarkTheme(theme) {
 
         if (theme == 0) {
           darkThemeCss.disabled = true;
-          document.body.className = 'light';
+          setBodyThemeClass('light');
           lightThemeButton.classList.add('selected');
         }
 
         if (theme == 1) {
           darkThemeCss.disabled = false;
-          document.body.className = 'dark';
+          setBodyThemeClass('dark');
           darkThemeButton.classList.add('selected');
         }
 
         if (theme == 2) {
           darkThemeCss.disabled = !prefersDarkMode;
-          document.body.className = prefersDarkMode ? 'dark' : 'light';
+          setBodyThemeClass(prefersDarkMode ? 'dark' : 'light');
           automaticThemeButton.classList.add('selected');
           document.cookie = `inUseTheme=${prefersDarkMode ? 'dark' : 'light'}; expires=Fri, 31 Dec 9999 23:59:59 GMT; SameSite=Lax`;
         }
@@ -260,5 +274,41 @@ function saveCustomCss() {
     .catch(error => {
       showErrorMessage(translate('unknown_error'));
       button.disabled = false;
+    });
+}
+
+function setDecorativeBackground() {
+  const checkbox = document.getElementById('decorativebackground');
+  if (!checkbox) {
+    return;
+  }
+
+  const enabled = checkbox.checked;
+  checkbox.disabled = true;
+
+  fetch('endpoints/settings/decorative_background.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ value: enabled })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        applyDecorativeBackgroundState(enabled);
+        showSuccessMessage(data.message);
+      } else {
+        checkbox.checked = !enabled;
+        showErrorMessage(data.message);
+      }
+    })
+    .catch(() => {
+      checkbox.checked = !enabled;
+      showErrorMessage(translate('unknown_error'));
+    })
+    .finally(() => {
+      checkbox.disabled = false;
     });
 }

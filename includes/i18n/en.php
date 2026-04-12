@@ -17,6 +17,8 @@ $i18n = [
     "username_exists" => "Username already exists",
     "email_exists" => "Email already exists",
     "registration_failed" => "Registration failed, please try again.",
+    "registration_form_notice" => "You do not need to provide real personal information. The name fields can be filled in freely.",
+    "tcy_selfhost_notice" => "tcymc self-hosted edition. If you notice a problem, please report it to tcy for a timely fix.",
     "register" => "Register",
     "restore_database" => "Restore Database",
     // Login Page
@@ -394,6 +396,8 @@ $i18n = [
     "main_color" => "Main Color",
     "accent_color" => "Accent Color",
     "hover_color" => "Hover Color",
+    "decorative_background" => "Decorative Background Effects",
+    "decorative_background_info" => "Render geometric layers, code fragments, Chinese typography, and payment icon motifs behind the interface. Disable this if you prefer a cleaner page background.",
     "save_custom_colors" => "Save Custom Colors",
     "reset_custom_colors" => "Reset Custom Colors",
     "custom_css" => "Custom CSS",

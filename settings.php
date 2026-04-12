@@ -1408,6 +1408,20 @@ $pageSections = [
                 </form>
             </div>
             <div>
+                <h3><?= translate('decorative_background', $i18n) ?></h3>
+                <div class="form-group-inline">
+                    <input type="checkbox" id="decorativebackground" name="decorativebackground"
+                        onChange="setDecorativeBackground()" <?= (!isset($settings['decorative_background']) || $settings['decorative_background']) ? 'checked' : '' ?>>
+                    <label for="decorativebackground"><?= translate('decorative_background', $i18n) ?></label>
+                </div>
+                <div class="settings-notes">
+                    <p>
+                        <i class="fa-solid fa-circle-info"></i>
+                        <?= translate('decorative_background_info', $i18n) ?>
+                    </p>
+                </div>
+            </div>
+            <div>
                 <h3><?= translate('custom_colors', $i18n) ?></h3>
                 <div class="custom-colors wrap">
                     <div class="form-group-inline mobile-grow color-picker-button">
