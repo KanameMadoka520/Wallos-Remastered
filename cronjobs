@@ -11,5 +11,6 @@
 40 3 * * * /usr/local/bin/php /var/www/html/endpoints/cronjobs/createbackup.php auto >> /var/log/cron/createbackup.log 2>&1
 15 3 * * * /usr/local/bin/php /var/www/html/endpoints/cronjobs/cleanuprequestlogs.php >> /var/log/cron/cleanuprequestlogs.log 2>&1
 20 3 * * * /usr/local/bin/php /var/www/html/endpoints/cronjobs/cleanupbannedusers.php >> /var/log/cron/cleanupbannedusers.log 2>&1
+25 3 * * * /usr/local/bin/php /var/www/html/endpoints/cronjobs/cleanuptrashedsubscriptions.php >> /var/log/cron/cleanuptrashedsubscriptions.log 2>&1
 30 3 * * 1 /usr/local/bin/php /var/www/html/endpoints/cronjobs/generaterecommendations.php weekly >> /var/log/cron/generaterecommendations.log 2>&1
 0 4 1 * * /usr/local/bin/php /var/www/html/endpoints/cronjobs/generaterecommendations.php monthly >> /var/log/cron/generaterecommendations.log 2>&1

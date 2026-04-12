@@ -2,15 +2,17 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/getdbkeys.php';
+require_once '../../includes/subscription_trash.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
 
 $id = $data['id'];
 
-$stmt = $db->prepare('SELECT * FROM subscriptions WHERE id = :id AND user_id = :userId');
+$stmt = $db->prepare('SELECT * FROM subscriptions WHERE id = :id AND user_id = :userId AND lifecycle_status = :lifecycle_status');
 $stmt->bindParam(':id', $id, SQLITE3_INTEGER);
 $stmt->bindParam(':userId', $_SESSION['userId'], SQLITE3_INTEGER);
+$stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
 $result = $stmt->execute();
 
 if ($result === false) {

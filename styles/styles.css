@@ -905,6 +905,31 @@ button.mobile-action-renew {
   font-weight: 600;
 }
 
+.subscription-inline-flag {
+  position: absolute;
+  top: -4px;
+  right: 56px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: rgba(var(--text-color-rgb), 0.08);
+  color: var(--text-color);
+}
+
+.subscription-inline-flag.no-stats {
+  background-color: rgba(var(--accent-color-rgb), 0.14);
+  color: var(--accent-color);
+}
+
+.rtl .subscription-inline-flag {
+  right: auto;
+  left: 56px;
+}
+
 .subscriptions.subscription-columns.subscription-columns-multi .subscription .name {
   grid-area: name;
   flex-basis: auto;
@@ -1157,6 +1182,74 @@ button.mobile-action-renew {
 
 .subscription-notes-help {
   margin-top: 10px;
+}
+
+.subscription-stats-exclusion-note {
+  margin-top: 10px;
+}
+
+.subscription-recycle-bin-section {
+  margin-top: 24px;
+}
+
+.subscription-recycle-bin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.subscription-trash-card {
+  border: 1px solid var(--box-border-color);
+  border-radius: 16px;
+  background-color: var(--box-background-color);
+  box-shadow: var(--box-shadow);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.subscription-trash-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.subscription-trash-card-header h3 {
+  margin: 0 0 8px;
+}
+
+.subscription-trash-card-header p,
+.subscription-trash-card-meta p {
+  margin: 0 0 6px;
+}
+
+.subscription-trash-card-header img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 12px;
+  background-color: rgba(var(--main-color-rgb), 0.04);
+  padding: 8px;
+}
+
+.subscription-trash-card-meta {
+  font-size: 14px;
+  color: rgba(var(--text-color-rgb), 0.82);
+}
+
+.subscription-trash-card-actions {
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+.subscription-recycle-bin-empty {
+  padding: 18px;
+  border: 1px dashed var(--box-border-color);
+  border-radius: 16px;
+  color: rgba(var(--text-color-rgb), 0.7);
+  text-align: center;
 }
 
 .calendar-subscription-notes {

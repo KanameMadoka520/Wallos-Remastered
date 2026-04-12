@@ -5,6 +5,7 @@ use PHPMailer\PHPMailer\Exception;
 
 require_once 'validate.php';
 require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
+require_once __DIR__ . '/../../includes/subscription_trash.php';
 require_once __DIR__ . '/../../includes/ssrf_helper.php';
 
 require __DIR__ . '/../../libs/PHPMailer/PHPMailer.php';
@@ -253,11 +254,12 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             $categories[$rowCategory['id']] = $rowCategory;
         }
 
-        $query = "SELECT * FROM subscriptions WHERE user_id = :user_id AND notify = :notify AND inactive = :inactive ORDER BY payer_user_id ASC";
+        $query = "SELECT * FROM subscriptions WHERE user_id = :user_id AND notify = :notify AND inactive = :inactive AND lifecycle_status = :lifecycle_status ORDER BY payer_user_id ASC";
         $stmt = $db->prepare($query);
         $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
         $stmt->bindValue(':notify', 1, SQLITE3_INTEGER);
         $stmt->bindValue(':inactive', 0, SQLITE3_INTEGER);
+        $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
         $resultSubscriptions = $stmt->execute();
 
         $notify = [];

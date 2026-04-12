@@ -28,6 +28,7 @@ Example response:
 */
 
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_trash.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -85,9 +86,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     $monthlyCost = 0;
     $notes = [];
 
-    $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0";
+    $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0 AND lifecycle_status = :lifecycle_status AND exclude_from_stats = 0";
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':userId', $userId);
+    $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
     $result = $stmt->execute();
     $subscriptions = [];
     while ($subscription = $result->fetchArray(SQLITE3_ASSOC)) {

@@ -2,6 +2,7 @@
 
 require_once 'validate.php';
 require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
+require_once __DIR__ . '/../../includes/subscription_trash.php';
 
 require 'settimezone.php';
 
@@ -20,9 +21,10 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $cycles[$cycleId] = $row;
 }
 
-$query = "SELECT id, next_payment, frequency, cycle FROM subscriptions WHERE next_payment < :currentDate AND auto_renew = 1 AND inactive = 0";
+$query = "SELECT id, next_payment, frequency, cycle FROM subscriptions WHERE next_payment < :currentDate AND auto_renew = 1 AND inactive = 0 AND lifecycle_status = :lifecycle_status";
 $stmt = $db->prepare($query);
 $stmt->bindValue(':currentDate', $currentDate->format('Y-m-d'));
+$stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
 $result = $stmt->execute();
 
 while ($row = $result->fetchArray(SQLITE3_ASSOC)) {

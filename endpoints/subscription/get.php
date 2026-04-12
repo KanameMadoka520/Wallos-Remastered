@@ -1,14 +1,16 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/subscription_media.php';
+require_once '../../includes/subscription_trash.php';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     if (isset($_GET['id']) && $_GET['id'] != "") {
         $subscriptionId = intval($_GET['id']);
-        $query = "SELECT * FROM subscriptions WHERE id = :subscriptionId AND user_id = :userId";
+        $query = "SELECT * FROM subscriptions WHERE id = :subscriptionId AND user_id = :userId AND lifecycle_status = :lifecycle_status";
         $stmt = $db->prepare($query);
         $stmt->bindParam(':subscriptionId', $subscriptionId, SQLITE3_INTEGER);
         $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+        $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
         $result = $stmt->execute();
 
         $subscriptionData = array();
@@ -30,6 +32,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $subscriptionData['category_id'] = $row['category_id'];
             $subscriptionData['notify'] = $row['notify'];
             $subscriptionData['inactive'] = $row['inactive'];
+            $subscriptionData['exclude_from_stats'] = (int) ($row['exclude_from_stats'] ?? 0);
             $subscriptionData['url'] = htmlspecialchars_decode($row['url'] ?? "");
             $subscriptionData['notify_days_before'] = $row['notify_days_before'];
             $subscriptionData['cancellation_date'] = $row['cancellation_date'];

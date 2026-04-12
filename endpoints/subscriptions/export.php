@@ -1,5 +1,6 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_trash.php';
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     die(json_encode([
@@ -12,9 +13,10 @@ require_once '../../includes/getdbkeys.php';
 
 $subscriptions = array();
 
-$query = "SELECT * FROM subscriptions WHERE user_id = :userId";
+$query = "SELECT * FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status";
 $stmt = $db->prepare($query);
 $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+$stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
 $result = $stmt->execute();
 
 while ($row = $result->fetchArray(SQLITE3_ASSOC)) {

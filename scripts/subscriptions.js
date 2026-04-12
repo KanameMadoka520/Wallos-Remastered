@@ -1266,6 +1266,10 @@ function resetForm() {
   startDate.value = new Date().toISOString().split('T')[0];
   const notifyDaysBefore = document.querySelector("#notify_days_before");
   notifyDaysBefore.disabled = true;
+  const excludeFromStats = document.querySelector("#exclude_from_stats");
+  if (excludeFromStats) {
+    excludeFromStats.checked = false;
+  }
   const replacementSubscriptionIdSelect = document.querySelector("#replacement_subscription_id");
   replacementSubscriptionIdSelect.value = "0";
   const replacementSubscription = document.querySelector(`#replacement_subscritpion`);
@@ -1345,6 +1349,10 @@ function fillEditFormFields(subscription) {
   const notifications = document.querySelector("#notifications");
   if (notifications) {
     notifications.checked = subscription.notify;
+  }
+  const excludeFromStats = document.querySelector("#exclude_from_stats");
+  if (excludeFromStats) {
+    excludeFromStats.checked = Number(subscription.exclude_from_stats || 0) === 1;
   }
 
   const notifyDaysBefore = document.querySelector("#notify_days_before");
@@ -1445,7 +1453,7 @@ function deleteSubscription(event, id) {
   event.stopPropagation();
   event.preventDefault();
 
-  if (!confirm(translate('confirm_delete_subscription'))) {
+  if (!confirm(translate('confirm_move_subscription_to_recycle_bin'))) {
     return;
   }
 
@@ -1460,9 +1468,9 @@ function deleteSubscription(event, id) {
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
-        showSuccessMessage(translate('subscription_deleted'));
-        fetchSubscriptions(null, null, "delete");
+        showSuccessMessage(data.message || translate('subscription_deleted'));
         closeAddSubscription();
+        window.setTimeout(() => window.location.reload(), 350);
       } else {
         showErrorMessage(data.message || translate('error_deleting_subscription'));
       }
@@ -1471,6 +1479,70 @@ function deleteSubscription(event, id) {
       console.error("Error:", error);
       showErrorMessage(translate('error_deleting_subscription'));
     });
+}
+
+function toggleSubscriptionSection(button) {
+  const targetId = button.dataset.target;
+  const target = document.getElementById(targetId);
+  if (!target) {
+    return;
+  }
+
+  const isExpanded = button.getAttribute('aria-expanded') === 'true';
+  button.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+  target.classList.toggle('is-collapsed', isExpanded);
+
+  const icon = button.querySelector('i');
+  if (icon) {
+    icon.classList.toggle('fa-chevron-up', !isExpanded);
+    icon.classList.toggle('fa-chevron-down', isExpanded);
+  }
+}
+
+function restoreSubscriptionFromRecycleBin(id) {
+  fetch("endpoints/subscription/restore.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": window.csrfToken,
+    },
+    body: JSON.stringify({ id }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        showSuccessMessage(data.message || translate("success"));
+        window.setTimeout(() => window.location.reload(), 350);
+      } else {
+        showErrorMessage(data.message || translate("error"));
+      }
+    })
+    .catch(() => showErrorMessage(translate("error")));
+}
+
+function permanentlyDeleteSubscription(id) {
+  if (!confirm(translate('confirm_permanently_delete_subscription'))) {
+    return;
+  }
+
+  fetch("endpoints/subscription/permanentdelete.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": window.csrfToken,
+    },
+    body: JSON.stringify({ id }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        showSuccessMessage(data.message || translate("success"));
+        window.setTimeout(() => window.location.reload(), 350);
+      } else {
+        showErrorMessage(data.message || translate("error"));
+      }
+    })
+    .catch(() => showErrorMessage(translate("error")));
 }
 
 

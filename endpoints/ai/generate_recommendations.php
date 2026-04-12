@@ -1,6 +1,7 @@
 <?php
 set_time_limit(300);
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_trash.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/ssrf_helper.php';
 
@@ -125,8 +126,9 @@ require_once '../../includes/i18n/languages.php';
 $userLanguageName = $languages[$userLanguage]['name'] ?? 'English';
 
 // Subscriptions
-$stmt = $db->prepare("SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = 0");
+$stmt = $db->prepare("SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = 0 AND lifecycle_status = :lifecycle_status AND exclude_from_stats = 0");
 $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+$stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
 $result = $stmt->execute();
 
 $subscriptions = [];

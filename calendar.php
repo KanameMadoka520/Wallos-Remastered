@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/subscription_trash.php';
 
 $calendarJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/calendar.js');
 
@@ -62,9 +63,10 @@ $numberOfSubscriptionsToPayThisMonth = 0;
 $totalCostThisMonth = 0;
 $amountDueThisMonth = 0;
 
-$query = "SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = 0";
+$query = "SELECT * FROM subscriptions WHERE user_id = :user_id AND lifecycle_status = :lifecycle_status AND inactive = 0";
 $stmt = $db->prepare($query);
 $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+$stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
 $result = $stmt->execute();
 $subscriptions = [];
 while ($row = $result->fetchArray(SQLITE3_ASSOC)) {

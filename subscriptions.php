@@ -4,6 +4,7 @@ require_once 'includes/header.php';
 require_once 'includes/getdbkeys.php';
 require_once 'includes/user_groups.php';
 require_once 'includes/subscription_media.php';
+require_once 'includes/subscription_trash.php';
 
 include_once 'includes/list_subscriptions.php';
 
@@ -11,9 +12,9 @@ $sort = "manual_order";
 $sortOrder = $sort;
 
 if ($settings['disabledToBottom'] === 'true') {
-  $sql = "SELECT * FROM subscriptions WHERE user_id = :userId ORDER BY inactive ASC, sort_order ASC, next_payment ASC";
+  $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status ORDER BY inactive ASC, sort_order ASC, next_payment ASC";
 } else {
-  $sql = "SELECT * FROM subscriptions WHERE user_id = :userId ORDER BY sort_order ASC, next_payment ASC, inactive ASC";
+  $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status ORDER BY sort_order ASC, next_payment ASC, inactive ASC";
 }
 
 $params = array();
@@ -42,7 +43,7 @@ if ($sort == "manual_order") {
   $sort = "sort_order";
 }
 
-$sql = "SELECT * FROM subscriptions WHERE user_id = :userId";
+$sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status";
 
 if (isset($_GET['member'])) {
   $memberIds = explode(',', $_GET['member']);
@@ -115,6 +116,7 @@ $sql .= " ORDER BY " . implode(", ", $orderByClauses);
 
 $stmt = $db->prepare($sql);
 $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+$stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
 
 if (!empty($params)) {
   foreach ($params as $key => $value) {
@@ -128,6 +130,20 @@ if ($result) {
   while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $subscriptions[] = $row;
   }
+}
+
+$trashedSubscriptions = [];
+$trashedStmt = $db->prepare('
+  SELECT *
+  FROM subscriptions
+  WHERE user_id = :userId AND lifecycle_status = :lifecycle_status
+  ORDER BY trashed_at DESC, id DESC
+');
+$trashedStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+$trashedStmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_TRASHED, SQLITE3_TEXT);
+$trashedResult = $trashedStmt->execute();
+while ($trashedResult && ($row = $trashedResult->fetchArray(SQLITE3_ASSOC))) {
+  $trashedSubscriptions[] = $row;
 }
 
 foreach ($subscriptions as $subscription) {
@@ -260,6 +276,7 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       $print[$id]['price'] = floatval($subscription['price']);
       $print[$id]['progress'] = getSubscriptionProgress($cycle, $frequency, $subscription['next_payment']);
       $print[$id]['inactive'] = $subscription['inactive'];
+      $print[$id]['exclude_from_stats'] = (int) ($subscription['exclude_from_stats'] ?? 0);
       $print[$id]['url'] = $subscription['url'];
       $print[$id]['notes'] = $subscription['notes'];
       $print[$id]['replacement_subscription_id'] = $subscription['replacement_subscription_id'];
@@ -313,6 +330,61 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       <?php
     }
     ?>
+  </div>
+</section>
+<section class="contain contain-wide subscription-recycle-bin-section account-section">
+  <div class="collapsible-section-header">
+    <button type="button" class="collapsible-section-toggle" data-target="subscription-recycle-bin-body"
+      aria-expanded="false" onClick="toggleSubscriptionSection(this)">
+      <span class="collapsible-section-heading">
+        <span><?= translate('subscription_recycle_bin', $i18n) ?></span>
+        <span class="section-count-badge"><?= count($trashedSubscriptions) ?></span>
+      </span>
+      <i class="fa-solid fa-chevron-down"></i>
+    </button>
+  </div>
+  <div class="collapsible-section-body is-collapsed" id="subscription-recycle-bin-body">
+    <?php if (!empty($trashedSubscriptions)): ?>
+      <div class="subscription-recycle-bin-list">
+        <?php foreach ($trashedSubscriptions as $trashedSubscription): ?>
+          <article class="subscription-trash-card">
+            <div class="subscription-trash-card-header">
+              <div>
+                <h3><?= htmlspecialchars($trashedSubscription['name'], ENT_QUOTES, 'UTF-8') ?></h3>
+                <p><?= translate('deleted_at', $i18n) ?>: <?= htmlspecialchars($trashedSubscription['trashed_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></p>
+                <p><?= translate('subscription_recycle_bin_scheduled_delete_at', $i18n) ?>: <?= htmlspecialchars($trashedSubscription['scheduled_delete_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></p>
+              </div>
+              <?php if (!empty($trashedSubscription['logo'])): ?>
+                <img src="images/uploads/logos/<?= htmlspecialchars($trashedSubscription['logo'], ENT_QUOTES, 'UTF-8') ?>"
+                  alt="<?= htmlspecialchars($trashedSubscription['name'], ENT_QUOTES, 'UTF-8') ?>">
+              <?php endif; ?>
+            </div>
+            <div class="subscription-trash-card-meta">
+              <p><strong><?= translate('price', $i18n) ?>:</strong>
+                <?php
+                $trashedCurrencyCode = $currencies[$trashedSubscription['currency_id']]['code'] ?? '';
+                echo htmlspecialchars($trashedCurrencyCode !== '' ? CurrencyFormatter::format((float) $trashedSubscription['price'], $trashedCurrencyCode) : (string) $trashedSubscription['price'], ENT_QUOTES, 'UTF-8');
+                ?>
+              </p>
+              <p><strong><?= translate('next_payment', $i18n) ?>:</strong> <?= htmlspecialchars($trashedSubscription['next_payment'] ?? '-', ENT_QUOTES, 'UTF-8') ?></p>
+              <p><strong><?= translate('subscription_excluded_from_stats_badge', $i18n) ?>:</strong> <?= !empty($trashedSubscription['exclude_from_stats']) ? translate('enabled', $i18n) : translate('disabled', $i18n) ?></p>
+            </div>
+            <div class="buttons subscription-trash-card-actions">
+              <button type="button" class="secondary-button thin" onClick="restoreSubscriptionFromRecycleBin(<?= (int) $trashedSubscription['id'] ?>)">
+                <?= translate('subscription_restore', $i18n) ?>
+              </button>
+              <button type="button" class="warning-button thin" onClick="permanentlyDeleteSubscription(<?= (int) $trashedSubscription['id'] ?>)">
+                <?= translate('subscription_permanently_delete', $i18n) ?>
+              </button>
+            </div>
+          </article>
+        <?php endforeach; ?>
+      </div>
+    <?php else: ?>
+      <div class="subscription-recycle-bin-empty">
+        <?= translate('subscription_recycle_bin_empty', $i18n) ?>
+      </div>
+    <?php endif; ?>
   </div>
 </section>
 <section class="subscription-form" id="subscription-form">
@@ -488,6 +560,17 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
     <div class="form-group-inline grow">
       <input type="checkbox" id="notifications" name="notifications" onchange="toggleNotificationDays()">
       <label for="notifications" class="grow"><?= translate('enable_notifications', $i18n) ?></label>
+    </div>
+
+    <div class="form-group-inline grow">
+      <input type="checkbox" id="exclude_from_stats" name="exclude_from_stats">
+      <label for="exclude_from_stats" class="grow"><?= translate('subscription_exclude_from_stats', $i18n) ?></label>
+    </div>
+    <div class="settings-notes subscription-stats-exclusion-note">
+      <p>
+        <i class="fa-solid fa-circle-info"></i>
+        <?= translate('subscription_exclude_from_stats_help', $i18n) ?>
+      </p>
     </div>
 
     <div class="form-group">

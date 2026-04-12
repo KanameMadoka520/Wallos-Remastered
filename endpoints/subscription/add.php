@@ -6,6 +6,7 @@ require_once '../../includes/inputvalidation.php';
 require_once '../../includes/getsettings.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_sort.php';
+require_once '../../includes/subscription_trash.php';
 require_once '../../includes/user_groups.php';
 if (!file_exists('../../images/uploads/logos')) {
     mkdir('../../images/uploads/logos', 0777, true);
@@ -252,6 +253,7 @@ $logoError = "";
 $notify = isset($_POST['notifications']) ? true : false;
 $notifyDaysBefore = $_POST['notify_days_before'];
 $inactive = isset($_POST['inactive']) ? true : false;
+$excludeFromStats = isset($_POST['exclude_from_stats']) ? true : false;
 $cancellationDate = $_POST['cancellation_date'] ?? null;
 $replacementSubscriptionId = $_POST['replacement_subscription_id'];
 $detailImageUrlsRaw = $_POST['detail_image_urls'] ?? '';
@@ -299,9 +301,10 @@ $imagesPendingFileDeletion = [];
 $storedUploadedImages = [];
 
 if ($isEdit) {
-    $existingStmt = $db->prepare('SELECT id FROM subscriptions WHERE id = :id AND user_id = :userId');
+    $existingStmt = $db->prepare('SELECT id FROM subscriptions WHERE id = :id AND user_id = :userId AND lifecycle_status = :lifecycle_status');
     $existingStmt->bindValue(':id', $subscriptionId, SQLITE3_INTEGER);
     $existingStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+    $existingStmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
     $existingResult = $existingStmt->execute();
     $existingSubscription = $existingResult ? $existingResult->fetchArray(SQLITE3_ASSOC) : false;
 
@@ -363,12 +366,14 @@ try {
                             name, logo, price, currency_id, next_payment, cycle, frequency, notes,
                             payment_method_id, payer_user_id, category_id, notify, inactive, url,
                             notify_days_before, user_id, cancellation_date, replacement_subscription_id,
-                            auto_renew, start_date, detail_image, detail_image_urls, sort_order
+                            auto_renew, start_date, detail_image, detail_image_urls, sort_order,
+                            lifecycle_status, exclude_from_stats
                         ) VALUES (
                             :name, :logo, :price, :currencyId, :nextPayment, :cycle, :frequency, :notes,
                             :paymentMethodId, :payerUserId, :categoryId, :notify, :inactive, :url,
                             :notifyDaysBefore, :userId, :cancellationDate, :replacement_subscription_id,
-                            :autoRenew, :startDate, '', :detailImageUrls, :sortOrder
+                            :autoRenew, :startDate, '', :detailImageUrls, :sortOrder,
+                            :lifecycleStatus, :excludeFromStats
                         )";
     } else {
         $sql = "UPDATE subscriptions SET
@@ -391,7 +396,8 @@ try {
                             cancellation_date = :cancellationDate,
                             replacement_subscription_id = :replacement_subscription_id,
                             detail_image = '',
-                            detail_image_urls = :detailImageUrls";
+                            detail_image_urls = :detailImageUrls,
+                            exclude_from_stats = :excludeFromStats";
 
         if ($logo != "") {
             $sql .= ", logo = :logo";
@@ -427,8 +433,11 @@ try {
     $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
     $stmt->bindParam(':replacement_subscription_id', $replacementSubscriptionId, SQLITE3_INTEGER);
     $stmt->bindParam(':detailImageUrls', $detailImageUrlsJson, SQLITE3_TEXT);
+    $stmt->bindParam(':excludeFromStats', $excludeFromStats, SQLITE3_INTEGER);
     if (!$isEdit) {
         $stmt->bindParam(':sortOrder', $nextSortOrder, SQLITE3_INTEGER);
+        $lifecycleStatus = WALLOS_SUBSCRIPTION_STATUS_ACTIVE;
+        $stmt->bindParam(':lifecycleStatus', $lifecycleStatus, SQLITE3_TEXT);
     }
 
     if (!$stmt->execute()) {
