@@ -1,6 +1,6 @@
 <?php
 
-$lang = "en";
+$lang = "zh_cn";
 $selectedLanguage = '';
 
 if (isset($_GET['set_language'])) {

@@ -32,8 +32,8 @@ For a fresh deployment, create your own admin account first.
 
 ## Public Page Language Behavior
 
-- login page defaults to English
-- registration page defaults to English
+- login page defaults to Simplified Chinese
+- registration page defaults to Simplified Chinese
 - both pages include a language switcher
 - the current registration page language becomes the new user's initial language
 
