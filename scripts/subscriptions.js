@@ -17,6 +17,7 @@ const SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS = {
   form: "wallos-subscription-image-layout-form",
   detail: "wallos-subscription-image-layout-detail",
 };
+const SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY = "wallos-subscriptions-display-columns";
 
 function toggleOpenSubscription(subId) {
   const subscriptionElement = document.querySelector('.subscription[data-id="' + subId + '"]');
@@ -104,6 +105,53 @@ function setSubscriptionImageLayoutMode(scope, mode, button = null) {
 function applyAllSubscriptionImageLayoutModes() {
   applySubscriptionImageLayoutMode("form");
   applySubscriptionImageLayoutMode("detail");
+}
+
+function getSubscriptionDisplayColumns() {
+  try {
+    return localStorage.getItem(SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY) === "3" ? 3 : 2;
+  } catch (error) {
+    return 2;
+  }
+}
+
+function updateSubscriptionDisplayColumnButtons(columns) {
+  document.querySelectorAll(".subscription-column-toggle .media-layout-button").forEach((button) => {
+    const isActive = Number(button.dataset.subscriptionColumns) === columns;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function applySubscriptionDisplayColumns(columns = null) {
+  const container = document.querySelector("#subscriptions");
+  const resolvedColumns = Number(columns) === 3 ? 3 : getSubscriptionDisplayColumns();
+
+  if (!container) {
+    updateSubscriptionDisplayColumnButtons(resolvedColumns);
+    return;
+  }
+
+  container.classList.add("subscription-columns");
+  container.classList.toggle("subscription-columns-2", resolvedColumns === 2);
+  container.classList.toggle("subscription-columns-3", resolvedColumns === 3);
+  updateSubscriptionDisplayColumnButtons(resolvedColumns);
+}
+
+function setSubscriptionDisplayColumns(columns, button = null) {
+  const resolvedColumns = Number(columns) === 3 ? 3 : 2;
+
+  try {
+    localStorage.setItem(SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY, String(resolvedColumns));
+  } catch (error) {
+    // Ignore localStorage write failures.
+  }
+
+  applySubscriptionDisplayColumns(resolvedColumns);
+
+  if (button) {
+    button.blur();
+  }
 }
 
 function getDetailImageConfig() {
@@ -1372,6 +1420,7 @@ function fetchSubscriptions(id, event, initiator) {
       }
 
       setSwipeElements();
+      applySubscriptionDisplayColumns();
       applySubscriptionImageLayoutMode("detail");
       initializeSubscriptionMediaSortables();
       if (initiator === "add") {
@@ -1577,6 +1626,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   document.addEventListener("keydown", handleSubscriptionImageViewerKeydown);
+  applySubscriptionDisplayColumns();
   applyAllSubscriptionImageLayoutModes();
   closeSubscriptionImageViewer();
   initializeSubscriptionMediaSortables();

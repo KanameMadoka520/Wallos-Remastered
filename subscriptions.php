@@ -152,6 +152,7 @@ $effectiveUserGroup = wallos_get_effective_user_group($userData['user_group'] ??
 $canUploadSubscriptionImages = wallos_can_upload_subscription_images($isAdmin, $userData['user_group'] ?? WALLOS_USER_GROUP_FREE);
 $subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
 $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
+$subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscriptions.js');
 ?>
 <style>
   .logo-preview:after {
@@ -159,7 +160,7 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
   }
 </style>
 
-<section class="contain">
+<section class="contain contain-wide subscriptions-page-layout">
   <header class="<?= $headerClass ?>" id="main-actions">
     <div class="inline-row">
       <button class="button" onClick="addSubscription()">
@@ -180,6 +181,22 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
         <span class="fa-solid fa-xmark clear-search" onClick="clearSearch()"></span>
       </div>
 
+      <div class="media-layout-toggle subscription-column-toggle" role="group"
+        aria-label="<?= translate('subscription_layout_switch', $i18n) ?>">
+        <button type="button" class="media-layout-button is-active" data-subscription-columns="2"
+          title="<?= translate('subscription_layout_two_columns', $i18n) ?>"
+          aria-pressed="true" onClick="setSubscriptionDisplayColumns(2, this)">
+          <i class="fa-solid fa-table-columns"></i>
+          <span><?= translate('subscription_layout_two_columns', $i18n) ?></span>
+        </button>
+        <button type="button" class="media-layout-button" data-subscription-columns="3"
+          title="<?= translate('subscription_layout_three_columns', $i18n) ?>"
+          aria-pressed="false" onClick="setSubscriptionDisplayColumns(3, this)">
+          <i class="fa-solid fa-grip"></i>
+          <span><?= translate('subscription_layout_three_columns', $i18n) ?></span>
+        </button>
+      </div>
+
       <div class="filtermenu on-dashboard">
         <button class="button secondary-button" id="filtermenu-button" title="<?= translate("filter", $i18n) ?>">
           <i class="fa-solid fa-filter"></i>
@@ -196,7 +213,7 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
       </div>
     </div>
   </header>
-  <div class="subscriptions" id="subscriptions">
+  <div class="subscriptions subscription-columns subscription-columns-2" id="subscriptions">
     <?php
     $formatter = new IntlDateFormatter(
       'en', // Force English locale
@@ -676,7 +693,7 @@ $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
   </div>
 </section>
 <script src="scripts/libs/sortable.min.js"></script>
-<script src="scripts/subscriptions.js?<?= $version ?>"></script>
+<script src="scripts/subscriptions.js?<?= $subscriptionsJsVersion ?>"></script>
 <?php
 if (isset($_GET['add'])) {
   ?>
