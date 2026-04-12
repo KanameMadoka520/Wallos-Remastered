@@ -24,15 +24,14 @@
   let background = null;
   let flowCanvas = null;
   let floatLayer = null;
-  let meteorLayer = null;
   let canvasWidth = 0;
   let canvasHeight = 0;
   let ctx = null;
   let rafId = 0;
+  let cometTimer = 0;
   let lastFrame = 0;
-  let meteorTimer = 0;
-  let points = [];
   let floatParticles = [];
+  let comets = [];
   let initialized = false;
   let running = false;
 
@@ -42,6 +41,23 @@
 
   function pick(list) {
     return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function superFormula(theta, m, n1, n2, n3) {
+    const t1 = Math.pow(Math.abs(Math.cos((m * theta) / 4)), n2);
+    const t2 = Math.pow(Math.abs(Math.sin((m * theta) / 4)), n3);
+    const value = Math.pow(t1 + t2, -1 / n1);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  function resolveElements() {
+    body = document.body;
+    background = document.querySelector('.wallos-decorative-background');
+    flowCanvas = background ? background.querySelector('.wallos-bg-flow') : null;
+    floatLayer = background ? background.querySelector('.wallos-bg-float-layer') : null;
+    ctx = flowCanvas ? flowCanvas.getContext('2d') : null;
+    initialized = !!(body && background && flowCanvas && floatLayer && ctx);
+    return initialized;
   }
 
   function resizeCanvas() {
@@ -55,104 +71,246 @@
     flowCanvas.height = Math.round(canvasHeight * dpr);
     flowCanvas.style.width = canvasWidth + 'px';
     flowCanvas.style.height = canvasHeight + 'px';
-    ctx = flowCanvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const pointCount = canvasWidth < 768 ? 18 : 30;
-    points = Array.from({ length: pointCount }, function () {
-      return {
-        x: random(0, canvasWidth),
-        y: random(0, canvasHeight),
-        vx: random(-0.18, 0.18),
-        vy: random(-0.18, 0.18),
-        radius: random(1.2, 2.6)
-      };
-    });
   }
 
-  function drawFlowField(now) {
-    if (!ctx) {
+  function drawRibbon(now, index, color, width, alpha) {
+    const centerY = canvasHeight * (0.18 + (index * 0.14));
+    const amp = canvasHeight * (0.045 + (index * 0.008));
+    const phase = now * (0.00012 + (index * 0.000018));
+
+    ctx.beginPath();
+    ctx.lineWidth = width;
+    ctx.strokeStyle = color.replace('__ALPHA__', alpha.toFixed(3));
+
+    for (let x = -80; x <= canvasWidth + 80; x += 10) {
+      const nx = (x / canvasWidth) * Math.PI * 2;
+      const y = centerY
+        + (amp * Math.sin((nx * 1.1) + phase))
+        + ((amp * 0.46) * Math.sin((nx * 2.8) - (phase * 1.36)))
+        + ((amp * 0.22) * Math.cos((nx * 5.4) + (phase * 0.72)));
+
+      if (x === -80) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+
+    ctx.stroke();
+  }
+
+  function drawLissajous(now, cx, cy, ax, ay, a, b, delta, strokeStyle, lineWidth) {
+    const phase = now * 0.00016;
+    ctx.beginPath();
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = strokeStyle;
+
+    for (let step = 0; step <= 300; step += 1) {
+      const t = (step / 300) * Math.PI * 2;
+      const x = cx + (ax * Math.sin((a * t) + phase + delta)) + ((ax * 0.08) * Math.sin((a * 3 * t) - phase));
+      const y = cy + (ay * Math.sin((b * t) + phase * 0.82));
+
+      if (step === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+
+    ctx.stroke();
+  }
+
+  function drawSuperShape(now, cx, cy, radius, options) {
+    const phase = now * (options.phaseSpeed || 0.00008);
+    ctx.beginPath();
+    ctx.lineWidth = options.lineWidth || 1;
+    ctx.strokeStyle = options.stroke;
+
+    for (let step = 0; step <= 360; step += 1) {
+      const theta = ((step / 360) * Math.PI * 2) + phase;
+      const r = radius * superFormula(theta, options.m, options.n1, options.n2, options.n3);
+      const x = cx + (r * Math.cos(theta) * (options.scaleX || 1));
+      const y = cy + (r * Math.sin(theta) * (options.scaleY || 1));
+
+      if (step === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+
+    if (options.closePath !== false) {
+      ctx.closePath();
+    }
+
+    ctx.stroke();
+  }
+
+  function drawHarmonicMesh(now) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+
+    drawRibbon(now, 0, 'rgba(201, 74, 42, __ALPHA__)', 1.35, 0.14);
+    drawRibbon(now, 1, 'rgba(0, 123, 255, __ALPHA__)', 1.05, 0.09);
+    drawRibbon(now, 2, 'rgba(26, 26, 26, __ALPHA__)', 0.85, 0.08);
+
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(201, 74, 42, 0.10)';
+    drawLissajous(
+      now,
+      canvasWidth * 0.78,
+      canvasHeight * 0.22,
+      canvasWidth * 0.11,
+      canvasHeight * 0.09,
+      3,
+      2,
+      Math.PI / 4,
+      'rgba(201, 74, 42, 0.16)',
+      1.15
+    );
+
+    ctx.shadowColor = 'rgba(0, 123, 255, 0.08)';
+    drawLissajous(
+      now,
+      canvasWidth * 0.24,
+      canvasHeight * 0.72,
+      canvasWidth * 0.08,
+      canvasHeight * 0.12,
+      5,
+      4,
+      Math.PI / 8,
+      'rgba(26, 26, 26, 0.12)',
+      0.95
+    );
+
+    drawSuperShape(now, canvasWidth * 0.58, canvasHeight * 0.52, Math.min(canvasWidth, canvasHeight) * 0.12, {
+      m: 7,
+      n1: 0.42,
+      n2: 1.2,
+      n3: 1.2,
+      scaleX: 1.38,
+      scaleY: 0.78,
+      stroke: 'rgba(0, 123, 255, 0.10)',
+      lineWidth: 0.9,
+      phaseSpeed: 0.00005,
+    });
+
+    drawSuperShape(now, canvasWidth * 0.18, canvasHeight * 0.74, Math.min(canvasWidth, canvasHeight) * 0.075, {
+      m: 5,
+      n1: 0.28,
+      n2: 1.5,
+      n3: 1.7,
+      scaleX: 1.2,
+      scaleY: 1.0,
+      stroke: 'rgba(201, 74, 42, 0.13)',
+      lineWidth: 1.0,
+      phaseSpeed: 0.00007,
+    });
+
+    drawSuperShape(now, canvasWidth * 0.84, canvasHeight * 0.68, Math.min(canvasWidth, canvasHeight) * 0.055, {
+      m: 9,
+      n1: 0.55,
+      n2: 0.9,
+      n3: 1.6,
+      scaleX: 1.3,
+      scaleY: 1.16,
+      stroke: 'rgba(26, 26, 26, 0.08)',
+      lineWidth: 0.75,
+      phaseSpeed: 0.00004,
+    });
+
+    ctx.restore();
+  }
+
+  function drawComet(now, comet) {
+    const elapsed = now - comet.startTime;
+    const progress = elapsed / comet.duration;
+
+    if (progress >= 1) {
+      comet.done = true;
       return;
     }
 
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    const trailSteps = 13;
+    const ease = 1 - Math.pow(1 - progress, 2.35);
 
-    const waveY = canvasHeight * 0.18;
-    const waveAmplitude = canvasHeight * 0.06;
-    const waveTime = now * 0.00018;
-
+    ctx.save();
     ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
 
-    for (let layer = 0; layer < 4; layer += 1) {
-      const offset = layer * 0.14;
-      const alpha = layer === 0 ? 0.15 : 0.07;
+    for (let step = trailSteps; step >= 0; step -= 1) {
+      const offset = step / trailSteps;
+      const t = Math.max(0, ease - (offset * 0.065));
+      const tailOpacity = Math.pow(1 - offset, 1.65) * comet.opacity;
+      const position = comet.positionAt(t);
+      const previous = comet.positionAt(Math.max(0, t - 0.028));
+
       ctx.beginPath();
-      ctx.strokeStyle = layer % 2 === 0
-        ? 'rgba(201, 74, 42, ' + alpha + ')'
-        : 'rgba(0, 123, 255, ' + (alpha * 0.7) + ')';
-      ctx.lineWidth = layer === 0 ? 1.3 : 0.8;
-
-      for (let x = -120; x <= canvasWidth + 120; x += 28) {
-        const y = waveY + layer * 95 + Math.sin((x * 0.008) + waveTime + offset) * waveAmplitude;
-        const secondary = Math.cos((x * 0.0038) - waveTime * 0.9 - offset) * (waveAmplitude * 0.38);
-        if (x === -120) {
-          ctx.moveTo(x, y + secondary);
-        } else {
-          ctx.lineTo(x, y + secondary);
-        }
-      }
+      ctx.moveTo(previous.x, previous.y);
+      ctx.lineTo(position.x, position.y);
+      ctx.strokeStyle = 'rgba(' + comet.color + ', ' + tailOpacity.toFixed(3) + ')';
+      ctx.lineWidth = comet.width * (1 - (offset * 0.72));
       ctx.stroke();
     }
 
-    points.forEach(function (point) {
-      point.x += point.vx;
-      point.y += point.vy;
+    const head = comet.positionAt(ease);
+    const headGlow = 8 + (Math.sin((progress * Math.PI)) * 5);
 
-      if (point.x < -40) point.x = canvasWidth + 40;
-      if (point.x > canvasWidth + 40) point.x = -40;
-      if (point.y < -40) point.y = canvasHeight + 40;
-      if (point.y > canvasHeight + 40) point.y = -40;
-    });
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(255, 255, 255, ' + (comet.opacity * 0.95).toFixed(3) + ')';
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = 'rgba(' + comet.color + ', 0.35)';
+    ctx.arc(head.x, head.y, headGlow * 0.22, 0, Math.PI * 2);
+    ctx.fill();
 
-    for (let i = 0; i < points.length; i += 1) {
-      for (let j = i + 1; j < points.length; j += 1) {
-        const a = points[i];
-        const b = points[j];
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
-        const distance = Math.sqrt((dx * dx) + (dy * dy));
+    ctx.restore();
+  }
 
-        if (distance > 220) {
-          continue;
-        }
+  function createComet() {
+    const startX = random(canvasWidth * 0.08, canvasWidth * 0.44);
+    const startY = random(canvasHeight * 0.08, canvasHeight * 0.42);
+    const travel = random(canvasWidth * 0.18, canvasWidth * 0.34);
+    const slope = random(0.18, 0.42);
+    const curve = random(26, 74);
+    const wobble = random(8, 24);
+    const phase = random(0, Math.PI * 2);
 
-        const opacity = (1 - (distance / 220)) * 0.18;
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.strokeStyle = 'rgba(26, 26, 26, ' + opacity.toFixed(3) + ')';
-        ctx.lineWidth = 0.75;
-        ctx.stroke();
-      }
+    return {
+      startTime: performance.now(),
+      duration: random(2200, 3600),
+      width: random(2.4, 3.8),
+      opacity: random(0.24, 0.38),
+      color: Math.random() > 0.55 ? '201, 74, 42' : '245, 245, 245',
+      positionAt: function (t) {
+        const x = startX + (travel * t) + (Math.sin((t * Math.PI) + phase) * wobble);
+        const y = startY + ((travel * slope) * t) - (Math.sin(t * Math.PI) * curve);
+        return { x: x, y: y };
+      },
+      done: false,
+    };
+  }
+
+  function scheduleComet() {
+    if (reduceMotion || !running || body.classList.contains('decorative-background-disabled')) {
+      return;
     }
 
-    points.forEach(function (point, index) {
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, point.radius, 0, Math.PI * 2);
-      ctx.fillStyle = index % 4 === 0 ? 'rgba(201, 74, 42, 0.36)' : 'rgba(26, 26, 26, 0.14)';
-      ctx.fill();
-    });
+    const delay = random(window.innerWidth < 768 ? 5200 : 3200, window.innerWidth < 768 ? 9200 : 6800);
+    window.clearTimeout(cometTimer);
+    cometTimer = window.setTimeout(function () {
+      comets.push(createComet());
+      scheduleComet();
+    }, delay);
   }
 
   function createParticle() {
     const element = document.createElement('span');
-    const isIcon = Math.random() < 0.22;
+    const isIcon = Math.random() < 0.16;
     element.className = 'wallos-bg-float ' + (isIcon ? 'is-icon' : 'is-text');
 
-    if (Math.random() < 0.35) {
+    if (Math.random() < 0.28) {
       element.classList.add('is-accent');
-    } else if (Math.random() < 0.45) {
+    } else if (Math.random() < 0.5) {
       element.classList.add('is-dim');
     }
 
@@ -168,16 +326,16 @@
 
     const particle = {
       element: element,
-      baseX: random(2, 98),
-      baseY: random(4, 96),
-      amplitudeX: random(8, 42),
-      amplitudeY: random(12, 56),
-      speed: random(0.0006, 0.0018),
+      baseX: random(4, 96),
+      baseY: random(8, 92),
+      amplitudeX: random(6, 24),
+      amplitudeY: random(8, 28),
+      speed: random(0.0004, 0.0011),
       phase: random(0, Math.PI * 2),
-      rotate: random(-18, 18),
-      scale: isIcon ? random(0.7, 1.2) : random(0.78, 1.14),
-      opacity: isIcon ? random(0.08, 0.18) : random(0.05, 0.14),
-      size: isIcon ? random(16, 30) : random(11, 18)
+      rotate: random(-11, 11),
+      scale: isIcon ? random(0.72, 1.04) : random(0.8, 1.02),
+      opacity: isIcon ? random(0.04, 0.11) : random(0.03, 0.09),
+      size: isIcon ? random(14, 22) : random(10, 15),
     };
 
     particle.element.style.fontSize = particle.size + 'px';
@@ -191,7 +349,7 @@
       return;
     }
 
-    const target = window.innerWidth < 768 ? 20 : 44;
+    const target = window.innerWidth < 768 ? 12 : 26;
 
     while (floatParticles.length < target) {
       floatParticles.push(createParticle());
@@ -207,10 +365,10 @@
 
   function renderParticles(now) {
     floatParticles.forEach(function (particle, index) {
-      const driftX = Math.sin((now * particle.speed) + particle.phase + (index * 0.18)) * particle.amplitudeX;
-      const driftY = Math.cos((now * particle.speed * 1.35) + particle.phase) * particle.amplitudeY;
-      const rotate = particle.rotate + Math.sin((now * particle.speed * 0.9) + particle.phase) * 8;
-      const scale = particle.scale + (Math.cos((now * particle.speed * 1.2) + particle.phase) * 0.08);
+      const driftX = Math.sin((now * particle.speed) + particle.phase + (index * 0.1)) * particle.amplitudeX;
+      const driftY = Math.cos((now * particle.speed * 1.16) + particle.phase) * particle.amplitudeY;
+      const rotate = particle.rotate + (Math.sin((now * particle.speed * 0.8) + particle.phase) * 4.5);
+      const scale = particle.scale + (Math.cos((now * particle.speed) + particle.phase) * 0.04);
 
       particle.element.style.left = 'calc(' + particle.baseX.toFixed(2) + '% + ' + driftX.toFixed(2) + 'px)';
       particle.element.style.top = 'calc(' + particle.baseY.toFixed(2) + '% + ' + driftY.toFixed(2) + 'px)';
@@ -218,51 +376,18 @@
     });
   }
 
-  function scheduleMeteor() {
-    if (reduceMotion || !meteorLayer || !running || body.classList.contains('decorative-background-disabled')) {
+  function drawScene(now) {
+    if (!ctx) {
       return;
     }
 
-    const delay = random(window.innerWidth < 768 ? 900 : 280, window.innerWidth < 768 ? 2200 : 1100);
-    window.clearTimeout(meteorTimer);
-    meteorTimer = window.setTimeout(function () {
-      spawnMeteor();
-      scheduleMeteor();
-    }, delay);
-  }
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    drawHarmonicMesh(now);
 
-  function spawnMeteor() {
-    if (!meteorLayer || !running) {
-      return;
-    }
-
-    const meteor = document.createElement('span');
-    meteor.className = 'wallos-bg-meteor';
-
-    const startX = random(window.innerWidth * 0.1, window.innerWidth * 0.92);
-    const startY = random(-40, window.innerHeight * 0.45);
-    const angle = random(18, 42);
-    const length = random(window.innerWidth < 768 ? 90 : 140, window.innerWidth < 768 ? 180 : 260);
-    const duration = random(0.8, 1.8);
-    const travelX = random(window.innerWidth < 768 ? 120 : 240, window.innerWidth < 768 ? 260 : 460);
-    const travelY = travelX * Math.tan((angle * Math.PI) / 180) * 0.45;
-
-    meteor.style.left = startX.toFixed(2) + 'px';
-    meteor.style.top = startY.toFixed(2) + 'px';
-    meteor.style.setProperty('--meteor-angle', angle.toFixed(2) + 'deg');
-    meteor.style.setProperty('--meteor-length', length.toFixed(2) + 'px');
-    meteor.style.setProperty('--meteor-duration', duration.toFixed(2) + 's');
-    meteor.style.setProperty('--meteor-travel-x', travelX.toFixed(2) + 'px');
-    meteor.style.setProperty('--meteor-travel-y', travelY.toFixed(2) + 'px');
-
-    meteorLayer.appendChild(meteor);
-    meteor.addEventListener('animationend', function () {
-      meteor.remove();
-    }, { once: true });
-
-    if (Math.random() > 0.55) {
-      window.setTimeout(spawnMeteor, random(70, 180));
-    }
+    comets = comets.filter(function (comet) {
+      drawComet(now, comet);
+      return !comet.done;
+    });
   }
 
   function frame(now) {
@@ -271,7 +396,7 @@
     }
 
     if (reduceMotion) {
-      drawFlowField(0);
+      drawScene(0);
       renderParticles(0);
       return;
     }
@@ -282,26 +407,16 @@
     }
 
     lastFrame = now;
-    drawFlowField(now);
+    drawScene(now);
     renderParticles(now);
     rafId = window.requestAnimationFrame(frame);
-  }
-
-  function resolveElements() {
-    body = document.body;
-    background = document.querySelector('.wallos-decorative-background');
-    flowCanvas = background ? background.querySelector('.wallos-bg-flow') : null;
-    floatLayer = background ? background.querySelector('.wallos-bg-float-layer') : null;
-    meteorLayer = background ? background.querySelector('.wallos-bg-meteor-layer') : null;
-    ctx = flowCanvas ? flowCanvas.getContext('2d') : null;
-    initialized = !!(body && background && flowCanvas && floatLayer && meteorLayer && ctx);
-    return initialized;
   }
 
   function initializeScene() {
     if (!resolveElements()) {
       return false;
     }
+
     resizeCanvas();
     ensureParticles();
     return true;
@@ -317,25 +432,28 @@
     }
 
     running = true;
-    scheduleMeteor();
+    scheduleComet();
+
     if (rafId) {
       window.cancelAnimationFrame(rafId);
     }
+
     rafId = window.requestAnimationFrame(frame);
   }
 
   function stop() {
     running = false;
-    window.clearTimeout(meteorTimer);
+    window.clearTimeout(cometTimer);
+
     if (rafId) {
       window.cancelAnimationFrame(rafId);
       rafId = 0;
     }
+
+    comets = [];
+
     if (ctx) {
       ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    }
-    if (meteorLayer) {
-      meteorLayer.innerHTML = '';
     }
   }
 
@@ -363,13 +481,11 @@
   };
 
   window.addEventListener('resize', function () {
-    if (!running && !body?.classList.contains('decorative-background-enabled')) {
+    if (!running && !(body && body.classList.contains('decorative-background-enabled'))) {
       return;
     }
+
     initializeScene();
-    if (running) {
-      start();
-    }
   });
 
   if (document.readyState === 'loading') {
