@@ -9,6 +9,7 @@
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const flowCanvas = background.querySelector('.wallos-bg-flow');
   const floatLayer = background.querySelector('.wallos-bg-float-layer');
+  const meteorLayer = background.querySelector('.wallos-bg-meteor-layer');
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
   const tokenPool = [
@@ -34,6 +35,7 @@
   let ctx = null;
   let rafId = 0;
   let lastFrame = 0;
+  let meteorTimer = 0;
   let points = [];
   let floatParticles = [];
 
@@ -219,6 +221,53 @@
     });
   }
 
+  function scheduleMeteor() {
+    if (reduceMotion || !meteorLayer || body.classList.contains('decorative-background-disabled')) {
+      return;
+    }
+
+    const delay = random(window.innerWidth < 768 ? 1600 : 700, window.innerWidth < 768 ? 3200 : 2200);
+    window.clearTimeout(meteorTimer);
+    meteorTimer = window.setTimeout(function () {
+      spawnMeteor();
+      scheduleMeteor();
+    }, delay);
+  }
+
+  function spawnMeteor() {
+    if (!meteorLayer) {
+      return;
+    }
+
+    const meteor = document.createElement('span');
+    meteor.className = 'wallos-bg-meteor';
+
+    const startX = random(window.innerWidth * 0.1, window.innerWidth * 0.92);
+    const startY = random(-40, window.innerHeight * 0.45);
+    const angle = random(18, 42);
+    const length = random(window.innerWidth < 768 ? 90 : 140, window.innerWidth < 768 ? 180 : 260);
+    const duration = random(0.8, 1.8);
+    const travelX = random(window.innerWidth < 768 ? 120 : 240, window.innerWidth < 768 ? 260 : 460);
+    const travelY = travelX * Math.tan((angle * Math.PI) / 180) * 0.45;
+
+    meteor.style.left = startX.toFixed(2) + 'px';
+    meteor.style.top = startY.toFixed(2) + 'px';
+    meteor.style.setProperty('--meteor-angle', angle.toFixed(2) + 'deg');
+    meteor.style.setProperty('--meteor-length', length.toFixed(2) + 'px');
+    meteor.style.setProperty('--meteor-duration', duration.toFixed(2) + 's');
+    meteor.style.setProperty('--meteor-travel-x', travelX.toFixed(2) + 'px');
+    meteor.style.setProperty('--meteor-travel-y', travelY.toFixed(2) + 'px');
+
+    meteorLayer.appendChild(meteor);
+    meteor.addEventListener('animationend', function () {
+      meteor.remove();
+    }, { once: true });
+
+    if (Math.random() > 0.72) {
+      window.setTimeout(spawnMeteor, random(90, 220));
+    }
+  }
+
   function frame(now) {
     if (reduceMotion) {
       drawFlowField(0);
@@ -240,6 +289,7 @@
   function initialize() {
     resizeCanvas();
     ensureParticles();
+    scheduleMeteor();
     if (rafId) {
       window.cancelAnimationFrame(rafId);
     }

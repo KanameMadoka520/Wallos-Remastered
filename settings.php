@@ -13,6 +13,10 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 require_once 'includes/page_navigation.php';
 
+$settingsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/settings.js');
+$themeJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/theme.js');
+$notificationsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/notifications.js');
+
 $pageSections = [
     ['id' => 'settings-budget', 'label' => translate('monthly_budget', $i18n)],
     ['id' => 'settings-household', 'label' => translate('household', $i18n)],
@@ -1563,9 +1567,9 @@ $pageSections = [
         </div>
     </div>
 </section>
-<script src="scripts/settings.js?<?= $version ?>"></script>
-<script src="scripts/theme.js?<?= $version ?>"></script>
-<script src="scripts/notifications.js?<?= $version ?>"></script>
+<script src="scripts/settings.js?<?= $settingsJsVersion ?>"></script>
+<script src="scripts/theme.js?<?= $themeJsVersion ?>"></script>
+<script src="scripts/notifications.js?<?= $notificationsJsVersion ?>"></script>
 
 <?php
 require_once 'includes/footer.php';

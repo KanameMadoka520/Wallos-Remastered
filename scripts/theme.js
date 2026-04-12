@@ -9,7 +9,7 @@ function setBodyThemeClass(themeName) {
 function applyDecorativeBackgroundState(enabled) {
   document.body.classList.toggle('decorative-background-enabled', enabled);
   document.body.classList.toggle('decorative-background-disabled', !enabled);
-  document.cookie = `decorativeBackground=${enabled ? '1' : '0'}; expires=Fri, 31 Dec 9999 23:59:59 GMT; SameSite=Lax`;
+  document.cookie = `decorativeBackground=${enabled ? '1' : '0'}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=Lax`;
 }
 
 function switchTheme() {
