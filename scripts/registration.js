@@ -54,8 +54,9 @@ function removeFromStorage() {
 
 function changeLanguage(selectedLanguage) {
   storeFormFields();
-  setCookie("language", selectedLanguage, 365);
-  location.reload();
+  const url = new URL(window.location.href);
+  url.searchParams.set("set_language", selectedLanguage);
+  window.location.href = url.toString();
 }
 
 function syncRegistrationLanguageInput() {
@@ -65,6 +66,16 @@ function syncRegistrationLanguageInput() {
   if (languageInput && pageLanguageSelect) {
     languageInput.value = pageLanguageSelect.value;
   }
+}
+
+function cleanupLanguageQueryParam() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('set_language')) {
+    return;
+  }
+
+  url.searchParams.delete('set_language');
+  window.history.replaceState({}, document.title, url.toString());
 }
 
 function runDatabaseMigration() {
@@ -201,6 +212,7 @@ function enableGoToLoginButton() {
 }
 
 window.onload = function () {
+  cleanupLanguageQueryParam();
   restoreFormFields();
   removeFromStorage();
   runDatabaseMigration();
