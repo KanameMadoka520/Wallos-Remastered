@@ -1,15 +1,5 @@
 (function () {
-  const body = document.body;
-  const background = document.querySelector('.wallos-decorative-background');
-
-  if (!body || !background || body.classList.contains('decorative-background-disabled')) {
-    return;
-  }
-
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const flowCanvas = background.querySelector('.wallos-bg-flow');
-  const floatLayer = background.querySelector('.wallos-bg-float-layer');
-  const meteorLayer = background.querySelector('.wallos-bg-meteor-layer');
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
   const tokenPool = [
@@ -30,6 +20,11 @@
     'fa-brands fa-apple-pay'
   ];
 
+  let body = null;
+  let background = null;
+  let flowCanvas = null;
+  let floatLayer = null;
+  let meteorLayer = null;
   let canvasWidth = 0;
   let canvasHeight = 0;
   let ctx = null;
@@ -38,6 +33,8 @@
   let meteorTimer = 0;
   let points = [];
   let floatParticles = [];
+  let initialized = false;
+  let running = false;
 
   function random(min, max) {
     return min + Math.random() * (max - min);
@@ -48,7 +45,7 @@
   }
 
   function resizeCanvas() {
-    if (!flowCanvas) {
+    if (!flowCanvas || !ctx) {
       return;
     }
 
@@ -222,11 +219,11 @@
   }
 
   function scheduleMeteor() {
-    if (reduceMotion || !meteorLayer || body.classList.contains('decorative-background-disabled')) {
+    if (reduceMotion || !meteorLayer || !running || body.classList.contains('decorative-background-disabled')) {
       return;
     }
 
-    const delay = random(window.innerWidth < 768 ? 1600 : 700, window.innerWidth < 768 ? 3200 : 2200);
+    const delay = random(window.innerWidth < 768 ? 900 : 280, window.innerWidth < 768 ? 2200 : 1100);
     window.clearTimeout(meteorTimer);
     meteorTimer = window.setTimeout(function () {
       spawnMeteor();
@@ -235,7 +232,7 @@
   }
 
   function spawnMeteor() {
-    if (!meteorLayer) {
+    if (!meteorLayer || !running) {
       return;
     }
 
@@ -263,12 +260,16 @@
       meteor.remove();
     }, { once: true });
 
-    if (Math.random() > 0.72) {
-      window.setTimeout(spawnMeteor, random(90, 220));
+    if (Math.random() > 0.55) {
+      window.setTimeout(spawnMeteor, random(70, 180));
     }
   }
 
   function frame(now) {
+    if (!running) {
+      return;
+    }
+
     if (reduceMotion) {
       drawFlowField(0);
       renderParticles(0);
@@ -286,9 +287,36 @@
     rafId = window.requestAnimationFrame(frame);
   }
 
-  function initialize() {
+  function resolveElements() {
+    body = document.body;
+    background = document.querySelector('.wallos-decorative-background');
+    flowCanvas = background ? background.querySelector('.wallos-bg-flow') : null;
+    floatLayer = background ? background.querySelector('.wallos-bg-float-layer') : null;
+    meteorLayer = background ? background.querySelector('.wallos-bg-meteor-layer') : null;
+    ctx = flowCanvas ? flowCanvas.getContext('2d') : null;
+    initialized = !!(body && background && flowCanvas && floatLayer && meteorLayer && ctx);
+    return initialized;
+  }
+
+  function initializeScene() {
+    if (!resolveElements()) {
+      return false;
+    }
     resizeCanvas();
     ensureParticles();
+    return true;
+  }
+
+  function start() {
+    if (!initialized && !initializeScene()) {
+      return;
+    }
+
+    if (running) {
+      return;
+    }
+
+    running = true;
     scheduleMeteor();
     if (rafId) {
       window.cancelAnimationFrame(rafId);
@@ -296,6 +324,57 @@
     rafId = window.requestAnimationFrame(frame);
   }
 
-  window.addEventListener('resize', initialize);
-  initialize();
+  function stop() {
+    running = false;
+    window.clearTimeout(meteorTimer);
+    if (rafId) {
+      window.cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+    if (ctx) {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    }
+    if (meteorLayer) {
+      meteorLayer.innerHTML = '';
+    }
+  }
+
+  function refresh() {
+    if (!resolveElements()) {
+      return;
+    }
+
+    if (body.classList.contains('decorative-background-disabled')) {
+      stop();
+      return;
+    }
+
+    if (!initialized) {
+      initializeScene();
+    }
+
+    start();
+  }
+
+  window.WallosDecorativeBackground = {
+    refresh: refresh,
+    start: start,
+    stop: stop,
+  };
+
+  window.addEventListener('resize', function () {
+    if (!running && !body?.classList.contains('decorative-background-enabled')) {
+      return;
+    }
+    initializeScene();
+    if (running) {
+      start();
+    }
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', refresh, { once: true });
+  } else {
+    refresh();
+  }
 })();

@@ -68,6 +68,7 @@ body.decorative-background-disabled .wallos-decorative-background {
     width: 100%;
     height: 100%;
     opacity: 0.95;
+    z-index: 0;
 }
 
 .wallos-bg-noise {
@@ -78,6 +79,7 @@ body.decorative-background-disabled .wallos-decorative-background {
     background-size: 120px 120px, 160px 160px, 110px 110px;
     mix-blend-mode: multiply;
     opacity: 0.28;
+    z-index: 1;
 }
 
 .wallos-bg-grid::before,
@@ -108,6 +110,7 @@ body.decorative-background-disabled .wallos-decorative-background {
 .wallos-bg-glow {
     filter: blur(18px);
     opacity: 0.78;
+    z-index: 2;
 }
 
 .wallos-bg-glow-a {
@@ -135,6 +138,7 @@ body.decorative-background-disabled .wallos-decorative-background {
     border: 1px solid rgba(var(--main-color-rgb), 0.12);
     border-radius: 999px;
     animation: wallosBgRotate 48s linear infinite;
+    z-index: 3;
 }
 
 .wallos-bg-orbit-a {
@@ -168,6 +172,7 @@ body.decorative-background-disabled .wallos-decorative-background {
     background: linear-gradient(135deg, rgba(var(--box-background-color-rgb), 0.16), rgba(var(--main-color-rgb), 0.04));
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
     backdrop-filter: blur(2px);
+    z-index: 4;
 }
 
 .wallos-bg-plate-a {
@@ -200,10 +205,16 @@ body.decorative-background-disabled .wallos-decorative-background {
 
 .wallos-bg-float-layer {
     overflow: hidden;
+    z-index: 5;
 }
 
 .wallos-bg-meteor-layer {
     overflow: hidden;
+    z-index: 7;
+}
+
+.wallos-bg-token-layer {
+    z-index: 6;
 }
 
 .wallos-bg-float {
@@ -240,15 +251,15 @@ body.decorative-background-disabled .wallos-decorative-background {
     left: 0;
     top: 0;
     width: var(--meteor-length, 180px);
-    height: 2px;
+    height: 2.5px;
     border-radius: 999px;
     background: linear-gradient(90deg,
         rgba(201, 74, 42, 0),
-        rgba(201, 74, 42, 0.08),
-        rgba(250, 249, 246, 0.95));
+        rgba(201, 74, 42, 0.16),
+        rgba(250, 249, 246, 0.98));
     box-shadow:
-        0 0 10px rgba(250, 249, 246, 0.45),
-        0 0 22px rgba(201, 74, 42, 0.22);
+        0 0 12px rgba(250, 249, 246, 0.6),
+        0 0 28px rgba(201, 74, 42, 0.3);
     transform: translate3d(0, 0, 0) rotate(var(--meteor-angle, -28deg));
     transform-origin: left center;
     opacity: 0;
@@ -412,7 +423,7 @@ body.dark .wallos-bg-grid::before {
     }
 
     .wallos-bg-meteor {
-        height: 1.5px;
+        height: 2px;
     }
 }
 
