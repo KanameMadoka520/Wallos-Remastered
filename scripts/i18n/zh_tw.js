@@ -83,4 +83,6 @@ let i18n = {
     subscription_image_upload_progress_uploading: "正在上傳圖片到伺服器",
     subscription_image_upload_progress_processing: "伺服器正在生成壓縮預覽圖與縮圖",
     subscription_image_original_loading: "正在載入原圖",
+    subscription_reorder_handle_title: "按住並拖動可調整訂閱順序",
+    subscription_reorder_unavailable: "僅在沒有搜尋詞與篩選條件時可手動排序",
 };

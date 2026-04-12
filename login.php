@@ -99,7 +99,7 @@ if ($adminRow['login_disabled'] == 1) {
         ]);
 
         if (!isset($_COOKIE['sortOrder'])) {
-            setcookie('sortOrder', 'next_payment', [
+            setcookie('sortOrder', 'manual_order', [
                 'expires' => $cookieExpire,
                 'samesite' => 'Lax'
             ]);
@@ -300,7 +300,7 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
                 ]);
 
                 if (!isset($_COOKIE['sortOrder'])) {
-                    setcookie('sortOrder', 'next_payment', [
+                    setcookie('sortOrder', 'manual_order', [
                         'expires' => $cookieExpire,
                         'samesite' => 'Lax'
                     ]);
@@ -448,6 +448,17 @@ wallos_log_request($db, 0, '');
                     <?= translate('please_login', $i18n) ?>
                 </p>
             </header>
+            <div class="public-page-edition-note">
+                <div class="public-page-edition-content">
+                    <span class="public-page-edition-badge">tcymc自建服务版</span>
+                    <span><?= translate('tcy_selfhost_notice', $i18n) ?></span>
+                </div>
+                <a class="button secondary-button public-page-feedback-button"
+                    href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">
+                    <i class="fa-solid fa-bug"></i>
+                    <?= translate('issues_and_requests', $i18n) ?>
+                </a>
+            </div>
             <form action="login.php" method="post">
                 <?php if (!$password_login_disabled) { ?>
                     <div class="form-group">

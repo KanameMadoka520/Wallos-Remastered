@@ -132,7 +132,7 @@ if (isset($_POST['one-time-code'])) {
         ]);
 
         if (!isset($_COOKIE['sortOrder'])) {
-            setcookie('sortOrder', 'next_payment', [
+            setcookie('sortOrder', 'manual_order', [
                 'expires' => $cookieExpire,
                 'samesite' => 'Lax'
             ]);

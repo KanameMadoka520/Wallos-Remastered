@@ -41,7 +41,7 @@ setcookie('language', $language, [
 
 // Set sort order default
 if (!isset($_COOKIE['sortOrder'])) {
-    setcookie('sortOrder', 'next_payment', [
+    setcookie('sortOrder', 'manual_order', [
         'expires' => $cookieExpire,
         'samesite' => 'Lax'
     ]);

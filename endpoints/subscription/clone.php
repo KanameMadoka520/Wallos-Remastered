@@ -2,6 +2,7 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/subscription_media.php';
+require_once '../../includes/subscription_sort.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -24,17 +25,18 @@ $userStmt = $db->prepare('SELECT username FROM user WHERE id = :userId');
 $userStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
 $userResult = $userStmt->execute();
 $currentUser = $userResult ? $userResult->fetchArray(SQLITE3_ASSOC) : false;
+$nextSortOrder = wallos_get_next_subscription_sort_order($db, $userId);
 
 $query = "INSERT INTO subscriptions (
     name, logo, price, currency_id, next_payment, cycle, frequency, notes,
     payment_method_id, payer_user_id, category_id, notify, url, inactive,
     notify_days_before, user_id, cancellation_date, replacement_subscription_id,
-    start_date, auto_renew, detail_image, detail_image_urls
+    start_date, auto_renew, detail_image, detail_image_urls, sort_order
 ) VALUES (
     :name, :logo, :price, :currency_id, :next_payment, :cycle, :frequency, :notes,
     :payment_method_id, :payer_user_id, :category_id, :notify, :url, :inactive,
     :notify_days_before, :user_id, :cancellation_date, :replacement_subscription_id,
-    :start_date, :auto_renew, :detail_image, :detail_image_urls
+    :start_date, :auto_renew, :detail_image, :detail_image_urls, :sort_order
 )";
 $cloneStmt = $db->prepare($query);
 $cloneStmt->bindValue(':name', $subscriptionToClone['name'], SQLITE3_TEXT);
@@ -59,6 +61,7 @@ $cloneStmt->bindValue(':start_date', $subscriptionToClone['start_date'], SQLITE3
 $cloneStmt->bindValue(':auto_renew', $subscriptionToClone['auto_renew'], SQLITE3_INTEGER);
 $cloneStmt->bindValue(':detail_image', '', SQLITE3_TEXT);
 $cloneStmt->bindValue(':detail_image_urls', $subscriptionToClone['detail_image_urls'] ?? '[]', SQLITE3_TEXT);
+$cloneStmt->bindValue(':sort_order', $nextSortOrder, SQLITE3_INTEGER);
 
 if ($cloneStmt->execute()) {
     $newSubscriptionId = $db->lastInsertRowID();

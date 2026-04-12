@@ -7,23 +7,23 @@ require_once 'includes/subscription_media.php';
 
 include_once 'includes/list_subscriptions.php';
 
-$sort = "next_payment";
+$sort = "manual_order";
 $sortOrder = $sort;
 
 if ($settings['disabledToBottom'] === 'true') {
-  $sql = "SELECT * FROM subscriptions WHERE user_id = :userId ORDER BY inactive ASC, next_payment ASC";
+  $sql = "SELECT * FROM subscriptions WHERE user_id = :userId ORDER BY inactive ASC, sort_order ASC, next_payment ASC";
 } else {
-  $sql = "SELECT * FROM subscriptions WHERE user_id = :userId ORDER BY next_payment ASC, inactive ASC";
+  $sql = "SELECT * FROM subscriptions WHERE user_id = :userId ORDER BY sort_order ASC, next_payment ASC, inactive ASC";
 }
 
 $params = array();
 
 if (isset($_COOKIE['sortOrder']) && $_COOKIE['sortOrder'] != "") {
-  $sort = $_COOKIE['sortOrder'] ?? 'next_payment';
+  $sort = $_COOKIE['sortOrder'] ?? 'manual_order';
 }
 
 $sortOrder = $sort;
-$allowedSortCriteria = ['name', 'id', 'next_payment', 'price', 'payer_user_id', 'category_id', 'payment_method_id', 'inactive', 'alphanumeric', 'renewal_type'];
+$allowedSortCriteria = ['manual_order', 'name', 'id', 'next_payment', 'price', 'payer_user_id', 'category_id', 'payment_method_id', 'inactive', 'alphanumeric', 'renewal_type'];
 $order = ($sort == "price" || $sort == "id") ? "DESC" : "ASC";
 
 if ($sort == "alphanumeric") {
@@ -31,11 +31,15 @@ if ($sort == "alphanumeric") {
 }
 
 if (!in_array($sort, $allowedSortCriteria)) {
-  $sort = "next_payment";
+  $sort = "manual_order";
 }
 
 if ($sort == "renewal_type") {
   $sort = "auto_renew";
+}
+
+if ($sort == "manual_order") {
+  $sort = "sort_order";
 }
 
 $sql = "SELECT * FROM subscriptions WHERE user_id = :userId";
@@ -103,7 +107,7 @@ if ($settings['disabledToBottom'] === 'true') {
   }
 }
 
-if ($sort != "next_payment") {
+if ($sort != "next_payment" && $sort != "sort_order") {
   $orderByClauses[] = "next_payment ASC";
 }
 
@@ -172,15 +176,6 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
         <i class="fa-solid fa-wand-magic-sparkles"></i>
         <?= translate('subscription_image_generate_variants', $i18n) ?>
       </button>
-    </div>
-    <div class="top-actions">
-      <div class="search">
-        <input type="text" autocomplete="off" name="search" id="search" placeholder="<?= translate('search', $i18n) ?>"
-          onkeyup="searchSubscriptions()" />
-        <span class="fa-solid fa-magnifying-glass search-icon"></span>
-        <span class="fa-solid fa-xmark clear-search" onClick="clearSearch()"></span>
-      </div>
-
       <div class="media-layout-toggle subscription-column-toggle" role="group"
         aria-label="<?= translate('subscription_layout_switch', $i18n) ?>">
         <button type="button" class="media-layout-button is-active" data-subscription-columns="1"
@@ -216,6 +211,14 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
           <i class="fa-solid fa-arrow-down-wide-short"></i>
         </button>
         <?php include 'includes/sort_options.php'; ?>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="search">
+        <input type="text" autocomplete="off" name="search" id="search" placeholder="<?= translate('search', $i18n) ?>"
+          onkeyup="searchSubscriptions()" />
+        <span class="fa-solid fa-magnifying-glass search-icon"></span>
+        <span class="fa-solid fa-xmark clear-search" onClick="clearSearch()"></span>
       </div>
     </div>
   </header>
