@@ -261,11 +261,5 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
   }
   ?>
 
-  <div class="custom-edition-banner">
-    <div class="contain">
-      <span class="custom-edition-badge">tcymc自建服务版</span>
-      <span class="custom-edition-text">以自己物理机为后端，香港vps作为网关</span>
-    </div>
-  </div>
 
   <main>
