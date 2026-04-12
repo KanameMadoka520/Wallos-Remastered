@@ -4,6 +4,7 @@ require_once 'includes/header.php';
 require_once 'includes/getdbkeys.php';
 require_once 'includes/user_groups.php';
 require_once 'includes/subscription_trash.php';
+require_once 'includes/metric_explanations.php';
 
 function formatPrice($price, $currencyCode, $currencies)
 {
@@ -286,6 +287,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                         <?= CurrencyFormatter::format($amountDueThisMonth, $currencies[$userData['main_currency']]['code']) ?>
                                     </p>
                                 </div>
+                                <?php wallos_render_metric_explanation_trigger('amount_due', $metricExplanations, translate('amount_due', $i18n)); ?>
                             </div>
                         <?php } ?>
                         <?php if (isset($currentMonthActualPaid)) { ?>
@@ -296,6 +298,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                         <?= CurrencyFormatter::format($currentMonthActualPaid, $currencies[$userData['main_currency']]['code']) ?>
                                     </p>
                                 </div>
+                                <?php wallos_render_metric_explanation_trigger('actual_paid_this_month', $metricExplanations, translate('actual_paid_this_month', $i18n)); ?>
                             </div>
                         <?php } ?>
                         <?php if (isset($currentYearActualPaid)) { ?>
@@ -306,6 +309,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                         <?= CurrencyFormatter::format($currentYearActualPaid, $currencies[$userData['main_currency']]['code']) ?>
                                     </p>
                                 </div>
+                                <?php wallos_render_metric_explanation_trigger('actual_paid_this_year', $metricExplanations, translate('actual_paid_this_year', $i18n)); ?>
                             </div>
                         <?php } ?>
                         <?php if (isset($currentYearProjectedSpend)) { ?>
@@ -316,6 +320,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                         <?= CurrencyFormatter::format($currentYearProjectedSpend, $currencies[$userData['main_currency']]['code']) ?>
                                     </p>
                                 </div>
+                                <?php wallos_render_metric_explanation_trigger('projected_yearly_spend', $metricExplanations, translate('projected_yearly_spend', $i18n)); ?>
                             </div>
                         <?php } ?>
                         <?php if (isset($budget) && $budget > 0) { ?>
@@ -326,6 +331,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                         <?= formatPrice($budget, $currencies[$userData['main_currency']]['code'], $currencies) ?>
                                     </p>
                                 </div>
+                                <?php wallos_render_metric_explanation_trigger('budget', $metricExplanations, translate('budget', $i18n)); ?>
                             </div>
                         <?php } ?>
                         <?php if (isset($budgetUsed)) { ?>
@@ -336,6 +342,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                         <?= number_format($budgetUsed, 2) ?>%
                                     </p>
                                 </div>
+                                <?php wallos_render_metric_explanation_trigger('budget_used', $metricExplanations, translate('budget_used', $i18n)); ?>
                             </div>
                         <?php } ?>
                         <?php if (isset($budgetLeft)) { ?>
@@ -346,6 +353,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                         <?= formatPrice($budgetLeft, $currencies[$userData['main_currency']]['code'], $currencies) ?>
                                     </p>
                                 </div>
+                                <?php wallos_render_metric_explanation_trigger('budget_remaining', $metricExplanations, translate('budget_remaining', $i18n)); ?>
                             </div>
                         <?php } ?>
                         <?php if (isset($overBudgetAmount) && $overBudgetAmount > 0) { ?>
@@ -356,6 +364,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                         <?= formatPrice($overBudgetAmount, $currencies[$userData['main_currency']]['code'], $currencies) ?>
                                     </p>
                                 </div>
+                                <?php wallos_render_metric_explanation_trigger('amount_over_budget', $metricExplanations, translate('amount_over_budget', $i18n)); ?>
                             </div>
                         <?php } ?>
                     </div>
@@ -384,6 +393,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                     <?= CurrencyFormatter::format($totalCostPerMonth, $currencies[$userData['main_currency']]['code']) ?>
                                 </p>
                             </div>
+                            <?php wallos_render_metric_explanation_trigger('monthly_cost', $metricExplanations, translate('monthly_cost', $i18n)); ?>
                         </div>
                     <?php } ?>
 
@@ -395,6 +405,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                     <?= CurrencyFormatter::format($totalCostPerYear, $currencies[$userData['main_currency']]['code']) ?>
                                 </p>
                             </div>
+                            <?php wallos_render_metric_explanation_trigger('yearly_cost', $metricExplanations, translate('yearly_cost', $i18n)); ?>
                         </div>
                     <?php } ?>
                 </div>
@@ -440,8 +451,11 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 
 </section>
 
+<?php wallos_render_metric_explanation_modal($i18n); ?>
+
 
 <script src="scripts/dashboard.js?<?= $version ?>"></script>
+<script src="scripts/metric-explanations.js?<?= $version . '.' . @filemtime(__DIR__ . '/scripts/metric-explanations.js') ?>"></script>
 
 <?php
 require_once 'includes/footer.php';

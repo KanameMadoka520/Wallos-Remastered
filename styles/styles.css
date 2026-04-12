@@ -3145,6 +3145,7 @@ button.dark-theme-button i {
   box-sizing: border-box;
   flex-grow: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .statistic.short {
@@ -3175,6 +3176,28 @@ button.dark-theme-button i {
 .statistic>.title {
   margin-top: 5px;
   text-align: center;
+}
+
+.metric-explanation-trigger {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--main-color-rgb), 0.18);
+  background-color: rgba(var(--main-color-rgb), 0.08);
+  color: var(--main-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.metric-explanation-trigger:hover {
+  background-color: rgba(var(--main-color-rgb), 0.16);
+  border-color: rgba(var(--main-color-rgb), 0.28);
 }
 
 .statistic>.subtitle {
@@ -4653,6 +4676,7 @@ input[type="radio"]:checked+label::after {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: relative;
 }
 
 .dashboard-subscriptions-list>.subscription-item.thin {
@@ -4700,6 +4724,96 @@ input[type="radio"]:checked+label::after {
 
 .dashboard-subscriptions-list>.subscription-item.thin .subscription-item-value {
   font-size: 20px;;
+}
+
+.metric-explanation-modal {
+  max-width: 820px;
+}
+
+.metric-explanation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metric-explanation-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metric-explanation-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(var(--text-color-rgb), 0.68);
+}
+
+.metric-explanation-formula {
+  padding: 12px 14px;
+  border: 1px solid var(--box-border-color);
+  border-radius: 12px;
+  background-color: rgba(var(--main-color-rgb), 0.04);
+  font-weight: 600;
+}
+
+.metric-explanation-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.metric-explanation-summary-card {
+  border: 1px solid var(--box-border-color);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background-color: rgba(var(--main-color-rgb), 0.04);
+}
+
+.metric-explanation-summary-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 18px;
+  color: var(--main-color);
+}
+
+.metric-explanation-items {
+  display: grid;
+  gap: 12px;
+}
+
+.metric-explanation-item {
+  border: 1px solid var(--box-border-color);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background-color: var(--box-background-color);
+}
+
+.metric-explanation-item-headline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.metric-explanation-item-headline strong {
+  font-size: 15px;
+}
+
+.metric-explanation-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  color: rgba(var(--text-color-rgb), 0.74);
+  font-size: 13px;
+}
+
+.metric-explanation-empty {
+  padding: 16px;
+  border: 1px dashed var(--box-border-color);
+  border-radius: 14px;
+  color: rgba(var(--text-color-rgb), 0.72);
 }
 
 .ai-recommendations-container {
