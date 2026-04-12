@@ -301,6 +301,9 @@ wallos_log_request($db, 0, '');
         <section class="container">
             <div class="public-page-toolbar">
                 <div class="public-page-language-switcher">
+                    <span class="public-page-language-icon" aria-hidden="true">
+                        <i class="fa-solid fa-earth-asia"></i>
+                    </span>
                     <label for="public-page-language"><?= translate('language', $i18n) ?>:</label>
                     <select id="public-page-language">
                         <?php
