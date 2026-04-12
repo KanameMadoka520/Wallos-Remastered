@@ -296,6 +296,21 @@ wallos_log_request($db, 0, '');
 <body class="<?= $languages[$lang]['dir'] ?>">
     <div class="content">
         <section class="container">
+            <div class="public-page-toolbar">
+                <div class="public-page-language-switcher">
+                    <label for="public-page-language"><?= translate('language', $i18n) ?>:</label>
+                    <select id="public-page-language" onchange="changeLanguage(this.value)">
+                        <?php
+                        foreach ($languages as $code => $languageOption) {
+                            $selected = ($code === $lang) ? 'selected' : '';
+                            ?>
+                            <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
+                            <?php
+                        }
+                        ?>
+                    </select>
+                </div>
+            </div>
             <header>
                 <div class="logo-image" title="Wallos - Subscription Tracker">
                     <?php include "images/siteicons/svg/logo.php"; ?>
@@ -305,6 +320,7 @@ wallos_log_request($db, 0, '');
                 </p>
             </header>
             <form action="registration.php" method="post">
+                <input type="hidden" id="registration-language" name="language" value="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>">
                 <div class="form-group">
                     <label for="username"><?= translate('username', $i18n) ?>:</label>
                     <input type="text" id="username" name="username" autocomplete="username" required>
@@ -336,19 +352,6 @@ wallos_log_request($db, 0, '');
                         foreach ($currencies as $currency) {
                             ?>
                             <option value="<?= $currency['code'] ?>"><?= $currency['name'] ?></option>
-                            <?php
-                        }
-                        ?>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="language"><?= translate('language', $i18n) ?>:</label>
-                    <select id="language" name="language" placeholder="<?= translate('language', $i18n) ?>" onchange="changeLanguage(this.value)">
-                        <?php
-                        foreach ($languages as $code => $language) {
-                            $selected = ($code === $lang) ? 'selected' : '';
-                            ?>
-                            <option value="<?= $code ?>" <?= $selected ?>><?= $language['name'] ?></option>
                             <?php
                         }
                         ?>

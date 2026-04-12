@@ -27,11 +27,50 @@ body, html {
     box-sizing: border-box;
 }
 
+.public-page-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+
+.public-page-language-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.public-page-language-switcher label {
+    margin-bottom: 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.public-page-language-switcher select {
+    width: auto;
+    min-width: 150px;
+    padding: 10px 12px;
+    font-size: 14px;
+}
+
 @media (max-width: 768px) {
     .container {
         background-color: transparent;
         border: none;
         box-shadow: none;
+    }
+
+    .public-page-toolbar,
+    .public-page-language-switcher {
+        width: 100%;
+    }
+
+    .public-page-language-switcher {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .public-page-language-switcher select {
+        width: 100%;
     }
 }
 
