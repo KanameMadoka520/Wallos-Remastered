@@ -94,13 +94,14 @@ function renderMetricExplanationItems(payload) {
 
   itemsContainer.innerHTML = items.map((item) => {
     const itemName = item.subscription_name || item.name || '-';
+    const itemCurrencyCode = item.currency_code || item.main_currency_code_snapshot || payload.currency_code || '';
     const primaryAmount =
       item.total_amount !== undefined
-        ? formatMetricExplanationValue(item.total_amount, payload.currency_code || item.main_currency_code_snapshot || '')
+        ? formatMetricExplanationValue(item.total_amount, itemCurrencyCode)
         : item.amount_main_snapshot !== undefined
           ? formatMetricExplanationValue(item.amount_main_snapshot, item.main_currency_code_snapshot || payload.currency_code || '')
           : item.monthly_equivalent !== undefined
-            ? formatMetricExplanationValue(item.monthly_equivalent, payload.currency_code || '')
+            ? formatMetricExplanationValue(item.monthly_equivalent, itemCurrencyCode)
             : '-';
 
     const meta = [];
@@ -108,10 +109,10 @@ function renderMetricExplanationItems(payload) {
       meta.push(`${translate('cycle')}: ${item.billing_cycle}`);
     }
     if (item.price_per_charge !== undefined) {
-      meta.push(`${translate('price')}: ${formatMetricExplanationValue(item.price_per_charge, payload.currency_code || '')}`);
+      meta.push(`${translate('price')}: ${formatMetricExplanationValue(item.price_per_charge, itemCurrencyCode)}`);
     }
     if (item.unit_amount !== undefined) {
-      meta.push(`${translate('subscription_payment_amount')}: ${formatMetricExplanationValue(item.unit_amount, payload.currency_code || '')}`);
+      meta.push(`${translate('subscription_payment_amount')}: ${formatMetricExplanationValue(item.unit_amount, itemCurrencyCode)}`);
     }
     if (item.count !== undefined) {
       meta.push(`${translate('frequency')}: ${new Intl.NumberFormat(navigator.language).format(item.count)}`);
@@ -127,6 +128,9 @@ function renderMetricExplanationItems(payload) {
     }
     if (item.amount_original !== undefined) {
       meta.push(`${translate('subscription_payment_amount')}: ${formatMetricExplanationValue(item.amount_original, item.currency_code_snapshot || '')}`);
+    }
+    if (item.rule_summary) {
+      meta.push(`${translate('subscription_price_rules')}: ${item.rule_summary}`);
     }
 
     return `

@@ -4,6 +4,7 @@ require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_sort.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/subscription_price_rules.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -69,6 +70,7 @@ $cloneStmt->bindValue(':exclude_from_stats', (int) ($subscriptionToClone['exclud
 
 if ($cloneStmt->execute()) {
     $newSubscriptionId = $db->lastInsertRowID();
+    wallos_clone_subscription_price_rules($db, $subscriptionId, $newSubscriptionId, $userId);
     wallos_clone_subscription_uploaded_images(
         $db,
         __DIR__ . '/../../',
