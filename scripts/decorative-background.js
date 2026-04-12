@@ -147,6 +147,153 @@
     ctx.stroke();
   }
 
+  function drawOrbitalSystem(now, cx, cy, scale) {
+    const time = now * 0.00012;
+    const orbitDefs = [
+      { rx: scale * 1.2, ry: scale * 0.52, width: 0.95, alpha: 0.12, phase: 0.0, color: '26, 26, 26', planetRadius: scale * 0.08 },
+      { rx: scale * 1.74, ry: scale * 0.78, width: 0.8, alpha: 0.09, phase: 1.6, color: '201, 74, 42', planetRadius: scale * 0.06 },
+      { rx: scale * 2.28, ry: scale * 1.08, width: 0.72, alpha: 0.08, phase: 3.1, color: '0, 123, 255', planetRadius: scale * 0.05 },
+    ];
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.sin(time * 0.8) * 0.16);
+
+    const starGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, scale * 0.42);
+    starGlow.addColorStop(0, 'rgba(250, 249, 246, 0.95)');
+    starGlow.addColorStop(0.18, 'rgba(201, 74, 42, 0.34)');
+    starGlow.addColorStop(1, 'rgba(201, 74, 42, 0)');
+    ctx.fillStyle = starGlow;
+    ctx.beginPath();
+    ctx.arc(0, 0, scale * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.beginPath();
+    ctx.arc(0, 0, scale * 0.055, 0, Math.PI * 2);
+    ctx.fill();
+
+    orbitDefs.forEach(function (orbit, orbitIndex) {
+      ctx.beginPath();
+      ctx.lineWidth = orbit.width;
+      ctx.strokeStyle = 'rgba(' + orbit.color + ', ' + orbit.alpha + ')';
+      ctx.ellipse(0, 0, orbit.rx, orbit.ry, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const angle = (time * (0.9 + orbitIndex * 0.28)) + orbit.phase;
+      const px = Math.cos(angle) * orbit.rx;
+      const py = Math.sin(angle) * orbit.ry;
+
+      for (let tail = 5; tail >= 0; tail -= 1) {
+        const tailAngle = angle - (tail * 0.17);
+        const tx = Math.cos(tailAngle) * orbit.rx;
+        const ty = Math.sin(tailAngle) * orbit.ry;
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(' + orbit.color + ', ' + ((6 - tail) * 0.028).toFixed(3) + ')';
+        ctx.arc(tx, ty, orbit.planetRadius * (0.34 + ((6 - tail) * 0.08)), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const planetGlow = ctx.createRadialGradient(px, py, 0, px, py, orbit.planetRadius * 2.3);
+      planetGlow.addColorStop(0, 'rgba(255,255,255,0.96)');
+      planetGlow.addColorStop(0.35, 'rgba(' + orbit.color + ', 0.42)');
+      planetGlow.addColorStop(1, 'rgba(' + orbit.color + ', 0)');
+      ctx.fillStyle = planetGlow;
+      ctx.beginPath();
+      ctx.arc(px, py, orbit.planetRadius * 2.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(250, 249, 246, 0.96)';
+      ctx.beginPath();
+      ctx.arc(px, py, orbit.planetRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (orbitIndex === 1) {
+        const moonAngle = (time * 2.2) - 0.6;
+        const moonX = px + (Math.cos(moonAngle) * orbit.planetRadius * 2.8);
+        const moonY = py + (Math.sin(moonAngle) * orbit.planetRadius * 1.9);
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(250, 249, 246, 0.12)';
+        ctx.lineWidth = 0.45;
+        ctx.ellipse(px, py, orbit.planetRadius * 2.8, orbit.planetRadius * 1.9, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(250, 249, 246, 0.78)';
+        ctx.beginPath();
+        ctx.arc(moonX, moonY, orbit.planetRadius * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    ctx.restore();
+  }
+
+  function drawBlackHole(now, cx, cy, scale) {
+    const time = now * 0.00014;
+    const diskRx = scale * 1.8;
+    const diskRy = scale * 0.66;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-0.18 + (Math.sin(time * 0.7) * 0.08));
+
+    const diskGlow = ctx.createRadialGradient(0, 0, scale * 0.1, 0, 0, scale * 2.25);
+    diskGlow.addColorStop(0, 'rgba(18, 18, 24, 0)');
+    diskGlow.addColorStop(0.22, 'rgba(201, 74, 42, 0.08)');
+    diskGlow.addColorStop(0.48, 'rgba(0, 123, 255, 0.06)');
+    diskGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = diskGlow;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, diskRx * 1.2, diskRy * 1.25, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    for (let ring = 0; ring < 5; ring += 1) {
+      ctx.beginPath();
+      ctx.lineWidth = 0.9 - (ring * 0.12);
+      ctx.strokeStyle = ring % 2 === 0
+        ? 'rgba(201, 74, 42, ' + (0.12 - (ring * 0.016)).toFixed(3) + ')'
+        : 'rgba(26, 26, 26, ' + (0.08 - (ring * 0.012)).toFixed(3) + ')';
+      ctx.ellipse(0, 0, diskRx - (ring * scale * 0.16), diskRy - (ring * scale * 0.06), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    for (let arm = 0; arm < 3; arm += 1) {
+      ctx.beginPath();
+      ctx.lineWidth = 1.0 - (arm * 0.12);
+      ctx.strokeStyle = arm === 0 ? 'rgba(250, 249, 246, 0.11)' : 'rgba(201, 74, 42, 0.10)';
+
+      for (let step = 0; step <= 220; step += 1) {
+        const t = step / 220;
+        const theta = (t * Math.PI * 3.8) + (arm * ((Math.PI * 2) / 3)) + time;
+        const radius = (scale * 0.2) + (Math.exp(t * 1.36) - 1) * scale * 0.33;
+        const wobble = Math.sin((t * Math.PI * 6) + time + arm) * scale * 0.018;
+        const x = Math.cos(theta) * (radius + wobble) * 1.4;
+        const y = Math.sin(theta) * (radius - wobble) * 0.54;
+
+        if (step === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(10, 10, 14, 0.98)';
+    ctx.beginPath();
+    ctx.arc(0, 0, scale * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.arc(0, 0, scale * 0.31, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
   function drawHarmonicMesh(now) {
     ctx.save();
     ctx.globalCompositeOperation = 'multiply';
@@ -219,6 +366,9 @@
       lineWidth: 0.75,
       phaseSpeed: 0.00004,
     });
+
+    drawOrbitalSystem(now, canvasWidth * 0.77, canvasHeight * 0.26, Math.min(canvasWidth, canvasHeight) * 0.09);
+    drawBlackHole(now, canvasWidth * 0.28, canvasHeight * 0.7, Math.min(canvasWidth, canvasHeight) * 0.1);
 
     ctx.restore();
   }
