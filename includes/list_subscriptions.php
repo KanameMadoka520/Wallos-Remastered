@@ -2,6 +2,7 @@
 
 require_once 'i18n/getlang.php';
 require_once __DIR__ . '/subscription_media.php';
+require_once __DIR__ . '/markdown.php';
 
 function getBillingCycle($cycle, $frequency, $i18n)
 {
@@ -353,10 +354,12 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                 if ($subscription['notes'] != "") {
                     ?>
                     <div class="subscription-notes">
-                        <span class="notes">
+                        <div class="subscription-notes-marker">
                             <?php include $imagePath . "images/siteicons/svg/notes.php"; ?>
-                            <?= htmlspecialchars($subscription['notes'], ENT_QUOTES, 'UTF-8') ?>
-                        </span>
+                        </div>
+                        <div class="subscription-markdown subscription-notes-content">
+                            <?= wallos_render_markdown($subscription['notes']) ?>
+                        </div>
                     </div>
                     <?php
                 }

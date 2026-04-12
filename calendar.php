@@ -1,6 +1,8 @@
 <?php
 require_once 'includes/header.php';
 
+$calendarJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/calendar.js');
+
 function getPriceConverted($price, $currency, $database, $userId)
 {
   $query = "SELECT rate FROM currencies WHERE id = :currency AND user_id = :userId";
@@ -386,7 +388,7 @@ $yearsToLoad = $calendarYear - $currentYear + 1;
   </div>
 </div>
 
-<script src="scripts/calendar.js?<?= $version ?>"></script>
+<script src="scripts/calendar.js?<?= $calendarJsVersion ?>"></script>
 <?php
 require_once 'includes/footer.php';
 ?>

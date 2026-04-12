@@ -1,6 +1,7 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/getdbkeys.php';
+require_once '../../includes/markdown.php';
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     die(json_encode([
@@ -36,6 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $subscription['payment_method'] = $payment_methods[$subscription['payment_method_id']]['name'];
         $subscription['currency'] = $currencies[$subscription['currency_id']]['symbol'];
         $subscription['price'] = number_format($subscription['price'], 2);
+        $subscription['notes_html'] = wallos_render_markdown($subscription['notes'] ?? '');
 
         echo json_encode([
             'success' => true,

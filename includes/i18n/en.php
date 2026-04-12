@@ -119,6 +119,7 @@ $i18n = [
     "paid_by" => "Paid by",
     "url" => "URL",
     "notes" => "Notes",
+    "subscription_notes_markdown_hint" => "Supports Markdown rendering. You can use headings, lists, links, quotes, and code blocks.",
     "enable_notifications" => "Enable Notifications for this subscription",
     "default_value_from_settings" => "Default value from settings",
     "cancellation_notification" => "Cancellation Notification",

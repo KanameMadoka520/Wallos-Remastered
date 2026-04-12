@@ -521,7 +521,16 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
     </div>
 
     <div class="form-group">
-      <input type="text" id="notes" name="notes" autocomplete="off" placeholder="<?= translate('notes', $i18n) ?>">
+      <label for="notes"><?= translate('notes', $i18n) ?></label>
+      <textarea id="notes" name="notes" autocomplete="off" rows="8"
+        class="subscription-notes-field"
+        placeholder="<?= translate('notes', $i18n) ?>"></textarea>
+      <div class="settings-notes subscription-notes-help">
+        <p>
+          <i class="fa-brands fa-markdown"></i>
+          <?= translate('subscription_notes_markdown_hint', $i18n) ?>
+        </p>
+      </div>
     </div>
 
     <div class="form-group subscription-detail-images-group">

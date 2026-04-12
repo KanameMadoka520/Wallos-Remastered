@@ -58,7 +58,7 @@ function openSubscriptionModal(subscriptionId) {
                 ${subscription.category ? `<p><strong>${translate('category')}:</strong> ${subscription.category}</p>` : ''}
                 ${subscription.payer_user ? `<p><strong>${translate('paid_by')}:</strong> ${subscription.payer_user}</p>` : ''}
                 ${subscription.payment_method ? `<p><strong>${translate('payment_method')}:</strong> ${subscription.payment_method}</p>` : ''}
-                ${subscription.notes ? `<p><strong>${translate('notes')}:</strong> ${subscription.notes}</p>` : ''}
+                ${subscription.notes_html ? `<div class="calendar-subscription-notes"><strong>${translate('notes')}:</strong><div class="subscription-markdown">${subscription.notes_html}</div></div>` : ''}
                 </div>
             </div>
             <div class="modal-footer">

@@ -840,11 +840,13 @@ button.mobile-action-renew {
 .subscription-notes {
   display: none;
   flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
   padding: 6px 5px;
   overflow: hidden;
 }
 
-.subscriptions.subscription-columns.subscription-columns-multi .subscription-notes>span {
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-notes {
   align-items: flex-start;
 }
 
@@ -1047,11 +1049,120 @@ button.mobile-action-renew {
   margin-right: auto;
 }
 
-.subscription-notes>span {
+.subscription-notes-marker {
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 4px;
+  flex: 0 0 auto;
+}
+
+.subscription-notes-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.subscription-markdown {
+  color: var(--text-color);
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+.subscription-markdown > :first-child {
+  margin-top: 0;
+}
+
+.subscription-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.subscription-markdown p,
+.subscription-markdown ul,
+.subscription-markdown ol,
+.subscription-markdown blockquote,
+.subscription-markdown pre,
+.subscription-markdown h1,
+.subscription-markdown h2,
+.subscription-markdown h3,
+.subscription-markdown h4,
+.subscription-markdown h5,
+.subscription-markdown h6 {
+  margin: 0 0 12px;
+}
+
+.subscription-markdown ul,
+.subscription-markdown ol {
+  padding-left: 22px;
+}
+
+.subscription-markdown h1,
+.subscription-markdown h2,
+.subscription-markdown h3,
+.subscription-markdown h4,
+.subscription-markdown h5,
+.subscription-markdown h6 {
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.subscription-markdown h1 {
+  font-size: 1.28rem;
+}
+
+.subscription-markdown h2 {
+  font-size: 1.18rem;
+}
+
+.subscription-markdown h3 {
+  font-size: 1.08rem;
+}
+
+.subscription-markdown blockquote {
+  margin-left: 0;
+  padding: 10px 14px;
+  border-left: 3px solid rgba(var(--main-color-rgb), 0.38);
+  background-color: rgba(var(--main-color-rgb), 0.05);
+  border-radius: 10px;
+}
+
+.subscription-markdown code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background-color: rgba(var(--text-color-rgb), 0.08);
+  font-size: 0.92em;
+}
+
+.subscription-markdown pre {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background-color: rgba(var(--text-color-rgb), 0.08);
+  overflow-x: auto;
+}
+
+.subscription-markdown pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.subscription-markdown a {
+  color: var(--main-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.subscription-notes-field {
+  min-height: 192px;
+  resize: vertical;
+}
+
+.subscription-notes-help {
+  margin-top: 10px;
+}
+
+.calendar-subscription-notes {
   display: flex;
-  align-items: center;
-  font-size: 14px;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .subscription-media {
