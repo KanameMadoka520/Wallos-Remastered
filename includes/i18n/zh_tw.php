@@ -119,6 +119,7 @@ $i18n = [
     "paid_by" => "付款人",
     "url" => "網址",
     "notes" => "備註",
+    "subscription_notes_markdown_hint" => "支援 Markdown 渲染，可使用標題、清單、連結、引用與程式碼區塊。",
     "enable_notifications" => "啟用此訂閱的通知",
     "default_value_from_settings" => "使用設定中的預設值",
     "cancellation_notification" => "取消通知",
