@@ -76,6 +76,12 @@ $currencies = wallos_get_default_currencies($lang);
 $categories = wallos_get_default_categories($lang);
 $payment_methods = wallos_get_default_payment_methods($lang);
 
+$defaultMainCurrencyCode = 'CNY';
+$availableCurrencyCodes = array_column($currencies, 'code');
+if (!in_array($defaultMainCurrencyCode, $availableCurrencyCodes, true) && !empty($availableCurrencyCodes)) {
+    $defaultMainCurrencyCode = $availableCurrencyCodes[0];
+}
+
 $passwordMismatch = false;
 $usernameExists = false;
 $emailExists = false;
@@ -355,9 +361,13 @@ wallos_log_request($db, 0, '');
                     <label for="currency"><?= translate('main_currency', $i18n) ?>:</label>
                     <select id="currency" name="main_currency" placeholder="<?= translate('currency', $i18n) ?>">
                         <?php
+                        $selectedMainCurrencyCode = isset($_POST['main_currency']) && trim((string) $_POST['main_currency']) !== ''
+                            ? (string) $_POST['main_currency']
+                            : $defaultMainCurrencyCode;
                         foreach ($currencies as $currency) {
+                            $selected = $currency['code'] === $selectedMainCurrencyCode ? 'selected' : '';
                             ?>
-                            <option value="<?= $currency['code'] ?>"><?= $currency['name'] ?></option>
+                            <option value="<?= $currency['code'] ?>" <?= $selected ?>><?= $currency['name'] ?></option>
                             <?php
                         }
                         ?>
