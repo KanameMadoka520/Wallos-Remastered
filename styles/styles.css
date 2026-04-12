@@ -1215,6 +1215,25 @@ button.mobile-action-renew {
   align-self: flex-start;
 }
 
+.subscription-payment-record-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.subscription-payment-record-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--box-border-color);
+  border-radius: 14px;
+  background-color: rgba(var(--main-color-rgb), 0.03);
+  color: rgba(var(--text-color-rgb), 0.78);
+  font-size: 14px;
+}
+
 .subscription-payment-record-list {
   display: grid;
   gap: 12px;
@@ -1245,6 +1264,11 @@ button.mobile-action-renew {
 
 .subscription-payment-record-note {
   margin-top: 10px;
+}
+
+.subscription-payment-record-history-actions {
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 .subscription-payment-record-empty {
@@ -1326,6 +1350,21 @@ button.mobile-action-renew {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.subscription-payment-history-modal {
+  max-width: 860px;
+}
+
+.subscription-payment-history-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.subscription-payment-history-content {
+  display: grid;
+  gap: 12px;
 }
 
 .subscription-media {

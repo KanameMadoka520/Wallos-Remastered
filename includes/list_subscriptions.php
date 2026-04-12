@@ -467,6 +467,8 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                 }
 
                 $paymentRecords = $subscription['payment_records'] ?? [];
+                $paymentRecordCount = (int) ($subscription['payment_record_count'] ?? count($paymentRecords));
+                $latestPaymentRecord = $paymentRecords[0] ?? null;
                 ?>
                 <div class="subscription-payment-records">
                     <div class="subscription-payment-records-header">
@@ -474,31 +476,29 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                             <i class="fa-solid fa-receipt"></i>
                             <?= translate('subscription_payment_history', $i18n) ?>
                         </span>
+                        <div class="subscription-payment-record-actions">
+                        <button type="button" class="secondary-button thin subscription-payment-record-button"
+                            onClick="openSubscriptionPaymentHistoryModal(event, <?= (int) $subscription['id'] ?>)">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span><?= translate('subscription_view_payment_history', $i18n) ?></span>
+                        </button>
                         <button type="button" class="secondary-button thin subscription-payment-record-button"
                             onClick="openSubscriptionPaymentModal(event, <?= (int) $subscription['id'] ?>)">
                             <i class="fa-solid fa-plus"></i>
                             <span><?= translate('subscription_record_payment', $i18n) ?></span>
                         </button>
+                        </div>
                     </div>
                     <?php if (!empty($paymentRecords)): ?>
-                        <div class="subscription-payment-record-list">
-                            <?php foreach ($paymentRecords as $record): ?>
-                                <article class="subscription-payment-record-item">
-                                    <div class="subscription-payment-record-topline">
-                                        <strong><?= htmlspecialchars($record['paid_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <span><?= htmlspecialchars(formatSnapshotPrice($record['amount_original'] ?? 0, $record['currency_code_snapshot'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-                                    </div>
-                                    <div class="subscription-payment-record-meta">
-                                        <span><?= translate('subscription_payment_due_date', $i18n) ?>: <?= htmlspecialchars($record['due_date'] ?? '-', ENT_QUOTES, 'UTF-8') ?></span>
-                                        <span><?= translate('subscription_payment_main_amount', $i18n) ?>: <?= htmlspecialchars(formatSnapshotPrice($record['amount_main_snapshot'] ?? 0, $record['main_currency_code_snapshot'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-                                    </div>
-                                    <?php if (!empty($record['note'])): ?>
-                                        <div class="subscription-markdown subscription-payment-record-note">
-                                            <?= wallos_render_markdown($record['note']) ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </article>
-                            <?php endforeach; ?>
+                        <div class="subscription-payment-record-summary">
+                            <span><?= sprintf(translate('subscription_payment_history_count_dynamic', $i18n), $paymentRecordCount) ?></span>
+                            <?php if ($latestPaymentRecord): ?>
+                                <span><?= translate('subscription_payment_latest_record', $i18n) ?>:
+                                    <?= htmlspecialchars($latestPaymentRecord['paid_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?>
+                                    /
+                                    <?= htmlspecialchars(formatSnapshotPrice($latestPaymentRecord['amount_original'] ?? 0, $latestPaymentRecord['currency_code_snapshot'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                                </span>
+                            <?php endif; ?>
                         </div>
                     <?php else: ?>
                         <div class="subscription-payment-record-empty">

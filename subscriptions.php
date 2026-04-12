@@ -174,6 +174,7 @@ $canUploadSubscriptionImages = wallos_can_upload_subscription_images($isAdmin, $
 $subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
 $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
 $paymentRecordsMap = wallos_get_subscription_payment_records_map($db, $userId, 6);
+$paymentRecordCountMap = wallos_get_subscription_payment_record_count_map($db, $userId);
 $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscriptions.js');
 ?>
 <style>
@@ -285,6 +286,7 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       $print[$id]['detail_image_urls'] = $subscription['detail_image_urls'] ?? '[]';
       $print[$id]['uploaded_images'] = $uploadedImagesMap[$id] ?? [];
       $print[$id]['payment_records'] = $paymentRecordsMap[$id] ?? [];
+      $print[$id]['payment_record_count'] = (int) ($paymentRecordCountMap[$id] ?? 0);
       $print[$id]['detail_image'] = !empty($print[$id]['uploaded_images'][0]['access_url'])
         ? $print[$id]['uploaded_images'][0]['access_url']
         : ($subscription['detail_image'] ?? '');
@@ -751,6 +753,7 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
   </header>
   <form id="subscription-payment-form">
     <input type="hidden" id="subscription-payment-subscription-id" name="subscription_id" value="">
+    <input type="hidden" id="subscription-payment-record-id" name="record_id" value="">
 
     <div class="form-group">
       <label for="subscription-payment-due-date"><?= translate('subscription_payment_due_date', $i18n) ?></label>
@@ -807,6 +810,24 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       </button>
     </div>
   </form>
+</section>
+<section class="subscription-modal subscription-payment-history-modal" id="subscription-payment-history-modal">
+  <header>
+    <h3 id="subscription-payment-history-modal-title"><?= translate('subscription_payment_history', $i18n) ?></h3>
+    <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionPaymentHistoryModal()"></span>
+  </header>
+  <div class="subscription-payment-history-toolbar">
+    <button type="button" class="secondary-button thin" id="subscription-payment-history-add-button">
+      <i class="fa-solid fa-plus"></i>
+      <span><?= translate('subscription_record_payment', $i18n) ?></span>
+    </button>
+  </div>
+  <div class="subscription-payment-history-content" id="subscription-payment-history-content"></div>
+  <div class="buttons">
+    <button type="button" class="secondary-button thin" onClick="closeSubscriptionPaymentHistoryModal()">
+      <?= translate('close', $i18n) ?>
+    </button>
+  </div>
 </section>
 <section class="subscription-image-viewer" id="subscription-image-viewer">
   <header>
