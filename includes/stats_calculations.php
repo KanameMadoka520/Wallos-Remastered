@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/subscription_trash.php';
+require_once __DIR__ . '/subscription_payment_records.php';
 
 function getPricePerMonth($cycle, $frequency, $price)
 {
@@ -81,6 +82,15 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 
 $activeSubscriptions = 0;
 $inactiveSubscriptions = 0;
+$currentDateForPayments = new DateTime('today');
+$currentMonthStart = $currentDateForPayments->format('Y-m-01');
+$currentMonthEnd = $currentDateForPayments->format('Y-m-t');
+$currentYearStart = $currentDateForPayments->format('Y-01-01');
+$currentYearEnd = $currentDateForPayments->format('Y-12-31');
+$currentMonthActualPaid = wallos_get_subscription_payment_total($db, $userId, $currentMonthStart, $currentMonthEnd, true);
+$currentYearActualPaid = wallos_get_subscription_payment_total($db, $userId, $currentYearStart, $currentYearEnd, true);
+$paidDueDatesThisYear = wallos_get_paid_due_dates_map($db, $userId, $currentYearStart, $currentYearEnd, true);
+$projectedRemainingYearCost = 0;
 // Calculate total monthly price
 $mostExpensiveSubscription = array();
 $mostExpensiveSubscription['price'] = 0;
@@ -159,6 +169,7 @@ if ($result) {
             $paymentMethods[$paymentMethodId]['count'] += 1;
             $inactive = $subscription['inactive'];
             $replacementSubscriptionId = $subscription['replacement_subscription_id'];
+            $subscriptionId = (int) ($subscription['id'] ?? 0);
             $originalSubscriptionPrice = getPriceConverted($price, $currency, $db, $userId);
             $price = getPricePerMonth($cycle, $frequency, $originalSubscriptionPrice);
 
@@ -180,6 +191,11 @@ if ($result) {
                 $endOfMonth = new DateTime('last day of this month');
 
                 if ($nextPaymentDate >= $tomorrow && $nextPaymentDate <= $endOfMonth) {
+                    $nextPaymentDateKey = $nextPaymentDate->format('Y-m-d');
+                    if (!empty($paidDueDatesThisYear[$subscriptionId][$nextPaymentDateKey])) {
+                        continue;
+                    }
+
                     $timesToPay = 1;
                     $daysInMonth = $endOfMonth->diff($tomorrow)->days + 1;
                     $daysRemaining = $endOfMonth->diff($nextPaymentDate)->days + 1;
@@ -192,6 +208,25 @@ if ($result) {
                         $timesToPay = $weeksRemaining / $frequency;
                     }
                     $amountDueThisMonth += $originalSubscriptionPrice * $timesToPay;
+                }
+                if (!empty($subscription['next_payment'])) {
+                    try {
+                        $forecastDate = new DateTime($subscription['next_payment']);
+                        $yearEndDate = new DateTime($currentYearEnd);
+                        $todayDate = new DateTime($currentDateForPayments->format('Y-m-d'));
+                        $intervalSpec = wallos_get_subscription_interval_spec((int) $cycle, (int) $frequency);
+                        $interval = new DateInterval($intervalSpec);
+
+                        while ($forecastDate <= $yearEndDate) {
+                            $forecastDateString = $forecastDate->format('Y-m-d');
+                            if ($forecastDate >= $todayDate && empty($paidDueDatesThisYear[$subscriptionId][$forecastDateString])) {
+                                $projectedRemainingYearCost += $originalSubscriptionPrice;
+                            }
+                            $forecastDate->add($interval);
+                        }
+                    } catch (Throwable $throwable) {
+                        // Ignore malformed future forecast calculations for a single subscription.
+                    }
                 }
             } else {
                 $inactiveSubscriptions++;
@@ -222,6 +257,7 @@ if ($result) {
 
         // Calculate yearly price
         $totalCostPerYear = $totalCostPerMonth * 12;
+        $currentYearProjectedSpend = $currentYearActualPaid + $projectedRemainingYearCost;
 
         // Calculate average subscription monthly cost
         if ($activeSubscriptions > 0) {
@@ -229,10 +265,12 @@ if ($result) {
         } else {
             $totalCostPerYear = 0;
             $averageSubscriptionCost = 0;
+            $currentYearProjectedSpend = $currentYearActualPaid;
         }
     } else {
         $totalCostPerYear = 0;
         $averageSubscriptionCost = 0;
+        $currentYearProjectedSpend = $currentYearActualPaid;
     }
 }
 

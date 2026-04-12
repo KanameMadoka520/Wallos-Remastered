@@ -273,7 +273,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 
         <?php } ?>
 
-        <?php if (isset($amountDueThisMonth) || isset($budget) || isset($budgetUsed) || isset($budgetLeft) || isset($overBudgetAmount)) { ?>
+        <?php if (isset($amountDueThisMonth) || isset($currentMonthActualPaid) || isset($currentYearActualPaid) || isset($currentYearProjectedSpend) || isset($budget) || isset($budgetUsed) || isset($budgetLeft) || isset($overBudgetAmount)) { ?>
             <div class="budget-subscriptions">
                 <h2><?= translate('your_budget', $i18n) ?></h2>
                 <div class="dashboard-subscriptions-container">
@@ -284,6 +284,36 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                                 <div class="subscription-item-info">
                                     <p class="subscription-item-value">
                                         <?= CurrencyFormatter::format($amountDueThisMonth, $currencies[$userData['main_currency']]['code']) ?>
+                                    </p>
+                                </div>
+                            </div>
+                        <?php } ?>
+                        <?php if (isset($currentMonthActualPaid)) { ?>
+                            <div class="subscription-item thin">
+                                <p class="subscription-item-title"><?= translate("actual_paid_this_month", $i18n) ?></p>
+                                <div class="subscription-item-info">
+                                    <p class="subscription-item-value">
+                                        <?= CurrencyFormatter::format($currentMonthActualPaid, $currencies[$userData['main_currency']]['code']) ?>
+                                    </p>
+                                </div>
+                            </div>
+                        <?php } ?>
+                        <?php if (isset($currentYearActualPaid)) { ?>
+                            <div class="subscription-item thin">
+                                <p class="subscription-item-title"><?= translate("actual_paid_this_year", $i18n) ?></p>
+                                <div class="subscription-item-info">
+                                    <p class="subscription-item-value">
+                                        <?= CurrencyFormatter::format($currentYearActualPaid, $currencies[$userData['main_currency']]['code']) ?>
+                                    </p>
+                                </div>
+                            </div>
+                        <?php } ?>
+                        <?php if (isset($currentYearProjectedSpend)) { ?>
+                            <div class="subscription-item thin">
+                                <p class="subscription-item-title"><?= translate("projected_yearly_spend", $i18n) ?></p>
+                                <div class="subscription-item-info">
+                                    <p class="subscription-item-value">
+                                        <?= CurrencyFormatter::format($currentYearProjectedSpend, $currencies[$userData['main_currency']]['code']) ?>
                                     </p>
                                 </div>
                             </div>

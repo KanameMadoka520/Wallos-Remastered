@@ -6,6 +6,7 @@ let i18n = {
   confirm_move_subscription_to_recycle_bin: "Move this subscription to the recycle bin? It can be restored within 180 days.",
   confirm_permanently_delete_subscription: "Permanently delete this subscription and all related images now?",
   error_deleting_subscription: "Error deleting subscription",
+  subscription_record_payment: "Record Payment",
   failed_to_load_subscription: "Failed to load subscription",
   edit_subscription: "Edit subscription",
   add_subscription: "Add subscription",

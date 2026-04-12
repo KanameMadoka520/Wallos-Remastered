@@ -236,6 +236,18 @@ if ($showStatsGraphs) {
       <span><?= CurrencyFormatter::format($amountDueThisMonth, $code) ?></span>
       <div class="title"><?= translate('amount_due', $i18n) ?></div>
     </div>
+    <div class="statistic">
+      <span><?= CurrencyFormatter::format($currentMonthActualPaid, $code) ?></span>
+      <div class="title"><?= translate('actual_paid_this_month', $i18n) ?></div>
+    </div>
+    <div class="statistic">
+      <span><?= CurrencyFormatter::format($currentYearActualPaid, $code) ?></span>
+      <div class="title"><?= translate('actual_paid_this_year', $i18n) ?></div>
+    </div>
+    <div class="statistic">
+      <span><?= CurrencyFormatter::format($currentYearProjectedSpend, $code) ?></span>
+      <div class="title"><?= translate('projected_yearly_spend', $i18n) ?></div>
+    </div>
     <?php
     if (isset($budgetUsed)) {
       ?>

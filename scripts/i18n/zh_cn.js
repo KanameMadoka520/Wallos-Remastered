@@ -6,6 +6,7 @@ let i18n = {
     'confirm_move_subscription_to_recycle_bin': '将这个订阅移入回收站吗？180天内仍可恢复。',
     'confirm_permanently_delete_subscription': '现在彻底删除这个订阅及其相关图片吗？',
     'error_deleting_subscription': "删除订阅时出错",
+    'subscription_record_payment': '记录支付',
     'failed_to_load_subscription': "加载订阅失败",
     'edit_subscription': "编辑订阅",
     'add_subscription': "添加订阅",

@@ -709,6 +709,103 @@ function mountSubscriptionOverlayToBody(selector) {
   overlay.dataset.mountedToBody = "1";
 }
 
+function resetSubscriptionPaymentForm() {
+  const form = document.querySelector("#subscription-payment-form");
+  if (!form) {
+    return;
+  }
+
+  form.reset();
+  const subscriptionIdInput = document.querySelector("#subscription-payment-subscription-id");
+  if (subscriptionIdInput) {
+    subscriptionIdInput.value = "";
+  }
+
+  const dueDateInput = document.querySelector("#subscription-payment-due-date");
+  const paidAtInput = document.querySelector("#subscription-payment-paid-at");
+  const today = new Date().toISOString().split('T')[0];
+  if (dueDateInput) {
+    dueDateInput.value = today;
+  }
+  if (paidAtInput) {
+    paidAtInput.value = today;
+  }
+}
+
+function closeSubscriptionPaymentModal() {
+  const modal = document.getElementById("subscription-payment-modal");
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.remove("is-open");
+  document.body.classList.remove('no-scroll');
+  resetSubscriptionPaymentForm();
+}
+
+function fillSubscriptionPaymentForm(subscription) {
+  const title = document.querySelector("#subscription-payment-modal-title");
+  const subscriptionIdInput = document.querySelector("#subscription-payment-subscription-id");
+  const dueDateInput = document.querySelector("#subscription-payment-due-date");
+  const paidAtInput = document.querySelector("#subscription-payment-paid-at");
+  const amountInput = document.querySelector("#subscription-payment-amount");
+  const currencyInput = document.querySelector("#subscription-payment-currency");
+  const paymentMethodInput = document.querySelector("#subscription-payment-method");
+
+  if (title) {
+    title.textContent = `${translate('subscription_record_payment')}: ${subscription.name || ''}`;
+  }
+  if (subscriptionIdInput) {
+    subscriptionIdInput.value = subscription.id || "";
+  }
+  if (dueDateInput) {
+    dueDateInput.value = subscription.next_payment || new Date().toISOString().split('T')[0];
+  }
+  if (paidAtInput) {
+    paidAtInput.value = new Date().toISOString().split('T')[0];
+  }
+  if (amountInput) {
+    amountInput.value = subscription.price || "";
+  }
+  if (currencyInput) {
+    currencyInput.value = String(subscription.currency_id || "");
+  }
+  if (paymentMethodInput) {
+    paymentMethodInput.value = String(subscription.payment_method_id || "");
+  }
+}
+
+function openSubscriptionPaymentModal(event, id) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  const modal = document.getElementById("subscription-payment-modal");
+  if (!modal) {
+    return;
+  }
+
+  resetSubscriptionPaymentForm();
+  document.body.classList.add('no-scroll');
+
+  fetch(`endpoints/subscription/get.php?id=${id}`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(translate('failed_to_load_subscription'));
+      }
+      return response.json();
+    })
+    .then((subscription) => {
+      fillSubscriptionPaymentForm(subscription);
+      modal.classList.add("is-open");
+    })
+    .catch((error) => {
+      document.body.classList.remove('no-scroll');
+      showErrorMessage(error.message || translate("error"));
+    });
+}
+
 function getViewerItemsFromGallery(gallery) {
   if (!gallery) {
     return [];
@@ -1865,8 +1962,11 @@ document.addEventListener('DOMContentLoaded', function () {
   const subscriptionForm = document.querySelector("#subs-form");
   const submitButton = document.querySelector("#save-button");
   const endpoint = "endpoints/subscription/add.php";
+  const subscriptionPaymentForm = document.querySelector("#subscription-payment-form");
+  const subscriptionPaymentSaveButton = document.querySelector("#subscription-payment-save-button");
 
   mountSubscriptionOverlayToBody("#subscription-form");
+  mountSubscriptionOverlayToBody("#subscription-payment-modal");
   mountSubscriptionOverlayToBody("#subscription-image-viewer");
 
   subscriptionForm.addEventListener("submit", function (e) {
@@ -1915,6 +2015,51 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelector('#sort-options').addEventListener('focus', function () {
     isSortOptionsOpen = true;
   });
+
+  if (subscriptionPaymentForm) {
+    subscriptionPaymentForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      if (!subscriptionPaymentSaveButton) {
+        return;
+      }
+
+      subscriptionPaymentSaveButton.disabled = true;
+
+      const payload = {
+        id: Number(document.querySelector("#subscription-payment-subscription-id")?.value || 0),
+        due_date: document.querySelector("#subscription-payment-due-date")?.value || "",
+        paid_at: document.querySelector("#subscription-payment-paid-at")?.value || "",
+        amount_original: document.querySelector("#subscription-payment-amount")?.value || "",
+        currency_id: Number(document.querySelector("#subscription-payment-currency")?.value || 0),
+        payment_method_id: Number(document.querySelector("#subscription-payment-method")?.value || 0),
+        note: document.querySelector("#subscription-payment-note")?.value || "",
+      };
+
+      fetch("endpoints/subscription/recordpayment.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": window.csrfToken,
+        },
+        body: JSON.stringify(payload),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            showSuccessMessage(data.message || translate("success"));
+            closeSubscriptionPaymentModal();
+            window.setTimeout(() => window.location.reload(), 350);
+          } else {
+            showErrorMessage(data.message || translate("error"));
+          }
+        })
+        .catch(() => showErrorMessage(translate("error")))
+        .finally(() => {
+          subscriptionPaymentSaveButton.disabled = false;
+        });
+    });
+  }
 
   const subscriptionImageViewerContent = document.querySelector("#subscription-image-viewer .subscription-image-viewer-content");
   if (subscriptionImageViewerContent) {

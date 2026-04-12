@@ -6,6 +6,7 @@ let i18n = {
     confirm_move_subscription_to_recycle_bin: '要將這個訂閱移入回收站嗎？180天內仍可還原。',
     confirm_permanently_delete_subscription: '現在徹底刪除這個訂閱及其相關圖片嗎？',
     error_deleting_subscription: "刪除訂閱時發生錯誤",
+    subscription_record_payment: '記錄支付',
     failed_to_load_subscription: "讀取訂閱失敗",
     edit_subscription: "編輯訂閱",
     add_subscription: "新增訂閱",

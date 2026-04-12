@@ -5,6 +5,7 @@ require_once 'includes/getdbkeys.php';
 require_once 'includes/user_groups.php';
 require_once 'includes/subscription_media.php';
 require_once 'includes/subscription_trash.php';
+require_once 'includes/subscription_payment_records.php';
 
 include_once 'includes/list_subscriptions.php';
 
@@ -172,6 +173,7 @@ $effectiveUserGroup = wallos_get_effective_user_group($userData['user_group'] ??
 $canUploadSubscriptionImages = wallos_can_upload_subscription_images($isAdmin, $userData['user_group'] ?? WALLOS_USER_GROUP_FREE);
 $subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
 $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
+$paymentRecordsMap = wallos_get_subscription_payment_records_map($db, $userId, 6);
 $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscriptions.js');
 ?>
 <style>
@@ -282,6 +284,7 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       $print[$id]['replacement_subscription_id'] = $subscription['replacement_subscription_id'];
       $print[$id]['detail_image_urls'] = $subscription['detail_image_urls'] ?? '[]';
       $print[$id]['uploaded_images'] = $uploadedImagesMap[$id] ?? [];
+      $print[$id]['payment_records'] = $paymentRecordsMap[$id] ?? [];
       $print[$id]['detail_image'] = !empty($print[$id]['uploaded_images'][0]['access_url'])
         ? $print[$id]['uploaded_images'][0]['access_url']
         : ($subscription['detail_image'] ?? '');
@@ -738,6 +741,70 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       <input type="button" value="<?= translate('cancel', $i18n) ?>" class="secondary-button thin"
         onClick="closeAddSubscription()">
       <input type="submit" value="<?= translate('save', $i18n) ?>" class="thin" id="save-button">
+    </div>
+  </form>
+</section>
+<section class="subscription-modal subscription-payment-modal" id="subscription-payment-modal">
+  <header>
+    <h3 id="subscription-payment-modal-title"><?= translate('subscription_record_payment', $i18n) ?></h3>
+    <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionPaymentModal()"></span>
+  </header>
+  <form id="subscription-payment-form">
+    <input type="hidden" id="subscription-payment-subscription-id" name="subscription_id" value="">
+
+    <div class="form-group">
+      <label for="subscription-payment-due-date"><?= translate('subscription_payment_due_date', $i18n) ?></label>
+      <div class="date-wrapper">
+        <input type="date" id="subscription-payment-due-date" name="due_date" autocomplete="off" required>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="subscription-payment-paid-at"><?= translate('subscription_payment_paid_at', $i18n) ?></label>
+      <div class="date-wrapper">
+        <input type="date" id="subscription-payment-paid-at" name="paid_at" autocomplete="off" required>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="subscription-payment-amount"><?= translate('subscription_payment_amount', $i18n) ?></label>
+      <input type="number" step="0.01" min="0" id="subscription-payment-amount" name="amount_original" autocomplete="off" required>
+    </div>
+
+    <div class="form-group">
+      <div class="inline">
+        <div class="split50">
+          <label for="subscription-payment-currency"><?= translate('currency', $i18n) ?></label>
+          <select id="subscription-payment-currency" name="currency_id">
+            <?php foreach ($currencies as $currency): ?>
+              <option value="<?= (int) $currency['id'] ?>"><?= htmlspecialchars($currency['name'], ENT_QUOTES, 'UTF-8') ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="split50">
+          <label for="subscription-payment-method"><?= translate('payment_method', $i18n) ?></label>
+          <select id="subscription-payment-method" name="payment_method_id">
+            <?php foreach ($payment_methods as $payment): ?>
+              <option value="<?= (int) $payment['id'] ?>"><?= htmlspecialchars($payment['name'], ENT_QUOTES, 'UTF-8') ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="subscription-payment-note"><?= translate('notes', $i18n) ?></label>
+      <textarea id="subscription-payment-note" name="note" rows="5" class="subscription-payment-note-field"
+        placeholder="<?= translate('subscription_payment_note_placeholder', $i18n) ?>"></textarea>
+    </div>
+
+    <div class="buttons">
+      <button type="button" class="secondary-button thin" onClick="closeSubscriptionPaymentModal()">
+        <?= translate('cancel', $i18n) ?>
+      </button>
+      <button type="submit" class="thin" id="subscription-payment-save-button">
+        <?= translate('save', $i18n) ?>
+      </button>
     </div>
   </form>
 </section>
