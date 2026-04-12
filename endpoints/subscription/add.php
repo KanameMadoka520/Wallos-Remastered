@@ -7,6 +7,7 @@ require_once '../../includes/getsettings.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_sort.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/subscription_price_rules.php';
 require_once '../../includes/user_groups.php';
 if (!file_exists('../../images/uploads/logos')) {
     mkdir('../../images/uploads/logos', 0777, true);
@@ -257,8 +258,10 @@ $excludeFromStats = isset($_POST['exclude_from_stats']) ? true : false;
 $cancellationDate = $_POST['cancellation_date'] ?? null;
 $replacementSubscriptionId = $_POST['replacement_subscription_id'];
 $detailImageUrlsRaw = $_POST['detail_image_urls'] ?? '';
+$subscriptionPriceRulesJson = $_POST['subscription_price_rules_json'] ?? '[]';
 $removeUploadedImageIds = wallos_parse_uploaded_image_ids($_POST['remove_uploaded_image_ids'] ?? []);
 $detailImageOrderTokens = wallos_parse_subscription_image_order_tokens($_POST['detail_image_order'] ?? []);
+$subscriptionPriceRules = wallos_decode_subscription_price_rules_input($subscriptionPriceRulesJson, $currencyId);
 
 if ($replacementSubscriptionId == 0 || $inactive == 0) {
     $replacementSubscriptionId = null;
@@ -487,6 +490,8 @@ try {
             $imageSortPlan['new']
         );
     }
+
+    wallos_replace_subscription_price_rules($db, $subscriptionId, $userId, $subscriptionPriceRules);
 
     $db->exec('COMMIT');
 

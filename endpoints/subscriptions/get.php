@@ -5,6 +5,8 @@ require_once '../../includes/currency_formatter.php';
 require_once '../../includes/getdbkeys.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/subscription_payment_records.php';
+require_once '../../includes/subscription_price_rules.php';
 
 include_once '../../includes/list_subscriptions.php';
 
@@ -31,6 +33,9 @@ $formatter = new IntlDateFormatter(
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
+  $paymentRecordsMap = wallos_get_subscription_payment_records_map($db, $userId, 6);
+  $paymentRecordCountMap = wallos_get_subscription_payment_record_count_map($db, $userId);
+  $priceRulesMap = wallos_get_subscription_price_rules_map($db, $userId, true);
 
 
   $sort = "manual_order";
@@ -191,6 +196,9 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $print[$id]['replacement_subscription_id'] = $subscription['replacement_subscription_id'];
     $print[$id]['detail_image_urls'] = $subscription['detail_image_urls'] ?? '[]';
     $print[$id]['uploaded_images'] = $uploadedImagesMap[$id] ?? [];
+    $print[$id]['payment_records'] = $paymentRecordsMap[$id] ?? [];
+    $print[$id]['payment_record_count'] = (int) ($paymentRecordCountMap[$id] ?? 0);
+    $print[$id]['price_rules'] = $priceRulesMap[$id] ?? [];
     $print[$id]['detail_image'] = !empty($print[$id]['uploaded_images'][0]['access_url'])
       ? $print[$id]['uploaded_images'][0]['access_url']
       : ($subscription['detail_image'] ?? '');

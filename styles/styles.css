@@ -1184,6 +1184,139 @@ button.mobile-action-renew {
   margin-top: 10px;
 }
 
+.subscription-price-rules-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--box-border-color);
+  border-radius: 16px;
+  background-color: rgba(var(--main-color-rgb), 0.03);
+}
+
+.subscription-price-rules-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.subscription-price-rules-hint {
+  color: rgba(var(--text-color-rgb), 0.74);
+  font-size: 14px;
+}
+
+.subscription-price-rules-list {
+  display: grid;
+  gap: 14px;
+}
+
+.subscription-price-rules-empty {
+  padding: 16px;
+  border: 1px dashed var(--box-border-color);
+  border-radius: 14px;
+  color: rgba(var(--text-color-rgb), 0.72);
+}
+
+.subscription-price-rule-card {
+  border: 1px solid var(--box-border-color);
+  border-radius: 16px;
+  background-color: var(--box-background-color);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.subscription-price-rule-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.subscription-price-rule-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.subscription-price-rule-date-range {
+  display: none;
+  grid-column: span 2;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.subscription-price-rule-conditional {
+  display: none;
+}
+
+.subscription-price-rule-card[data-rule-type="first_n_cycles"] .subscription-price-rule-first-cycles {
+  display: block;
+}
+
+.subscription-price-rule-card[data-rule-type="date_range"] .subscription-price-rule-date-range {
+  display: grid;
+}
+
+.subscription-price-rule-card[data-rule-type="one_time"] .subscription-price-rule-one-time {
+  display: block;
+}
+
+.subscription-price-rule-note-group {
+  grid-column: 1 / -1;
+}
+
+.subscription-price-rule-enabled {
+  grid-column: 1 / -1;
+}
+
+.subscription-price-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 5px 4px;
+}
+
+.subscription-price-rules-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.subscription-price-rules-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.subscription-price-rules-count {
+  color: rgba(var(--text-color-rgb), 0.72);
+  font-size: 13px;
+}
+
+.subscription-price-rules-summary-list {
+  display: grid;
+  gap: 12px;
+}
+
+.subscription-price-rule-summary-card {
+  border: 1px solid var(--box-border-color);
+  border-radius: 14px;
+  background-color: rgba(var(--main-color-rgb), 0.03);
+  padding: 14px 16px;
+}
+
+.subscription-price-rule-summary-note {
+  margin-top: 10px;
+}
+
 .subscription-payment-note-field {
   min-height: 128px;
   resize: vertical;
@@ -1365,6 +1498,17 @@ button.mobile-action-renew {
 .subscription-payment-history-content {
   display: grid;
   gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .subscription-price-rule-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-price-rule-date-range {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+  }
 }
 
 .subscription-media {

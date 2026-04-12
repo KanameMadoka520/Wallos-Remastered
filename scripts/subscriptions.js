@@ -13,6 +13,10 @@ let subscriptionImageViewerTouchStartY = 0;
 let currentPaymentHistorySubscriptionId = 0;
 let currentPaymentHistorySubscriptionName = "";
 let currentPaymentHistoryRecords = [];
+let currentPaymentModalSubscription = null;
+let currentPaymentModalMode = "create";
+let subscriptionPriceRules = [];
+let subscriptionPriceRuleTempIdCounter = 0;
 let detailImageGallerySortable = null;
 let detailSubscriptionGallerySortables = [];
 let detailImageTempIdCounter = 0;
@@ -47,6 +51,36 @@ function toggleNotificationDays() {
 let selectedDetailImageFiles = [];
 let existingUploadedImages = [];
 let removedUploadedImageIds = [];
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function createSubscriptionPriceRuleTempId() {
+  subscriptionPriceRuleTempIdCounter += 1;
+  return `price-rule-${Date.now()}-${subscriptionPriceRuleTempIdCounter}`;
+}
+
+function normalizeSubscriptionPriceRule(rule = {}, index = 0) {
+  return {
+    id: Number(rule.id || 0),
+    tempId: rule.tempId || createSubscriptionPriceRuleTempId(),
+    rule_type: rule.rule_type || "first_n_cycles",
+    price: rule.price === undefined || rule.price === null ? "" : String(rule.price),
+    currency_id: String(rule.currency_id || document.querySelector("#currency")?.value || ""),
+    start_date: rule.start_date || "",
+    end_date: rule.end_date || "",
+    max_cycles: rule.max_cycles === undefined || rule.max_cycles === null ? "1" : String(rule.max_cycles),
+    priority: Number(rule.priority || index + 1),
+    note: rule.note || "",
+    enabled: rule.enabled === undefined ? true : (Number(rule.enabled) === 1 || rule.enabled === true),
+  };
+}
 
 function getSubscriptionImageLayoutMode(scope) {
   const storageKey = SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS[scope];
@@ -122,6 +156,109 @@ function getSubscriptionDisplayColumns() {
   } catch (error) {
     return 1;
   }
+}
+
+function getSubscriptionOccurrenceIndexForDueDate(subscription, dueDate) {
+  if (!subscription || !dueDate) {
+    return null;
+  }
+
+  const startDateValue = subscription.start_date || "";
+  const nextPaymentValue = subscription.next_payment || "";
+
+  if (!startDateValue) {
+    return nextPaymentValue === dueDate ? 1 : null;
+  }
+
+  const startDate = new Date(`${startDateValue}T00:00:00`);
+  const targetDate = new Date(`${dueDate}T00:00:00`);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(targetDate.getTime()) || targetDate < startDate) {
+    return null;
+  }
+
+  let current = new Date(startDate.getTime());
+  let occurrenceIndex = 1;
+  const cycle = Number(subscription.cycle || 3);
+  const frequency = Math.max(1, Number(subscription.frequency || 1));
+
+  while (current <= targetDate && occurrenceIndex <= 2400) {
+    const currentString = current.toISOString().split('T')[0];
+    if (currentString === dueDate) {
+      return occurrenceIndex;
+    }
+
+    if (cycle === 1) {
+      current.setDate(current.getDate() + frequency);
+    } else if (cycle === 2) {
+      current.setDate(current.getDate() + (frequency * 7));
+    } else if (cycle === 3) {
+      current.setMonth(current.getMonth() + frequency);
+    } else {
+      current.setFullYear(current.getFullYear() + frequency);
+    }
+
+    occurrenceIndex += 1;
+  }
+
+  return null;
+}
+
+function doesSubscriptionPriceRuleMatch(rule, subscription, dueDate) {
+  if (!rule || !subscription || !dueDate || !rule.enabled) {
+    return false;
+  }
+
+  if (rule.rule_type === "one_time") {
+    return rule.start_date === dueDate;
+  }
+
+  if (rule.rule_type === "date_range") {
+    if (rule.start_date && dueDate < rule.start_date) {
+      return false;
+    }
+    if (rule.end_date && dueDate > rule.end_date) {
+      return false;
+    }
+    return !!(rule.start_date || rule.end_date);
+  }
+
+  if (rule.rule_type === "first_n_cycles") {
+    const occurrenceIndex = getSubscriptionOccurrenceIndexForDueDate(subscription, dueDate);
+    return occurrenceIndex !== null && occurrenceIndex <= Math.max(0, Number(rule.max_cycles || 0));
+  }
+
+  return false;
+}
+
+function getEffectiveSubscriptionPaymentRule(subscription, dueDate) {
+  const rules = Array.isArray(subscription?.price_rules) ? subscription.price_rules : [];
+  const normalizedRules = rules
+    .map((rule, index) => normalizeSubscriptionPriceRule(rule, index))
+    .sort((left, right) => (left.priority - right.priority) || (left.id - right.id));
+
+  return normalizedRules.find((rule) => doesSubscriptionPriceRuleMatch(rule, subscription, dueDate)) || null;
+}
+
+function applyPaymentRulePreviewForDueDate(dueDate) {
+  if (!currentPaymentModalSubscription || currentPaymentModalMode !== "create") {
+    return;
+  }
+
+  const amountInput = document.querySelector("#subscription-payment-amount");
+  const currencyInput = document.querySelector("#subscription-payment-currency");
+  if (!amountInput || !currencyInput) {
+    return;
+  }
+
+  const matchedRule = getEffectiveSubscriptionPaymentRule(currentPaymentModalSubscription, dueDate);
+  if (matchedRule) {
+    amountInput.value = matchedRule.price;
+    currencyInput.value = String(matchedRule.currency_id || currentPaymentModalSubscription.currency_id || "");
+    return;
+  }
+
+  amountInput.value = currentPaymentModalSubscription.price || "";
+  currencyInput.value = String(currentPaymentModalSubscription.currency_id || "");
 }
 
 function updateSubscriptionDisplayColumnButtons(columns) {
@@ -737,6 +874,9 @@ function resetSubscriptionPaymentForm() {
   if (paidAtInput) {
     paidAtInput.value = today;
   }
+
+  currentPaymentModalSubscription = null;
+  currentPaymentModalMode = "create";
 }
 
 function closeSubscriptionPaymentModal() {
@@ -762,6 +902,9 @@ function fillSubscriptionPaymentForm(subscription) {
   const currencyInput = document.querySelector("#subscription-payment-currency");
   const paymentMethodInput = document.querySelector("#subscription-payment-method");
 
+  currentPaymentModalSubscription = subscription;
+  currentPaymentModalMode = "create";
+
   if (title) {
     title.textContent = `${translate('subscription_record_payment')}: ${subscription.name || ''}`;
   }
@@ -774,14 +917,16 @@ function fillSubscriptionPaymentForm(subscription) {
   if (paidAtInput) {
     paidAtInput.value = new Date().toISOString().split('T')[0];
   }
-  if (amountInput) {
-    amountInput.value = subscription.price || "";
-  }
   if (currencyInput) {
     currencyInput.value = String(subscription.currency_id || "");
   }
   if (paymentMethodInput) {
     paymentMethodInput.value = String(subscription.payment_method_id || "");
+  }
+  if (dueDateInput) {
+    applyPaymentRulePreviewForDueDate(dueDateInput.value || "");
+  } else if (amountInput) {
+    amountInput.value = subscription.price || "";
   }
 }
 
@@ -795,6 +940,8 @@ function fillSubscriptionPaymentFormFromRecord(subscriptionId, subscriptionName,
   const currencyInput = document.querySelector("#subscription-payment-currency");
   const paymentMethodInput = document.querySelector("#subscription-payment-method");
   const noteInput = document.querySelector("#subscription-payment-note");
+
+  currentPaymentModalMode = "edit";
 
   if (title) {
     title.textContent = `${translate('subscription_edit_payment')}: ${subscriptionName || ''}`;
@@ -1015,6 +1162,156 @@ function deleteSubscriptionPaymentRecord(event, subscriptionId, recordId) {
       }
     })
     .catch(() => showErrorMessage(translate("error")));
+}
+
+function getSubscriptionPriceRulesCurrencyOptionsHtml() {
+  const currencySelect = document.querySelector("#currency");
+  return currencySelect ? currencySelect.innerHTML : "";
+}
+
+function serializeSubscriptionPriceRules() {
+  const input = document.querySelector("#subscription-price-rules-json");
+  if (!input) {
+    return;
+  }
+
+  const serialized = subscriptionPriceRules.map(({ tempId, ...rule }, index) => ({
+    ...rule,
+    priority: index + 1,
+  }));
+
+  input.value = JSON.stringify(serialized);
+}
+
+function updateSubscriptionPriceRuleField(tempId, field, value, rerender = false, isCheckbox = false) {
+  const rule = subscriptionPriceRules.find((item) => item.tempId === tempId);
+  if (!rule) {
+    return;
+  }
+
+  rule[field] = isCheckbox ? !!value : value;
+  serializeSubscriptionPriceRules();
+
+  if (rerender) {
+    renderSubscriptionPriceRules();
+  }
+}
+
+function addSubscriptionPriceRule(ruleType = "first_n_cycles") {
+  subscriptionPriceRules.push(normalizeSubscriptionPriceRule({
+    rule_type: ruleType,
+    currency_id: document.querySelector("#currency")?.value || "",
+    max_cycles: "1",
+    enabled: true,
+  }, subscriptionPriceRules.length));
+  renderSubscriptionPriceRules();
+}
+
+function removeSubscriptionPriceRule(tempId) {
+  subscriptionPriceRules = subscriptionPriceRules.filter((rule) => rule.tempId !== tempId);
+  renderSubscriptionPriceRules();
+}
+
+function setSubscriptionPriceRules(rules = []) {
+  subscriptionPriceRules = Array.isArray(rules)
+    ? rules.map((rule, index) => normalizeSubscriptionPriceRule(rule, index))
+    : [];
+  renderSubscriptionPriceRules();
+}
+
+function resetSubscriptionPriceRules() {
+  setSubscriptionPriceRules([]);
+}
+
+function renderSubscriptionPriceRules() {
+  const list = document.querySelector("#subscription-price-rules-list");
+  if (!list) {
+    return;
+  }
+
+  const currencyOptionsHtml = getSubscriptionPriceRulesCurrencyOptionsHtml();
+  if (!subscriptionPriceRules.length) {
+    list.innerHTML = `<div class="subscription-price-rules-empty">${translate('subscription_price_rules_empty')}</div>`;
+    serializeSubscriptionPriceRules();
+    return;
+  }
+
+  subscriptionPriceRules.forEach((rule, index) => {
+    rule.priority = index + 1;
+  });
+
+  list.innerHTML = subscriptionPriceRules.map((rule, index) => `
+    <article class="subscription-price-rule-card" data-rule-temp-id="${escapeHtml(rule.tempId)}" data-rule-type="${escapeHtml(rule.rule_type)}">
+      <div class="subscription-price-rule-card-header">
+        <strong>${translate('subscription_price_rule_card_title')} ${index + 1}</strong>
+        <button type="button" class="warning-button thin subscription-price-rule-remove"
+          onClick="removeSubscriptionPriceRule('${escapeHtml(rule.tempId)}')">
+          <i class="fa-solid fa-trash"></i>
+          <span>${translate('delete')}</span>
+        </button>
+      </div>
+      <div class="subscription-price-rule-grid">
+        <div class="form-group">
+          <label>${translate('subscription_price_rule_type')}</label>
+          <select onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'rule_type', this.value, true)">
+            <option value="first_n_cycles" ${rule.rule_type === 'first_n_cycles' ? 'selected' : ''}>${translate('subscription_price_rule_type_first_n_cycles')}</option>
+            <option value="date_range" ${rule.rule_type === 'date_range' ? 'selected' : ''}>${translate('subscription_price_rule_type_date_range')}</option>
+            <option value="one_time" ${rule.rule_type === 'one_time' ? 'selected' : ''}>${translate('subscription_price_rule_type_one_time')}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>${translate('subscription_price_rule_price')}</label>
+          <input type="number" step="0.01" min="0" value="${escapeHtml(rule.price)}" oninput="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'price', this.value)">
+        </div>
+        <div class="form-group">
+          <label>${translate('subscription_price_rule_currency')}</label>
+          <select onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'currency_id', this.value)">${currencyOptionsHtml}</select>
+        </div>
+        <div class="form-group subscription-price-rule-conditional subscription-price-rule-first-cycles">
+          <label>${translate('subscription_price_rule_max_cycles')}</label>
+          <input type="number" min="1" step="1" value="${escapeHtml(rule.max_cycles)}" oninput="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'max_cycles', this.value)">
+        </div>
+        <div class="form-group subscription-price-rule-conditional subscription-price-rule-one-time">
+          <label>${translate('subscription_price_rule_due_date')}</label>
+          <div class="date-wrapper">
+            <input type="date" value="${escapeHtml(rule.start_date)}" onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'start_date', this.value)">
+          </div>
+        </div>
+        <div class="subscription-price-rule-date-range subscription-price-rule-conditional">
+          <div class="form-group">
+            <label>${translate('subscription_price_rule_start_date')}</label>
+            <div class="date-wrapper">
+              <input type="date" value="${escapeHtml(rule.start_date)}" onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'start_date', this.value)">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>${translate('subscription_price_rule_end_date')}</label>
+            <div class="date-wrapper">
+              <input type="date" value="${escapeHtml(rule.end_date)}" onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'end_date', this.value)">
+            </div>
+          </div>
+        </div>
+        <div class="form-group subscription-price-rule-note-group">
+          <label>${translate('notes')}</label>
+          <textarea rows="3" oninput="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'note', this.value)">${escapeHtml(rule.note)}</textarea>
+        </div>
+        <div class="form-group-inline grow subscription-price-rule-enabled">
+          <input type="checkbox" id="subscription-price-rule-enabled-${escapeHtml(rule.tempId)}" ${rule.enabled ? 'checked' : ''} onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'enabled', this.checked, false, true)">
+          <label for="subscription-price-rule-enabled-${escapeHtml(rule.tempId)}" class="grow">${translate('subscription_price_rule_enabled')}</label>
+        </div>
+      </div>
+    </article>
+  `).join('');
+
+  subscriptionPriceRules.forEach((rule) => {
+    const card = list.querySelector(`[data-rule-temp-id="${rule.tempId}"]`);
+    const currencySelect = card?.querySelectorAll('select')[1];
+    if (currencySelect) {
+      currencySelect.value = String(rule.currency_id || "");
+    }
+  });
+
+  serializeSubscriptionPriceRules();
 }
 
 function getViewerItemsFromGallery(gallery) {
@@ -1584,6 +1881,7 @@ function resetForm() {
   replacementSubscription.classList.add("hide");
   const form = document.querySelector("#subs-form");
   form.reset();
+  resetSubscriptionPriceRules();
   resetDetailImageControls();
   closeLogoSearch();
   const deleteButton = document.querySelector("#deletesub");
@@ -1641,6 +1939,7 @@ function fillEditFormFields(subscription) {
   if (detailImageInput) {
     detailImageInput.value = "";
   }
+  setSubscriptionPriceRules(subscription.price_rules || []);
   selectedDetailImageFiles = [];
   resetDetailImageCompression();
   setExistingUploadedImages(subscription.uploaded_images || []);
@@ -2175,11 +2474,19 @@ document.addEventListener('DOMContentLoaded', function () {
   const endpoint = "endpoints/subscription/add.php";
   const subscriptionPaymentForm = document.querySelector("#subscription-payment-form");
   const subscriptionPaymentSaveButton = document.querySelector("#subscription-payment-save-button");
+  const subscriptionPaymentDueDateInput = document.querySelector("#subscription-payment-due-date");
 
   mountSubscriptionOverlayToBody("#subscription-form");
   mountSubscriptionOverlayToBody("#subscription-payment-modal");
   mountSubscriptionOverlayToBody("#subscription-payment-history-modal");
   mountSubscriptionOverlayToBody("#subscription-image-viewer");
+  renderSubscriptionPriceRules();
+
+  if (subscriptionPaymentDueDateInput) {
+    subscriptionPaymentDueDateInput.addEventListener("change", function () {
+      applyPaymentRulePreviewForDueDate(this.value || "");
+    });
+  }
 
   subscriptionForm.addEventListener("submit", function (e) {
     e.preventDefault();

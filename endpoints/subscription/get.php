@@ -3,6 +3,7 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/subscription_payment_records.php';
+require_once '../../includes/subscription_price_rules.php';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     if (isset($_GET['id']) && $_GET['id'] != "") {
@@ -41,6 +42,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $subscriptionData['detail_image_urls'] = json_decode($row['detail_image_urls'] ?? '[]', true) ?: [];
             $subscriptionData['uploaded_images'] = wallos_get_subscription_uploaded_images($db, $subscriptionId, $userId);
             $subscriptionData['payment_records'] = wallos_get_subscription_payment_records($db, $subscriptionId, $userId, 12);
+            $subscriptionData['price_rules'] = wallos_get_subscription_price_rules($db, $subscriptionId, $userId, false);
             $subscriptionData['detail_image'] = !empty($subscriptionData['uploaded_images'][0]['access_url'])
                 ? $subscriptionData['uploaded_images'][0]['access_url']
                 : ($row['detail_image'] ?? "");

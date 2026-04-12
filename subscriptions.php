@@ -6,6 +6,7 @@ require_once 'includes/user_groups.php';
 require_once 'includes/subscription_media.php';
 require_once 'includes/subscription_trash.php';
 require_once 'includes/subscription_payment_records.php';
+require_once 'includes/subscription_price_rules.php';
 
 include_once 'includes/list_subscriptions.php';
 
@@ -175,6 +176,7 @@ $subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
 $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
 $paymentRecordsMap = wallos_get_subscription_payment_records_map($db, $userId, 6);
 $paymentRecordCountMap = wallos_get_subscription_payment_record_count_map($db, $userId);
+$priceRulesMap = wallos_get_subscription_price_rules_map($db, $userId, true);
 $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscriptions.js');
 ?>
 <style>
@@ -287,6 +289,7 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       $print[$id]['uploaded_images'] = $uploadedImagesMap[$id] ?? [];
       $print[$id]['payment_records'] = $paymentRecordsMap[$id] ?? [];
       $print[$id]['payment_record_count'] = (int) ($paymentRecordCountMap[$id] ?? 0);
+      $print[$id]['price_rules'] = $priceRulesMap[$id] ?? [];
       $print[$id]['detail_image'] = !empty($print[$id]['uploaded_images'][0]['access_url'])
         ? $print[$id]['uploaded_images'][0]['access_url']
         : ($subscription['detail_image'] ?? '');
@@ -618,6 +621,21 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
           <i class="fa-brands fa-markdown"></i>
           <?= translate('subscription_notes_markdown_hint', $i18n) ?>
         </p>
+      </div>
+    </div>
+
+    <div class="form-group subscription-price-rules-group">
+      <label><?= translate('subscription_price_rules', $i18n) ?></label>
+      <div class="subscription-price-rules-panel">
+        <div class="subscription-price-rules-toolbar">
+          <span class="subscription-price-rules-hint"><?= translate('subscription_price_rules_hint', $i18n) ?></span>
+          <button type="button" class="secondary-button thin" onClick="addSubscriptionPriceRule()">
+            <i class="fa-solid fa-tags"></i>
+            <span><?= translate('subscription_price_rule_add', $i18n) ?></span>
+          </button>
+        </div>
+        <div class="subscription-price-rules-list" id="subscription-price-rules-list"></div>
+        <input type="hidden" id="subscription-price-rules-json" name="subscription_price_rules_json" value="[]">
       </div>
     </div>
 

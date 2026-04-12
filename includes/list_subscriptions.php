@@ -3,6 +3,7 @@
 require_once 'i18n/getlang.php';
 require_once __DIR__ . '/subscription_media.php';
 require_once __DIR__ . '/markdown.php';
+require_once __DIR__ . '/subscription_price_rules.php';
 
 function getBillingCycle($cycle, $frequency, $i18n)
 {
@@ -378,6 +379,37 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                         </div>
                         <div class="subscription-markdown subscription-notes-content">
                             <?= wallos_render_markdown($subscription['notes']) ?>
+                        </div>
+                    </div>
+                    <?php
+                }
+
+                $priceRules = $subscription['price_rules'] ?? [];
+                if (!empty($priceRules)) {
+                    ?>
+                    <div class="subscription-price-rules">
+                        <div class="subscription-price-rules-header">
+                            <span class="subscription-price-rules-title">
+                                <i class="fa-solid fa-tags"></i>
+                                <?= translate('subscription_price_rules', $i18n) ?>
+                            </span>
+                            <span class="subscription-price-rules-count">
+                                <?= sprintf(translate('subscription_price_rules_count_dynamic', $i18n), count($priceRules)) ?>
+                            </span>
+                        </div>
+                        <div class="subscription-price-rules-summary-list">
+                            <?php foreach ($priceRules as $rule): ?>
+                                <article class="subscription-price-rule-summary-card">
+                                    <div class="subscription-price-rule-summary-headline">
+                                        <strong><?= htmlspecialchars(wallos_format_subscription_price_rule_summary($rule, $currencies, $i18n), ENT_QUOTES, 'UTF-8') ?></strong>
+                                    </div>
+                                    <?php if (!empty($rule['note'])): ?>
+                                        <div class="subscription-markdown subscription-price-rule-summary-note">
+                                            <?= wallos_render_markdown($rule['note']) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </article>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                     <?php
