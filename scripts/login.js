@@ -8,6 +8,8 @@ function changePublicPageLanguage(selectedLanguage) {
   window.location.href = url.toString();
 }
 
+window.changePublicPageLanguage = changePublicPageLanguage;
+
 function cleanupLanguageQueryParam() {
   const url = new URL(window.location.href);
   if (!url.searchParams.has("set_language")) {
@@ -32,6 +34,13 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.className = themePreference;
     const themeColorMetaTag = document.querySelector('meta[name="theme-color"]');
     themeColorMetaTag.setAttribute('content', themePreference === 'dark' ? '#222222' : '#FFFFFF');
+  }
+
+  const languageSelect = document.getElementById('public-page-language-login');
+  if (languageSelect) {
+    languageSelect.addEventListener('change', function () {
+      changePublicPageLanguage(this.value);
+    });
   }
 
 });

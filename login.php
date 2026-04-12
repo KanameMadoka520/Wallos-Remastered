@@ -11,6 +11,9 @@ require_once 'includes/login_rate_limit.php';
 
 require_once 'includes/version.php';
 
+$loginCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/login.css');
+$loginJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/login.js');
+
 function wallos_build_recycle_bin_login_message($i18n, $reason = '', $scheduledDeleteAt = '')
 {
     $message = translate('account_in_recycle_bin', $i18n);
@@ -391,7 +394,7 @@ wallos_log_request($db, 0, '');
     <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
-    <link rel="stylesheet" href="styles/login.css?<?= $version ?>">
+    <link rel="stylesheet" href="styles/login.css?<?= $loginCssVersion ?>">
     <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/green.css?<?= $version ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/yellow.css?<?= $version ?>" id="yellow-theme" <?= $colorTheme != "yellow" ? "disabled" : "" ?>>
@@ -403,7 +406,7 @@ wallos_log_request($db, 0, '');
         window.update_theme_settings = "<?= $updateThemeSettings ?>";
         window.color_theme = "<?= $colorTheme ?>";
     </script>
-    <script type="text/javascript" src="scripts/login.js?<?= $version ?>"></script>
+    <script type="text/javascript" src="scripts/login.js?<?= $loginJsVersion ?>"></script>
 </head>
 
 <body class="<?= $languages[$lang]['dir'] ?>">
@@ -412,7 +415,7 @@ wallos_log_request($db, 0, '');
             <div class="public-page-toolbar">
                 <div class="public-page-language-switcher">
                     <label for="public-page-language-login"><?= translate('language', $i18n) ?>:</label>
-                    <select id="public-page-language-login" onchange="changePublicPageLanguage(this.value)">
+                    <select id="public-page-language-login">
                         <?php
                         foreach ($languages as $code => $languageOption) {
                             $selected = ($code === $lang) ? 'selected' : '';

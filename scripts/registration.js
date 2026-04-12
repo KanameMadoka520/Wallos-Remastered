@@ -59,6 +59,8 @@ function changeLanguage(selectedLanguage) {
   window.location.href = url.toString();
 }
 
+window.changeLanguage = changeLanguage;
+
 function syncRegistrationLanguageInput() {
   var languageInput = document.getElementById('registration-language');
   var pageLanguageSelect = document.getElementById('public-page-language');
@@ -219,4 +221,11 @@ window.onload = function () {
   checkThemeNeedsUpdate();
   enableGoToLoginButton();
   syncRegistrationLanguageInput();
+
+  var pageLanguageSelect = document.getElementById('public-page-language');
+  if (pageLanguageSelect) {
+    pageLanguageSelect.addEventListener('change', function () {
+      changeLanguage(this.value);
+    });
+  }
 };
