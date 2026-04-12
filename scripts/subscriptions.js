@@ -18,10 +18,13 @@ const SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS = {
   detail: "wallos-subscription-image-layout-detail",
 };
 const SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY = "wallos-subscriptions-display-columns";
+let subscriptionMasonryLayoutFrame = null;
+let subscriptionMasonryResizeTimer = null;
 
 function toggleOpenSubscription(subId) {
   const subscriptionElement = document.querySelector('.subscription[data-id="' + subId + '"]');
   subscriptionElement.classList.toggle('is-open');
+  scheduleSubscriptionMasonryLayout();
 }
 
 function toggleSortOptions() {
@@ -109,9 +112,10 @@ function applyAllSubscriptionImageLayoutModes() {
 
 function getSubscriptionDisplayColumns() {
   try {
-    return localStorage.getItem(SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY) === "3" ? 3 : 2;
+    const storedValue = Number(localStorage.getItem(SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY));
+    return storedValue === 2 || storedValue === 3 ? storedValue : 1;
   } catch (error) {
-    return 2;
+    return 1;
   }
 }
 
@@ -125,7 +129,7 @@ function updateSubscriptionDisplayColumnButtons(columns) {
 
 function applySubscriptionDisplayColumns(columns = null) {
   const container = document.querySelector("#subscriptions");
-  const resolvedColumns = Number(columns) === 3 ? 3 : getSubscriptionDisplayColumns();
+  const resolvedColumns = Number(columns) === 2 || Number(columns) === 3 ? Number(columns) : getSubscriptionDisplayColumns();
 
   if (!container) {
     updateSubscriptionDisplayColumnButtons(resolvedColumns);
@@ -133,13 +137,17 @@ function applySubscriptionDisplayColumns(columns = null) {
   }
 
   container.classList.add("subscription-columns");
+  container.classList.toggle("subscription-columns-1", resolvedColumns === 1);
   container.classList.toggle("subscription-columns-2", resolvedColumns === 2);
   container.classList.toggle("subscription-columns-3", resolvedColumns === 3);
+  container.classList.toggle("subscription-columns-multi", resolvedColumns > 1);
   updateSubscriptionDisplayColumnButtons(resolvedColumns);
+  bindSubscriptionMasonryImageEvents();
+  scheduleSubscriptionMasonryLayout();
 }
 
 function setSubscriptionDisplayColumns(columns, button = null) {
-  const resolvedColumns = Number(columns) === 3 ? 3 : 2;
+  const resolvedColumns = Number(columns) === 2 || Number(columns) === 3 ? Number(columns) : 1;
 
   try {
     localStorage.setItem(SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY, String(resolvedColumns));
@@ -152,6 +160,71 @@ function setSubscriptionDisplayColumns(columns, button = null) {
   if (button) {
     button.blur();
   }
+}
+
+function bindSubscriptionMasonryImageEvents() {
+  document.querySelectorAll("#subscriptions img").forEach((image) => {
+    if (image.dataset.subscriptionMasonryBound === "1") {
+      return;
+    }
+
+    image.dataset.subscriptionMasonryBound = "1";
+    image.addEventListener("load", scheduleSubscriptionMasonryLayout);
+    image.addEventListener("error", scheduleSubscriptionMasonryLayout);
+  });
+}
+
+function applySubscriptionMasonryLayout() {
+  const container = document.querySelector("#subscriptions");
+  if (!container || !container.classList.contains("subscription-columns")) {
+    return;
+  }
+
+  const computedStyles = window.getComputedStyle(container);
+  const rowHeight = parseFloat(computedStyles.gridAutoRows);
+  const rowGap = parseFloat(computedStyles.rowGap);
+
+  if (!Number.isFinite(rowHeight) || rowHeight <= 0) {
+    return;
+  }
+
+  Array.from(container.children).forEach((item) => {
+    if (!(item instanceof HTMLElement)) {
+      return;
+    }
+
+    if (window.getComputedStyle(item).display === "none") {
+      item.style.gridRowEnd = "";
+      return;
+    }
+
+    item.style.gridRowEnd = "span 1";
+    const itemHeight = item.getBoundingClientRect().height;
+    const span = Math.max(1, Math.ceil((itemHeight + rowGap) / (rowHeight + rowGap)));
+    item.style.gridRowEnd = `span ${span}`;
+  });
+}
+
+function scheduleSubscriptionMasonryLayout() {
+  if (subscriptionMasonryLayoutFrame !== null) {
+    window.cancelAnimationFrame(subscriptionMasonryLayoutFrame);
+  }
+
+  subscriptionMasonryLayoutFrame = window.requestAnimationFrame(() => {
+    subscriptionMasonryLayoutFrame = null;
+    applySubscriptionMasonryLayout();
+  });
+}
+
+function handleSubscriptionMasonryResize() {
+  if (subscriptionMasonryResizeTimer !== null) {
+    window.clearTimeout(subscriptionMasonryResizeTimer);
+  }
+
+  subscriptionMasonryResizeTimer = window.setTimeout(() => {
+    subscriptionMasonryResizeTimer = null;
+    scheduleSubscriptionMasonryLayout();
+  }, 80);
 }
 
 function getDetailImageConfig() {
@@ -1626,6 +1699,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   document.addEventListener("keydown", handleSubscriptionImageViewerKeydown);
+  window.addEventListener("resize", handleSubscriptionMasonryResize, { passive: true });
   applySubscriptionDisplayColumns();
   applyAllSubscriptionImageLayoutModes();
   closeSubscriptionImageViewer();
@@ -1652,6 +1726,8 @@ function searchSubscriptions() {
       subscription.parentElement.classList.remove("hide");
     }
   });
+
+  scheduleSubscriptionMasonryLayout();
 }
 
 function clearSearch() {

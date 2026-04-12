@@ -18,7 +18,7 @@ $i18n = [
     "email_exists" => "電子郵件已存在",
     "registration_failed" => "註冊失敗，請再試一次。",
     "registration_form_notice" => "無需填寫真實資訊，姓名可以隨意填寫。",
-    "tcy_selfhost_notice" => "tcymc自建服務版，如有問題請及時回報給 tcy 修復。",
+    "tcy_selfhost_notice" => "訂閱預算管理，但功能增強版。",
     "register" => "註冊",
     "restore_database" => "還原資料庫",
     // 登入頁面
@@ -224,6 +224,7 @@ $i18n = [
     "subscription_image_layout_focus" => "聚焦",
     "subscription_image_layout_grid" => "網格",
     "subscription_layout_switch" => "訂閱佈局",
+    "subscription_layout_single_column" => "單欄",
     "subscription_layout_two_columns" => "兩欄",
     "subscription_layout_three_columns" => "三欄",
     "subscription_image_source_server" => "已存伺服器",

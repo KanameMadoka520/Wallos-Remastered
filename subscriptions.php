@@ -183,9 +183,15 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
 
       <div class="media-layout-toggle subscription-column-toggle" role="group"
         aria-label="<?= translate('subscription_layout_switch', $i18n) ?>">
-        <button type="button" class="media-layout-button is-active" data-subscription-columns="2"
+        <button type="button" class="media-layout-button is-active" data-subscription-columns="1"
+          title="<?= translate('subscription_layout_single_column', $i18n) ?>"
+          aria-pressed="true" onClick="setSubscriptionDisplayColumns(1, this)">
+          <i class="fa-solid fa-list"></i>
+          <span><?= translate('subscription_layout_single_column', $i18n) ?></span>
+        </button>
+        <button type="button" class="media-layout-button" data-subscription-columns="2"
           title="<?= translate('subscription_layout_two_columns', $i18n) ?>"
-          aria-pressed="true" onClick="setSubscriptionDisplayColumns(2, this)">
+          aria-pressed="false" onClick="setSubscriptionDisplayColumns(2, this)">
           <i class="fa-solid fa-table-columns"></i>
           <span><?= translate('subscription_layout_two_columns', $i18n) ?></span>
         </button>
@@ -213,7 +219,7 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       </div>
     </div>
   </header>
-  <div class="subscriptions subscription-columns subscription-columns-2" id="subscriptions">
+  <div class="subscriptions subscription-columns subscription-columns-1" id="subscriptions">
     <?php
     $formatter = new IntlDateFormatter(
       'en', // Force English locale
