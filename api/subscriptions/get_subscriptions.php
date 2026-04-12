@@ -93,6 +93,7 @@ Example response:
 */
 
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_trash.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -217,11 +218,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     // Construction of the main SQL Query
     $params = [];
     if ($allUserSubscription == 1 && $userId == 1) {
-        $sql = "SELECT * FROM subscriptions";
+        $sql = "SELECT * FROM subscriptions WHERE lifecycle_status = :lifecycle_status";
     } else {
-        $sql = "SELECT * FROM subscriptions WHERE user_id = :userId";
+        $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status";
         $params[':userId'] = $userId;
     }
+    $params[':lifecycle_status'] = WALLOS_SUBSCRIPTION_STATUS_ACTIVE;
 
     if (isset($_REQUEST['member'])) {
         $memberIds = explode(',', $_REQUEST['member']);
@@ -281,7 +283,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     $stmt = $db->prepare($sql);
     if (!empty($params)) {
         foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value, SQLITE3_INTEGER);
+            $type = $key === ':lifecycle_status' ? SQLITE3_TEXT : SQLITE3_INTEGER;
+            $stmt->bindValue($key, $value, $type);
         }
     }
     $result = $stmt->execute();

@@ -222,6 +222,9 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
             if ($subscription['auto_renew'] != 1) {
                 $subscriptionExtraClasses .= " manual";
             }
+            if (!empty($subscription['exclude_from_stats'])) {
+                $subscriptionExtraClasses .= " no-stats";
+            }
 
             $hasLogo = false;
             if ($subscription['logo'] != "") {
@@ -253,6 +256,12 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                         ?>
                     </span>
                     <span class="name <?= $hasLogo ? 'hideOnMobile' : '' ?>"><?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php if (!empty($subscription['exclude_from_stats'])): ?>
+                        <span class="subscription-inline-flag no-stats" title="<?= translate('subscription_exclude_from_stats_help', $i18n) ?>">
+                            <i class="fa-solid fa-chart-line"></i>
+                            <?= translate('subscription_excluded_from_stats_badge', $i18n) ?>
+                        </span>
+                    <?php endif; ?>
                     <span class="cycle"
                         title="<?= $subscription['auto_renew'] ? translate("automatically_renews", $i18n) : translate("manual_renewal", $i18n) ?>">
                         <?php

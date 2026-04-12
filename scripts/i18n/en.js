@@ -3,6 +3,8 @@ let i18n = {
   error_reloading_subscription: "Error reloading subscription:",
   error_fetching_image_results: "Error fetching image results:",
   subscription_deleted: "Subscription deleted",
+  confirm_move_subscription_to_recycle_bin: "Move this subscription to the recycle bin? It can be restored within 180 days.",
+  confirm_permanently_delete_subscription: "Permanently delete this subscription and all related images now?",
   error_deleting_subscription: "Error deleting subscription",
   failed_to_load_subscription: "Failed to load subscription",
   edit_subscription: "Edit subscription",

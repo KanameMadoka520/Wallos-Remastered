@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/subscription_trash.php';
+
 function getPricePerMonth($cycle, $frequency, $price)
 {
     switch ($cycle) {
@@ -111,7 +113,10 @@ if (isset($_GET['payment'])) {
 }
 
 $conditions[] = "user_id = :userId";
+$conditions[] = "lifecycle_status = :lifecycle_status";
+$conditions[] = "exclude_from_stats = 0";
 $params[':userId'] = $userId;
+$params[':lifecycle_status'] = WALLOS_SUBSCRIPTION_STATUS_ACTIVE;
 
 if (!empty($conditions)) {
     $query .= " WHERE " . implode(' AND ', $conditions);
@@ -121,7 +126,8 @@ $stmt = $db->prepare($query);
 $statsSubtitle = !empty($statsSubtitleParts) ? '(' . implode(', ', $statsSubtitleParts) . ')' : "";
 
 foreach ($params as $key => $value) {
-    $stmt->bindValue($key, $value, SQLITE3_INTEGER);
+    $type = $key === ':lifecycle_status' ? SQLITE3_TEXT : SQLITE3_INTEGER;
+    $stmt->bindValue($key, $value, $type);
 }
 
 $result = $stmt->execute();
@@ -193,9 +199,10 @@ if ($result) {
 
                 // Check if it has a replacement subscription and if it was not already counted
                 if ($replacementSubscriptionId && !in_array($replacementSubscriptionId, $replacementSubscriptions)) {
-                    $query = "SELECT price, currency_id, cycle, frequency FROM subscriptions WHERE id = :replacementSubscriptionId";
+                    $query = "SELECT price, currency_id, cycle, frequency FROM subscriptions WHERE id = :replacementSubscriptionId AND lifecycle_status = :lifecycle_status AND exclude_from_stats = 0";
                     $stmt = $db->prepare($query);
                     $stmt->bindValue(':replacementSubscriptionId', $replacementSubscriptionId, SQLITE3_INTEGER);
+                    $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
                     $result = $stmt->execute();
                     $replacementSubscription = $result->fetchArray(SQLITE3_ASSOC);
                     if ($replacementSubscription) {

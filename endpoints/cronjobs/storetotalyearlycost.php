@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
+require_once __DIR__ . '/../../includes/subscription_trash.php';
 
 require 'settimezone.php';
 
@@ -58,9 +59,10 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $userCurrencyId = $row['main_currency'];
     $totalYearlyCost = 0;
 
-    $query = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0";
+    $query = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0 AND lifecycle_status = :lifecycle_status AND exclude_from_stats = 0";
     $stmt = $db->prepare($query);
     $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
     $resultSubscriptions = $stmt->execute();
 
     while ($rowSubscriptions = $resultSubscriptions->fetchArray(SQLITE3_ASSOC)) {

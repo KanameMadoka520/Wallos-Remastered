@@ -9,6 +9,7 @@ It returns a downloadable VCAL file with the active subscriptions
 */
 
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_trash.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -111,10 +112,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         $paymentMethods[$paymentMethod['id']] = $paymentMethod['name'];
     }
 
-    $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0 ORDER BY next_payment ASC";
+    $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0 AND lifecycle_status = :lifecycle_status ORDER BY next_payment ASC";
 
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+    $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
     $result = $stmt->execute();
 
     if ($result) {

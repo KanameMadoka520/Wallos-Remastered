@@ -106,6 +106,9 @@ crontab -d -u root
 # Run cleanupbannedusers.php
 /usr/local/bin/php /var/www/html/endpoints/cronjobs/cleanupbannedusers.php
 
+# Run cleanuptrashedsubscriptions.php
+/usr/local/bin/php /var/www/html/endpoints/cronjobs/cleanuptrashedsubscriptions.php
+
 # Run backup cleanup once on startup
 /usr/local/bin/php /var/www/html/endpoints/cronjobs/createbackup.php cleanup || true
 

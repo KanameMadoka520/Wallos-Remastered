@@ -2,6 +2,7 @@
 set_time_limit(300);
 require_once 'validate.php';
 require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
+require_once __DIR__ . '/../../includes/subscription_trash.php';
 require_once __DIR__ . '/../../includes/ssrf_helper.php';
 
 if (php_sapi_name() === 'cli') {
@@ -139,8 +140,9 @@ foreach ($allAiSettings as $aiSettings) {
     $userLanguageName = $languages[$userLanguage]['name'] ?? 'English';
 
     // Subscriptions
-    $subStmt = $db->prepare("SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = 0");
+    $subStmt = $db->prepare("SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = 0 AND lifecycle_status = :lifecycle_status AND exclude_from_stats = 0");
     $subStmt->bindValue(':user_id', $tempUserId, SQLITE3_INTEGER);
+    $subStmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
     $subResult = $subStmt->execute();
     $subscriptions = [];
     while ($row = $subResult->fetchArray(SQLITE3_ASSOC)) {

@@ -2,6 +2,7 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/getdbkeys.php';
 require_once '../../includes/markdown.php';
+require_once '../../includes/subscription_trash.php';
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     die(json_encode([
@@ -16,9 +17,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $id = $data['id'];
 
-    $stmt = $db->prepare('SELECT * FROM subscriptions WHERE id = :id AND user_id = :userId');
+    $stmt = $db->prepare('SELECT * FROM subscriptions WHERE id = :id AND user_id = :userId AND lifecycle_status = :lifecycle_status');
     $stmt->bindParam(':id', $id, SQLITE3_INTEGER);
     $stmt->bindParam(':userId', $_SESSION['userId'], SQLITE3_INTEGER); // Assuming $_SESSION['userId'] holds the logged-in user's ID
+    $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
     $result = $stmt->execute();
 
     if ($result === false) {

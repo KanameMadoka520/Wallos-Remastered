@@ -4,6 +4,7 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/currency_formatter.php';
 require_once '../../includes/getdbkeys.php';
 require_once '../../includes/subscription_media.php';
+require_once '../../includes/subscription_trash.php';
 
 include_once '../../includes/list_subscriptions.php';
 
@@ -37,7 +38,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   $order = "ASC";
 
   $params = array();
-  $sql = "SELECT * FROM subscriptions WHERE user_id = :userId";
+  $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status";
 
   if (isset($_GET['categories']) && $_GET['categories'] != "") {
     $allCategories = explode(',', $_GET['categories']);
@@ -143,6 +144,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
   $stmt = $db->prepare($sql);
   $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+  $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
 
   foreach ($params as $key => $value) {
     $stmt->bindValue($key, $value);
@@ -183,6 +185,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $print[$id]['price'] = floatval($subscription['price']);
     $print[$id]['progress'] = getSubscriptionProgress($cycle, $frequency, $subscription['next_payment']);
     $print[$id]['inactive'] = $subscription['inactive'];
+    $print[$id]['exclude_from_stats'] = (int) ($subscription['exclude_from_stats'] ?? 0);
     $print[$id]['url'] = $subscription['url'] ?? "";
     $print[$id]['notes'] = $subscription['notes'] ?? "";
     $print[$id]['replacement_subscription_id'] = $subscription['replacement_subscription_id'];
