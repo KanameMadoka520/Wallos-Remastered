@@ -1184,6 +1184,76 @@ button.mobile-action-renew {
   margin-top: 10px;
 }
 
+.subscription-payment-note-field {
+  min-height: 128px;
+  resize: vertical;
+}
+
+.subscription-payment-records {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 5px 4px;
+}
+
+.subscription-payment-records-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.subscription-payment-records-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.subscription-payment-record-button {
+  align-self: flex-start;
+}
+
+.subscription-payment-record-list {
+  display: grid;
+  gap: 12px;
+}
+
+.subscription-payment-record-item {
+  border: 1px solid var(--box-border-color);
+  border-radius: 14px;
+  background-color: rgba(var(--main-color-rgb), 0.03);
+  padding: 14px 16px;
+}
+
+.subscription-payment-record-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.subscription-payment-record-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  color: rgba(var(--text-color-rgb), 0.74);
+  font-size: 13px;
+}
+
+.subscription-payment-record-note {
+  margin-top: 10px;
+}
+
+.subscription-payment-record-empty {
+  padding: 14px 16px;
+  border: 1px dashed var(--box-border-color);
+  border-radius: 14px;
+  color: rgba(var(--text-color-rgb), 0.7);
+}
+
 .subscription-stats-exclusion-note {
   margin-top: 10px;
 }
