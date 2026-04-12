@@ -833,7 +833,19 @@ function openSubscriptionImageOriginal() {
     return;
   }
 
-  const popup = window.open("", "_blank", "noopener,noreferrer");
+  const popup = window.open("about:blank", "_blank");
+  if (!popup) {
+    showErrorMessage(translate("error"));
+    return;
+  }
+
+  try {
+    popup.opener = null;
+    popup.document.title = translate("subscription_image_original_loading");
+    popup.document.body.innerHTML = `<p style="font-family:sans-serif;padding:16px;">${translate("subscription_image_original_loading")}</p>`;
+  } catch (error) {
+    // Ignore cross-window setup failures and continue with the image request.
+  }
 
   if (currentSubscriptionImageOriginalRequest) {
     currentSubscriptionImageOriginalRequest.abort();
@@ -861,16 +873,8 @@ function openSubscriptionImageOriginal() {
     if (request.status >= 200 && request.status < 300) {
       setOriginalImageProgress(100, translate("subscription_image_original_loading"));
       const blobUrl = URL.createObjectURL(request.response);
-      if (popup && !popup.closed) {
-        popup.location.href = blobUrl;
-      } else {
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.target = "_blank";
-        link.rel = "noopener,noreferrer";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      if (!popup.closed) {
+        popup.location.replace(blobUrl);
       }
 
       setTimeout(() => {
