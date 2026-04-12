@@ -1,24 +1,25 @@
-function setCookie(name, value, days) {
-  let expires = "";
-  if (days) {
-    const date = new Date();
-    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-    expires = "; expires=" + date.toUTCString();
-  }
-
-  document.cookie = `${name}=${value}${expires}; path=/; SameSite=Lax`;
-}
-
 function changePublicPageLanguage(selectedLanguage) {
   if (!selectedLanguage) {
     return;
   }
 
-  setCookie("language", selectedLanguage, 365);
-  window.location.reload();
+  const url = new URL(window.location.href);
+  url.searchParams.set("set_language", selectedLanguage);
+  window.location.href = url.toString();
+}
+
+function cleanupLanguageQueryParam() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("set_language")) {
+    return;
+  }
+
+  url.searchParams.delete("set_language");
+  window.history.replaceState({}, document.title, url.toString());
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  cleanupLanguageQueryParam();
 
   const userLocale = navigator.language || navigator.languages[0];
   document.cookie = `user_locale=${userLocale}; expires=Fri, 31 Dec 9999 23:59:59 GMT; SameSite=Lax`;
