@@ -112,6 +112,7 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   <link rel="stylesheet" href="styles/brands.css">
   <script type="text/javascript" src="scripts/all.js?<?= $version ?>"></script>
   <script type="text/javascript" src="scripts/common.js?<?= $version ?>"></script>
+  <script type="text/javascript" src="scripts/decorative-background.js?<?= $version ?>"></script>
   <script type="text/javascript">
     window.theme = "<?= $theme ?>";
     window.update_theme_settings = "<?= $updateThemeSettings ?>";

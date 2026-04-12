@@ -13,13 +13,17 @@ function wallos_get_decorative_background_tokens()
         ['type' => 'text', 'content' => '月付', 'x' => '84%', 'y' => '18%', 'rotate' => '8deg', 'scale' => '0.98', 'delay' => '-7s'],
         ['type' => 'text', 'content' => '年付', 'x' => '72%', 'y' => '72%', 'rotate' => '-8deg', 'scale' => '1.08', 'delay' => '-12s'],
         ['type' => 'text', 'content' => 'const', 'x' => '33%', 'y' => '16%', 'rotate' => '-7deg', 'scale' => '0.92', 'delay' => '-3s'],
+        ['type' => 'text', 'content' => 'TPS:20.0', 'x' => '6%', 'y' => '28%', 'rotate' => '8deg', 'scale' => '0.86', 'delay' => '-4s'],
         ['type' => 'text', 'content' => '{ }', 'x' => '58%', 'y' => '12%', 'rotate' => '4deg', 'scale' => '1.2', 'delay' => '-9s'],
         ['type' => 'text', 'content' => 'UTF-8', 'x' => '41%', 'y' => '82%', 'rotate' => '-3deg', 'scale' => '0.96', 'delay' => '-11s'],
+        ['type' => 'text', 'content' => '127.0.0.1', 'x' => '56%', 'y' => '22%', 'rotate' => '-5deg', 'scale' => '0.86', 'delay' => '-6s'],
         ['type' => 'text', 'content' => '0x2A', 'x' => '62%', 'y' => '58%', 'rotate' => '7deg', 'scale' => '0.94', 'delay' => '-13s'],
         ['type' => 'text', 'content' => 'async', 'x' => '11%', 'y' => '44%', 'rotate' => '8deg', 'scale' => '0.88', 'delay' => '-6s'],
+        ['type' => 'text', 'content' => 'DNS', 'x' => '36%', 'y' => '32%', 'rotate' => '9deg', 'scale' => '0.84', 'delay' => '-2s'],
         ['type' => 'text', 'content' => '¥', 'x' => '90%', 'y' => '56%', 'rotate' => '-11deg', 'scale' => '1.3', 'delay' => '-10s'],
         ['type' => 'text', 'content' => '$', 'x' => '79%', 'y' => '36%', 'rotate' => '11deg', 'scale' => '1.18', 'delay' => '-4s'],
         ['type' => 'text', 'content' => 'class', 'x' => '28%', 'y' => '52%', 'rotate' => '-6deg', 'scale' => '0.9', 'delay' => '-8s'],
+        ['type' => 'text', 'content' => 'CDN', 'x' => '86%', 'y' => '66%', 'rotate' => '4deg', 'scale' => '0.82', 'delay' => '-9s'],
         ['type' => 'icon', 'icon' => 'fa-brands fa-cc-visa', 'x' => '76%', 'y' => '10%', 'rotate' => '-8deg', 'scale' => '1.15', 'delay' => '-2s'],
         ['type' => 'icon', 'icon' => 'fa-brands fa-cc-mastercard', 'x' => '87%', 'y' => '82%', 'rotate' => '7deg', 'scale' => '1.08', 'delay' => '-14s'],
         ['type' => 'icon', 'icon' => 'fa-brands fa-paypal', 'x' => '54%', 'y' => '26%', 'rotate' => '-9deg', 'scale' => '1.02', 'delay' => '-1s'],
@@ -36,14 +40,19 @@ function wallos_render_decorative_background($variant = 'app')
     $tokens = wallos_get_decorative_background_tokens();
     ?>
     <div class="wallos-decorative-background <?= $variantClass ?>" aria-hidden="true">
+        <canvas class="wallos-bg-flow"></canvas>
         <div class="wallos-bg-grid"></div>
+        <div class="wallos-bg-noise"></div>
         <div class="wallos-bg-glow wallos-bg-glow-a"></div>
         <div class="wallos-bg-glow wallos-bg-glow-b"></div>
         <div class="wallos-bg-glow wallos-bg-glow-c"></div>
         <div class="wallos-bg-orbit wallos-bg-orbit-a"></div>
         <div class="wallos-bg-orbit wallos-bg-orbit-b"></div>
+        <div class="wallos-bg-orbit wallos-bg-orbit-c"></div>
         <div class="wallos-bg-plate wallos-bg-plate-a"></div>
         <div class="wallos-bg-plate wallos-bg-plate-b"></div>
+        <div class="wallos-bg-plate wallos-bg-plate-c"></div>
+        <div class="wallos-bg-float-layer"></div>
         <div class="wallos-bg-token-layer">
             <?php foreach ($tokens as $token): ?>
                 <span class="wallos-bg-token <?= $token['type'] === 'icon' ? 'is-icon' : 'is-text' ?>"
@@ -59,4 +68,3 @@ function wallos_render_decorative_background($variant = 'app')
     </div>
     <?php
 }
-

@@ -214,7 +214,7 @@ header .logo .logo-image svg {
   border: 1px solid var(--box-border-color);
   min-width: 130px;
   box-shadow: var(--box-shadow);
-  z-index: 5;
+  z-index: 120;
   width: max-content;
   border-top: none;
   border-radius: 8px;
