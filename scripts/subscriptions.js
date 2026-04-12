@@ -699,14 +699,14 @@ function buildFormDetailImageViewerItems() {
   return items;
 }
 
-function mountSubscriptionImageViewerToBody() {
-  const viewer = document.querySelector("#subscription-image-viewer");
-  if (!viewer || viewer.dataset.mountedToBody === "1" || !document.body) {
+function mountSubscriptionOverlayToBody(selector) {
+  const overlay = document.querySelector(selector);
+  if (!overlay || overlay.dataset.mountedToBody === "1" || !document.body) {
     return;
   }
 
-  document.body.appendChild(viewer);
-  viewer.dataset.mountedToBody = "1";
+  document.body.appendChild(overlay);
+  overlay.dataset.mountedToBody = "1";
 }
 
 function getViewerItemsFromGallery(gallery) {
@@ -1794,7 +1794,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const submitButton = document.querySelector("#save-button");
   const endpoint = "endpoints/subscription/add.php";
 
-  mountSubscriptionImageViewerToBody();
+  mountSubscriptionOverlayToBody("#subscription-form");
+  mountSubscriptionOverlayToBody("#subscription-image-viewer");
 
   subscriptionForm.addEventListener("submit", function (e) {
     e.preventDefault();
