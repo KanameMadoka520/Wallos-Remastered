@@ -16,6 +16,10 @@ require_once 'decorative_background.php';
 
 require_once 'version.php';
 
+$stylesCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/styles.css');
+$decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/decorative-background.css');
+$decorativeBackgroundJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/decorative-background.js');
+
 if ($userCount == 0) {
   $db->close();
   header("Location: registration.php");
@@ -100,8 +104,8 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
   <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
   <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
-  <link rel="stylesheet" href="styles/decorative-background.css?<?= $version ?>">
-  <link rel="stylesheet" href="styles/styles.css?<?= $version ?>">
+  <link rel="stylesheet" href="styles/decorative-background.css?<?= $decorativeBackgroundCssVersion ?>">
+  <link rel="stylesheet" href="styles/styles.css?<?= $stylesCssVersion ?>">
   <link rel="stylesheet" href="styles/dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme != "dark" ? "disabled" : "" ?>>
   <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
   <link rel="stylesheet" href="styles/themes/green.css?<?= $version ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
@@ -112,7 +116,7 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   <link rel="stylesheet" href="styles/brands.css">
   <script type="text/javascript" src="scripts/all.js?<?= $version ?>"></script>
   <script type="text/javascript" src="scripts/common.js?<?= $version ?>"></script>
-  <script type="text/javascript" src="scripts/decorative-background.js?<?= $version ?>"></script>
+  <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
   <script type="text/javascript">
     window.theme = "<?= $theme ?>";
     window.update_theme_settings = "<?= $updateThemeSettings ?>";
