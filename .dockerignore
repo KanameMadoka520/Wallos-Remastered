@@ -8,3 +8,10 @@
 *.md
 .gitignore
 .dockerignore
+db/
+backups/
+images/uploads/logos/
+.env
+.env.*
+.tmp/
+*.log

@@ -11,7 +11,7 @@ if (!is_null($settings['latest_version'])) {
 }
 
 $pageSections = [
-    ['id' => 'about-custom-build', 'label' => 'tcymc自建服务版'],
+    ['id' => 'about-remastered', 'label' => 'Wallos-Remastered'],
     ['id' => 'about-upstream', 'label' => translate('about', $i18n)],
     ['id' => 'about-credits', 'label' => translate('credits', $i18n)],
 ];
@@ -22,159 +22,134 @@ $pageSections = [
         <?php render_page_navigation(translate('about', $i18n), $pageSections); ?>
         <div class="page-content">
 
-    <section class="account-section" id="about-custom-build" data-page-section>
-        <header>
-            <h2>tcymc自建服务版</h2>
-        </header>
-        <div class="credits-list">
-            <div>
-                <h3>部署结构</h3>
-                <span>以自己物理机为后端，香港vps作为网关</span>
-            </div>
-            <div>
-                <h3>源码仓库</h3>
-                <span>
-                    https://github.com/KanameMadoka520/Wallos
-                    <a href="https://github.com/KanameMadoka520/Wallos" target="_blank" title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
-            <div>
-                <h3>上游项目</h3>
-                <span>
-                    Wallos / GPLv3
-                    <a href="https://github.com/ellite/Wallos" target="_blank" title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
-        </div>
-    </section>
-
-    <section class="account-section" id="about-upstream" data-page-section>
-        <header>
-            <h2><?= translate('about', $i18n) ?></h2>
-        </header>
-        <div class="credits-list">
-            <div>
-                <h3>
-                    Wallos <?= $version ?> <?= $demoMode ? "Demo" : "" ?>
-                </h3>
-                <span>
-                    <?= translate('release_notes', $i18n) ?>
-                    <a href="https://github.com/ellite/Wallos/releases/tag/<?= $version ?>" target="_blank"
-                        title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
-            <?php if (!$wallosIsUpToDate): ?>
-                <div class="update-available">
-                    <h3>
-                        <i class="fa-solid fa-info-circle"></i>
-                        <?= translate('update_available', $i18n) ?> <?= $latestVersion ?>
-                    </h3>
-                    <span>
-                        <?= translate('release_notes', $i18n) ?>
-                        <a href="https://github.com/ellite/Wallos/releases/tag/<?= $latestVersion ?>" target="_blank"
-                            title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                        </a>
-                    </span>
+            <section class="account-section" id="about-remastered" data-page-section>
+                <header>
+                    <h2>Wallos-Remastered</h2>
+                </header>
+                <div class="credits-list">
+                    <div>
+                        <h3>Project Positioning</h3>
+                        <span>An independently maintained remastered branch focused on admin operations, media governance, and self-host lifecycle management.</span>
+                    </div>
+                    <div>
+                        <h3>Repository</h3>
+                        <span>
+                            https://github.com/KanameMadoka520/Wallos-Remastered
+                            <a href="https://github.com/KanameMadoka520/Wallos-Remastered" target="_blank"
+                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <div>
+                        <h3>License</h3>
+                        <span>GPLv3</span>
+                    </div>
                 </div>
-            <?php endif; ?>
-            <div>
-                <h3><?= translate('license', $i18n) ?></h3>
-                <span>
-                    GPLv3
-                    <a href="https://www.gnu.org/licenses/gpl-3.0.en.html" target="_blank"
-                        title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
-            <div>
-                <h3><?= translate('issues_and_requests', $i18n) ?></h3>
-                <span>
-                    GitHub
-                    <a href="https://github.com/ellite/Wallos/issues" target="_blank"
-                        title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
-            <div>
-                <h3><?= translate('the_author', $i18n) ?></h3>
-                <span>
-                    https://henrique.pt
-                    <a href="https://henrique.pt/" target="_blank" title="<?= translate('external_url', $i18n) ?>"
-                        rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
+            </section>
 
-        </div>
-    </section>
+            <section class="account-section" id="about-upstream" data-page-section>
+                <header>
+                    <h2><?= translate('about', $i18n) ?></h2>
+                </header>
+                <div class="credits-list">
+                    <div>
+                        <h3>
+                            Wallos-Remastered <?= $version ?> <?= $demoMode ? "Demo" : "" ?>
+                        </h3>
+                        <span>
+                            <?= translate('release_notes', $i18n) ?>
+                            <a href="https://github.com/ellite/Wallos/releases/tag/<?= $version ?>" target="_blank"
+                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <?php if (!$wallosIsUpToDate): ?>
+                        <div class="update-available">
+                            <h3>
+                                <i class="fa-solid fa-info-circle"></i>
+                                <?= translate('update_available', $i18n) ?> <?= $latestVersion ?>
+                            </h3>
+                            <span>
+                                <?= translate('release_notes', $i18n) ?>
+                                <a href="https://github.com/ellite/Wallos/releases/tag/<?= $latestVersion ?>" target="_blank"
+                                    title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+                    <div>
+                        <h3>Upstream</h3>
+                        <span>
+                            Wallos
+                            <a href="https://github.com/ellite/Wallos" target="_blank"
+                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <div>
+                        <h3><?= translate('issues_and_requests', $i18n) ?></h3>
+                        <span>
+                            GitHub
+                            <a href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank"
+                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
+                </div>
+            </section>
 
-    <section class="account-section" id="about-credits" data-page-section>
-        <header>
-            <h2><?= translate("credits", $i18n) ?></h2>
-        </header>
-        <div class="credits-list">
-            <div>
-                <h3><?= translate('icons', $i18n) ?></h3>
-                <span>
-                    https://www.streamlinehq.com/freebies/plump-flat-free
-                    <a href="https://www.streamlinehq.com/freebies/plump-flat-free" target="_blank"
-                        title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
-            <div>
-                <h3><?= translate('payment_icons', $i18n) ?></h3>
-                <span>
-                    https://www.figma.com/file/5IMW8JfoXfB5GRlPNdTyeg/Credit-Cards-and-Payment-Methods-Icons-(Community)
-                    <a href="https://www.figma.com/file/5IMW8JfoXfB5GRlPNdTyeg/Credit-Cards-and-Payment-Methods-Icons-(Community)"
-                        target="_blank" title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
-            <div>
-                <h3>Chart.js</h3>
-                <span>
-                    https://www.chartjs.org/
-                    <a href="https://www.chartjs.org/" target="_blank" title="<?= translate('external_url', $i18n) ?>"
-                        rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
-            <div>
-                <h3>QRCode.js</h3>
-                <span>
-                    https://github.com/davidshimjs/qrcodejs
-                    <a href="https://github.com/davidshimjs/qrcodejs" target="_blank"
-                        title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
-            <div>
-                <h3>Icons by icons8</h3>
-                <span>
-                    https://icons8.com/
-                    <a href="https://icons8.com/" target="_blank" title="<?= translate('external_url', $i18n) ?>"
-                        rel="noreferrer">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </span>
-            </div>
-        </div>
-    </section>
+            <section class="account-section" id="about-credits" data-page-section>
+                <header>
+                    <h2><?= translate("credits", $i18n) ?></h2>
+                </header>
+                <div class="credits-list">
+                    <div>
+                        <h3><?= translate('icons', $i18n) ?></h3>
+                        <span>
+                            https://www.streamlinehq.com/freebies/plump-flat-free
+                            <a href="https://www.streamlinehq.com/freebies/plump-flat-free" target="_blank"
+                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <div>
+                        <h3><?= translate('payment_icons', $i18n) ?></h3>
+                        <span>
+                            https://www.figma.com/file/5IMW8JfoXfB5GRlPNdTyeg/Credit-Cards-and-Payment-Methods-Icons-(Community)
+                            <a href="https://www.figma.com/file/5IMW8JfoXfB5GRlPNdTyeg/Credit-Cards-and-Payment-Methods-Icons-(Community)"
+                                target="_blank" title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <div>
+                        <h3>Chart.js</h3>
+                        <span>
+                            https://www.chartjs.org/
+                            <a href="https://www.chartjs.org/" target="_blank" title="<?= translate('external_url', $i18n) ?>"
+                                rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <div>
+                        <h3>QRCode.js</h3>
+                        <span>
+                            https://github.com/davidshimjs/qrcodejs
+                            <a href="https://github.com/davidshimjs/qrcodejs" target="_blank"
+                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
+                    </div>
+                </div>
+            </section>
 
         </div>
     </div>

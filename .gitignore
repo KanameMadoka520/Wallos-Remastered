@@ -4,6 +4,14 @@
 !/images/uploads/logos/wallos.png
 /backups/*
 !/backups/.gitkeep
+.env
+.env.*
+.tmp/
+*.log
+*.zip
+*.tar
+*.tar.gz
+*.part
 .DS_Store
 .idea/
 .vscode/
