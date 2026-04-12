@@ -15,6 +15,8 @@ require_once 'includes/version.php';
 
 $loginCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/login.css');
 $registrationJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/registration.js');
+$decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/decorative-background.css');
+$decorativeBackgroundJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/decorative-background.js');
 
 function validate($value)
 {
@@ -291,7 +293,7 @@ wallos_log_request($db, 0, '');
     <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
-    <link rel="stylesheet" href="styles/decorative-background.css?<?= $version ?>">
+    <link rel="stylesheet" href="styles/decorative-background.css?<?= $decorativeBackgroundCssVersion ?>">
     <link rel="stylesheet" href="styles/login.css?<?= $loginCssVersion ?>">
     <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/green.css?<?= $version ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
@@ -305,7 +307,7 @@ wallos_log_request($db, 0, '');
         window.update_theme_settings = "<?= $updateThemeSettings ?>";
         window.colorTheme = "<?= $colorTheme ?>";
     </script>
-    <script type="text/javascript" src="scripts/decorative-background.js?<?= $version ?>"></script>
+    <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
     <script type="text/javascript" src="scripts/registration.js?<?= $registrationJsVersion ?>"></script>
 </head>
 
