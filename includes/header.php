@@ -19,6 +19,8 @@ require_once 'version.php';
 $stylesCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/styles.css');
 $decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/decorative-background.css');
 $decorativeBackgroundJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/decorative-background.js');
+$i18nJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/' . $lang . '.js');
+$i18nGetLangJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/getlang.js');
 
 if ($userCount == 0) {
   $db->close();
@@ -163,8 +165,8 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
     <?php
   }
   ?>
-  <script type="text/javascript" src="scripts/i18n/<?= $lang ?>.js?<?= $version ?>"></script>
-  <script type="text/javascript" src="scripts/i18n/getlang.js?<?= $version ?>"></script>
+  <script type="text/javascript" src="scripts/i18n/<?= $lang ?>.js?<?= $i18nJsVersion ?>"></script>
+  <script type="text/javascript" src="scripts/i18n/getlang.js?<?= $i18nGetLangJsVersion ?>"></script>
   <script>
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       if (!sessionStorage.getItem('sw_prefetched')) {

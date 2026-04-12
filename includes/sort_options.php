@@ -1,5 +1,8 @@
 <div class="sort-options" id="sort-options">
     <ul>
+        <li <?= $sortOrder == "manual_order" ? 'class="selected"' : "" ?> onClick="setSortOption('manual_order')" id="sort-manual_order">
+            <?= translate('manual_order', $i18n) ?>
+        </li>
         <li <?= $sortOrder == "name" ? 'class="selected"' : "" ?> onClick="setSortOption('name')" id="sort-name">
             <?= translate('name', $i18n) ?>
         </li>

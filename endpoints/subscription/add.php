@@ -5,6 +5,7 @@ require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/inputvalidation.php';
 require_once '../../includes/getsettings.php';
 require_once '../../includes/subscription_media.php';
+require_once '../../includes/subscription_sort.php';
 require_once '../../includes/user_groups.php';
 if (!file_exists('../../images/uploads/logos')) {
     mkdir('../../images/uploads/logos', 0777, true);
@@ -355,18 +356,19 @@ if ($logoUrl !== "") {
 
 try {
     $db->exec('BEGIN IMMEDIATE');
+    $nextSortOrder = !$isEdit ? wallos_get_next_subscription_sort_order($db, $userId) : 0;
 
     if (!$isEdit) {
         $sql = "INSERT INTO subscriptions (
                             name, logo, price, currency_id, next_payment, cycle, frequency, notes,
                             payment_method_id, payer_user_id, category_id, notify, inactive, url,
                             notify_days_before, user_id, cancellation_date, replacement_subscription_id,
-                            auto_renew, start_date, detail_image, detail_image_urls
+                            auto_renew, start_date, detail_image, detail_image_urls, sort_order
                         ) VALUES (
                             :name, :logo, :price, :currencyId, :nextPayment, :cycle, :frequency, :notes,
                             :paymentMethodId, :payerUserId, :categoryId, :notify, :inactive, :url,
                             :notifyDaysBefore, :userId, :cancellationDate, :replacement_subscription_id,
-                            :autoRenew, :startDate, '', :detailImageUrls
+                            :autoRenew, :startDate, '', :detailImageUrls, :sortOrder
                         )";
     } else {
         $sql = "UPDATE subscriptions SET
@@ -425,6 +427,9 @@ try {
     $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
     $stmt->bindParam(':replacement_subscription_id', $replacementSubscriptionId, SQLITE3_INTEGER);
     $stmt->bindParam(':detailImageUrls', $detailImageUrlsJson, SQLITE3_TEXT);
+    if (!$isEdit) {
+        $stmt->bindParam(':sortOrder', $nextSortOrder, SQLITE3_INTEGER);
+    }
 
     if (!$stmt->execute()) {
         throw new RuntimeException(translate('error', $i18n) . ": " . $db->lastErrorMsg());

@@ -20,6 +20,8 @@ const SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS = {
 const SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY = "wallos-subscriptions-display-columns";
 let subscriptionMasonryLayoutFrame = null;
 let subscriptionMasonryResizeTimer = null;
+let subscriptionCardSortable = null;
+let isSubscriptionSortDragging = false;
 
 function toggleOpenSubscription(subId) {
   const subscriptionElement = document.querySelector('.subscription[data-id="' + subId + '"]');
@@ -176,7 +178,7 @@ function bindSubscriptionMasonryImageEvents() {
 
 function applySubscriptionMasonryLayout() {
   const container = document.querySelector("#subscriptions");
-  if (!container || !container.classList.contains("subscription-columns")) {
+  if (!container || !container.classList.contains("subscription-columns") || isSubscriptionSortDragging) {
     return;
   }
 
@@ -206,6 +208,10 @@ function applySubscriptionMasonryLayout() {
 }
 
 function scheduleSubscriptionMasonryLayout() {
+  if (isSubscriptionSortDragging) {
+    return;
+  }
+
   if (subscriptionMasonryLayoutFrame !== null) {
     window.cancelAnimationFrame(subscriptionMasonryLayoutFrame);
   }
@@ -225,6 +231,145 @@ function handleSubscriptionMasonryResize() {
     subscriptionMasonryResizeTimer = null;
     scheduleSubscriptionMasonryLayout();
   }, 80);
+}
+
+function getCurrentSubscriptionSortOrder() {
+  const rawValue = getCookie("sortOrder");
+  return rawValue ? decodeURIComponent(rawValue) : "manual_order";
+}
+
+function hasActiveSubscriptionFilters() {
+  return activeFilters['categories'].length > 0
+    || activeFilters['members'].length > 0
+    || activeFilters['payments'].length > 0
+    || activeFilters['state'] !== ""
+    || activeFilters['renewalType'] !== "";
+}
+
+function canReorderSubscriptions() {
+  const searchInput = document.querySelector("#search");
+  const searchTerm = searchInput?.value.trim() || "";
+  const currentSort = getCurrentSubscriptionSortOrder();
+  const isReorderSort = currentSort === "manual_order" || currentSort === "next_payment";
+
+  return isReorderSort && searchTerm === "" && !hasActiveSubscriptionFilters();
+}
+
+function updateSubscriptionReorderState() {
+  const container = document.querySelector("#subscriptions");
+  const enabled = !!container && canReorderSubscriptions();
+
+  if (container) {
+    container.classList.toggle("subscription-reorder-enabled", enabled);
+  }
+
+  document.querySelectorAll(".subscription-drag-handle").forEach((handle) => {
+    handle.disabled = !enabled;
+    handle.setAttribute("title", translate(enabled ? "subscription_reorder_handle_title" : "subscription_reorder_unavailable"));
+    handle.setAttribute("aria-label", translate(enabled ? "subscription_reorder_handle_title" : "subscription_reorder_unavailable"));
+  });
+
+  if (subscriptionCardSortable) {
+    subscriptionCardSortable.option("disabled", !enabled);
+  }
+}
+
+function setSubscriptionSortCookie(sortOption) {
+  const expirationDate = new Date();
+  expirationDate.setDate(expirationDate.getDate() + 30);
+  document.cookie = `sortOrder=${encodeURIComponent(sortOption)}; expires=${expirationDate.toUTCString()}; path=/; SameSite=Lax`;
+}
+
+function persistManualSubscriptionSortPreference() {
+  if (getCurrentSubscriptionSortOrder() === "manual_order") {
+    updateSubscriptionReorderState();
+    return;
+  }
+
+  setSubscriptionSortCookie("manual_order");
+  updateSortOptionSelection("manual_order");
+  updateSubscriptionReorderState();
+}
+
+function updateSortOptionSelection(sortOption) {
+  const sortOptionsContainer = document.querySelector("#sort-options");
+  if (!sortOptionsContainer) {
+    return;
+  }
+
+  sortOptionsContainer.querySelectorAll("li").forEach((option) => {
+    option.classList.toggle("selected", option.getAttribute("id") === `sort-${sortOption}`);
+  });
+}
+
+function persistSubscriptionOrder() {
+  const container = document.querySelector("#subscriptions");
+  if (!container) {
+    return;
+  }
+
+  const subscriptionIds = Array.from(container.querySelectorAll(".subscription-container[data-id]"))
+    .filter((item) => window.getComputedStyle(item).display !== "none")
+    .map((item) => Number(item.dataset.id || 0))
+    .filter((subscriptionId) => subscriptionId > 0);
+
+  if (subscriptionIds.length < 2) {
+    return;
+  }
+
+  fetch("endpoints/subscription/reordersubscriptions.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": window.csrfToken,
+    },
+    body: JSON.stringify({
+      subscriptionIds,
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (!data.success) {
+        showErrorMessage(data.message || translate("error"));
+        return;
+      }
+
+      persistManualSubscriptionSortPreference();
+    })
+    .catch(() => showErrorMessage(translate("error")));
+}
+
+function initializeSubscriptionCardSortable() {
+  const container = document.querySelector("#subscriptions");
+
+  if (subscriptionCardSortable) {
+    subscriptionCardSortable.destroy();
+    subscriptionCardSortable = null;
+  }
+
+  if (!container || typeof Sortable === "undefined") {
+    updateSubscriptionReorderState();
+    return;
+  }
+
+  subscriptionCardSortable = new Sortable(container, {
+    animation: 160,
+    draggable: ".subscription-container[data-id]",
+    handle: ".subscription-drag-handle",
+    disabled: !canReorderSubscriptions(),
+    onStart: () => {
+      isSubscriptionSortDragging = true;
+      container.classList.add("is-sorting");
+    },
+    onEnd: () => {
+      isSubscriptionSortDragging = false;
+      container.classList.remove("is-sorting");
+      persistSubscriptionOrder();
+      scheduleSubscriptionMasonryLayout();
+    },
+  });
+
+  updateSubscriptionReorderState();
 }
 
 function getDetailImageConfig() {
@@ -1459,6 +1604,11 @@ function fetchSubscriptions(id, event, initiator) {
   const subscriptionsContainer = document.querySelector("#subscriptions");
   let getSubscriptions = "endpoints/subscriptions/get.php";
 
+  if (subscriptionCardSortable) {
+    subscriptionCardSortable.destroy();
+    subscriptionCardSortable = null;
+  }
+
   if (activeFilters['categories'].length > 0) {
     getSubscriptions += `?categories=${activeFilters['categories']}`;
   }
@@ -1496,6 +1646,7 @@ function fetchSubscriptions(id, event, initiator) {
       applySubscriptionDisplayColumns();
       applySubscriptionImageLayoutMode("detail");
       initializeSubscriptionMediaSortables();
+      initializeSubscriptionCardSortable();
       if (initiator === "add") {
         if (document.getElementsByClassName('subscription').length === 1) {
           setTimeout(() => {
@@ -1510,20 +1661,8 @@ function fetchSubscriptions(id, event, initiator) {
 }
 
 function setSortOption(sortOption) {
-  const sortOptionsContainer = document.querySelector("#sort-options");
-  const sortOptionsList = sortOptionsContainer.querySelectorAll("li");
-  sortOptionsList.forEach((option) => {
-    if (option.getAttribute("id") === "sort-" + sortOption) {
-      option.classList.add("selected");
-    } else {
-      option.classList.remove("selected");
-    }
-  });
-  const daysToExpire = 30;
-  const expirationDate = new Date();
-  expirationDate.setDate(expirationDate.getDate() + daysToExpire);
-  const cookieValue = encodeURIComponent(sortOption) + '; expires=' + expirationDate.toUTCString();
-  document.cookie = 'sortOrder=' + cookieValue + '; SameSite=Lax';
+  updateSortOptionSelection(sortOption);
+  setSubscriptionSortCookie(sortOption);
   fetchSubscriptions(null, null, "sort");
   toggleSortOptions();
 }
@@ -1704,6 +1843,7 @@ document.addEventListener('DOMContentLoaded', function () {
   applyAllSubscriptionImageLayoutModes();
   closeSubscriptionImageViewer();
   initializeSubscriptionMediaSortables();
+  initializeSubscriptionCardSortable();
 });
 
 function searchSubscriptions() {
@@ -1727,6 +1867,7 @@ function searchSubscriptions() {
     }
   });
 
+  updateSubscriptionReorderState();
   scheduleSubscriptionMasonryLayout();
 }
 

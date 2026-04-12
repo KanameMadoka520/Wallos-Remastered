@@ -405,6 +405,12 @@ main>.contain {
   position: relative;
 }
 
+.subscriptions-page-layout .inline-row {
+  margin-bottom: 0px;
+  align-items: center;
+  flex: 1 1 auto;
+}
+
 .main-actions.hidden {
   display: none;
 }
@@ -478,7 +484,7 @@ button:hover svg .main-color {
 }
 
 .subscriptions-page-layout .top-actions {
-  flex-wrap: wrap;
+  flex: 0 1 360px;
   justify-content: flex-end;
 }
 
@@ -488,6 +494,7 @@ button:hover svg .main-color {
 
 .subscriptions-page-layout .top-actions .search {
   min-width: min(100%, 280px);
+  width: 100%;
 }
 
 .top-actions .search>input[type="text"] {
@@ -536,6 +543,17 @@ button:hover svg .main-color {
   flex-shrink: 0;
 }
 
+.subscriptions.subscription-reorder-enabled .subscription-drag-handle {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.subscriptions.is-sorting .subscription-drag-handle,
+.subscriptions.subscription-reorder-enabled .subscription-drag-handle:active {
+  cursor: grabbing;
+}
+
 .subscriptions.subscription-columns {
   display: grid;
   align-items: start;
@@ -567,6 +585,14 @@ button:hover svg .main-color {
   background-color: var(--box-background-color);
   box-shadow: var(--box-shadow);
   border-radius: 16px;
+}
+
+.subscription-container.sortable-ghost {
+  opacity: 0.35;
+}
+
+.subscription-container.sortable-drag {
+  z-index: 20;
 }
 
 .subscription-container>.mobile-actions {
@@ -679,13 +705,44 @@ button.mobile-action-renew {
 
 .subscriptions.subscription-columns.subscription-columns-multi .subscription-main {
   display: grid;
-  grid-template-columns: minmax(44px, 58px) minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(44px, 58px) minmax(0, 1fr) auto;
   grid-template-areas:
-    "logo name actions"
-    "logo cycle payment"
-    "logo next price";
+    "drag logo name actions"
+    "drag logo cycle payment"
+    "drag logo next price";
   align-items: center;
   gap: 10px 14px;
+}
+
+.subscription-drag-handle {
+  width: 32px;
+  min-width: 32px;
+  height: 48px;
+  border: 1px solid rgba(var(--main-color-rgb), 0.12);
+  border-radius: 12px;
+  background-color: rgba(var(--main-color-rgb), 0.05);
+  color: var(--main-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.subscription-drag-handle:hover {
+  background-color: rgba(var(--main-color-rgb), 0.12);
+  border-color: rgba(var(--main-color-rgb), 0.28);
+}
+
+.subscription-drag-handle i {
+  font-size: 16px;
+}
+
+.subscriptions.subscription-columns.subscription-columns-multi .subscription-drag-handle {
+  grid-area: drag;
+  justify-self: start;
 }
 
 .subscription-main .actions-expand {
@@ -877,7 +934,23 @@ button.mobile-action-renew {
 .subscription .next {
   flex-basis: 16%;
   flex-grow: 1;
-  text-transform: capitalize;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  text-align: left;
+  text-transform: none;
+}
+
+.subscription .next .next-label {
+  font-size: 12px;
+  line-height: 1.15;
+  color: #777;
+}
+
+.subscription .next .next-value {
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .subscriptions.subscription-columns.subscription-columns-multi .subscription .next {
@@ -1123,6 +1196,19 @@ button.mobile-action-renew {
   .subscriptions.subscription-columns.subscription-columns-2,
   .subscriptions.subscription-columns.subscription-columns-3 {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .subscriptions-page-layout .top-actions {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .subscription-drag-handle {
+    width: 28px;
+    min-width: 28px;
+    height: 42px;
   }
 }
 

@@ -105,18 +105,23 @@ function formatPrice($price, $currencyCode, $currencies)
 
 function formatDate($date, $lang = 'en')
 {
-    $currentYear = date('Y');
-    $dateYear = date('Y', strtotime($date));
-
-    // Determine the date format based on whether the year matches the current year
-    $dateFormat = ($currentYear == $dateYear) ? 'MMM d' : 'MMM yyyy';
-
-    // Validate the locale and fallback to 'en' if unsupported
-    if (!in_array($lang, ResourceBundle::getLocales(''))) {
-        $lang = 'en'; // Fallback to English
+    if (!$date) {
+        return '';
     }
 
-    // Create an IntlDateFormatter instance for the specified language
+    $dateTime = new DateTime($date);
+    $normalizedLang = strtolower(str_replace('-', '_', (string) $lang));
+
+    if ($normalizedLang === 'zh_cn' || $normalizedLang === 'zh_tw') {
+        return $dateTime->format('Y年n月j日');
+    }
+
+    $dateFormat = 'MMM d, yyyy';
+
+    if (!in_array($lang, ResourceBundle::getLocales(''))) {
+        $lang = 'en';
+    }
+
     $formatter = new IntlDateFormatter(
         $lang,
         IntlDateFormatter::SHORT,
@@ -126,10 +131,7 @@ function formatDate($date, $lang = 'en')
         $dateFormat
     );
 
-    // Format the date
-    $formattedDate = $formatter->format(new DateTime($date));
-
-    return $formattedDate;
+    return $formatter->format($dateTime);
 }
 
 function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n, $colorTheme, $imagePath, $disabledToBottom, $mobileNavigation, $showSubscriptionProgress, $currencies, $lang)
@@ -180,7 +182,7 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
             $currentPaymentMethodId = $subscription['payment_method_id'];
         }
         ?>
-        <div class="subscription-container">
+        <div class="subscription-container" data-id="<?= (int) $subscription['id'] ?>">
             <?php
             if ($mobileNavigation === 'true') {
                 ?>
@@ -231,6 +233,13 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                 onClick="toggleOpenSubscription(<?= $subscription['id'] ?>)" data-id="<?= $subscription['id'] ?>"
                 data-name="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>">
                 <div class="subscription-main">
+                    <button type="button" class="subscription-drag-handle"
+                        title="<?= translate('subscription_reorder_handle_title', $i18n) ?>"
+                        aria-label="<?= translate('subscription_reorder_handle_title', $i18n) ?>"
+                        onMouseDown="event.stopPropagation()" onTouchStart="event.stopPropagation()"
+                        onClick="event.stopPropagation()">
+                        <i class="fa-solid fa-grip-vertical"></i>
+                    </button>
                     <span class="logo <?= !$hasLogo ? 'hideOnMobile' : '' ?>">
                         <?php
                         if ($hasLogo) {
@@ -254,7 +263,10 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                         ?>
                         <?= $subscription['billing_cycle'] ?>
                     </span>
-                    <span class="next"><?= formatDate($subscription['next_payment'], $lang) ?></span>
+                    <span class="next" title="<?= translate('theoretical_renewal_date', $i18n) ?>">
+                        <span class="next-label"><?= translate('theoretical_renewal_date', $i18n) ?></span>
+                        <span class="next-value"><?= formatDate($subscription['next_payment'], $lang) ?></span>
+                    </span>
                     <span class="price">
                         <span class="value">
                             <?= formatPrice($subscription['price'], $subscription['currency_code'], $currencies) ?>

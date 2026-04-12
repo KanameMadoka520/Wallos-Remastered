@@ -32,7 +32,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
 
 
-  $sort = "next_payment";
+  $sort = "manual_order";
   $sortOrder = $sort;
   $order = "ASC";
 
@@ -99,7 +99,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   }
 
   $sortOrder = $sort;
-  $allowedSortCriteria = ['name', 'id', 'next_payment', 'price', 'payer_user_id', 'category_id', 'payment_method_id', 'inactive', 'alphanumeric', 'renewal_type'];
+  $allowedSortCriteria = ['manual_order', 'name', 'id', 'next_payment', 'price', 'payer_user_id', 'category_id', 'payment_method_id', 'inactive', 'alphanumeric', 'renewal_type'];
   $order = ($sort == "price" || $sort == "id") ? "DESC" : "ASC";
 
   if ($sort == "alphanumeric") {
@@ -107,11 +107,15 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   }
 
   if (!in_array($sort, $allowedSortCriteria)) {
-    $sort = "next_payment";
+    $sort = "manual_order";
   }
 
   if ($sort == "renewal_type") {
     $sort = "auto_renew";
+  }
+
+  if ($sort == "manual_order") {
+    $sort = "sort_order";
   }
 
   $orderByClauses = [];
@@ -131,7 +135,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     }
   }
 
-  if ($sort != "next_payment") {
+  if ($sort != "next_payment" && $sort != "sort_order") {
     $orderByClauses[] = "next_payment ASC";
   }
 

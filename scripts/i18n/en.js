@@ -83,4 +83,6 @@ let i18n = {
   subscription_image_upload_progress_uploading: "Uploading images to the server",
   subscription_image_upload_progress_processing: "Generating compressed previews and thumbnails on the server",
   subscription_image_original_loading: "Loading the original image",
+  subscription_reorder_handle_title: "Hold and drag to reorder subscriptions",
+  subscription_reorder_unavailable: "Manual reorder is available only with no search or filters applied",
 };
