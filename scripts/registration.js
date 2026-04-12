@@ -58,6 +58,15 @@ function changeLanguage(selectedLanguage) {
   location.reload();
 }
 
+function syncRegistrationLanguageInput() {
+  var languageInput = document.getElementById('registration-language');
+  var pageLanguageSelect = document.getElementById('public-page-language');
+
+  if (languageInput && pageLanguageSelect) {
+    languageInput.value = pageLanguageSelect.value;
+  }
+}
+
 function runDatabaseMigration() {
   let url = "endpoints/db/migrate.php";
   fetch(url)
@@ -197,4 +206,5 @@ window.onload = function () {
   runDatabaseMigration();
   checkThemeNeedsUpdate();
   enableGoToLoginButton();
+  syncRegistrationLanguageInput();
 };

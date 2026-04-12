@@ -409,6 +409,21 @@ wallos_log_request($db, 0, '');
 <body class="<?= $languages[$lang]['dir'] ?>">
     <div class="content">
         <section class="container">
+            <div class="public-page-toolbar">
+                <div class="public-page-language-switcher">
+                    <label for="public-page-language-login"><?= translate('language', $i18n) ?>:</label>
+                    <select id="public-page-language-login" onchange="changePublicPageLanguage(this.value)">
+                        <?php
+                        foreach ($languages as $code => $languageOption) {
+                            $selected = ($code === $lang) ? 'selected' : '';
+                            ?>
+                            <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
+                            <?php
+                        }
+                        ?>
+                    </select>
+                </div>
+            </div>
             <header>
                 <div class="logo-image" title="Wallos - Subscription Tracker">
                     <?php include "images/siteicons/svg/logo.php"; ?>
