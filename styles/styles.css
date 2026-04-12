@@ -63,6 +63,18 @@ h3 {
   max-width: 1280px;
 }
 
+.contain.contain-wide {
+  width: min(90vw, 1680px);
+  max-width: min(90vw, 1680px);
+}
+
+@media (max-width: 768px) {
+  .contain.contain-wide {
+    width: calc(100% - 24px);
+    max-width: none;
+  }
+}
+
 .custom-edition-banner {
   border-bottom: 1px solid var(--box-border-color);
   background: linear-gradient(135deg,
@@ -465,8 +477,17 @@ button:hover svg .main-color {
   width: auto;
 }
 
+.subscriptions-page-layout .top-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .top-actions .search {
   flex-grow: 1;
+}
+
+.subscriptions-page-layout .top-actions .search {
+  min-width: min(100%, 280px);
 }
 
 .top-actions .search>input[type="text"] {
@@ -511,11 +532,39 @@ button:hover svg .main-color {
   font-size: 17px;
 }
 
+.subscription-column-toggle {
+  flex-shrink: 0;
+}
+
+.subscriptions.subscription-columns {
+  display: grid;
+  align-items: start;
+  gap: 18px;
+}
+
+.subscriptions.subscription-columns.subscription-columns-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.subscriptions.subscription-columns.subscription-columns-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.subscriptions.subscription-columns>.subscription-list-title,
+.subscriptions.subscription-columns>.empty-page,
+.subscriptions.subscription-columns>.no-matching-subscriptions {
+  grid-column: 1 / -1;
+}
+
 .subscription-container {
   position: relative;
   background-color: var(--box-background-color);
   box-shadow: var(--box-shadow);
   border-radius: 16px;
+}
+
+.subscriptions.subscription-columns .subscription-container {
+  height: 100%;
 }
 
 .subscription-container>.mobile-actions {
@@ -583,6 +632,10 @@ button.mobile-action-renew {
   justify-content: center;
 }
 
+.subscriptions.subscription-columns .subscription {
+  min-height: 100%;
+}
+
 .subscription-container.hide {
   display: none;
 }
@@ -626,6 +679,17 @@ button.mobile-action-renew {
   min-height: 40px;
 }
 
+.subscriptions.subscription-columns .subscription-main {
+  display: grid;
+  grid-template-columns: minmax(44px, 58px) minmax(0, 1fr) auto;
+  grid-template-areas:
+    "logo name actions"
+    "logo cycle payment"
+    "logo next price";
+  align-items: center;
+  gap: 10px 14px;
+}
+
 .subscription-main .actions-expand {
   font-size: 21px;
   padding: 8px 16px;
@@ -633,6 +697,13 @@ button.mobile-action-renew {
   background-color: transparent;
   border: none;
   cursor: pointer;
+}
+
+.subscriptions.subscription-columns .subscription-main .actions-expand {
+  grid-area: actions;
+  justify-self: end;
+  align-self: start;
+  padding: 4px 8px;
 }
 
 .subscription-main .actions-expand:hover {
@@ -653,6 +724,12 @@ button.mobile-action-renew {
   border-radius: 16px;
   padding: 0px;
   margin: 0px;
+}
+
+.subscriptions.subscription-columns .subscription-main .actions {
+  right: 0px;
+  top: calc(100% + 8px);
+  z-index: 4;
 }
 
 .rtl .subscription-main .actions {
@@ -699,11 +776,21 @@ button.mobile-action-renew {
   overflow: hidden;
 }
 
+.subscriptions.subscription-columns .subscription-secondary {
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+}
+
 .subscription-notes {
   display: none;
   flex-direction: row;
   padding: 6px 5px;
   overflow: hidden;
+}
+
+.subscriptions.subscription-columns .subscription-notes>span {
+  align-items: flex-start;
 }
 
 .subscription-main .actions svg {
@@ -727,8 +814,20 @@ button.mobile-action-renew {
   margin: 0px;
 }
 
+.subscriptions.subscription-columns .subscription-main>span,
+.subscriptions.subscription-columns .subscription-secondary>span {
+  justify-content: flex-start;
+  text-align: left;
+}
+
 .subscription .logo {
   flex-basis: var(--logo-flex-basis);
+}
+
+.subscriptions.subscription-columns .subscription .logo {
+  grid-area: logo;
+  flex-basis: auto;
+  align-self: start;
 }
 
 .subscription .logo img {
@@ -749,11 +848,25 @@ button.mobile-action-renew {
   font-weight: 600;
 }
 
+.subscriptions.subscription-columns .subscription .name {
+  grid-area: name;
+  flex-basis: auto;
+  min-width: 0;
+  white-space: normal;
+}
+
 .subscription .cycle {
   flex-basis: 16%;
   flex-grow: 1;
   flex-direction: row;
   align-items: center;
+}
+
+.subscriptions.subscription-columns .subscription .cycle {
+  grid-area: cycle;
+  flex-basis: auto;
+  flex-grow: 0;
+  min-width: 0;
 }
 
 .subscription .cycle>svg {
@@ -769,11 +882,24 @@ button.mobile-action-renew {
   text-transform: capitalize;
 }
 
+.subscriptions.subscription-columns .subscription .next {
+  grid-area: next;
+  flex-basis: auto;
+  flex-grow: 0;
+  min-width: 0;
+}
+
 .subscription .payment_method {
   margin-left: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.subscriptions.subscription-columns .subscription .payment_method {
+  grid-area: payment;
+  margin-left: 0px;
+  justify-self: end;
 }
 
 .subscription .payment_method img {
@@ -793,6 +919,13 @@ button.mobile-action-renew {
   flex-basis: 8%;
   justify-content: center;
   flex-direction: row;
+}
+
+.subscriptions.subscription-columns .subscription .price {
+  grid-area: price;
+  flex-basis: auto;
+  justify-self: end;
+  text-align: right;
 }
 
 .subscription .price .original_price {
@@ -822,10 +955,20 @@ button.mobile-action-renew {
   gap: 10px;
 }
 
+.subscriptions.subscription-columns .subscription-secondary>span {
+  flex: 1 1 calc(50% - 10px);
+  min-width: min(100%, 180px);
+}
+
 .subscription-secondary>.url {
   flex-basis: 20px;
   margin-left: auto;
   cursor: pointer;
+}
+
+.subscriptions.subscription-columns .subscription-secondary>.url {
+  flex: 0 0 auto;
+  margin-left: 0px;
 }
 
 .rtl .subscription-secondary>.url {
@@ -969,6 +1112,19 @@ button.mobile-action-renew {
 @media (max-width: 375px) {
   .subscription-main>.cycle {
     display: none;
+  }
+}
+
+@media (max-width: 1320px) {
+  .subscriptions.subscription-columns.subscription-columns-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .subscriptions.subscription-columns.subscription-columns-2,
+  .subscriptions.subscription-columns.subscription-columns-3 {
+    grid-template-columns: 1fr;
   }
 }
 
