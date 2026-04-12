@@ -305,6 +305,7 @@ wallos_log_request($db, 0, '');
         window.update_theme_settings = "<?= $updateThemeSettings ?>";
         window.colorTheme = "<?= $colorTheme ?>";
     </script>
+    <script type="text/javascript" src="scripts/decorative-background.js?<?= $version ?>"></script>
     <script type="text/javascript" src="scripts/registration.js?<?= $registrationJsVersion ?>"></script>
 </head>
 

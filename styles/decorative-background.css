@@ -1,23 +1,40 @@
 body.decorative-background-enabled {
     background-image:
-        radial-gradient(circle at top left, rgba(var(--main-color-rgb), 0.12), transparent 34%),
-        radial-gradient(circle at bottom right, rgba(var(--accent-color-rgb), 0.14), transparent 38%),
-        linear-gradient(135deg, rgba(var(--main-color-rgb), 0.04), transparent 42%);
+        radial-gradient(circle at top left, rgba(var(--main-color-rgb), 0.14), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(var(--accent-color-rgb), 0.18), transparent 40%),
+        linear-gradient(135deg, rgba(var(--main-color-rgb), 0.06), transparent 42%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 38%);
     background-attachment: fixed;
     position: relative;
 }
 
-body.decorative-background-enabled > header,
+body.decorative-background-enabled > header {
+    position: relative;
+    z-index: 40;
+}
+
+body.decorative-background-enabled > .custom-edition-banner {
+    position: relative;
+    z-index: 30;
+}
+
 body.decorative-background-enabled > main,
-body.decorative-background-enabled > .content,
-body.decorative-background-enabled > .custom-edition-banner,
+body.decorative-background-enabled > .content {
+    position: relative;
+    z-index: 10;
+}
+
 body.decorative-background-enabled > .mobile-nav {
     position: relative;
-    z-index: 1;
+    z-index: 50;
 }
 
 body.decorative-background-enabled > .toast {
     z-index: 2000;
+}
+
+body.decorative-background-enabled .dropdown-content {
+    z-index: 120;
 }
 
 body.decorative-background-disabled .wallos-decorative-background {
@@ -35,12 +52,31 @@ body.decorative-background-disabled .wallos-decorative-background {
 .wallos-bg-grid,
 .wallos-bg-grid::before,
 .wallos-bg-grid::after,
+.wallos-bg-flow,
+.wallos-bg-noise,
 .wallos-bg-glow,
 .wallos-bg-orbit,
 .wallos-bg-plate,
+.wallos-bg-float-layer,
 .wallos-bg-token-layer {
     position: absolute;
     inset: 0;
+}
+
+.wallos-bg-flow {
+    width: 100%;
+    height: 100%;
+    opacity: 0.95;
+}
+
+.wallos-bg-noise {
+    background-image:
+        radial-gradient(circle at 20% 24%, rgba(201, 74, 42, 0.08) 0 1px, transparent 1px),
+        radial-gradient(circle at 72% 58%, rgba(0, 123, 255, 0.06) 0 1.2px, transparent 1.2px),
+        radial-gradient(circle at 32% 82%, rgba(26, 26, 26, 0.06) 0 0.9px, transparent 0.9px);
+    background-size: 120px 120px, 160px 160px, 110px 110px;
+    mix-blend-mode: multiply;
+    opacity: 0.28;
 }
 
 .wallos-bg-grid::before,
@@ -54,7 +90,8 @@ body.decorative-background-disabled .wallos-decorative-background {
     background-image:
         linear-gradient(rgba(var(--text-color-rgb), 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(var(--text-color-rgb), 0.03) 1px, transparent 1px);
-    background-size: 78px 78px;
+    background-size: 72px 72px;
+    transform: rotate(-10deg) scale(1.08);
     mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.8), transparent 76%);
 }
 
@@ -63,6 +100,7 @@ body.decorative-background-disabled .wallos-decorative-background {
         radial-gradient(circle, rgba(var(--main-color-rgb), 0.16) 1.4px, transparent 1.4px);
     background-size: 36px 36px;
     opacity: 0.22;
+    transform: rotate(12deg) scale(1.08);
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.88), transparent 88%);
 }
 
@@ -115,6 +153,15 @@ body.decorative-background-disabled .wallos-decorative-background {
     animation-duration: 36s;
 }
 
+.wallos-bg-orbit-c {
+    top: 24%;
+    left: 26%;
+    width: 180px;
+    height: 180px;
+    border-color: rgba(201, 74, 42, 0.18);
+    animation-duration: 26s;
+}
+
 .wallos-bg-plate {
     border: 1px solid rgba(var(--text-color-rgb), 0.06);
     background: linear-gradient(135deg, rgba(var(--box-background-color-rgb), 0.16), rgba(var(--main-color-rgb), 0.04));
@@ -140,6 +187,49 @@ body.decorative-background-disabled .wallos-decorative-background {
     transform: rotate(16deg);
 }
 
+.wallos-bg-plate-c {
+    top: 32%;
+    left: 48%;
+    width: 180px;
+    height: 86px;
+    border-radius: 20px;
+    transform: rotate(-18deg);
+    background: linear-gradient(135deg, rgba(201, 74, 42, 0.08), rgba(var(--box-background-color-rgb), 0.12));
+}
+
+.wallos-bg-float-layer {
+    overflow: hidden;
+}
+
+.wallos-bg-float {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+    color: rgba(var(--text-color-rgb), 0.1);
+    font-family: "Courier New", monospace;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.wallos-bg-float.is-icon {
+    font-family: inherit;
+}
+
+.wallos-bg-float.is-accent {
+    color: rgba(201, 74, 42, 0.18);
+}
+
+.wallos-bg-float.is-dim {
+    color: rgba(var(--text-color-rgb), 0.06);
+}
+
 .wallos-bg-token {
     position: absolute;
     left: var(--x);
@@ -160,7 +250,8 @@ body.decorative-background-disabled .wallos-decorative-background {
     padding: 8px 12px;
     border-radius: 999px;
     border: 1px solid rgba(var(--text-color-rgb), 0.06);
-    background: rgba(var(--box-background-color-rgb), 0.16);
+    background: rgba(var(--box-background-color-rgb), 0.18);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
     font-size: clamp(16px, 1.8vw, 28px);
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -181,6 +272,14 @@ body.dark .wallos-bg-token {
 body.dark .wallos-bg-token.is-text {
     border-color: rgba(var(--text-color-rgb), 0.08);
     background: rgba(var(--box-background-color-rgb), 0.12);
+}
+
+body.dark .wallos-bg-float {
+    color: rgba(var(--text-color-rgb), 0.16);
+}
+
+body.dark .wallos-bg-float.is-accent {
+    color: rgba(201, 74, 42, 0.24);
 }
 
 body.dark .wallos-bg-grid::before {
@@ -235,8 +334,16 @@ body.dark .wallos-bg-grid::before {
         top: 62%;
     }
 
+    .wallos-bg-orbit-c {
+        width: 120px;
+        height: 120px;
+        top: 28%;
+        left: 42%;
+    }
+
     .wallos-bg-plate-a,
-    .wallos-bg-plate-b {
+    .wallos-bg-plate-b,
+    .wallos-bg-plate-c {
         opacity: 0.6;
     }
 }
