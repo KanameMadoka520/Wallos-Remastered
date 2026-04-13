@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/custom_edition.php';
+
 $query = "SELECT * FROM settings WHERE user_id = :userId";
 $stmt = $db->prepare($query);
 $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
@@ -61,12 +63,14 @@ if ($adminSettings !== false) {
     $settings['disableLogin'] = $adminSettings['login_disabled'];
     $settings['update_notification'] = $adminSettings['update_notification'];
     $settings['latest_version'] = $adminSettings['latest_version'];
-    $settings['custom_edition_title'] = trim((string) ($adminSettings['custom_edition_title'] ?? '')) !== ''
-        ? $adminSettings['custom_edition_title']
-        : 'Remastered';
-    $settings['custom_edition_subtitle'] = trim((string) ($adminSettings['custom_edition_subtitle'] ?? '')) !== ''
-        ? $adminSettings['custom_edition_subtitle']
-        : '基于wallos原版深度魔改';
+    $settings['custom_edition_title'] = wallos_normalize_custom_edition_value(
+        $adminSettings['custom_edition_title'] ?? '',
+        'Remastered'
+    );
+    $settings['custom_edition_subtitle'] = wallos_normalize_custom_edition_value(
+        $adminSettings['custom_edition_subtitle'] ?? '',
+        '基于wallos原版深度魔改'
+    );
 }
 
 ?>
