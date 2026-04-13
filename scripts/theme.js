@@ -238,8 +238,8 @@ function resetCustomColors() {
         document.documentElement.style.removeProperty("--main-color");
         document.documentElement.style.removeProperty("--accent-color");
         document.documentElement.style.removeProperty("--hover-color");
-        document.documentElement.style.removeProperty("--text-color");
-        document.documentElement.style.removeProperty("--text-color-rgb");
+        document.documentElement.style.removeProperty("--wallos-dynamic-text-color");
+        document.documentElement.style.removeProperty("--wallos-dynamic-text-color-rgb");
 
         document.getElementById("mainColor").value = "#FFFFFF";
         document.getElementById("accentColor").value = "#FFFFFF";
@@ -283,8 +283,8 @@ function saveCustomColors() {
         document.documentElement.style.setProperty('--main-color', mainColor);
         document.documentElement.style.setProperty('--accent-color', accentColor);
         document.documentElement.style.setProperty('--hover-color', hoverColor);
-        document.documentElement.style.setProperty('--text-color', textColor);
-        document.documentElement.style.setProperty('--text-color-rgb', hexToRgbString(textColor));
+        document.documentElement.style.setProperty('--wallos-dynamic-text-color', textColor);
+        document.documentElement.style.setProperty('--wallos-dynamic-text-color-rgb', hexToRgbString(textColor));
       } else {
         showErrorMessage(data.message);
       }
