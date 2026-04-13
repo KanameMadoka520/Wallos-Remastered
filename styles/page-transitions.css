@@ -1,6 +1,9 @@
 :root {
-    --wallos-page-transition-duration-in: 420ms;
-    --wallos-page-transition-duration-out: 760ms;
+    --wallos-page-transition-duration-in: 520ms;
+    --wallos-page-transition-duration-out: 920ms;
+    --wallos-page-transition-ease-in: cubic-bezier(0.19, 1, 0.22, 1);
+    --wallos-page-transition-ease-out: cubic-bezier(0.77, 0, 0.18, 1);
+    --wallos-page-transition-ease-float: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .wallos-page-transition {
@@ -52,12 +55,12 @@
 
 .wallos-page-transition-panel-left {
     left: -22vw;
-    transform: translateX(-100%) skewX(-18deg);
+    transform: translateX(-102%) skewX(-18deg) scaleX(1.02);
 }
 
 .wallos-page-transition-panel-right {
     right: -22vw;
-    transform: translateX(100%) skewX(-18deg);
+    transform: translateX(102%) skewX(-18deg) scaleX(1.02);
 }
 
 .wallos-page-transition-panel-top,
@@ -69,12 +72,12 @@
 
 .wallos-page-transition-panel-top {
     top: -18vh;
-    transform: translateY(-100%) skewY(-4deg);
+    transform: translateY(-104%) skewY(-4deg);
 }
 
 .wallos-page-transition-panel-bottom {
     bottom: -18vh;
-    transform: translateY(100%) skewY(-4deg);
+    transform: translateY(104%) skewY(-4deg);
 }
 
 .wallos-page-transition-beam {
@@ -83,7 +86,7 @@
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
     mix-blend-mode: screen;
     opacity: 0;
-    transform: skewX(-24deg);
+    transform: skewX(-24deg) scaleX(0.9);
 }
 
 .wallos-page-transition-rings {
@@ -187,18 +190,18 @@ html.wallos-page-transition-enabled .wallos-page-transition {
 }
 
 html.wallos-page-transition-resume {
-    --wallos-page-transition-duration-in: 180ms;
-    --wallos-page-transition-duration-out: 320ms;
+    --wallos-page-transition-duration-in: 260ms;
+    --wallos-page-transition-duration-out: 460ms;
 }
 
 html.wallos-page-transition-loading .wallos-page-transition-panel-left,
 html.wallos-page-transition-leaving .wallos-page-transition-panel-left {
-    transform: translateX(0) skewX(-18deg);
+    transform: translateX(0) skewX(-18deg) scaleX(1);
 }
 
 html.wallos-page-transition-loading .wallos-page-transition-panel-right,
 html.wallos-page-transition-leaving .wallos-page-transition-panel-right {
-    transform: translateX(0) skewX(-18deg);
+    transform: translateX(0) skewX(-18deg) scaleX(1);
 }
 
 html.wallos-page-transition-loading .wallos-page-transition-panel-top,
@@ -213,32 +216,18 @@ html.wallos-page-transition-leaving .wallos-page-transition-panel-bottom {
 
 html.wallos-page-transition-loading .wallos-page-transition-center,
 html.wallos-page-transition-leaving .wallos-page-transition-center {
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(0) scale(1);
     opacity: 1;
 }
 
-html.wallos-page-transition-resume .wallos-page-transition-kicker,
-html.wallos-page-transition-resume .wallos-page-transition-subtitle,
-html.wallos-page-transition-resume .wallos-page-transition-status,
-html.wallos-page-transition-resume .wallos-page-transition-accent,
-html.wallos-page-transition-resume .wallos-page-transition-progress {
-    display: none;
-}
-
-html.wallos-page-transition-resume.wallos-page-transition-loading .wallos-page-transition-center,
-html.wallos-page-transition-resume.wallos-page-transition-leaving .wallos-page-transition-center {
-    transform: translateX(-50%) translateY(8px);
-    opacity: 0;
-}
-
 html.wallos-page-transition-resume .wallos-page-transition-rings span {
-    animation-duration: 0.7s;
+    animation-duration: 0.8s;
 }
 
 html.wallos-page-transition-loading .wallos-page-transition-beam,
 html.wallos-page-transition-leaving .wallos-page-transition-beam {
     opacity: 1;
-    transform: translateX(170vw) skewX(-24deg);
+    transform: translateX(170vw) skewX(-24deg) scaleX(1);
 }
 
 html.wallos-page-transition-loading .wallos-page-transition-rings span,
@@ -251,40 +240,98 @@ html.wallos-page-transition-leaving .wallos-page-transition-progress span {
     animation: wallosPageTransitionProgress 1.3s ease-in-out infinite;
 }
 
-html.wallos-page-transition-loading .wallos-page-transition-panel,
-html.wallos-page-transition-loading .wallos-page-transition-center,
-html.wallos-page-transition-loading .wallos-page-transition-beam,
-html.wallos-page-transition-loading .wallos-page-transition-grid,
-html.wallos-page-transition-leaving .wallos-page-transition-panel,
-html.wallos-page-transition-leaving .wallos-page-transition-center,
-html.wallos-page-transition-leaving .wallos-page-transition-beam,
-html.wallos-page-transition-leaving .wallos-page-transition-grid {
-    transition:
-        transform var(--wallos-page-transition-duration-in) cubic-bezier(0.22, 1, 0.36, 1),
-        opacity var(--wallos-page-transition-duration-in) ease;
+.wallos-page-transition-panel-left,
+.wallos-page-transition-panel-right,
+.wallos-page-transition-panel-top,
+.wallos-page-transition-panel-bottom,
+.wallos-page-transition-center,
+.wallos-page-transition-beam,
+.wallos-page-transition-grid {
+    will-change: transform, opacity;
 }
 
-html.wallos-page-transition-revealed .wallos-page-transition-panel,
-html.wallos-page-transition-revealed .wallos-page-transition-center,
-html.wallos-page-transition-revealed .wallos-page-transition-beam,
+html.wallos-page-transition-loading .wallos-page-transition-panel-left,
+html.wallos-page-transition-leaving .wallos-page-transition-panel-left,
+html.wallos-page-transition-loading .wallos-page-transition-panel-right,
+html.wallos-page-transition-leaving .wallos-page-transition-panel-right {
+    transition:
+        transform calc(var(--wallos-page-transition-duration-in) * 0.96) var(--wallos-page-transition-ease-in),
+        opacity calc(var(--wallos-page-transition-duration-in) * 0.7) ease;
+}
+
+html.wallos-page-transition-loading .wallos-page-transition-panel-top,
+html.wallos-page-transition-leaving .wallos-page-transition-panel-top,
+html.wallos-page-transition-loading .wallos-page-transition-panel-bottom,
+html.wallos-page-transition-leaving .wallos-page-transition-panel-bottom {
+    transition:
+        transform calc(var(--wallos-page-transition-duration-in) * 0.82) var(--wallos-page-transition-ease-in) 36ms,
+        opacity calc(var(--wallos-page-transition-duration-in) * 0.62) ease 36ms;
+}
+
+html.wallos-page-transition-loading .wallos-page-transition-center,
+html.wallos-page-transition-leaving .wallos-page-transition-center {
+    transition:
+        transform calc(var(--wallos-page-transition-duration-in) * 0.78) var(--wallos-page-transition-ease-float) 64ms,
+        opacity calc(var(--wallos-page-transition-duration-in) * 0.58) ease 64ms;
+}
+
+html.wallos-page-transition-loading .wallos-page-transition-beam,
+html.wallos-page-transition-leaving .wallos-page-transition-beam {
+    transition:
+        transform calc(var(--wallos-page-transition-duration-in) * 1.18) cubic-bezier(0.12, 0.86, 0.2, 1) 42ms,
+        opacity calc(var(--wallos-page-transition-duration-in) * 0.78) ease;
+}
+
+html.wallos-page-transition-loading .wallos-page-transition-grid,
+html.wallos-page-transition-leaving .wallos-page-transition-grid {
+    transition:
+        transform calc(var(--wallos-page-transition-duration-in) * 0.94) var(--wallos-page-transition-ease-float),
+        opacity calc(var(--wallos-page-transition-duration-in) * 0.74) ease;
+}
+
+html.wallos-page-transition-revealed .wallos-page-transition-panel-left,
+html.wallos-page-transition-revealed .wallos-page-transition-panel-right {
+    transition:
+        transform calc(var(--wallos-page-transition-duration-out) * 0.94) var(--wallos-page-transition-ease-out),
+        opacity calc(var(--wallos-page-transition-duration-out) * 0.54) ease;
+}
+
+html.wallos-page-transition-revealed .wallos-page-transition-panel-top,
+html.wallos-page-transition-revealed .wallos-page-transition-panel-bottom {
+    transition:
+        transform calc(var(--wallos-page-transition-duration-out) * 0.76) var(--wallos-page-transition-ease-out),
+        opacity calc(var(--wallos-page-transition-duration-out) * 0.42) ease;
+}
+
+html.wallos-page-transition-revealed .wallos-page-transition-center {
+    transition:
+        transform calc(var(--wallos-page-transition-duration-out) * 0.74) var(--wallos-page-transition-ease-float),
+        opacity calc(var(--wallos-page-transition-duration-out) * 0.42) ease;
+}
+
+html.wallos-page-transition-revealed .wallos-page-transition-beam {
+    transition:
+        transform calc(var(--wallos-page-transition-duration-out) * 0.82) cubic-bezier(0.19, 0.83, 0.27, 1),
+        opacity calc(var(--wallos-page-transition-duration-out) * 0.36) ease;
+}
+
 html.wallos-page-transition-revealed .wallos-page-transition-grid {
     transition:
-        transform var(--wallos-page-transition-duration-out) cubic-bezier(0.22, 1, 0.36, 1),
-        opacity var(--wallos-page-transition-duration-out) ease,
-        filter var(--wallos-page-transition-duration-out) ease;
+        transform calc(var(--wallos-page-transition-duration-out) * 0.88) var(--wallos-page-transition-ease-float),
+        opacity calc(var(--wallos-page-transition-duration-out) * 0.4) ease;
 }
 
 html.wallos-page-transition-revealed .wallos-page-transition {
     opacity: 0;
-    transition: opacity 280ms ease 520ms;
+    transition: opacity 320ms ease 620ms;
 }
 
 html.wallos-page-transition-revealed .wallos-page-transition-panel-left {
-    transform: translateX(-100%) skewX(-18deg);
+    transform: translateX(-102%) skewX(-18deg) scaleX(1.02);
 }
 
 html.wallos-page-transition-revealed .wallos-page-transition-panel-right {
-    transform: translateX(100%) skewX(-18deg);
+    transform: translateX(102%) skewX(-18deg) scaleX(1.02);
 }
 
 html.wallos-page-transition-revealed .wallos-page-transition-panel-top {
@@ -296,12 +343,12 @@ html.wallos-page-transition-revealed .wallos-page-transition-panel-bottom {
 }
 
 html.wallos-page-transition-revealed .wallos-page-transition-center {
-    transform: translateX(-50%) translateY(-36px);
+    transform: translateX(-50%) translateY(-52px) scale(0.985);
     opacity: 0;
 }
 
 html.wallos-page-transition-resume.wallos-page-transition-revealed .wallos-page-transition-center {
-    transform: translateX(-50%) translateY(-10px);
+    transform: translateX(-50%) translateY(-22px) scale(0.992);
     opacity: 0;
 }
 
@@ -312,7 +359,7 @@ html.wallos-page-transition-revealed .wallos-page-transition-grid {
 
 html.wallos-page-transition-revealed .wallos-page-transition-beam {
     opacity: 0;
-    transform: translateX(200vw) skewX(-24deg);
+    transform: translateX(204vw) skewX(-24deg) scaleX(1.02);
 }
 
 html.wallos-page-transition-revealed .wallos-page-transition-rings span {
@@ -327,149 +374,6 @@ body.dynamic-wallpaper-enabled .wallos-page-transition-backdrop {
 
 body.dynamic-wallpaper-enabled .wallos-page-transition-grid {
     opacity: 0.3;
-}
-
-html[data-page-transition-style="nova"] .wallos-page-transition-backdrop {
-    background:
-        radial-gradient(circle at 50% 46%, rgba(142, 193, 255, 0.32), rgba(12, 15, 34, 0.96) 52%),
-        radial-gradient(circle at 50% 50%, rgba(153, 94, 255, 0.18), transparent 62%),
-        linear-gradient(135deg, rgba(8, 10, 24, 0.98), rgba(21, 17, 44, 0.96));
-}
-
-html[data-page-transition-style="nova"] .wallos-page-transition-panel-left,
-html[data-page-transition-style="nova"] .wallos-page-transition-panel-right {
-    width: 68vw;
-    background: radial-gradient(circle at center, rgba(130, 180, 255, 0.18), rgba(8, 12, 24, 0.96) 70%);
-}
-
-html[data-page-transition-style="nova"] .wallos-page-transition-panel-top,
-html[data-page-transition-style="nova"] .wallos-page-transition-panel-bottom {
-    opacity: 0.3;
-}
-
-html[data-page-transition-style="nova"] .wallos-page-transition-grid {
-    opacity: 0.18;
-    background-size: 54px 54px;
-}
-
-html[data-page-transition-style="nova"] .wallos-page-transition-rings span:nth-child(1) {
-    width: 220px;
-    height: 220px;
-}
-
-html[data-page-transition-style="nova"] .wallos-page-transition-rings span:nth-child(2) {
-    width: 300px;
-    height: 300px;
-}
-
-html[data-page-transition-style="nova"] .wallos-page-transition-rings span:nth-child(3) {
-    width: 390px;
-    height: 390px;
-}
-
-html[data-page-transition-style="nova"] .wallos-page-transition-beam {
-    width: 34vw;
-    background: linear-gradient(90deg, transparent, rgba(163, 215, 255, 0.86), rgba(215, 173, 255, 0.76), transparent);
-}
-
-html[data-page-transition-style="scanline"] .wallos-page-transition-backdrop {
-    background:
-        linear-gradient(180deg, rgba(4, 12, 24, 0.98), rgba(3, 6, 18, 0.94)),
-        linear-gradient(90deg, rgba(0, 217, 255, 0.12), transparent 28%, transparent 72%, rgba(0, 217, 255, 0.12));
-}
-
-html[data-page-transition-style="scanline"] .wallos-page-transition-grid {
-    opacity: 0.5;
-    background-image:
-        linear-gradient(rgba(74, 231, 255, 0.08) 1px, transparent 1px),
-        linear-gradient(180deg, transparent 0, transparent 6px, rgba(255, 255, 255, 0.04) 7px, transparent 8px);
-    background-size: 34px 34px, 100% 12px;
-}
-
-html[data-page-transition-style="scanline"] .wallos-page-transition-panel-left,
-html[data-page-transition-style="scanline"] .wallos-page-transition-panel-right {
-    width: 22vw;
-    background: linear-gradient(180deg, rgba(10, 40, 60, 0.88), rgba(2, 10, 20, 0.98));
-}
-
-html[data-page-transition-style="scanline"] .wallos-page-transition-panel-top,
-html[data-page-transition-style="scanline"] .wallos-page-transition-panel-bottom {
-    height: 38vh;
-    background: linear-gradient(180deg, rgba(10, 52, 77, 0.88), rgba(4, 9, 18, 0.98));
-}
-
-html[data-page-transition-style="scanline"] .wallos-page-transition-beam {
-    inset: 50% 0 auto 0;
-    width: 100%;
-    height: 16px;
-    transform: translateY(-50%) scaleX(0);
-    background: linear-gradient(90deg, transparent, rgba(126, 255, 252, 0.92), transparent);
-}
-
-html[data-page-transition-style="scanline"] .wallos-page-transition-loading .wallos-page-transition-beam,
-html[data-page-transition-style="scanline"] .wallos-page-transition-leaving .wallos-page-transition-beam {
-    opacity: 1;
-    transform: translateY(-50%) scaleX(1);
-}
-
-html[data-page-transition-style="scanline"] .wallos-page-transition-revealed .wallos-page-transition-beam {
-    opacity: 0;
-    transform: translateY(-50%) scaleX(1.18);
-}
-
-html[data-page-transition-style="scanline"] .wallos-page-transition-rings {
-    display: none;
-}
-
-html[data-page-transition-style="ribbon"] .wallos-page-transition-backdrop {
-    background:
-        linear-gradient(135deg, rgba(12, 10, 24, 0.98), rgba(22, 10, 36, 0.94)),
-        radial-gradient(circle at 18% 50%, rgba(255, 115, 185, 0.16), transparent 40%),
-        radial-gradient(circle at 82% 50%, rgba(104, 162, 255, 0.16), transparent 40%);
-}
-
-html[data-page-transition-style="ribbon"] .wallos-page-transition-panel-left,
-html[data-page-transition-style="ribbon"] .wallos-page-transition-panel-right {
-    width: 82vw;
-    background: linear-gradient(105deg, rgba(255, 132, 188, 0.2), rgba(14, 12, 28, 0.96) 44%, rgba(113, 168, 255, 0.18));
-}
-
-html[data-page-transition-style="ribbon"] .wallos-page-transition-panel-left {
-    transform: translateX(-100%) skewX(-28deg);
-}
-
-html[data-page-transition-style="ribbon"] .wallos-page-transition-panel-right {
-    transform: translateX(100%) skewX(-28deg);
-}
-
-html[data-page-transition-style="ribbon"] .wallos-page-transition-loading .wallos-page-transition-panel-left,
-html[data-page-transition-style="ribbon"] .wallos-page-transition-leaving .wallos-page-transition-panel-left,
-html[data-page-transition-style="ribbon"] .wallos-page-transition-loading .wallos-page-transition-panel-right,
-html[data-page-transition-style="ribbon"] .wallos-page-transition-leaving .wallos-page-transition-panel-right {
-    transform: translateX(0) skewX(-28deg);
-}
-
-html[data-page-transition-style="ribbon"] .wallos-page-transition-revealed .wallos-page-transition-panel-left {
-    transform: translateX(-100%) skewX(-28deg);
-}
-
-html[data-page-transition-style="ribbon"] .wallos-page-transition-revealed .wallos-page-transition-panel-right {
-    transform: translateX(100%) skewX(-28deg);
-}
-
-html[data-page-transition-style="ribbon"] .wallos-page-transition-panel-top,
-html[data-page-transition-style="ribbon"] .wallos-page-transition-panel-bottom {
-    opacity: 0;
-}
-
-html[data-page-transition-style="ribbon"] .wallos-page-transition-grid {
-    opacity: 0.16;
-    transform: scale(1.22);
-}
-
-html[data-page-transition-style="ribbon"] .wallos-page-transition-beam {
-    width: 18vw;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.98), rgba(255, 168, 210, 0.84), transparent);
 }
 
 @keyframes wallosPageTransitionPulse {

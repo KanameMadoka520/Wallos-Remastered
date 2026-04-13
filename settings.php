@@ -1476,34 +1476,10 @@ $pageSections = [
                         onChange="setPageTransitionSettings()" <?= !empty($settings['pageTransitionEnabled']) ? 'checked' : '' ?>>
                     <label for="pagetransitionenabled"><?= htmlspecialchars($pageTransitionLabels['enable_label'], ENT_QUOTES, 'UTF-8') ?></label>
                 </div>
-                <div class="page-transition-style-grid" id="page-transition-style-grid">
-                    <?php foreach ($pageTransitionLabels['styles'] as $styleKey => $styleMeta): ?>
-                        <label class="page-transition-style-option <?= ($settings['pageTransitionStyle'] ?? 'shutter') === $styleKey ? 'is-selected' : '' ?>"
-                            data-page-transition-style-option="<?= htmlspecialchars($styleKey, ENT_QUOTES, 'UTF-8') ?>">
-                            <input type="radio" name="page-transition-style" value="<?= htmlspecialchars($styleKey, ENT_QUOTES, 'UTF-8') ?>"
-                                onChange="setPageTransitionSettings('<?= htmlspecialchars($styleKey, ENT_QUOTES, 'UTF-8') ?>')"
-                                <?= ($settings['pageTransitionStyle'] ?? 'shutter') === $styleKey ? 'checked' : '' ?>
-                                <?= empty($settings['pageTransitionEnabled']) ? 'disabled' : '' ?>>
-                            <span class="page-transition-style-preview <?= htmlspecialchars($styleKey, ENT_QUOTES, 'UTF-8') ?>">
-                                <span class="page-transition-style-preview-core"></span>
-                                <span class="page-transition-style-preview-beam"></span>
-                                <span class="page-transition-style-preview-ring"></span>
-                            </span>
-                            <span class="page-transition-style-text">
-                                <strong><?= htmlspecialchars($styleMeta['name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                <small><?= htmlspecialchars($styleMeta['description'], ENT_QUOTES, 'UTF-8') ?></small>
-                            </span>
-                        </label>
-                    <?php endforeach; ?>
-                </div>
                 <div class="settings-notes">
                     <p>
                         <i class="fa-solid fa-circle-info"></i>
                         <?= htmlspecialchars($pageTransitionLabels['enable_info'], ENT_QUOTES, 'UTF-8') ?>
-                    </p>
-                    <p>
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        <?= htmlspecialchars($pageTransitionLabels['style_info'], ENT_QUOTES, 'UTF-8') ?>
                     </p>
                 </div>
             </div>
