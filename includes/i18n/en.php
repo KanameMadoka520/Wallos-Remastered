@@ -529,6 +529,7 @@ $i18n = [
     "save_custom_css" => "Save Custom CSS",
     "calculate_monthly_price" => "Calculate and show monthly price for all subscriptions",
     "convert_prices" => "Always convert and show prices on my main currency (slower)",
+    "convert_prices_requires_fixer_api" => "You must fill in a Fixer API key before enabling this option.",
     "show_original_price" => "Also show original price when conversions or calculations are made",
     "experience" => "Experience",
     "show_subscription_progress" => "Show subscription progress",

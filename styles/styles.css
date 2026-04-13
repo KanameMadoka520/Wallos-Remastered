@@ -218,6 +218,9 @@ header .logo .logo-image svg {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   pointer-events: auto !important;
+  cursor: pointer;
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
 .wallos-page-immersive-toggle > i {
@@ -233,6 +236,52 @@ body.page-ui-hidden .metric-explanation-modal,
 body.page-ui-hidden .toast,
 body.page-ui-hidden .progress {
   display: none !important;
+}
+
+body.page-ui-fading-out > header,
+body.page-ui-fading-out > footer,
+body.page-ui-fading-out > .custom-edition-banner,
+body.page-ui-fading-out .mobile-nav,
+body.page-ui-fading-out [data-page-ui-hide-target],
+body.page-ui-fading-out .metric-explanation-modal,
+body.page-ui-fading-out .toast,
+body.page-ui-fading-out .progress,
+body.page-ui-fading-in > header,
+body.page-ui-fading-in > footer,
+body.page-ui-fading-in > .custom-edition-banner,
+body.page-ui-fading-in .mobile-nav,
+body.page-ui-fading-in [data-page-ui-hide-target],
+body.page-ui-fading-in .metric-explanation-modal,
+body.page-ui-fading-in .toast,
+body.page-ui-fading-in .progress {
+  transition: opacity 0.18s ease, transform 0.18s ease, filter 0.18s ease;
+}
+
+body.page-ui-fading-out > header,
+body.page-ui-fading-out > footer,
+body.page-ui-fading-out > .custom-edition-banner,
+body.page-ui-fading-out .mobile-nav,
+body.page-ui-fading-out [data-page-ui-hide-target],
+body.page-ui-fading-out .metric-explanation-modal,
+body.page-ui-fading-out .toast,
+body.page-ui-fading-out .progress {
+  opacity: 0 !important;
+  transform: translateY(-10px) scale(0.992);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+body.page-ui-fading-in > header,
+body.page-ui-fading-in > footer,
+body.page-ui-fading-in > .custom-edition-banner,
+body.page-ui-fading-in .mobile-nav,
+body.page-ui-fading-in [data-page-ui-hide-target],
+body.page-ui-fading-in .metric-explanation-modal,
+body.page-ui-fading-in .toast,
+body.page-ui-fading-in .progress {
+  opacity: 0 !important;
+  transform: translateY(-10px) scale(0.992);
+  filter: blur(2px);
 }
 
 @media (max-width: 768px) {
@@ -1546,6 +1595,11 @@ button.mobile-action-renew {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding-inline: 14px;
+}
+
+.subscription-recycle-bin-trigger > span:first-of-type {
+  display: none;
 }
 
 .subscription-recycle-bin-list {
@@ -1563,6 +1617,20 @@ button.mobile-action-renew {
   max-height: min(72vh, 860px);
   overflow-y: auto;
   padding-right: 4px;
+}
+
+.subscription-recycle-bin-modal > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.subscription-recycle-bin-modal > header h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
 }
 
 .subscription-trash-card {
