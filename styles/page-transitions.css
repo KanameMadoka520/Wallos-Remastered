@@ -1053,18 +1053,18 @@ html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enab
 }
 
 html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-panel {
-    background: linear-gradient(135deg, rgba(8, 14, 24, 0.88), rgba(var(--accent-color-rgb), 0.16));
+    background: linear-gradient(135deg, rgba(8, 14, 24, 0.92), rgba(var(--accent-color-rgb), 0.14));
     box-shadow:
         0 24px 48px rgba(0, 0, 0, 0.24),
         inset 0 1px 0 rgba(var(--main-color-rgb), 0.22);
 }
 
 html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-beam {
-    background: linear-gradient(90deg, transparent, rgba(var(--main-color-rgb), 0.82), rgba(var(--accent-color-rgb), 0.72), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--main-color-rgb), 0.74), rgba(var(--accent-color-rgb), 0.64), transparent);
 }
 
 html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-ba-panel {
-    background: linear-gradient(135deg, rgba(9, 16, 28, 0.82), rgba(var(--accent-color-rgb), 0.18));
+    background: linear-gradient(135deg, rgba(9, 16, 28, 0.84), rgba(var(--accent-color-rgb), 0.16));
     border-color: rgba(var(--main-color-rgb), 0.34);
     box-shadow:
         0 20px 44px rgba(0, 0, 0, 0.22),
@@ -1073,7 +1073,7 @@ html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enab
 
 html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-ba-header-bar,
 html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-ba-footer-bar {
-    background: linear-gradient(90deg, rgba(var(--main-color-rgb), 0), rgba(var(--main-color-rgb), 0.34), rgba(var(--accent-color-rgb), 0.56), rgba(var(--main-color-rgb), 0));
+    background: linear-gradient(90deg, rgba(var(--main-color-rgb), 0), rgba(var(--main-color-rgb), 0.3), rgba(var(--accent-color-rgb), 0.48), rgba(var(--main-color-rgb), 0));
 }
 
 html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-ba-gridline {
@@ -1112,7 +1112,7 @@ html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enab
 }
 
 html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-progress span {
-    background: linear-gradient(90deg, rgba(var(--main-color-rgb), 0.08), rgba(var(--main-color-rgb), 0.92), rgba(var(--accent-color-rgb), 0.84), rgba(var(--main-color-rgb), 0.08));
+    background: linear-gradient(90deg, rgba(var(--main-color-rgb), 0.08), rgba(var(--main-color-rgb), 0.82), rgba(var(--accent-color-rgb), 0.7), rgba(var(--main-color-rgb), 0.08));
 }
 
 html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-ba-crosshair,
@@ -1125,7 +1125,18 @@ html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enab
 }
 
 html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-ba-datapanel span {
-    background: linear-gradient(90deg, rgba(var(--main-color-rgb), 0.1), rgba(var(--main-color-rgb), 0.52), rgba(var(--accent-color-rgb), 0.62));
+    background: linear-gradient(90deg, rgba(var(--main-color-rgb), 0.1), rgba(var(--main-color-rgb), 0.44), rgba(var(--accent-color-rgb), 0.52));
+}
+
+html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-kicker,
+html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-subtitle,
+html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-status,
+html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-accent {
+    color: rgba(var(--wallos-dynamic-text-color-rgb), 0.68);
+}
+
+html[data-page-transition-style="bluearchive_theme"] body.dynamic-wallpaper-enabled .wallos-page-transition-title {
+    text-shadow: 0 0 18px rgba(var(--main-color-rgb), 0.18);
 }
 
 @keyframes wallosPageTransitionPulse {
