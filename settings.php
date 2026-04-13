@@ -1594,8 +1594,6 @@ $pageSections = [
                         <?php
                         if ($settings['convert_currency'])
                             echo ' checked';
-                        if ($apiKey == "")
-                            echo ' disabled';
                         ?>>
                     <label for="convertcurrency"><?= translate('convert_prices', $i18n) ?></label>
                 </div>

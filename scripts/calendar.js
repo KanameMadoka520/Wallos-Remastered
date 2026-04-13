@@ -22,7 +22,7 @@ function currentMoth() {
     window.location.href = `calendar.php`;
 }
 
-function syncCalendarJumpControls() {
+function syncCalendarJumpControls(shouldNavigate = false) {
   const container = document.getElementById('calendar-nav-jump');
   const yearSelect = document.getElementById('calendarYearSelect');
   const monthSelect = document.getElementById('calendarMonthSelect');
@@ -40,8 +40,14 @@ function syncCalendarJumpControls() {
     option.disabled = selectedYear === currentYear && monthValue < currentMonth;
   });
 
+  let selectionAdjusted = false;
   if (monthSelect.selectedOptions.length > 0 && monthSelect.selectedOptions[0].disabled) {
     monthSelect.value = String(currentMonth);
+    selectionAdjusted = true;
+  }
+
+  if (shouldNavigate || selectionAdjusted) {
+    goToCalendarDate();
   }
 }
 
@@ -171,5 +177,5 @@ function copyToClipboard() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  syncCalendarJumpControls();
+  syncCalendarJumpControls(false);
 });
