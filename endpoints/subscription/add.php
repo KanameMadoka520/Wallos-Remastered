@@ -7,6 +7,7 @@ require_once '../../includes/getsettings.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_sort.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/subscription_payment_history.php';
 require_once '../../includes/subscription_price_rules.php';
 require_once '../../includes/user_groups.php';
 if (!file_exists('../../images/uploads/logos')) {
@@ -257,6 +258,9 @@ $inactive = isset($_POST['inactive']) ? true : false;
 $excludeFromStats = isset($_POST['exclude_from_stats']) ? true : false;
 $cancellationDate = $_POST['cancellation_date'] ?? null;
 $replacementSubscriptionId = $_POST['replacement_subscription_id'];
+$manualCycleUsedValueMain = isset($_POST['manual_cycle_used_value_main']) && is_numeric($_POST['manual_cycle_used_value_main'])
+    ? max(0, round((float) $_POST['manual_cycle_used_value_main'], 2))
+    : 0;
 $detailImageUrlsRaw = $_POST['detail_image_urls'] ?? '';
 $subscriptionPriceRulesJson = $_POST['subscription_price_rules_json'] ?? '[]';
 $removeUploadedImageIds = wallos_parse_uploaded_image_ids($_POST['remove_uploaded_image_ids'] ?? []);
@@ -266,6 +270,15 @@ $subscriptionPriceRules = wallos_decode_subscription_price_rules_input($subscrip
 if ($replacementSubscriptionId == 0 || $inactive == 0) {
     $replacementSubscriptionId = null;
 }
+
+$manualCycleUsedValueCycleStart = $manualCycleUsedValueMain > 0
+    ? wallos_get_subscription_current_cycle_start_value([
+        'start_date' => $startDate,
+        'next_payment' => $nextPayment,
+        'cycle' => $cycle,
+        'frequency' => $frequency,
+    ])
+    : '';
 
 $userStmt = $db->prepare('SELECT username, user_group FROM user WHERE id = :userId');
 $userStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
@@ -370,13 +383,13 @@ try {
                             payment_method_id, payer_user_id, category_id, notify, inactive, url,
                             notify_days_before, user_id, cancellation_date, replacement_subscription_id,
                             auto_renew, start_date, detail_image, detail_image_urls, sort_order,
-                            lifecycle_status, exclude_from_stats
+                            lifecycle_status, exclude_from_stats, manual_cycle_used_value_main, manual_cycle_used_value_cycle_start
                         ) VALUES (
                             :name, :logo, :price, :currencyId, :nextPayment, :cycle, :frequency, :notes,
                             :paymentMethodId, :payerUserId, :categoryId, :notify, :inactive, :url,
                             :notifyDaysBefore, :userId, :cancellationDate, :replacement_subscription_id,
                             :autoRenew, :startDate, '', :detailImageUrls, :sortOrder,
-                            :lifecycleStatus, :excludeFromStats
+                            :lifecycleStatus, :excludeFromStats, :manualCycleUsedValueMain, :manualCycleUsedValueCycleStart
                         )";
     } else {
         $sql = "UPDATE subscriptions SET
@@ -400,7 +413,9 @@ try {
                             replacement_subscription_id = :replacement_subscription_id,
                             detail_image = '',
                             detail_image_urls = :detailImageUrls,
-                            exclude_from_stats = :excludeFromStats";
+                            exclude_from_stats = :excludeFromStats,
+                            manual_cycle_used_value_main = :manualCycleUsedValueMain,
+                            manual_cycle_used_value_cycle_start = :manualCycleUsedValueCycleStart";
 
         if ($logo != "") {
             $sql .= ", logo = :logo";
@@ -437,6 +452,8 @@ try {
     $stmt->bindParam(':replacement_subscription_id', $replacementSubscriptionId, SQLITE3_INTEGER);
     $stmt->bindParam(':detailImageUrls', $detailImageUrlsJson, SQLITE3_TEXT);
     $stmt->bindParam(':excludeFromStats', $excludeFromStats, SQLITE3_INTEGER);
+    $stmt->bindParam(':manualCycleUsedValueMain', $manualCycleUsedValueMain, SQLITE3_FLOAT);
+    $stmt->bindParam(':manualCycleUsedValueCycleStart', $manualCycleUsedValueCycleStart, SQLITE3_TEXT);
     if (!$isEdit) {
         $stmt->bindParam(':sortOrder', $nextSortOrder, SQLITE3_INTEGER);
         $lifecycleStatus = WALLOS_SUBSCRIPTION_STATUS_ACTIVE;

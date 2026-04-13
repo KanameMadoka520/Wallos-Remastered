@@ -44,7 +44,9 @@ try {
         frequency INTEGER,
         start_date TEXT,
         next_payment TEXT,
-        payment_method_id INTEGER
+        payment_method_id INTEGER,
+        manual_cycle_used_value_main REAL DEFAULT 0,
+        manual_cycle_used_value_cycle_start TEXT DEFAULT ""
     )');
     $db->exec('CREATE TABLE subscription_payment_records (
         id INTEGER PRIMARY KEY,

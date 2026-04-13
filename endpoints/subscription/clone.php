@@ -34,12 +34,14 @@ $query = "INSERT INTO subscriptions (
     name, logo, price, currency_id, next_payment, cycle, frequency, notes,
     payment_method_id, payer_user_id, category_id, notify, url, inactive,
     notify_days_before, user_id, cancellation_date, replacement_subscription_id,
-    start_date, auto_renew, detail_image, detail_image_urls, sort_order, lifecycle_status, exclude_from_stats
+    start_date, auto_renew, detail_image, detail_image_urls, sort_order, lifecycle_status, exclude_from_stats,
+    manual_cycle_used_value_main, manual_cycle_used_value_cycle_start
 ) VALUES (
     :name, :logo, :price, :currency_id, :next_payment, :cycle, :frequency, :notes,
     :payment_method_id, :payer_user_id, :category_id, :notify, :url, :inactive,
     :notify_days_before, :user_id, :cancellation_date, :replacement_subscription_id,
-    :start_date, :auto_renew, :detail_image, :detail_image_urls, :sort_order, :lifecycle_status, :exclude_from_stats
+    :start_date, :auto_renew, :detail_image, :detail_image_urls, :sort_order, :lifecycle_status, :exclude_from_stats,
+    :manual_cycle_used_value_main, :manual_cycle_used_value_cycle_start
 )";
 $cloneStmt = $db->prepare($query);
 $cloneStmt->bindValue(':name', $subscriptionToClone['name'], SQLITE3_TEXT);
@@ -67,6 +69,8 @@ $cloneStmt->bindValue(':detail_image_urls', $subscriptionToClone['detail_image_u
 $cloneStmt->bindValue(':sort_order', $nextSortOrder, SQLITE3_INTEGER);
 $cloneStmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
 $cloneStmt->bindValue(':exclude_from_stats', (int) ($subscriptionToClone['exclude_from_stats'] ?? 0), SQLITE3_INTEGER);
+$cloneStmt->bindValue(':manual_cycle_used_value_main', 0, SQLITE3_FLOAT);
+$cloneStmt->bindValue(':manual_cycle_used_value_cycle_start', '', SQLITE3_TEXT);
 
 if ($cloneStmt->execute()) {
     $newSubscriptionId = $db->lastInsertRowID();

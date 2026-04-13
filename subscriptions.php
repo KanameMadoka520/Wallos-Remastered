@@ -225,6 +225,28 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
         </button>
       </div>
 
+      <div class="media-layout-toggle subscription-value-toggle" role="group"
+        aria-label="<?= translate('subscription_value_metrics_display', $i18n) ?>">
+        <button type="button" class="media-layout-button is-active" data-subscription-value-toggle="invested"
+          title="<?= translate('subscription_invested_total', $i18n) ?>" aria-pressed="true"
+          onClick="toggleSubscriptionValueMetric('invested')">
+          <i class="fa-solid fa-sack-dollar"></i>
+          <span><?= translate('subscription_invested_total', $i18n) ?></span>
+        </button>
+        <button type="button" class="media-layout-button is-active" data-subscription-value-toggle="remaining"
+          title="<?= translate('subscription_remaining_value', $i18n) ?>" aria-pressed="true"
+          onClick="toggleSubscriptionValueMetric('remaining')">
+          <i class="fa-solid fa-hourglass-half"></i>
+          <span><?= translate('subscription_remaining_value', $i18n) ?></span>
+        </button>
+        <button type="button" class="media-layout-button is-active" data-subscription-value-toggle="used"
+          title="<?= translate('subscription_manual_used_value', $i18n) ?>" aria-pressed="true"
+          onClick="toggleSubscriptionValueMetric('used')">
+          <i class="fa-solid fa-gauge-high"></i>
+          <span><?= translate('subscription_manual_used_value', $i18n) ?></span>
+        </button>
+      </div>
+
       <div class="filtermenu on-dashboard">
         <button class="button secondary-button" id="filtermenu-button" title="<?= translate("filter", $i18n) ?>">
           <i class="fa-solid fa-filter"></i>
@@ -620,6 +642,21 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
         <i class="fa-solid fa-circle-info"></i>
         <?= translate('subscription_exclude_from_stats_help', $i18n) ?>
       </p>
+    </div>
+
+    <div class="form-group">
+      <label for="manual_cycle_used_value_main"><?= translate('subscription_manual_used_value', $i18n) ?></label>
+      <div class="form-group-inline">
+        <label for="manual_cycle_used_value_main"><?= htmlspecialchars($currencies[$main_currency]['symbol'] ?: $currencies[$main_currency]['code'], ENT_QUOTES, 'UTF-8') ?></label>
+        <input type="number" step="0.01" min="0" id="manual_cycle_used_value_main" name="manual_cycle_used_value_main"
+          autocomplete="off" placeholder="<?= translate('subscription_manual_used_value', $i18n) ?>">
+      </div>
+      <div class="settings-notes compact">
+        <p>
+          <i class="fa-solid fa-circle-info"></i>
+          <?= translate('subscription_manual_used_value_help', $i18n) ?>
+        </p>
+      </div>
     </div>
 
     <div class="form-group">

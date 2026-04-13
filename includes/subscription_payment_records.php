@@ -500,6 +500,28 @@ function wallos_get_subscription_interval_spec($cycleId, $frequency)
     return 'P' . $frequency . 'Y';
 }
 
+function wallos_get_cycle_start_value_from_due_date($startDateValue, $dueDateValue, $cycleId, $frequency)
+{
+    $startDateValue = trim((string) $startDateValue);
+    $dueDateValue = trim((string) $dueDateValue);
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dueDateValue)) {
+        return '';
+    }
+
+    $cycleEnd = new DateTime($dueDateValue);
+    $interval = new DateInterval(wallos_get_subscription_interval_spec((int) $cycleId, (int) $frequency));
+    $cycleStart = (clone $cycleEnd)->sub($interval);
+
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDateValue)) {
+        $configuredStartDate = new DateTime($startDateValue);
+        if ($cycleStart < $configuredStartDate) {
+            $cycleStart = $configuredStartDate;
+        }
+    }
+
+    return $cycleStart->format('Y-m-d');
+}
+
 function wallos_advance_subscription_next_payment_after_record($db, $subscriptionId, $userId, $recordedDueDate)
 {
     $stmt = $db->prepare('
@@ -548,7 +570,7 @@ function wallos_advance_subscription_next_payment_after_record($db, $subscriptio
 function wallos_recalculate_subscription_next_payment_from_history($db, $subscriptionId, $userId)
 {
     $stmt = $db->prepare('
-        SELECT id, start_date, next_payment, cycle, frequency
+        SELECT id, start_date, next_payment, cycle, frequency, manual_cycle_used_value_cycle_start
         FROM subscriptions
         WHERE id = :subscription_id AND user_id = :user_id
         LIMIT 1
@@ -610,7 +632,22 @@ function wallos_recalculate_subscription_next_payment_from_history($db, $subscri
         $nextUnpaidDueDate = $cursor->format('Y-m-d');
     }
 
-    $updateStmt = $db->prepare('UPDATE subscriptions SET next_payment = :next_payment WHERE id = :subscription_id AND user_id = :user_id');
+    $newCycleStart = wallos_get_cycle_start_value_from_due_date(
+        $subscription['start_date'] ?? '',
+        $nextUnpaidDueDate,
+        $subscription['cycle'] ?? 3,
+        $subscription['frequency'] ?? 1
+    );
+
+    $clearManualCycleValue = trim((string) ($subscription['manual_cycle_used_value_cycle_start'] ?? '')) !== $newCycleStart;
+
+    $sql = 'UPDATE subscriptions SET next_payment = :next_payment';
+    if ($clearManualCycleValue) {
+        $sql .= ", manual_cycle_used_value_main = 0, manual_cycle_used_value_cycle_start = ''";
+    }
+    $sql .= ' WHERE id = :subscription_id AND user_id = :user_id';
+
+    $updateStmt = $db->prepare($sql);
     $updateStmt->bindValue(':next_payment', $nextUnpaidDueDate, SQLITE3_TEXT);
     $updateStmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
     $updateStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);

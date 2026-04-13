@@ -1418,6 +1418,16 @@ button.mobile-action-renew {
   margin-top: 12px;
 }
 
+.subscription-value-metrics.is-hidden-by-toggle {
+  display: none;
+}
+
+#subscriptions.hide-invested-metric .subscription-value-metric-card.metric-invested,
+#subscriptions.hide-remaining-metric .subscription-value-metric-card.metric-remaining,
+#subscriptions.hide-used-metric .subscription-value-metric-card.metric-used {
+  display: none;
+}
+
 .subscription-value-metric-card {
   border: 1px solid var(--box-border-color);
   border-radius: 14px;

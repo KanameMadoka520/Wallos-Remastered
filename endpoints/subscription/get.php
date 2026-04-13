@@ -3,6 +3,7 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/subscription_payment_records.php';
+require_once '../../includes/subscription_payment_history.php';
 require_once '../../includes/subscription_price_rules.php';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
@@ -16,6 +17,13 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         $result = $stmt->execute();
 
         $subscriptionData = array();
+        $currencies = [];
+        $currencyStmt = $db->prepare('SELECT id, code, name, symbol FROM currencies WHERE user_id = :user_id');
+        $currencyStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+        $currencyResult = $currencyStmt->execute();
+        while ($currencyResult && ($currencyRow = $currencyResult->fetchArray(SQLITE3_ASSOC))) {
+            $currencies[(int) $currencyRow['id']] = $currencyRow;
+        }
 
         if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $subscriptionData['id'] = $subscriptionId;
@@ -35,6 +43,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $subscriptionData['notify'] = $row['notify'];
             $subscriptionData['inactive'] = $row['inactive'];
             $subscriptionData['exclude_from_stats'] = (int) ($row['exclude_from_stats'] ?? 0);
+            $subscriptionData['manual_cycle_used_value_main'] = (float) ($row['manual_cycle_used_value_main'] ?? 0);
+            $subscriptionData['manual_cycle_used_value_cycle_start'] = (string) ($row['manual_cycle_used_value_cycle_start'] ?? '');
             $subscriptionData['url'] = htmlspecialchars_decode($row['url'] ?? "");
             $subscriptionData['notify_days_before'] = $row['notify_days_before'];
             $subscriptionData['cancellation_date'] = $row['cancellation_date'];
@@ -43,6 +53,15 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $subscriptionData['uploaded_images'] = wallos_get_subscription_uploaded_images($db, $subscriptionId, $userId);
             $subscriptionData['payment_records'] = wallos_get_subscription_payment_records($db, $subscriptionId, $userId, 12);
             $subscriptionData['price_rules'] = wallos_get_subscription_price_rules($db, $subscriptionId, $userId, false);
+            $subscriptionData['remaining_value'] = wallos_build_subscription_remaining_value_snapshot(
+                $db,
+                $row,
+                $userId,
+                $subscriptionData['price_rules'],
+                $subscriptionData['payment_records'],
+                $currencies,
+                $i18n
+            );
             $subscriptionData['detail_image'] = !empty($subscriptionData['uploaded_images'][0]['access_url'])
                 ? $subscriptionData['uploaded_images'][0]['access_url']
                 : ($row['detail_image'] ?? "");
