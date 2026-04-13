@@ -62,10 +62,14 @@ function setupPageNavigation() {
 function showErrorMessage(message) {
   const toast = document.querySelector(".toast#errorToast");
   const closeIcon = document.querySelector(".close-error");
+  const errorTitle = document.querySelector("#errorToast .text-1");
   const errorMessage = document.querySelector(".errorMessage");
   const progress = document.querySelector(".progress.error");
   let timer1, timer2;
-  errorMessage.textContent = message;
+  const normalizedContent = normalizeToastContent("error", message);
+  errorTitle.textContent = normalizedContent.title;
+  errorMessage.textContent = normalizedContent.body;
+  errorMessage.classList.toggle("is-empty", normalizedContent.body === "");
   toast.classList.add("active");
   progress.classList.add("active");
   timer1 = setTimeout(() => {
@@ -93,10 +97,14 @@ function showErrorMessage(message) {
 function showSuccessMessage(message) {
   const toast = document.querySelector(".toast#successToast");
   const closeIcon = document.querySelector(".close-success");
+  const successTitle = document.querySelector("#successToast .text-1");
   const successMessage = document.querySelector(".successMessage");
   const progress = document.querySelector(".progress.success");
   let timer1, timer2;
-  successMessage.textContent = message;
+  const normalizedContent = normalizeToastContent("success", message);
+  successTitle.textContent = normalizedContent.title;
+  successMessage.textContent = normalizedContent.body;
+  successMessage.classList.toggle("is-empty", normalizedContent.body === "");
   toast.classList.add("active");
   progress.classList.add("active");
   timer1 = setTimeout(() => {
@@ -167,4 +175,58 @@ function getCookie(name) {
     }
   }
   return null;
+}
+
+function normalizeToastContent(type, message) {
+  const fallbackTitle = type === "error" ? translate("error") : translate("success");
+  const fallbackBody = type === "error" ? translate("toast_error_generic") : translate("toast_success_generic");
+  const rawMessage = String(message ?? "").trim();
+
+  if (!rawMessage) {
+    return {
+      title: fallbackTitle,
+      body: fallbackBody,
+    };
+  }
+
+  const genericCandidates = new Set([
+    fallbackTitle,
+    type === "error" ? "Error" : "Success",
+    type === "error" ? "error" : "success",
+  ]);
+
+  if (genericCandidates.has(rawMessage)) {
+    return {
+      title: fallbackTitle,
+      body: fallbackBody,
+    };
+  }
+
+  const separatorMatch = rawMessage.match(/^([^:\n：]{1,60})[:：]\s*([\s\S]+)$/);
+  if (separatorMatch) {
+    return {
+      title: separatorMatch[1].trim(),
+      body: separatorMatch[2].trim(),
+    };
+  }
+
+  const lineMatch = rawMessage.match(/^([^\n]{1,70})\n+([\s\S]+)$/);
+  if (lineMatch) {
+    return {
+      title: lineMatch[1].trim(),
+      body: lineMatch[2].trim(),
+    };
+  }
+
+  if (rawMessage.length <= 80) {
+    return {
+      title: rawMessage,
+      body: "",
+    };
+  }
+
+  return {
+    title: fallbackTitle,
+    body: rawMessage,
+  };
 }
