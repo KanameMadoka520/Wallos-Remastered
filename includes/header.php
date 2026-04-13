@@ -177,6 +177,14 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
             <?= hex2rgb($settings['customColors']['hover_color']) ?>
           ;
         <?php endif; ?>
+        <?php if (isset($settings['customColors']['text_color']) && !empty($settings['customColors']['text_color'])): ?>
+          --text-color:
+            <?= $settings['customColors']['text_color'] ?>
+          ;
+          --text-color-rgb:
+            <?= hex2rgb($settings['customColors']['text_color']) ?>
+          ;
+        <?php endif; ?>
       }
     </style>
     <?php
