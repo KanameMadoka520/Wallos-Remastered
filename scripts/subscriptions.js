@@ -28,20 +28,20 @@ let subscriptionPriceRuleTempIdCounter = 0;
 let detailImageGallerySortable = null;
 let detailSubscriptionGallerySortables = [];
 let detailImageTempIdCounter = 0;
-const SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS = {
-  form: "wallos-subscription-image-layout-form",
-  detail: "wallos-subscription-image-layout-detail",
-};
-const SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY = "wallos-subscriptions-display-columns";
-const SUBSCRIPTION_VALUE_VISIBILITY_STORAGE_KEY = "wallos-subscriptions-value-visibility";
+const SUBSCRIPTION_PREFERENCES_ENDPOINT = "endpoints/settings/subscription_preferences.php";
 let subscriptionMasonryLayoutFrame = null;
 let subscriptionMasonryResizeTimer = null;
 let subscriptionCardSortable = null;
 let isSubscriptionSortDragging = false;
+let subscriptionDisplayColumns = 1;
+let subscriptionImageLayoutPreferences = {
+  form: "focus",
+  detail: "focus",
+};
+let subscriptionPreferencesSaveTimer = null;
 let subscriptionValueVisibility = {
-  invested: true,
-  remaining: true,
-  used: true,
+  metrics: true,
+  payment_records: true,
 };
 
 function toggleOpenSubscription(subId) {
@@ -75,34 +75,77 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function loadSubscriptionValueVisibility() {
-  try {
-    const stored = window.localStorage.getItem(SUBSCRIPTION_VALUE_VISIBILITY_STORAGE_KEY);
-    if (!stored) {
-      return;
-    }
+function normalizeSubscriptionDisplayColumnsPreference(value) {
+  const columns = Number(value);
+  return columns === 2 || columns === 3 ? columns : 1;
+}
 
-    const parsed = JSON.parse(stored);
-    subscriptionValueVisibility = {
-      invested: parsed.invested !== false,
-      remaining: parsed.remaining !== false,
-      used: parsed.used !== false,
-    };
-  } catch (error) {
-    subscriptionValueVisibility = { invested: true, remaining: true, used: true };
+function normalizeSubscriptionImageLayoutPreference(value) {
+  return value === "grid" ? "grid" : "focus";
+}
+
+function normalizeSubscriptionValueVisibilityPreference(value) {
+  const visibility = value && typeof value === "object" ? value : {};
+  return {
+    metrics: visibility.metrics !== false,
+    payment_records: visibility.payment_records !== false,
+  };
+}
+
+function updateSubscriptionPagePreferencesCache() {
+  window.subscriptionPagePreferences = {
+    displayColumns: subscriptionDisplayColumns,
+    valueVisibility: { ...subscriptionValueVisibility },
+    imageLayout: {
+      form: subscriptionImageLayoutPreferences.form,
+      detail: subscriptionImageLayoutPreferences.detail,
+    },
+  };
+}
+
+function scheduleSubscriptionPagePreferencesSave() {
+  updateSubscriptionPagePreferencesCache();
+
+  if (subscriptionPreferencesSaveTimer !== null) {
+    window.clearTimeout(subscriptionPreferencesSaveTimer);
   }
+
+  subscriptionPreferencesSaveTimer = window.setTimeout(() => {
+    subscriptionPreferencesSaveTimer = null;
+
+    fetch(SUBSCRIPTION_PREFERENCES_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": window.csrfToken,
+      },
+      body: JSON.stringify({
+        display_columns: subscriptionDisplayColumns,
+        value_visibility: subscriptionValueVisibility,
+        image_layout_form: subscriptionImageLayoutPreferences.form,
+        image_layout_detail: subscriptionImageLayoutPreferences.detail,
+      }),
+    }).catch((error) => {
+      console.error("Failed to persist subscription page preferences.", error);
+    });
+  }, 160);
+}
+
+function loadSubscriptionValueVisibility() {
+  subscriptionValueVisibility = normalizeSubscriptionValueVisibilityPreference(
+    window.subscriptionPagePreferences?.valueVisibility
+  );
 }
 
 function persistSubscriptionValueVisibility() {
-  window.localStorage.setItem(SUBSCRIPTION_VALUE_VISIBILITY_STORAGE_KEY, JSON.stringify(subscriptionValueVisibility));
+  scheduleSubscriptionPagePreferencesSave();
 }
 
 function applySubscriptionValueVisibility() {
   const container = document.getElementById("subscriptions");
   if (container) {
-    container.classList.toggle("hide-invested-metric", !subscriptionValueVisibility.invested);
-    container.classList.toggle("hide-remaining-metric", !subscriptionValueVisibility.remaining);
-    container.classList.toggle("hide-used-metric", !subscriptionValueVisibility.used);
+    container.classList.toggle("hide-cost-value-metrics", !subscriptionValueVisibility.metrics);
+    container.classList.toggle("hide-payment-records", !subscriptionValueVisibility.payment_records);
   }
 
   document.querySelectorAll("[data-subscription-value-toggle]").forEach((button) => {
@@ -112,13 +155,6 @@ function applySubscriptionValueVisibility() {
     button.setAttribute("aria-pressed", visible ? "true" : "false");
   });
 
-  document.querySelectorAll(".subscription-value-metrics").forEach((metricsContainer) => {
-    const visibleCards = Array.from(metricsContainer.querySelectorAll(".subscription-value-metric-card")).filter((card) => {
-      const computedStyle = window.getComputedStyle(card);
-      return computedStyle.display !== "none";
-    });
-    metricsContainer.classList.toggle("is-hidden-by-toggle", visibleCards.length === 0);
-  });
 }
 
 function toggleSubscriptionValueMetric(metricKey) {
@@ -153,17 +189,7 @@ function normalizeSubscriptionPriceRule(rule = {}, index = 0) {
 }
 
 function getSubscriptionImageLayoutMode(scope) {
-  const storageKey = SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS[scope];
-  if (!storageKey) {
-    return "focus";
-  }
-
-  try {
-    const stored = localStorage.getItem(storageKey);
-    return stored === "grid" ? "grid" : "focus";
-  } catch (error) {
-    return "focus";
-  }
+  return normalizeSubscriptionImageLayoutPreference(subscriptionImageLayoutPreferences[scope]);
 }
 
 function getSubscriptionImageGalleryTargets(scope) {
@@ -197,14 +223,9 @@ function applySubscriptionImageLayoutMode(scope, mode = null) {
 
 function setSubscriptionImageLayoutMode(scope, mode, button = null) {
   const resolvedMode = mode === "grid" ? "grid" : "focus";
-  const storageKey = SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS[scope];
-
-  if (storageKey) {
-    try {
-      localStorage.setItem(storageKey, resolvedMode);
-    } catch (error) {
-      // Ignore localStorage write failures.
-    }
+  if (scope in subscriptionImageLayoutPreferences) {
+    subscriptionImageLayoutPreferences[scope] = resolvedMode;
+    scheduleSubscriptionPagePreferencesSave();
   }
 
   applySubscriptionImageLayoutMode(scope, resolvedMode);
@@ -220,12 +241,7 @@ function applyAllSubscriptionImageLayoutModes() {
 }
 
 function getSubscriptionDisplayColumns() {
-  try {
-    const storedValue = Number(localStorage.getItem(SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY));
-    return storedValue === 2 || storedValue === 3 ? storedValue : 1;
-  } catch (error) {
-    return 1;
-  }
+  return normalizeSubscriptionDisplayColumnsPreference(subscriptionDisplayColumns);
 }
 
 function getSubscriptionOccurrenceIndexForDueDate(subscription, dueDate) {
@@ -360,12 +376,8 @@ function applySubscriptionDisplayColumns(columns = null) {
 
 function setSubscriptionDisplayColumns(columns, button = null) {
   const resolvedColumns = Number(columns) === 2 || Number(columns) === 3 ? Number(columns) : 1;
-
-  try {
-    localStorage.setItem(SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY, String(resolvedColumns));
-  } catch (error) {
-    // Ignore localStorage write failures.
-  }
+  subscriptionDisplayColumns = resolvedColumns;
+  scheduleSubscriptionPagePreferencesSave();
 
   applySubscriptionDisplayColumns(resolvedColumns);
 
@@ -2246,20 +2258,6 @@ function openSubscriptionImageOriginal() {
     return;
   }
 
-  const popup = window.open("about:blank", "_blank");
-  if (!popup) {
-    showErrorMessage(translate("error"));
-    return;
-  }
-
-  try {
-    popup.opener = null;
-    popup.document.title = translate("subscription_image_original_loading");
-    popup.document.body.innerHTML = `<p style="font-family:sans-serif;padding:16px;">${translate("subscription_image_original_loading")}</p>`;
-  } catch (error) {
-    // Ignore cross-window setup failures and continue with the image request.
-  }
-
   if (currentSubscriptionImageOriginalRequest) {
     currentSubscriptionImageOriginalRequest.abort();
     currentSubscriptionImageOriginalRequest = null;
@@ -2286,9 +2284,13 @@ function openSubscriptionImageOriginal() {
     if (request.status >= 200 && request.status < 300) {
       setOriginalImageProgress(100, translate("subscription_image_original_loading"));
       const blobUrl = URL.createObjectURL(request.response);
-      if (!popup.closed) {
-        popup.location.replace(blobUrl);
-      }
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
       setTimeout(() => {
         URL.revokeObjectURL(blobUrl);
@@ -2300,27 +2302,18 @@ function openSubscriptionImageOriginal() {
     }
 
     hideOriginalImageProgress();
-    if (popup && !popup.closed) {
-      popup.close();
-    }
     showErrorMessage(translate("error"));
   };
 
   request.onerror = () => {
     currentSubscriptionImageOriginalRequest = null;
     hideOriginalImageProgress();
-    if (popup && !popup.closed) {
-      popup.close();
-    }
     showErrorMessage(translate("error"));
   };
 
   request.onabort = () => {
     currentSubscriptionImageOriginalRequest = null;
     hideOriginalImageProgress();
-    if (popup && !popup.closed) {
-      popup.close();
-    }
   };
 
   request.send();
@@ -3012,6 +3005,13 @@ function submitFormData(formData, submitButton, endpoint) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  subscriptionDisplayColumns = normalizeSubscriptionDisplayColumnsPreference(
+    window.subscriptionPagePreferences?.displayColumns
+  );
+  subscriptionImageLayoutPreferences = {
+    form: normalizeSubscriptionImageLayoutPreference(window.subscriptionPagePreferences?.imageLayout?.form),
+    detail: normalizeSubscriptionImageLayoutPreference(window.subscriptionPagePreferences?.imageLayout?.detail),
+  };
   const subscriptionForm = document.querySelector("#subs-form");
   const submitButton = document.querySelector("#save-button");
   const endpoint = "endpoints/subscription/add.php";

@@ -185,6 +185,24 @@ $paymentRecordCountMap = wallos_get_subscription_payment_record_count_map($db, $
 $paymentTotalMap = wallos_get_subscription_payment_total_map($db, $userId);
 $priceRulesMap = wallos_get_subscription_price_rules_map($db, $userId, true);
 $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscriptions.js');
+$subscriptionDisplayColumns = (int) ($settings['subscriptionDisplayColumns'] ?? 1);
+if (!in_array($subscriptionDisplayColumns, [1, 2, 3], true)) {
+  $subscriptionDisplayColumns = 1;
+}
+$subscriptionValueVisibility = $settings['subscriptionValueVisibility'] ?? [
+  'metrics' => true,
+  'payment_records' => true,
+];
+$subscriptionImageLayoutForm = $settings['subscriptionImageLayoutForm'] ?? 'focus';
+$subscriptionImageLayoutDetail = $settings['subscriptionImageLayoutDetail'] ?? 'focus';
+$subscriptionPagePreferences = [
+  'displayColumns' => $subscriptionDisplayColumns,
+  'valueVisibility' => $subscriptionValueVisibility,
+  'imageLayout' => [
+    'form' => $subscriptionImageLayoutForm,
+    'detail' => $subscriptionImageLayoutDetail,
+  ],
+];
 ?>
 <style>
   .logo-preview:after {
@@ -206,21 +224,21 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       </button>
       <div class="media-layout-toggle subscription-column-toggle" role="group"
         aria-label="<?= translate('subscription_layout_switch', $i18n) ?>">
-        <button type="button" class="media-layout-button is-active" data-subscription-columns="1"
+        <button type="button" class="media-layout-button<?= $subscriptionDisplayColumns === 1 ? ' is-active' : '' ?>" data-subscription-columns="1"
           title="<?= translate('subscription_layout_single_column', $i18n) ?>"
-          aria-pressed="true" onClick="setSubscriptionDisplayColumns(1, this)">
+          aria-pressed="<?= $subscriptionDisplayColumns === 1 ? 'true' : 'false' ?>" onClick="setSubscriptionDisplayColumns(1, this)">
           <i class="fa-solid fa-list"></i>
           <span><?= translate('subscription_layout_single_column', $i18n) ?></span>
         </button>
-        <button type="button" class="media-layout-button" data-subscription-columns="2"
+        <button type="button" class="media-layout-button<?= $subscriptionDisplayColumns === 2 ? ' is-active' : '' ?>" data-subscription-columns="2"
           title="<?= translate('subscription_layout_two_columns', $i18n) ?>"
-          aria-pressed="false" onClick="setSubscriptionDisplayColumns(2, this)">
+          aria-pressed="<?= $subscriptionDisplayColumns === 2 ? 'true' : 'false' ?>" onClick="setSubscriptionDisplayColumns(2, this)">
           <i class="fa-solid fa-table-columns"></i>
           <span><?= translate('subscription_layout_two_columns', $i18n) ?></span>
         </button>
-        <button type="button" class="media-layout-button" data-subscription-columns="3"
+        <button type="button" class="media-layout-button<?= $subscriptionDisplayColumns === 3 ? ' is-active' : '' ?>" data-subscription-columns="3"
           title="<?= translate('subscription_layout_three_columns', $i18n) ?>"
-          aria-pressed="false" onClick="setSubscriptionDisplayColumns(3, this)">
+          aria-pressed="<?= $subscriptionDisplayColumns === 3 ? 'true' : 'false' ?>" onClick="setSubscriptionDisplayColumns(3, this)">
           <i class="fa-solid fa-grip"></i>
           <span><?= translate('subscription_layout_three_columns', $i18n) ?></span>
         </button>
@@ -228,23 +246,17 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
 
       <div class="media-layout-toggle subscription-value-toggle" role="group"
         aria-label="<?= translate('subscription_value_metrics_display', $i18n) ?>">
-        <button type="button" class="media-layout-button is-active" data-subscription-value-toggle="invested"
-          title="<?= translate('subscription_invested_total', $i18n) ?>" aria-pressed="true"
-          onClick="toggleSubscriptionValueMetric('invested')">
+        <button type="button" class="media-layout-button<?= !empty($subscriptionValueVisibility['metrics']) ? ' is-active' : '' ?>" data-subscription-value-toggle="metrics"
+          title="<?= translate('subscription_value_metrics_display', $i18n) ?>" aria-pressed="<?= !empty($subscriptionValueVisibility['metrics']) ? 'true' : 'false' ?>"
+          onClick="toggleSubscriptionValueMetric('metrics')">
           <i class="fa-solid fa-sack-dollar"></i>
-          <span><?= translate('subscription_invested_total', $i18n) ?></span>
+          <span><?= translate('subscription_value_metrics_display', $i18n) ?></span>
         </button>
-        <button type="button" class="media-layout-button is-active" data-subscription-value-toggle="remaining"
-          title="<?= translate('subscription_remaining_value', $i18n) ?>" aria-pressed="true"
-          onClick="toggleSubscriptionValueMetric('remaining')">
-          <i class="fa-solid fa-hourglass-half"></i>
-          <span><?= translate('subscription_remaining_value', $i18n) ?></span>
-        </button>
-        <button type="button" class="media-layout-button is-active" data-subscription-value-toggle="used"
-          title="<?= translate('subscription_manual_used_value', $i18n) ?>" aria-pressed="true"
-          onClick="toggleSubscriptionValueMetric('used')">
-          <i class="fa-solid fa-gauge-high"></i>
-          <span><?= translate('subscription_manual_used_value', $i18n) ?></span>
+        <button type="button" class="media-layout-button<?= !empty($subscriptionValueVisibility['payment_records']) ? ' is-active' : '' ?>" data-subscription-value-toggle="payment_records"
+          title="<?= translate('subscription_payment_history', $i18n) ?>" aria-pressed="<?= !empty($subscriptionValueVisibility['payment_records']) ? 'true' : 'false' ?>"
+          onClick="toggleSubscriptionValueMetric('payment_records')">
+          <i class="fa-solid fa-receipt"></i>
+          <span><?= translate('subscription_payment_history', $i18n) ?></span>
         </button>
       </div>
 
@@ -272,7 +284,7 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       </div>
     </div>
   </header>
-  <div class="subscriptions subscription-columns subscription-columns-1" id="subscriptions">
+  <div class="subscriptions subscription-columns subscription-columns-<?= $subscriptionDisplayColumns ?><?= $subscriptionDisplayColumns > 1 ? ' subscription-columns-multi' : '' ?><?= empty($subscriptionValueVisibility['metrics']) ? ' hide-cost-value-metrics' : '' ?><?= empty($subscriptionValueVisibility['payment_records']) ? ' hide-payment-records' : '' ?>" id="subscriptions">
     <?php
     $formatter = new IntlDateFormatter(
       'en', // Force English locale
@@ -1003,6 +1015,9 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
     </button>
   </div>
 </section>
+<script>
+  window.subscriptionPagePreferences = <?= json_encode($subscriptionPagePreferences, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+</script>
 <script src="scripts/libs/sortable.min.js"></script>
 <script src="scripts/subscriptions.js?<?= $subscriptionsJsVersion ?>"></script>
 <?php

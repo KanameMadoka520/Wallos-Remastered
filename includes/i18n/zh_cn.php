@@ -345,7 +345,7 @@ $i18n = [
     "subscription_layout_single_column" => "单列",
     "subscription_layout_two_columns" => "两列",
     "subscription_layout_three_columns" => "三列",
-    "subscription_value_metrics_display" => "订阅价值信息",    "subscription_image_source_server" => "已存服务器",
+    "subscription_value_metrics_display" => "成本与价值计算",    "subscription_image_source_server" => "已存服务器",
     "subscription_image_source_external" => "外链图片",
     "subscription_image_source_new" => "待上传",
     "subscription_image_generate_variants" => "一键生成图片缩略图",
