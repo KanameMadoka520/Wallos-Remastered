@@ -1,12 +1,12 @@
 <?php
-// This migration adds a "color_theme" column to the settings table and sets it to blue as default.
+// This migration adds a "color_theme" column to the settings table and sets it to purple as default.
 
 $columnQuery = $db->query("SELECT * FROM pragma_table_info('settings') where name='color_theme'");
 $columnRequired = $columnQuery->fetchArray(SQLITE3_ASSOC) === false;
 
 if ($columnRequired) {
-    $db->exec("ALTER TABLE settings ADD COLUMN color_theme TEXT DEFAULT 'blue'");
-    $db->exec('UPDATE settings SET `color_theme` = "blue"');
+    $db->exec("ALTER TABLE settings ADD COLUMN color_theme TEXT DEFAULT 'purple'");
+    $db->exec('UPDATE settings SET `color_theme` = "purple"');
 }
 
 // This migrations adds custom_colors table to the database, so the user can set custom accent colors to the application

@@ -10,6 +10,7 @@ require_once 'includes/invite_codes.php';
 require_once 'includes/request_logs.php';
 require_once 'includes/user_status.php';
 require_once 'includes/decorative_background.php';
+require_once 'includes/theme_resolver.php';
 
 require_once 'includes/version.php';
 
@@ -62,18 +63,10 @@ if ($userCount > 0) {
 }
 
 
-$theme = "light";
+$theme = wallos_resolve_public_theme_cookie();
 $updateThemeSettings = false;
-if (isset($_COOKIE['theme'])) {
-    $theme = $_COOKIE['theme'];
-} else {
-    $updateThemeSettings = true;
-}
 
-$colorTheme = "blue";
-if (isset($_COOKIE['colorTheme'])) {
-    $colorTheme = $_COOKIE['colorTheme'];
-}
+$colorTheme = wallos_resolve_public_color_theme_cookie();
 
 $decorativeBackgroundEnabled = wallos_is_public_decorative_background_enabled();
 $decorativeBackgroundClass = $decorativeBackgroundEnabled ? 'decorative-background-enabled' : 'decorative-background-disabled';
@@ -232,7 +225,7 @@ if (isset($_POST['username'])) {
                 $stmt->execute();
 
                 $query = "INSERT INTO settings (dark_theme, monthly_price, convert_currency, remove_background, color_theme, hide_disabled, user_id, disabled_to_bottom, show_original_price, mobile_nav) 
-                          VALUES (2, 0, 0, 0, 'blue', 0, :user_id, 0, 0, 0)";
+                          VALUES (0, 0, 0, 0, 'purple', 0, :user_id, 0, 0, 0)";
                 $stmt = $db->prepare($query);
                 $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
                 $stmt->execute();
@@ -304,7 +297,7 @@ wallos_log_request($db, 0, '');
     <link rel="stylesheet" href="styles/brands.css">
     <link rel="stylesheet" href="styles/barlow.css">
     <script type="text/javascript">
-        window.update_theme_settings = "<?= $updateThemeSettings ?>";
+        window.update_theme_settings = <?= $updateThemeSettings ? 'true' : 'false' ?>;
         window.colorTheme = "<?= $colorTheme ?>";
     </script>
     <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
@@ -341,6 +334,17 @@ wallos_log_request($db, 0, '');
                     <?= translate('create_account', $i18n) ?>
                 </p>
             </header>
+            <div class="public-page-edition-note">
+                <div class="public-page-edition-content">
+                    <span class="public-page-edition-badge">tcymc自建服务版</span>
+                    <span><?= translate('tcy_selfhost_notice', $i18n) ?></span>
+                </div>
+                <a class="button secondary-button public-page-feedback-button"
+                    href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">
+                    <i class="fa-solid fa-bug"></i>
+                    <?= translate('issues_and_requests', $i18n) ?>
+                </a>
+            </div>
             <div class="registration-page-notice">
                 <i class="fa-solid fa-circle-info"></i>
                 <span><?= translate('registration_form_notice', $i18n) ?></span>

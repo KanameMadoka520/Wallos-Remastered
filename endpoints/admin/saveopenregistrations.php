@@ -13,6 +13,16 @@ $requireEmailVerification = $data['require_email_validation'];
 $serverUrl = $data['server_url'];
 $disableLogin = $data['disable_login'];
 $inviteOnlyRegistration = (int) ($data['invite_only_registration'] ?? 0);
+$customEditionTitle = trim((string) ($data['custom_edition_title'] ?? ''));
+$customEditionSubtitle = trim((string) ($data['custom_edition_subtitle'] ?? ''));
+
+if ($customEditionTitle === '') {
+    $customEditionTitle = 'Remastered';
+}
+
+if ($customEditionSubtitle === '') {
+    $customEditionSubtitle = '基于wallos原版深度魔改';
+}
 
 if ($disableLogin == 1) {
     if ($openRegistrations == 1) {
@@ -47,7 +57,7 @@ if ($requireEmailVerification == 1 && $serverUrl == "") {
     die();
 }
 
-$sql = "UPDATE admin SET registrations_open = :openRegistrations, max_users = :maxUsers, require_email_verification = :requireEmailVerification, server_url = :serverUrl, login_disabled = :disableLogin, invite_only_registration = :inviteOnlyRegistration WHERE id = 1";
+$sql = "UPDATE admin SET registrations_open = :openRegistrations, max_users = :maxUsers, require_email_verification = :requireEmailVerification, server_url = :serverUrl, login_disabled = :disableLogin, invite_only_registration = :inviteOnlyRegistration, custom_edition_title = :customEditionTitle, custom_edition_subtitle = :customEditionSubtitle WHERE id = 1";
 $stmt = $db->prepare($sql);
 $stmt->bindParam(':openRegistrations', $openRegistrations, SQLITE3_INTEGER);
 $stmt->bindParam(':maxUsers', $maxUsers, SQLITE3_INTEGER);
@@ -55,6 +65,8 @@ $stmt->bindParam(':requireEmailVerification', $requireEmailVerification, SQLITE3
 $stmt->bindParam(':serverUrl', $serverUrl, SQLITE3_TEXT);
 $stmt->bindParam(':disableLogin', $disableLogin, SQLITE3_INTEGER);
 $stmt->bindParam(':inviteOnlyRegistration', $inviteOnlyRegistration, SQLITE3_INTEGER);
+$stmt->bindParam(':customEditionTitle', $customEditionTitle, SQLITE3_TEXT);
+$stmt->bindParam(':customEditionSubtitle', $customEditionSubtitle, SQLITE3_TEXT);
 $result = $stmt->execute();
 
 if ($result) {

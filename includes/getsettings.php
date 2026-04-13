@@ -20,7 +20,7 @@ if ($settings !== false) {
     if ($themeValue == "automatic") {
         $settings['update_theme_setttings'] = true;
     }
-    $settings['color_theme'] = $settings['color_theme'] ? $settings['color_theme'] : "blue";
+    $settings['color_theme'] = $settings['color_theme'] ? $settings['color_theme'] : "purple";
     $settings['showMonthlyPrice'] = $settings['monthly_price'] ? 'true': 'false';
     $settings['convertCurrency'] = $settings['convert_currency'] ? 'true': 'false';
     $settings['removeBackground'] = $settings['remove_background'] ? 'true': 'false';
@@ -61,6 +61,12 @@ if ($adminSettings !== false) {
     $settings['disableLogin'] = $adminSettings['login_disabled'];
     $settings['update_notification'] = $adminSettings['update_notification'];
     $settings['latest_version'] = $adminSettings['latest_version'];
+    $settings['custom_edition_title'] = trim((string) ($adminSettings['custom_edition_title'] ?? '')) !== ''
+        ? $adminSettings['custom_edition_title']
+        : 'Remastered';
+    $settings['custom_edition_subtitle'] = trim((string) ($adminSettings['custom_edition_subtitle'] ?? '')) !== ''
+        ? $adminSettings['custom_edition_subtitle']
+        : '基于wallos原版深度魔改';
 }
 
 ?>
