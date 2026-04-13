@@ -1489,12 +1489,24 @@ $pageSections = [
                             class="color-picker fa-solid fa-eye-dropper">
                         <label for="hoverColor"><?= translate('hover_color', $i18n) ?></label>
                     </div>
+                    <div class="form-group-inline mobile-grow color-picker-button">
+                        <input type="color" id="textColor" name="textColor"
+                            value="<?= isset($settings['customColors']['text_color']) && !empty($settings['customColors']['text_color']) ? $settings['customColors']['text_color'] : '#202020' ?>"
+                            class="color-picker fa-solid fa-eye-dropper">
+                        <label for="textColor"><?= translate('text_color', $i18n) ?></label>
+                    </div>
                 </div>
                 <div class="custom-colors wrap">
                     <input type="button" value="<?= translate('reset_custom_colors', $i18n) ?>"
                         onClick="resetCustomColors()" class="secondary-button thin mobile-grow" id="reset-colors">
                     <input type="button" value="<?= translate('save_custom_colors', $i18n) ?>"
                         onClick="saveCustomColors()" class="buton thin mobile-grow" id="save-colors">
+                </div>
+                <div class="settings-notes">
+                    <p>
+                        <i class="fa-solid fa-circle-info"></i>
+                        <?= translate('dynamic_wallpaper_text_color_hint', $i18n) ?>
+                    </p>
                 </div>
             </div>
             <?php

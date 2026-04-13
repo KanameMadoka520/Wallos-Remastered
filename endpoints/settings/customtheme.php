@@ -9,9 +9,10 @@ $data = json_decode($postData, true);
 $main_color = $data['mainColor'];
 $accent_color = $data['accentColor'];
 $hover_color = $data['hoverColor'];
+$text_color = $data['textColor'] ?? '';
 
 // Validate input, should be a color in #RRGGBB format
-if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $main_color) || !preg_match('/^#[0-9A-Fa-f]{6}$/', $accent_color) || !preg_match('/^#[0-9A-Fa-f]{6}$/', $hover_color)) {
+if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $main_color) || !preg_match('/^#[0-9A-Fa-f]{6}$/', $accent_color) || !preg_match('/^#[0-9A-Fa-f]{6}$/', $hover_color) || ($text_color !== '' && !preg_match('/^#[0-9A-Fa-f]{6}$/', $text_color))) {
     die(json_encode([
         "success" => false,
         "message" => translate("error", $i18n)
@@ -29,10 +30,11 @@ $stmt = $db->prepare('DELETE FROM custom_colors WHERE user_id = :userId');
 $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
 $stmt->execute();
 
-$stmt = $db->prepare('INSERT INTO custom_colors (main_color, accent_color, hover_color, user_id) VALUES (:main_color, :accent_color, :hover_color, :userId)');
+$stmt = $db->prepare('INSERT INTO custom_colors (main_color, accent_color, hover_color, text_color, user_id) VALUES (:main_color, :accent_color, :hover_color, :text_color, :userId)');
 $stmt->bindParam(':main_color', $main_color, SQLITE3_TEXT);
 $stmt->bindParam(':accent_color', $accent_color, SQLITE3_TEXT);
 $stmt->bindParam(':hover_color', $hover_color, SQLITE3_TEXT);
+$stmt->bindParam(':text_color', $text_color, SQLITE3_TEXT);
 $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
 
 if ($stmt->execute()) {

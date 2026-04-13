@@ -1,6 +1,10 @@
 body.dynamic-wallpaper-enabled {
     background: transparent !important;
     position: relative;
+    --text-color: #f3f6fb;
+    --text-color-rgb: 243, 246, 251;
+    --text-color-inverted: #11151c;
+    --text-color-inverted-rgb: 17, 21, 28;
 }
 
 body.dynamic-wallpaper-enabled .wallos-decorative-background {
@@ -124,13 +128,13 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer,
 body.dynamic-wallpaper-enabled .user-card,
 body.dynamic-wallpaper-enabled .invite-code-card,
 body.dynamic-wallpaper-enabled .access-log-card {
-    background-color: rgba(255, 255, 255, 0.001);
+    background-color: rgba(17, 21, 28, 0.72);
     backdrop-filter: blur(18px) saturate(1.08);
     -webkit-backdrop-filter: blur(18px) saturate(1.08);
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.22);
     box-shadow:
-        0 20px 56px rgba(0, 0, 0, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        0 20px 56px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 body.dark.dynamic-wallpaper-enabled .account-section,
@@ -162,20 +166,26 @@ body.dark.dynamic-wallpaper-enabled .subscription-image-viewer,
 body.dark.dynamic-wallpaper-enabled .user-card,
 body.dark.dynamic-wallpaper-enabled .invite-code-card,
 body.dark.dynamic-wallpaper-enabled .access-log-card {
-    background-color: rgba(0, 0, 0, 0.001);
-    border-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(14, 18, 24, 0.78);
+    border-color: rgba(255, 255, 255, 0.20);
 }
 
 body.dynamic-wallpaper-enabled > header .contain,
 body.dynamic-wallpaper-enabled > .custom-edition-banner .contain {
-    background-color: rgba(255, 255, 255, 0.001);
+    background-color: rgba(12, 16, 22, 0.58);
     backdrop-filter: blur(16px) saturate(1.06);
     -webkit-backdrop-filter: blur(16px) saturate(1.06);
     border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow:
-        0 16px 36px rgba(0, 0, 0, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        0 16px 36px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body.dynamic-wallpaper-enabled .button.secondary-button,
+body.dynamic-wallpaper-enabled .media-layout-button,
+body.dynamic-wallpaper-enabled .dark-theme-button {
+    border-color: rgba(255, 255, 255, 0.18);
 }
 
 body.dynamic-wallpaper-enabled > header .contain {

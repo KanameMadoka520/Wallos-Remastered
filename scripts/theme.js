@@ -6,6 +6,18 @@ function setBodyThemeClass(themeName) {
   document.body.className = [...existingClasses, themeName].join(' ');
 }
 
+function hexToRgbString(hex) {
+  const normalized = String(hex || "").replace("#", "");
+  if (normalized.length !== 6) {
+    return "";
+  }
+
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
 function applyDecorativeBackgroundState(enabled) {
   document.body.classList.toggle('decorative-background-enabled', enabled);
   document.body.classList.toggle('decorative-background-disabled', !enabled);
@@ -226,10 +238,13 @@ function resetCustomColors() {
         document.documentElement.style.removeProperty("--main-color");
         document.documentElement.style.removeProperty("--accent-color");
         document.documentElement.style.removeProperty("--hover-color");
+        document.documentElement.style.removeProperty("--text-color");
+        document.documentElement.style.removeProperty("--text-color-rgb");
 
         document.getElementById("mainColor").value = "#FFFFFF";
         document.getElementById("accentColor").value = "#FFFFFF";
         document.getElementById("hoverColor").value = "#FFFFFF";
+        document.getElementById("textColor").value = "#202020";
       } else {
         showErrorMessage(data.message || translate("failed_reset_colors"));
       }
@@ -251,6 +266,7 @@ function saveCustomColors() {
   const mainColor = document.getElementById("mainColor").value;
   const accentColor = document.getElementById("accentColor").value;
   const hoverColor = document.getElementById("hoverColor").value;
+  const textColor = document.getElementById("textColor").value;
 
   fetch('endpoints/settings/customtheme.php', {
     method: 'POST',
@@ -258,7 +274,7 @@ function saveCustomColors() {
       'Content-Type': 'application/json',
       'X-CSRF-Token': window.csrfToken,
     },
-    body: JSON.stringify({ mainColor: mainColor, accentColor: accentColor, hoverColor: hoverColor })
+    body: JSON.stringify({ mainColor: mainColor, accentColor: accentColor, hoverColor: hoverColor, textColor: textColor })
   })
     .then(response => response.json())
     .then(data => {
@@ -267,6 +283,8 @@ function saveCustomColors() {
         document.documentElement.style.setProperty('--main-color', mainColor);
         document.documentElement.style.setProperty('--accent-color', accentColor);
         document.documentElement.style.setProperty('--hover-color', hoverColor);
+        document.documentElement.style.setProperty('--text-color', textColor);
+        document.documentElement.style.setProperty('--text-color-rgb', hexToRgbString(textColor));
       } else {
         showErrorMessage(data.message);
       }
