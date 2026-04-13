@@ -17,7 +17,7 @@ function wallos_normalize_subscription_image_layout_setting($value)
 function wallos_normalize_page_transition_style_setting($value)
 {
     $style = trim((string) $value);
-    return in_array($style, ['shutter', 'bluearchive'], true) ? $style : 'shutter';
+    return in_array($style, ['shutter', 'bluearchive', 'bluearchive_theme'], true) ? $style : 'shutter';
 }
 
 function wallos_normalize_subscription_value_visibility_setting($value)

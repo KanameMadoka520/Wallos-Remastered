@@ -5,7 +5,7 @@ require_once '../../includes/validate_endpoint.php';
 function wallos_normalize_page_transition_style($value)
 {
     $style = trim((string) $value);
-    return in_array($style, ['shutter', 'bluearchive'], true) ? $style : 'shutter';
+    return in_array($style, ['shutter', 'bluearchive', 'bluearchive_theme'], true) ? $style : 'shutter';
 }
 
 $postData = file_get_contents('php://input');

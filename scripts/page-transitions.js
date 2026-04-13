@@ -4,7 +4,7 @@
   const transitionTitleId = "wallos-page-transition-title";
   const contextStorageKey = "wallos-page-transition-context";
   const enabledClass = "wallos-page-transition-enabled";
-  const supportedStyles = new Set(["shutter", "bluearchive"]);
+  const supportedStyles = new Set(["shutter", "bluearchive", "bluearchive_theme"]);
   const leaveDurationMs = 520;
   const loadingClass = "wallos-page-transition-loading";
   const leavingClass = "wallos-page-transition-leaving";
