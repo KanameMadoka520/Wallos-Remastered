@@ -12,6 +12,12 @@
         <li <?= $sortOrder == "price" ? 'class="selected"' : "" ?> onClick="setSortOption('price')" id="sort-price">
             <?= translate('price', $i18n) ?>
         </li>
+        <li <?= $sortOrder == "payment_total_main" ? 'class="selected"' : "" ?> onClick="setSortOption('payment_total_main')" id="sort-payment_total_main">
+            <?= translate('subscription_invested_total', $i18n) ?>
+        </li>
+        <li <?= $sortOrder == "remaining_value" ? 'class="selected"' : "" ?> onClick="setSortOption('remaining_value')" id="sort-remaining_value">
+            <?= translate('subscription_remaining_value', $i18n) ?>
+        </li>
         <li <?= $sortOrder == "next_payment" ? 'class="selected"' : "" ?> onClick="setSortOption('next_payment')"
             id="sort-next_payment"><?= translate('next_payment', $i18n) ?></li>
         <li <?= $sortOrder == "payer_user_id" ? 'class="selected"' : "" ?> onClick="setSortOption('payer_user_id')"
