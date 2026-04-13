@@ -57,19 +57,34 @@ function updateDynamicWallpaperControls() {
 
 function updatePageTransitionControls() {
   const enabledCheckbox = document.getElementById('pagetransitionenabled');
-  if (!enabledCheckbox) {
+  const options = document.querySelectorAll('input[name="page-transition-style"]');
+  const selectedStyle = window.pageTransitionStyle || 'shutter';
+
+  if (!enabledCheckbox || !options.length) {
     return;
   }
+
+  options.forEach((option) => {
+    const isSelected = option.value === selectedStyle;
+    option.checked = isSelected;
+    option.disabled = !enabledCheckbox.checked;
+    option.closest('.page-transition-style-option')?.classList.toggle('is-selected', isSelected);
+  });
 }
 
-function setPageTransitionSettings() {
+function setPageTransitionSettings(forcedStyle = null) {
   const enabledCheckbox = document.getElementById('pagetransitionenabled');
   if (!enabledCheckbox) {
     return;
   }
 
+  const checkedStyle = forcedStyle || document.querySelector('input[name="page-transition-style"]:checked')?.value || window.pageTransitionStyle || 'shutter';
   const enabled = enabledCheckbox.checked;
   enabledCheckbox.disabled = true;
+
+  document.querySelectorAll('input[name="page-transition-style"]').forEach((input) => {
+    input.disabled = true;
+  });
 
   fetch('endpoints/settings/page_transition.php', {
     method: 'POST',
@@ -77,15 +92,15 @@ function setPageTransitionSettings() {
       'Content-Type': 'application/json',
       'X-CSRF-Token': window.csrfToken,
     },
-    body: JSON.stringify({ enabled: enabled, style: 'shutter' })
+    body: JSON.stringify({ enabled: enabled, style: checkedStyle })
   })
     .then(response => response.json())
     .then(data => {
       if (data.success) {
         window.pageTransitionEnabled = enabled;
-        window.pageTransitionStyle = 'shutter';
+        window.pageTransitionStyle = checkedStyle;
         if (window.WallosPageTransitions && typeof window.WallosPageTransitions.configure === 'function') {
-          window.WallosPageTransitions.configure({ enabled: enabled, style: 'shutter' });
+          window.WallosPageTransitions.configure({ enabled: enabled, style: checkedStyle });
         }
         showSuccessMessage(data.message);
       } else {
