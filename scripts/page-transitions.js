@@ -3,8 +3,12 @@
   const transitionOverlayId = "wallos-page-transition";
   const transitionTitleId = "wallos-page-transition-title";
   const leaveDurationMs = 420;
+  const loadingClass = "wallos-page-transition-loading";
+  const leavingClass = "wallos-page-transition-leaving";
+  const revealedClass = "wallos-page-transition-revealed";
   let revealScheduled = false;
   let leaveInProgress = false;
+  let pageTransitionsInitialized = false;
 
   function hasOverlay() {
     return !!document.getElementById(transitionOverlayId);
@@ -47,9 +51,9 @@
 
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
-        html.classList.add("wallos-page-transition-revealed");
+        html.classList.add(revealedClass);
         window.setTimeout(() => {
-          html.classList.remove("wallos-page-transition-loading");
+          html.classList.remove(loadingClass);
         }, 240);
       });
     });
@@ -77,8 +81,8 @@
 
     leaveInProgress = true;
     updateTransitionTitle(label);
-    html.classList.remove("wallos-page-transition-revealed");
-    html.classList.add("wallos-page-transition-loading", "wallos-page-transition-leaving");
+    html.classList.remove(revealedClass);
+    html.classList.add(loadingClass, leavingClass);
 
     window.setTimeout(() => {
       if (typeof onComplete === "function") {
@@ -87,12 +91,21 @@
     }, leaveDurationMs);
   }
 
+  function replayRevealForBfcacheRestore() {
+    revealScheduled = false;
+    leaveInProgress = false;
+    html.classList.add("wallos-page-transition-enabled", loadingClass);
+    html.classList.remove(leavingClass, revealedClass);
+    scheduleReveal();
+  }
+
   function initializePageTransitions() {
-    if (!hasOverlay()) {
+    if (pageTransitionsInitialized || !hasOverlay()) {
       return;
     }
 
-    html.classList.add("wallos-page-transition-enabled", "wallos-page-transition-loading");
+    pageTransitionsInitialized = true;
+    html.classList.add("wallos-page-transition-enabled", loadingClass);
     scheduleReveal();
 
     document.addEventListener("click", (event) => {
@@ -113,12 +126,12 @@
       }, nextLabel);
     }, true);
 
-    window.addEventListener("pageshow", () => {
-      revealScheduled = false;
-      leaveInProgress = false;
-      html.classList.add("wallos-page-transition-enabled", "wallos-page-transition-loading");
-      html.classList.remove("wallos-page-transition-leaving", "wallos-page-transition-revealed");
-      scheduleReveal();
+    window.addEventListener("pageshow", (event) => {
+      if (!event.persisted) {
+        return;
+      }
+
+      replayRevealForBfcacheRestore();
     });
   }
 
