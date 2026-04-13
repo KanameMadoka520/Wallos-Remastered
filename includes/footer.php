@@ -1,5 +1,12 @@
 </main>
 
+<section class="page-edition-footer" data-page-ui-hide-target>
+  <div class="contain">
+    <span class="custom-edition-badge"><?= htmlspecialchars($settings['custom_edition_title'] ?? 'Remastered', ENT_QUOTES, 'UTF-8') ?></span>
+    <span class="custom-edition-text"><?= htmlspecialchars($settings['custom_edition_subtitle'] ?? '基于wallos原版深度魔改', ENT_QUOTES, 'UTF-8') ?></span>
+  </div>
+</section>
+
 <div class="toast" id="errorToast">
   <div class="toast-content">
     <i class="fas fa-solid fa-x toast-icon error"></i>
