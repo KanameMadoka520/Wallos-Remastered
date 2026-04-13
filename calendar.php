@@ -148,41 +148,30 @@ $calendarSelectableYears = range((int) $currentYear, $calendarSelectableYearEnd)
         <?php
       }
       ?>
-      <span id="month" class="month"><?= translate('month-' . $calendarMonth, $i18n) ?> <?= $calendarYear ?></span>
+      <div class="calendar-nav-current" id="calendar-nav-jump" data-current-year="<?= (int) $currentYear ?>"
+        data-current-month="<?= (int) $currentMonth ?>">
+        <select id="calendarMonthSelect" class="calendar-nav-inline-select" onchange="goToCalendarDate()">
+          <?php for ($monthOption = 1; $monthOption <= 12; $monthOption++): ?>
+            <?php
+            $monthValue = str_pad((string) $monthOption, 2, '0', STR_PAD_LEFT);
+            $isPastMonth = ((int) $calendarYear === (int) $currentYear) && ($monthOption < (int) $currentMonth);
+            ?>
+            <option value="<?= $monthOption ?>" <?= (int) $calendarMonth === $monthOption ? 'selected' : '' ?>
+              <?= $isPastMonth ? 'disabled' : '' ?>>
+              <?= translate('month-' . $monthValue, $i18n) ?>
+            </option>
+          <?php endfor; ?>
+        </select>
+        <select id="calendarYearSelect" class="calendar-nav-inline-select" onchange="syncCalendarJumpControls(true)">
+          <?php foreach ($calendarSelectableYears as $yearOption): ?>
+            <option value="<?= (int) $yearOption ?>" <?= (int) $calendarYear === (int) $yearOption ? 'selected' : '' ?>>
+              <?= (int) $yearOption ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
       <button class="button tiny" id="next" onclick="nextMonth(<?= $calendarMonth ?>, <?= $calendarYear ?>)"><i
           class="fa-solid fa-chevron-right"></i></button>
-      <div class="calendar-nav-jump" id="calendar-nav-jump" data-current-year="<?= (int) $currentYear ?>"
-        data-current-month="<?= (int) $currentMonth ?>">
-        <div class="calendar-nav-select-group">
-          <span><?= translate('calendar_year_label', $i18n) ?></span>
-          <select id="calendarYearSelect" class="calendar-nav-select" onchange="syncCalendarJumpControls()">
-            <?php foreach ($calendarSelectableYears as $yearOption): ?>
-              <option value="<?= (int) $yearOption ?>" <?= (int) $calendarYear === (int) $yearOption ? 'selected' : '' ?>>
-                <?= (int) $yearOption ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div class="calendar-nav-select-group">
-          <span><?= translate('calendar_month_label', $i18n) ?></span>
-          <select id="calendarMonthSelect" class="calendar-nav-select">
-            <?php for ($monthOption = 1; $monthOption <= 12; $monthOption++): ?>
-              <?php
-              $monthValue = str_pad((string) $monthOption, 2, '0', STR_PAD_LEFT);
-              $isPastMonth = ((int) $calendarYear === (int) $currentYear) && ($monthOption < (int) $currentMonth);
-              ?>
-              <option value="<?= $monthOption ?>" <?= (int) $calendarMonth === $monthOption ? 'selected' : '' ?>
-                <?= $isPastMonth ? 'disabled' : '' ?>>
-                <?= translate('month-' . $monthValue, $i18n) ?>
-              </option>
-            <?php endfor; ?>
-          </select>
-        </div>
-        <button class="button secondary-button tiny calendar-jump-button" type="button" onclick="goToCalendarDate()">
-          <i class="fa-solid fa-arrow-right"></i>
-          <?= translate('calendar_jump_button', $i18n) ?>
-        </button>
-      </div>
     </div>
   </div>
   <div>

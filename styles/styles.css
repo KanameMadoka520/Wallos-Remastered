@@ -4905,36 +4905,48 @@ button.dark-theme-button i {
   font-size: 18px;
 }
 
-.calendar-nav .month {
-  text-align: center;
-}
-
-.calendar-nav-jump {
-  margin-left: auto;
+.calendar-nav-current {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
-}
-
-.calendar-nav-select-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 132px;
-}
-
-.calendar-nav-select-group span {
-  font-size: 12px;
-  color: rgba(var(--text-color-rgb), 0.72);
-}
-
-.calendar-nav-select {
   min-width: 0;
 }
 
-.calendar-jump-button {
-  white-space: nowrap;
+.calendar-nav-inline-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  min-width: 0;
+  width: auto;
+  padding: 9px 36px 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--box-border-color);
+  background:
+    linear-gradient(135deg, rgba(var(--main-color-rgb), 0.06), rgba(var(--accent-color-rgb), 0.04)),
+    var(--box-background-color);
+  color: var(--text-color);
+  font-size: 16px;
+  font-weight: 600;
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 10px 10px;
+  background-image:
+    linear-gradient(135deg, rgba(var(--main-color-rgb), 0.06), rgba(var(--accent-color-rgb), 0.04)),
+    linear-gradient(45deg, transparent 50%, var(--main-color) 50%),
+    linear-gradient(135deg, var(--main-color) 50%, transparent 50%);
+  box-shadow: var(--box-shadow);
+  cursor: pointer;
+}
+
+.calendar-nav-inline-select:hover {
+  border-color: rgba(var(--main-color-rgb), 0.28);
+}
+
+.calendar-nav-inline-select:focus {
+  outline: none;
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px rgba(var(--main-color-rgb), 0.14);
 }
 
 .calendar {
@@ -5038,19 +5050,12 @@ button.dark-theme-button i {
 }
 
 @media (max-width: 768px) {
-  .calendar-nav-jump {
+  .calendar-nav-current {
     width: 100%;
-    margin-left: 0;
   }
 
-  .calendar-nav-select-group {
+  .calendar-nav-inline-select {
     flex: 1 1 calc(50% - 8px);
-    min-width: 0;
-  }
-
-  .calendar-jump-button {
-    width: 100%;
-    justify-content: center;
   }
 }
 

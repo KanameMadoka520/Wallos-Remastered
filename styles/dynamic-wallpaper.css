@@ -313,7 +313,6 @@ body.dynamic-wallpaper-enabled .mobile-nav > a.active {
 
 body.dynamic-wallpaper-enabled .calendar-nav,
 body.dynamic-wallpaper-enabled .calendar-nav .month,
-body.dynamic-wallpaper-enabled .calendar-nav-select-group span,
 body.dynamic-wallpaper-enabled .calendar .calendar-header .calendar-cell,
 body.dynamic-wallpaper-enabled .calendar .calendar-body .calendar-cell,
 body.dynamic-wallpaper-enabled .calendar .calendar-body .calendar-cell .calendar-cell-header {
@@ -353,7 +352,7 @@ body.dynamic-wallpaper-enabled .calendar .calendar-subscription-title {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-body.dynamic-wallpaper-enabled .calendar-nav-select {
+body.dynamic-wallpaper-enabled .calendar-nav-inline-select {
     background: rgba(10, 15, 24, 0.82);
     border-color: rgba(var(--main-color-rgb), 0.28);
     color: var(--wallos-dynamic-text-color);
