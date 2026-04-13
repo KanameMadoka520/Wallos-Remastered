@@ -3,6 +3,7 @@
 require_once __DIR__ . '/subscription_trash.php';
 require_once __DIR__ . '/subscription_payment_records.php';
 require_once __DIR__ . '/subscription_price_rules.php';
+require_once __DIR__ . '/budget_metrics.php';
 
 function getPricePerMonth($cycle, $frequency, $price)
 {
@@ -369,14 +370,11 @@ function wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n)
 $showVsBudgetGraph = false;
 $vsBudgetDataPoints = [];
 if (isset($userData['budget']) && $userData['budget'] > 0) {
-    $budget = (float) $userData['budget'];
-    $budgetLeft = $budget - $totalCostPerMonth;
-    $budgetLeft = $budgetLeft < 0 ? 0 : $budgetLeft;
-    $budgetUsed = ($totalCostPerMonth / $budget) * 100;
-    $budgetUsed = $budgetUsed > 100 ? 100 : $budgetUsed;
-    if ($totalCostPerMonth > $budget) {
-        $overBudgetAmount = $totalCostPerMonth - $budget;
-    }
+    $monthlyBudgetMetrics = wallos_calculate_budget_metrics($userData['budget'], $totalCostPerMonth);
+    $budget = $monthlyBudgetMetrics['budget'];
+    $budgetLeft = $monthlyBudgetMetrics['remaining'];
+    $budgetUsed = $monthlyBudgetMetrics['used_percent'];
+    $overBudgetAmount = $monthlyBudgetMetrics['over_amount'];
     $showVsBudgetGraph = true;
     $vsBudgetDataPoints = [
         [
@@ -391,14 +389,16 @@ if (isset($userData['budget']) && $userData['budget'] > 0) {
 }
 
 if (isset($userData['yearly_budget']) && $userData['yearly_budget'] > 0) {
-    $yearlyBudget = (float) $userData['yearly_budget'];
-    $yearlyBudgetRemaining = $yearlyBudget - $currentYearProjectedSpend;
-    $yearlyBudgetRemaining = $yearlyBudgetRemaining < 0 ? 0 : $yearlyBudgetRemaining;
-    $yearlyBudgetUsed = ($currentYearProjectedSpend / $yearlyBudget) * 100;
-    $yearlyBudgetUsed = $yearlyBudgetUsed > 100 ? 100 : $yearlyBudgetUsed;
-    if ($currentYearProjectedSpend > $yearlyBudget) {
-        $yearlyOverBudgetAmount = $currentYearProjectedSpend - $yearlyBudget;
-    }
+    $yearlyBudgetMetrics = wallos_calculate_yearly_budget_metrics(
+        $userData['yearly_budget'],
+        $currentYearActualPaid,
+        $projectedRemainingYearCost,
+        $totalCostPerYear
+    );
+    $yearlyBudget = $yearlyBudgetMetrics['budget'];
+    $yearlyBudgetRemaining = $yearlyBudgetMetrics['remaining'];
+    $yearlyBudgetUsed = $yearlyBudgetMetrics['used_percent'];
+    $yearlyOverBudgetAmount = $yearlyBudgetMetrics['over_amount'];
 }
 
 $showCantConverErrorMessage = false;
