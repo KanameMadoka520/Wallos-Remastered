@@ -4,8 +4,7 @@
   const transitionTitleId = "wallos-page-transition-title";
   const contextStorageKey = "wallos-page-transition-context";
   const enabledClass = "wallos-page-transition-enabled";
-  const supportedStyles = new Set(["shutter", "nova", "scanline", "ribbon"]);
-  const leaveDurationMs = 420;
+  const leaveDurationMs = 520;
   const loadingClass = "wallos-page-transition-loading";
   const leavingClass = "wallos-page-transition-leaving";
   const revealedClass = "wallos-page-transition-revealed";
@@ -20,7 +19,7 @@
   }
 
   function normalizeTransitionStyle(style) {
-    return supportedStyles.has(style) ? style : "shutter";
+    return "shutter";
   }
 
   function applyTransitionStyle(style) {
