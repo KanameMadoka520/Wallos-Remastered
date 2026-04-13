@@ -27,8 +27,8 @@ if (isset($_COOKIE['sortOrder']) && $_COOKIE['sortOrder'] != "") {
 }
 
 $sortOrder = $sort;
-$allowedSortCriteria = ['manual_order', 'name', 'id', 'next_payment', 'price', 'payer_user_id', 'category_id', 'payment_method_id', 'inactive', 'alphanumeric', 'renewal_type'];
-$order = ($sort == "price" || $sort == "id") ? "DESC" : "ASC";
+$allowedSortCriteria = ['manual_order', 'name', 'id', 'next_payment', 'price', 'payment_total_main', 'remaining_value', 'payer_user_id', 'category_id', 'payment_method_id', 'inactive', 'alphanumeric', 'renewal_type'];
+$order = ($sort == "price" || $sort == "id" || $sort == "payment_total_main" || $sort == "remaining_value") ? "DESC" : "ASC";
 
 if ($sort == "alphanumeric") {
   $sort = "name";
@@ -43,6 +43,10 @@ if ($sort == "renewal_type") {
 }
 
 if ($sort == "manual_order") {
+  $sort = "sort_order";
+}
+
+if ($sort == "payment_total_main" || $sort == "remaining_value") {
   $sort = "sort_order";
 }
 
@@ -329,6 +333,30 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
           return $a['inactive'] - $b['inactive'];
         });
       }
+    }
+
+    if ($sortOrder == "payment_total_main") {
+      usort($print, function ($a, $b) {
+        $totalA = (float) ($a['payment_total_main'] ?? 0);
+        $totalB = (float) ($b['payment_total_main'] ?? 0);
+        if ($totalA === $totalB) {
+          return strnatcmp(strtolower((string) ($a['name'] ?? '')), strtolower((string) ($b['name'] ?? '')));
+        }
+
+        return $totalA < $totalB ? 1 : -1;
+      });
+    }
+
+    if ($sortOrder == "remaining_value") {
+      usort($print, function ($a, $b) {
+        $remainingA = (float) (($a['remaining_value']['remaining_value_main'] ?? 0));
+        $remainingB = (float) (($b['remaining_value']['remaining_value_main'] ?? 0));
+        if ($remainingA === $remainingB) {
+          return strnatcmp(strtolower((string) ($a['name'] ?? '')), strtolower((string) ($b['name'] ?? '')));
+        }
+
+        return $remainingA < $remainingB ? 1 : -1;
+      });
     }
 
     if (isset($print)) {
