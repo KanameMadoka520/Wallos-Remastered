@@ -899,10 +899,10 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
     </div>
 
     <div class="buttons">
-      <button type="button" class="secondary-button thin" onClick="closeSubscriptionPaymentModal()">
+      <button type="button" class="button secondary-button thin" onClick="closeSubscriptionPaymentModal()">
         <?= translate('cancel', $i18n) ?>
       </button>
-      <button type="submit" class="thin" id="subscription-payment-save-button">
+      <button type="submit" class="button thin" id="subscription-payment-save-button">
         <?= translate('save', $i18n) ?>
       </button>
     </div>
@@ -930,23 +930,23 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       </div>
     </div>
     <div class="subscription-payment-history-export-actions">
-      <button type="button" class="secondary-button thin" onClick="exportSubscriptionPaymentHistoryCurrentView('csv')">
+      <button type="button" class="button secondary-button thin subscription-payment-history-toolbar-button" onClick="exportSubscriptionPaymentHistoryCurrentView('csv')">
         <i class="fa-solid fa-file-csv"></i>
         <span><?= translate('export_as_csv', $i18n) ?></span>
       </button>
-      <button type="button" class="secondary-button thin" onClick="exportSubscriptionPaymentHistoryCurrentView('json')">
+      <button type="button" class="button secondary-button thin subscription-payment-history-toolbar-button" onClick="exportSubscriptionPaymentHistoryCurrentView('json')">
         <i class="fa-solid fa-file-code"></i>
         <span><?= translate('export_as_json', $i18n) ?></span>
       </button>
     </div>
-    <button type="button" class="secondary-button thin" id="subscription-payment-history-add-button">
+    <button type="button" class="button secondary-button thin subscription-payment-history-toolbar-button" id="subscription-payment-history-add-button">
       <i class="fa-solid fa-plus"></i>
       <span><?= translate('subscription_record_payment', $i18n) ?></span>
     </button>
   </div>
   <div class="subscription-payment-history-content" id="subscription-payment-history-content"></div>
   <div class="buttons">
-    <button type="button" class="secondary-button thin" onClick="closeSubscriptionPaymentHistoryModal()">
+    <button type="button" class="button secondary-button thin" onClick="closeSubscriptionPaymentHistoryModal()">
       <?= translate('close', $i18n) ?>
     </button>
   </div>

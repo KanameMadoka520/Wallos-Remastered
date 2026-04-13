@@ -1378,6 +1378,22 @@ button.mobile-action-renew {
   justify-content: flex-end;
 }
 
+.subscription-payment-record-button,
+.subscription-payment-history-toolbar-button,
+.subscription-payment-record-history-actions > .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.subscription-payment-record-button > i,
+.subscription-payment-history-toolbar-button > i,
+.subscription-payment-record-history-actions > .button > i {
+  font-size: 14px;
+}
+
 .subscription-payment-record-summary {
   display: flex;
   flex-wrap: wrap;
@@ -1558,7 +1574,8 @@ button.mobile-action-renew {
 }
 
 .subscription-payment-history-modal {
-  max-width: 860px;
+  width: min(50vw, 980px);
+  max-width: min(calc(100vw - 32px), 980px);
 }
 
 .subscription-payment-history-toolbar {
@@ -1751,7 +1768,7 @@ button.mobile-action-renew {
     width: 100%;
   }
 
-  .subscription-payment-history-export-actions > .secondary-button {
+  .subscription-payment-history-export-actions > .subscription-payment-history-toolbar-button {
     flex: 1 1 calc(50% - 10px);
     justify-content: center;
   }
@@ -1760,7 +1777,7 @@ button.mobile-action-renew {
     justify-content: stretch;
   }
 
-  .subscription-payment-history-toolbar > .secondary-button {
+  .subscription-payment-history-toolbar > .subscription-payment-history-toolbar-button {
     width: 100%;
   }
 
@@ -2628,7 +2645,8 @@ button.button.secondary-button:hover {
   border-color: var(--hover-color);
 }
 
-input[type="button"].warning-button {
+input[type="button"].warning-button,
+button.button.warning-button {
   background-color: #f45a40;
   border-color: #f45a40;
 }

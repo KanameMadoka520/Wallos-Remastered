@@ -509,12 +509,12 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                             <?= translate('subscription_payment_history', $i18n) ?>
                         </span>
                         <div class="subscription-payment-record-actions">
-                        <button type="button" class="secondary-button thin subscription-payment-record-button"
+                        <button type="button" class="button secondary-button thin subscription-payment-record-button"
                             onClick="openSubscriptionPaymentHistoryModal(event, <?= (int) $subscription['id'] ?>)">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                             <span><?= translate('subscription_view_payment_history', $i18n) ?></span>
                         </button>
-                        <button type="button" class="secondary-button thin subscription-payment-record-button"
+                        <button type="button" class="button secondary-button thin subscription-payment-record-button"
                             onClick="openSubscriptionPaymentModal(event, <?= (int) $subscription['id'] ?>)">
                             <i class="fa-solid fa-plus"></i>
                             <span><?= translate('subscription_record_payment', $i18n) ?></span>
