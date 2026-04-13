@@ -155,6 +155,41 @@ try {
     wallos_ledger_assert_equal($availableYears, [2027, 2026], '账本年份列表应覆盖当前年与下一年，并按倒序返回');
     wallos_ledger_print_ok('账本年份切换列表生成正确');
 
+    $paymentTotalMap = wallos_get_subscription_payment_total_map($db, 1);
+    wallos_ledger_assert_float($paymentTotalMap[9], 200, '同一订阅的累计投入成本应按全部实付账本累加');
+    wallos_ledger_print_ok('累计投入成本映射正确');
+
+    $remainingValueSubscription = $subscription;
+    $remainingValueSubscription['next_payment'] = '2026-05-01';
+    $remainingValueRecords = [
+        [
+            'due_date' => '2026-04-01',
+            'amount_main_snapshot' => 20,
+            'amount_original' => 10,
+            'currency_code_snapshot' => 'EUR',
+            'status' => 'paid',
+        ],
+    ];
+    $remainingValue = wallos_build_subscription_remaining_value_snapshot(
+        $db,
+        $remainingValueSubscription,
+        1,
+        $priceRules,
+        $remainingValueRecords,
+        [1 => ['code' => 'USD'], 2 => ['code' => 'EUR']],
+        [
+            'metric_explanation_regular_price_source' => 'Regular subscription price',
+            'subscription_remaining_value_source_record' => 'Based on the actual payment recorded for the current cycle',
+            'subscription_remaining_value_source_rule' => 'Estimated from the current pricing rules for the active cycle',
+            'subscription_price_rule_one_time_summary' => '%s on due date %s',
+        ],
+        new DateTime('2026-04-16')
+    );
+    wallos_ledger_assert_float($remainingValue['current_cycle_value_main'], 20, '当前周期价值应优先采用本期实际支付记录');
+    wallos_ledger_assert_float($remainingValue['remaining_value_main'], 10, '剩余价值应按当前周期剩余时间折算');
+    wallos_ledger_assert_equal($remainingValue['remaining_days'], 15, '剩余天数应按到期时间折算');
+    wallos_ledger_print_ok('剩余价值折算正确');
+
     $cashflow = wallos_build_subscription_yearly_cashflow($records, $forecast, 2026);
     wallos_ledger_assert_float($cashflow[0]['actual_total'], 100, '一月现金流应计入历史实付');
     wallos_ledger_assert_float($cashflow[3]['predicted_total'], 20, '四月现金流应计入预测付款');

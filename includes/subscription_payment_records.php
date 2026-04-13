@@ -95,6 +95,25 @@ function wallos_get_subscription_payment_record_by_id($db, $recordId, $subscript
     return $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
 }
 
+function wallos_get_subscription_payment_record_by_due_date($db, $subscriptionId, $userId, $dueDate)
+{
+    $stmt = $db->prepare('
+        SELECT id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot,
+               main_currency_code_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
+        FROM subscription_payment_records
+        WHERE subscription_id = :subscription_id AND user_id = :user_id AND due_date = :due_date AND status = :status
+        ORDER BY paid_at DESC, id DESC
+        LIMIT 1
+    ');
+    $stmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $stmt->bindValue(':due_date', $dueDate, SQLITE3_TEXT);
+    $stmt->bindValue(':status', 'paid', SQLITE3_TEXT);
+    $result = $stmt->execute();
+
+    return $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+}
+
 function wallos_get_subscription_payment_records_map($db, $userId, $limitPerSubscription = 6)
 {
     $stmt = $db->prepare('
@@ -145,6 +164,26 @@ function wallos_get_subscription_payment_record_count_map($db, $userId)
     }
 
     return $counts;
+}
+
+function wallos_get_subscription_payment_total_map($db, $userId)
+{
+    $stmt = $db->prepare('
+        SELECT subscription_id, COALESCE(SUM(amount_main_snapshot), 0) AS total_amount
+        FROM subscription_payment_records
+        WHERE user_id = :user_id AND status = :status
+        GROUP BY subscription_id
+    ');
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $stmt->bindValue(':status', 'paid', SQLITE3_TEXT);
+    $result = $stmt->execute();
+
+    $totals = [];
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $totals[(int) ($row['subscription_id'] ?? 0)] = round((float) ($row['total_amount'] ?? 0), 2);
+    }
+
+    return $totals;
 }
 
 function wallos_get_subscription_payment_records_for_period($db, $userId, $dateFrom, $dateTo, $respectExcludeFromStats = true)

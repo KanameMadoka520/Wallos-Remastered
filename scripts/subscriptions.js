@@ -1110,10 +1110,16 @@ function formatSubscriptionPaymentHistoryAmount(value, currencyCode) {
 function getSubscriptionPaymentHistorySummaryHtml() {
   const summary = currentPaymentHistorySummary || {};
   const currencyCode =
+    currentPaymentHistorySummary?.remaining_value?.main_currency_code ||
     currentPaymentHistoryRecords[0]?.main_currency_code_snapshot ||
     currentPaymentHistoryForecast[0]?.main_currency_code ||
     '';
+  const remainingValue = currentPaymentHistorySummary?.remaining_value || {};
   const summaryCards = [
+    {
+      label: translate('subscription_invested_total'),
+      value: formatSubscriptionPaymentHistoryAmount(summary.invested_total || 0, currencyCode),
+    },
     {
       label: translate('subscription_payment_summary_actual_this_year'),
       value: formatSubscriptionPaymentHistoryAmount(summary.actual_this_year_total || 0, currencyCode),
@@ -1131,6 +1137,13 @@ function getSubscriptionPaymentHistorySummaryHtml() {
       value: new Intl.NumberFormat(navigator.language).format(Number(summary.record_count || 0)),
     },
   ];
+
+  if (remainingValue.available) {
+    summaryCards.push({
+      label: translate('subscription_remaining_value'),
+      value: formatSubscriptionPaymentHistoryAmount(remainingValue.remaining_value_main || 0, currencyCode),
+    });
+  }
 
   return `
     <div class="subscription-payment-history-summary">
@@ -1150,6 +1163,12 @@ function getSubscriptionPaymentHistorySummaryHtml() {
         <i class="fa-solid fa-shuffle"></i>
         <span>${escapeHtml(translate('subscription_payment_rule_replay_notice'))}</span>
       </div>
+      ${remainingValue.available ? `
+        <div class="subscription-payment-history-note">
+          <i class="fa-solid fa-hourglass-half"></i>
+          <span>${escapeHtml(`${translate('subscription_remaining_value')}: ${formatSubscriptionPaymentHistoryAmount(remainingValue.remaining_value_main || 0, currencyCode)} | ${translate('subscription_remaining_value_days_inline').replace('%1$s', String(remainingValue.remaining_days || 0)).replace('%2$s', String(remainingValue.total_days || 0)).replace('%3$s', new Intl.NumberFormat(navigator.language, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(remainingValue.remaining_ratio || 0)))} | ${remainingValue.value_source_summary || ''}`)}</span>
+        </div>
+      ` : ''}
     </div>
   `;
 }

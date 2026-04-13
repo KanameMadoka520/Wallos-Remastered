@@ -6,6 +6,7 @@ require_once '../../includes/getdbkeys.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/subscription_payment_records.php';
+require_once '../../includes/subscription_payment_history.php';
 require_once '../../includes/subscription_price_rules.php';
 
 include_once '../../includes/list_subscriptions.php';
@@ -35,6 +36,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
   $paymentRecordsMap = wallos_get_subscription_payment_records_map($db, $userId, 6);
   $paymentRecordCountMap = wallos_get_subscription_payment_record_count_map($db, $userId);
+  $paymentTotalMap = wallos_get_subscription_payment_total_map($db, $userId);
   $priceRulesMap = wallos_get_subscription_price_rules_map($db, $userId, true);
 
 
@@ -198,7 +200,18 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $print[$id]['uploaded_images'] = $uploadedImagesMap[$id] ?? [];
     $print[$id]['payment_records'] = $paymentRecordsMap[$id] ?? [];
     $print[$id]['payment_record_count'] = (int) ($paymentRecordCountMap[$id] ?? 0);
+    $print[$id]['payment_total_main'] = (float) ($paymentTotalMap[$id] ?? 0);
+    $print[$id]['payment_total_currency_code'] = $currencies[$main_currency]['code'] ?? $print[$id]['currency_code'];
     $print[$id]['price_rules'] = $priceRulesMap[$id] ?? [];
+    $print[$id]['remaining_value'] = wallos_build_subscription_remaining_value_snapshot(
+      $db,
+      $subscription,
+      $userId,
+      $print[$id]['price_rules'],
+      $print[$id]['payment_records'],
+      $currencies,
+      $i18n
+    );
     $print[$id]['detail_image'] = !empty($print[$id]['uploaded_images'][0]['access_url'])
       ? $print[$id]['uploaded_images'][0]['access_url']
       : ($subscription['detail_image'] ?? '');
