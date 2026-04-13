@@ -33,10 +33,16 @@ const SUBSCRIPTION_IMAGE_LAYOUT_STORAGE_KEYS = {
   detail: "wallos-subscription-image-layout-detail",
 };
 const SUBSCRIPTION_DISPLAY_COLUMNS_STORAGE_KEY = "wallos-subscriptions-display-columns";
+const SUBSCRIPTION_VALUE_VISIBILITY_STORAGE_KEY = "wallos-subscriptions-value-visibility";
 let subscriptionMasonryLayoutFrame = null;
 let subscriptionMasonryResizeTimer = null;
 let subscriptionCardSortable = null;
 let isSubscriptionSortDragging = false;
+let subscriptionValueVisibility = {
+  invested: true,
+  remaining: true,
+  used: true,
+};
 
 function toggleOpenSubscription(subId) {
   const subscriptionElement = document.querySelector('.subscription[data-id="' + subId + '"]');
@@ -67,6 +73,62 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function loadSubscriptionValueVisibility() {
+  try {
+    const stored = window.localStorage.getItem(SUBSCRIPTION_VALUE_VISIBILITY_STORAGE_KEY);
+    if (!stored) {
+      return;
+    }
+
+    const parsed = JSON.parse(stored);
+    subscriptionValueVisibility = {
+      invested: parsed.invested !== false,
+      remaining: parsed.remaining !== false,
+      used: parsed.used !== false,
+    };
+  } catch (error) {
+    subscriptionValueVisibility = { invested: true, remaining: true, used: true };
+  }
+}
+
+function persistSubscriptionValueVisibility() {
+  window.localStorage.setItem(SUBSCRIPTION_VALUE_VISIBILITY_STORAGE_KEY, JSON.stringify(subscriptionValueVisibility));
+}
+
+function applySubscriptionValueVisibility() {
+  const container = document.getElementById("subscriptions");
+  if (container) {
+    container.classList.toggle("hide-invested-metric", !subscriptionValueVisibility.invested);
+    container.classList.toggle("hide-remaining-metric", !subscriptionValueVisibility.remaining);
+    container.classList.toggle("hide-used-metric", !subscriptionValueVisibility.used);
+  }
+
+  document.querySelectorAll("[data-subscription-value-toggle]").forEach((button) => {
+    const metricKey = button.getAttribute("data-subscription-value-toggle");
+    const visible = !!subscriptionValueVisibility[metricKey];
+    button.classList.toggle("is-active", visible);
+    button.setAttribute("aria-pressed", visible ? "true" : "false");
+  });
+
+  document.querySelectorAll(".subscription-value-metrics").forEach((metricsContainer) => {
+    const visibleCards = Array.from(metricsContainer.querySelectorAll(".subscription-value-metric-card")).filter((card) => {
+      const computedStyle = window.getComputedStyle(card);
+      return computedStyle.display !== "none";
+    });
+    metricsContainer.classList.toggle("is-hidden-by-toggle", visibleCards.length === 0);
+  });
+}
+
+function toggleSubscriptionValueMetric(metricKey) {
+  if (!(metricKey in subscriptionValueVisibility)) {
+    return;
+  }
+
+  subscriptionValueVisibility[metricKey] = !subscriptionValueVisibility[metricKey];
+  persistSubscriptionValueVisibility();
+  applySubscriptionValueVisibility();
 }
 
 function createSubscriptionPriceRuleTempId() {
@@ -2337,6 +2399,10 @@ function resetForm() {
   autoRenew.checked = true;
   const startDate = document.querySelector("#start_date");
   startDate.value = new Date().toISOString().split('T')[0];
+  const manualUsedValueInput = document.querySelector("#manual_cycle_used_value_main");
+  if (manualUsedValueInput) {
+    manualUsedValueInput.value = "";
+  }
   const notifyDaysBefore = document.querySelector("#notify_days_before");
   notifyDaysBefore.disabled = true;
   const excludeFromStats = document.querySelector("#exclude_from_stats");
@@ -2392,6 +2458,11 @@ function fillEditFormFields(subscription) {
   startDate.value = subscription.start_date;
   const nextPament = document.querySelector("#next_payment");
   nextPament.value = subscription.next_payment;
+  const manualUsedValueInput = document.querySelector("#manual_cycle_used_value_main");
+  if (manualUsedValueInput) {
+    const effectiveManualValue = Number(subscription?.remaining_value?.manual_used_value_main || subscription?.manual_cycle_used_value_main || 0);
+    manualUsedValueInput.value = effectiveManualValue > 0 ? effectiveManualValue : "";
+  }
   const cancellationDate = document.querySelector("#cancellation_date");
   cancellationDate.value = subscription.cancellation_date;
 
@@ -2801,6 +2872,7 @@ function fetchSubscriptions(id, event, initiator) {
 
       setSwipeElements();
       applySubscriptionDisplayColumns();
+      applySubscriptionValueVisibility();
       applySubscriptionImageLayoutMode("detail");
       initializeSubscriptionMediaSortables();
       initializeSubscriptionCardSortable();
@@ -2972,6 +3044,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     formData.set("compress_subscription_image", shouldCompressDetailImage);
     formData.set("remove_uploaded_image_ids", removedUploadedImageIds.join(","));
+    formData.set("manual_cycle_used_value_main", document.querySelector("#manual_cycle_used_value_main")?.value || "");
     formData.delete("detail_images[]");
     selectedDetailImageFiles.forEach((file) => {
       formData.append("detail_images[]", file, file.name);
@@ -3072,7 +3145,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.addEventListener("keydown", handleSubscriptionImageViewerKeydown);
   window.addEventListener("resize", handleSubscriptionMasonryResize, { passive: true });
+  loadSubscriptionValueVisibility();
   applySubscriptionDisplayColumns();
+  applySubscriptionValueVisibility();
   applyAllSubscriptionImageLayoutModes();
   closeSubscriptionImageViewer();
   initializeSubscriptionMediaSortables();

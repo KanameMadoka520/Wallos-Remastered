@@ -24,6 +24,56 @@ function wallos_get_subscription_paid_due_dates_from_records(array $records)
     return $map;
 }
 
+function wallos_get_subscription_cycle_window(array $subscription, DateTime $today = null)
+{
+    $nextPaymentValue = trim((string) ($subscription['next_payment'] ?? ''));
+    if (!wallos_payment_history_is_valid_date($nextPaymentValue)) {
+        return [
+            'available' => false,
+            'cycle_start' => '',
+            'cycle_end' => '',
+            'remaining_days' => 0,
+            'total_days' => 0,
+        ];
+    }
+
+    $today = $today ?: new DateTime('today');
+    $cycleEnd = new DateTime($nextPaymentValue);
+    $interval = new DateInterval(wallos_get_subscription_interval_spec((int) ($subscription['cycle'] ?? 3), (int) ($subscription['frequency'] ?? 1)));
+    $cycleStart = (clone $cycleEnd)->sub($interval);
+
+    $startDateValue = trim((string) ($subscription['start_date'] ?? ''));
+    if (wallos_payment_history_is_valid_date($startDateValue)) {
+        $configuredStartDate = new DateTime($startDateValue);
+        if ($cycleStart < $configuredStartDate) {
+            $cycleStart = $configuredStartDate;
+        }
+    }
+
+    $totalDays = max(1, (int) $cycleStart->diff($cycleEnd)->days);
+    if ($today >= $cycleEnd) {
+        $remainingDays = 0;
+    } elseif ($today <= $cycleStart) {
+        $remainingDays = $totalDays;
+    } else {
+        $remainingDays = (int) $today->diff($cycleEnd)->days;
+    }
+
+    return [
+        'available' => true,
+        'cycle_start' => $cycleStart->format('Y-m-d'),
+        'cycle_end' => $cycleEnd->format('Y-m-d'),
+        'remaining_days' => $remainingDays,
+        'total_days' => $totalDays,
+    ];
+}
+
+function wallos_get_subscription_current_cycle_start_value(array $subscription)
+{
+    $window = wallos_get_subscription_cycle_window($subscription);
+    return $window['available'] ? (string) $window['cycle_start'] : '';
+}
+
 function wallos_enrich_subscription_payment_records_with_rule_replay($db, array $subscription, $userId, array $records, array $priceRules, $currencies, $i18n)
 {
     $enriched = [];
@@ -55,13 +105,17 @@ function wallos_enrich_subscription_payment_records_with_rule_replay($db, array 
 
 function wallos_build_subscription_remaining_value_snapshot($db, array $subscription, $userId, array $priceRules, array $records, $currencies, $i18n, DateTime $today = null)
 {
-    $nextPaymentValue = trim((string) ($subscription['next_payment'] ?? ''));
     $mainCurrencyCode = wallos_get_main_currency_snapshot($db, $userId);
-    if (!wallos_payment_history_is_valid_date($nextPaymentValue)) {
+    $window = wallos_get_subscription_cycle_window($subscription, $today);
+    if (empty($window['available'])) {
         return [
             'available' => false,
             'remaining_value_main' => 0.0,
             'current_cycle_value_main' => 0.0,
+            'time_prorated_remaining_main' => 0.0,
+            'manual_used_value_main' => 0.0,
+            'manual_unused_value_main' => 0.0,
+            'manual_used_value_active' => false,
             'remaining_ratio' => 0.0,
             'remaining_days' => 0,
             'total_days' => 0,
@@ -73,29 +127,7 @@ function wallos_build_subscription_remaining_value_snapshot($db, array $subscrip
         ];
     }
 
-    $today = $today ?: new DateTime('today');
-    $cycleEnd = new DateTime($nextPaymentValue);
-    $interval = new DateInterval(wallos_get_subscription_interval_spec((int) ($subscription['cycle'] ?? 3), (int) ($subscription['frequency'] ?? 1)));
-    $cycleStart = (clone $cycleEnd)->sub($interval);
-
-    $startDateValue = trim((string) ($subscription['start_date'] ?? ''));
-    if (wallos_payment_history_is_valid_date($startDateValue)) {
-        $configuredStartDate = new DateTime($startDateValue);
-        if ($cycleStart < $configuredStartDate) {
-            $cycleStart = $configuredStartDate;
-        }
-    }
-
-    $totalDays = max(1, (int) $cycleStart->diff($cycleEnd)->days);
-    if ($today >= $cycleEnd) {
-        $remainingDays = 0;
-    } elseif ($today <= $cycleStart) {
-        $remainingDays = $totalDays;
-    } else {
-        $remainingDays = (int) $today->diff($cycleEnd)->days;
-    }
-
-    $currentCycleAnchor = $cycleStart->format('Y-m-d');
+    $currentCycleAnchor = (string) $window['cycle_start'];
     $currentCycleRecord = null;
     foreach ($records as $record) {
         if (trim((string) ($record['due_date'] ?? '')) === $currentCycleAnchor && trim((string) ($record['status'] ?? 'paid')) === 'paid') {
@@ -126,20 +158,38 @@ function wallos_build_subscription_remaining_value_snapshot($db, array $subscrip
             : translate('subscription_remaining_value_source_rule', $i18n);
     }
 
-    $remainingRatio = $totalDays > 0 ? round($remainingDays / $totalDays, 6) : 0.0;
-    $remainingValueMain = round($currentCycleValueMain * $remainingRatio, 2);
+    $remainingRatio = (int) ($window['total_days'] ?? 0) > 0 ? round(((int) ($window['remaining_days'] ?? 0)) / ((int) ($window['total_days'] ?? 1)), 6) : 0.0;
+    $timeProratedRemainingMain = round($currentCycleValueMain * $remainingRatio, 2);
+
+    $storedManualUsedValue = round((float) ($subscription['manual_cycle_used_value_main'] ?? 0), 2);
+    $storedManualAnchor = trim((string) ($subscription['manual_cycle_used_value_cycle_start'] ?? ''));
+    $manualUsedValueActive = $storedManualUsedValue > 0 && $storedManualAnchor === $currentCycleAnchor;
+    $manualUsedValueMain = $manualUsedValueActive ? min($currentCycleValueMain, max(0, $storedManualUsedValue)) : 0.0;
+    $manualUnusedValueMain = round(max(0, $currentCycleValueMain - $manualUsedValueMain), 2);
+
+    $remainingValueMain = $timeProratedRemainingMain;
+    $remainingValueModeSummary = translate('subscription_remaining_value_mode_time', $i18n);
+    if ($manualUsedValueActive) {
+        $remainingValueMain = round(min($timeProratedRemainingMain, $manualUnusedValueMain), 2);
+        $remainingValueModeSummary = translate('subscription_remaining_value_mode_hybrid', $i18n);
+    }
 
     return [
         'available' => true,
         'remaining_value_main' => $remainingValueMain,
         'current_cycle_value_main' => $currentCycleValueMain,
+        'time_prorated_remaining_main' => $timeProratedRemainingMain,
+        'manual_used_value_main' => $manualUsedValueMain,
+        'manual_unused_value_main' => $manualUnusedValueMain,
+        'manual_used_value_active' => $manualUsedValueActive,
         'remaining_ratio' => round($remainingRatio * 100, 2),
-        'remaining_days' => $remainingDays,
-        'total_days' => $totalDays,
+        'remaining_days' => (int) ($window['remaining_days'] ?? 0),
+        'total_days' => (int) ($window['total_days'] ?? 0),
         'current_cycle_start' => $currentCycleAnchor,
-        'current_cycle_end' => $cycleEnd->format('Y-m-d'),
+        'current_cycle_end' => (string) ($window['cycle_end'] ?? ''),
         'current_cycle_value_label' => $currentCycleValueLabel,
         'value_source_summary' => $valueSourceSummary,
+        'remaining_mode_summary' => $remainingValueModeSummary,
         'main_currency_code' => $mainCurrencyCode,
     ];
 }
