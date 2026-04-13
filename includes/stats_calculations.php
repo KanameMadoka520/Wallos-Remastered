@@ -369,6 +369,9 @@ function wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n)
 
 $showVsBudgetGraph = false;
 $vsBudgetDataPoints = [];
+$showYearlyBudgetGraph = false;
+$yearlyBudgetDataPoints = [];
+$yearlyBudgetVisualizationSegments = [];
 if (isset($userData['budget']) && $userData['budget'] > 0) {
     $monthlyBudgetMetrics = wallos_calculate_budget_metrics($userData['budget'], $totalCostPerMonth);
     $budget = $monthlyBudgetMetrics['budget'];
@@ -399,6 +402,70 @@ if (isset($userData['yearly_budget']) && $userData['yearly_budget'] > 0) {
     $yearlyBudgetRemaining = $yearlyBudgetMetrics['remaining'];
     $yearlyBudgetUsed = $yearlyBudgetMetrics['used_percent'];
     $yearlyOverBudgetAmount = $yearlyBudgetMetrics['over_amount'];
+    $showYearlyBudgetGraph = true;
+
+    $yearlyBudgetDataPoints = [
+        [
+            'label' => translate('actual_paid_this_year', $i18n),
+            'y' => round((float) $currentYearActualPaid, 2),
+            'color' => 'rgba(43, 112, 255, 0.92)',
+            'borderColor' => 'rgba(43, 112, 255, 1)',
+        ],
+        [
+            'label' => translate('metric_explanation_projected_remaining_total', $i18n),
+            'y' => round((float) $projectedRemainingYearCost, 2),
+            'color' => 'rgba(245, 166, 35, 0.88)',
+            'borderColor' => 'rgba(245, 166, 35, 1)',
+        ],
+    ];
+
+    if ($yearlyBudgetRemaining > 0) {
+        $yearlyBudgetDataPoints[] = [
+            'label' => translate('yearly_budget_remaining', $i18n),
+            'y' => round((float) $yearlyBudgetRemaining, 2),
+            'color' => 'rgba(37, 203, 128, 0.88)',
+            'borderColor' => 'rgba(37, 203, 128, 1)',
+        ];
+    } elseif ($yearlyOverBudgetAmount > 0) {
+        $yearlyBudgetDataPoints[] = [
+            'label' => translate('yearly_amount_over_budget', $i18n),
+            'y' => round((float) $yearlyOverBudgetAmount, 2),
+            'color' => 'rgba(237, 84, 84, 0.88)',
+            'borderColor' => 'rgba(237, 84, 84, 1)',
+        ];
+    }
+
+    $yearlyBudgetVisualizationBase = max((float) $yearlyBudget, (float) $yearlyBudgetMetrics['projected_total'], 0.01);
+    $yearlyBudgetVisualizationSegments = [
+        [
+            'label' => translate('actual_paid_this_year', $i18n),
+            'value' => round((float) $currentYearActualPaid, 2),
+            'ratio' => round((float) ($currentYearActualPaid / $yearlyBudgetVisualizationBase), 6),
+            'color' => 'rgba(43, 112, 255, 0.92)',
+        ],
+        [
+            'label' => translate('metric_explanation_projected_remaining_total', $i18n),
+            'value' => round((float) $projectedRemainingYearCost, 2),
+            'ratio' => round((float) ($projectedRemainingYearCost / $yearlyBudgetVisualizationBase), 6),
+            'color' => 'rgba(245, 166, 35, 0.88)',
+        ],
+    ];
+
+    if ($yearlyBudgetRemaining > 0) {
+        $yearlyBudgetVisualizationSegments[] = [
+            'label' => translate('yearly_budget_remaining', $i18n),
+            'value' => round((float) $yearlyBudgetRemaining, 2),
+            'ratio' => round((float) ($yearlyBudgetRemaining / $yearlyBudgetVisualizationBase), 6),
+            'color' => 'rgba(37, 203, 128, 0.88)',
+        ];
+    } elseif ($yearlyOverBudgetAmount > 0) {
+        $yearlyBudgetVisualizationSegments[] = [
+            'label' => translate('yearly_amount_over_budget', $i18n),
+            'value' => round((float) $yearlyOverBudgetAmount, 2),
+            'ratio' => round((float) ($yearlyOverBudgetAmount / $yearlyBudgetVisualizationBase), 6),
+            'color' => 'rgba(237, 84, 84, 0.88)',
+        ];
+    }
 }
 
 $showCantConverErrorMessage = false;

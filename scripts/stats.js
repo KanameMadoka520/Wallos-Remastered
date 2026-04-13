@@ -89,6 +89,63 @@ function loadLineGraph(container, dataPoints, currency, run) {
     }
 }
 
+function loadBudgetBreakdownGraph(container, dataPoints, currency, run) {
+    if (!run) {
+        return;
+    }
+
+    const canvas = document.getElementById(container);
+    if (!canvas || !Array.isArray(dataPoints) || dataPoints.length === 0) {
+        return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: dataPoints.map(point => point.y),
+                backgroundColor: dataPoints.map(point => point.color || 'rgba(43, 112, 255, 0.85)'),
+                borderColor: dataPoints.map(point => point.borderColor || point.color || 'rgba(43, 112, 255, 1)'),
+                borderWidth: 1,
+                hoverOffset: 8,
+            }],
+            labels: dataPoints.map(point => {
+                if (currency) {
+                    return `${point.label} (${new Intl.NumberFormat(navigator.language, { style: 'currency', currency }).format(point.y)})`;
+                }
+                return `${point.label} (${new Intl.NumberFormat(navigator.language).format(point.y)})`;
+            }),
+        },
+        options: {
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+            },
+            cutout: '58%',
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label ? `${context.label}: ` : '';
+                            if (currency) {
+                                label += new Intl.NumberFormat(navigator.language, { style: 'currency', currency }).format(context.raw);
+                            } else {
+                                label += new Intl.NumberFormat(navigator.language).format(context.raw);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        },
+    });
+}
+
 
 function closeSubMenus() {
     var subMenus = document.querySelectorAll('.filtermenu-submenu-content');

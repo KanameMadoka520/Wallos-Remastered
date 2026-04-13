@@ -4909,6 +4909,100 @@ input[type="radio"]:checked+label::after {
   font-size: 20px;;
 }
 
+.budget-visualizer {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(var(--main-color-rgb), 0.09), rgba(var(--accent-color-rgb), 0.08));
+  border: 1px solid rgba(var(--main-color-rgb), 0.16);
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-sizing: border-box;
+  margin-bottom: 14px;
+}
+
+.budget-visualizer-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.budget-visualizer-header h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.budget-visualizer-header p {
+  margin: 0;
+  color: rgba(var(--text-color-rgb), 0.72);
+  font-size: 13px;
+}
+
+.budget-visualizer-figures {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.budget-visualizer-figures strong {
+  display: block;
+  font-size: 20px;
+  color: var(--main-color);
+}
+
+.budget-visualizer-figures span {
+  color: rgba(var(--text-color-rgb), 0.72);
+  font-size: 13px;
+}
+
+.budget-visualizer-bar {
+  display: flex;
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background-color: rgba(var(--text-color-rgb), 0.08);
+  margin-bottom: 14px;
+}
+
+.budget-visualizer-segment {
+  display: block;
+  height: 100%;
+}
+
+.budget-visualizer-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 16px;
+}
+
+.budget-visualizer-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.budget-visualizer-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.budget-visualizer-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: rgba(var(--text-color-rgb), 0.78);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budget-visualizer-legend-item strong {
+  flex: 0 0 auto;
+  font-size: 13px;
+}
+
 .account-budget-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -5032,6 +5126,16 @@ input[type="radio"]:checked+label::after {
   border: 1px dashed var(--box-border-color);
   border-radius: 14px;
   color: rgba(var(--text-color-rgb), 0.72);
+}
+
+@media (max-width: 768px) {
+  .budget-visualizer-header {
+    flex-direction: column;
+  }
+
+  .budget-visualizer-figures {
+    text-align: left;
+  }
 }
 
 .ai-recommendations-container {

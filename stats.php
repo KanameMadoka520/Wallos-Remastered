@@ -56,7 +56,7 @@ foreach ($paymentMethodsCount as $paymentMethod) {
 }
 
 $showPaymentMethodsGraph = count($paymentMethodDataPoints) > 1;
-$showStatsGraphs = $showCategoryCostGraph || $showMemberCostGraph || $showPaymentMethodsGraph || $showTotalMonthlyCostGraph || $showVsBudgetGraph;
+$showStatsGraphs = $showCategoryCostGraph || $showMemberCostGraph || $showPaymentMethodsGraph || $showTotalMonthlyCostGraph || $showVsBudgetGraph || $showYearlyBudgetGraph;
 
 $pageSections = [
   ['id' => 'stats-overview', 'label' => translate('general_statistics', $i18n)],
@@ -417,6 +417,21 @@ if ($showStatsGraphs) {
         <?php
       }
 
+      if ($showYearlyBudgetGraph) {
+        ?>
+        <section class="graph x2">
+          <header>
+            <?= translate('yearly_budget_breakdown', $i18n) ?>
+            <div class="sub-header">
+              <?= translate('yearly_budget_breakdown_info', $i18n) ?>
+              (<?= CurrencyFormatter::format($yearlyBudget, $code) ?>)
+            </div>
+          </header>
+          <canvas id="yearlyBudgetBreakdownChart" style="height: 370px; width: 100%; max-height: 370px;"></canvas>
+        </section>
+        <?php
+      }
+
       ?>
           </div>
         </section>
@@ -439,6 +454,7 @@ if ($showStatsGraphs) {
       loadGraph("memberSplitChart", <?php echo json_encode($memberDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showMemberCostGraph ?>);
       loadGraph("paymentMethidSplitChart", <?php echo json_encode($paymentMethodDataPoints, JSON_NUMERIC_CHECK); ?>, "", <?= $showPaymentMethodsGraph ?>);
       loadGraph("budgetVsCostChart", <?php echo json_encode($vsBudgetDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showVsBudgetGraph ?>);
+      loadBudgetBreakdownGraph("yearlyBudgetBreakdownChart", <?php echo json_encode($yearlyBudgetDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showYearlyBudgetGraph ?>);
     }
   </script>
   <?php
