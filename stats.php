@@ -260,8 +260,17 @@ if ($showStatsGraphs) {
       ?>
       <div class="statistic">
         <span><?= number_format($budgetUsed, 2) ?>%</span>
-        <div class="title"><?= translate('percentage_budget_used', $i18n) ?></div>
-        <?php wallos_render_metric_explanation_trigger('budget_used', $metricExplanations, translate('percentage_budget_used', $i18n)); ?>
+        <div class="title"><?= translate('monthly_budget_used', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('budget_used', $metricExplanations, translate('monthly_budget_used', $i18n)); ?>
+      </div>
+      <?php
+    }
+    if (isset($budget) && $budget > 0) {
+      ?>
+      <div class="statistic">
+        <span><?= CurrencyFormatter::format($budget, $code) ?></span>
+        <div class="title"><?= translate('monthly_budget', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('budget', $metricExplanations, translate('monthly_budget', $i18n)); ?>
       </div>
       <?php
     }
@@ -269,8 +278,8 @@ if ($showStatsGraphs) {
       ?>
       <div class="statistic">
         <span><?= CurrencyFormatter::format($budgetLeft, $code) ?></span>
-        <div class="title"><?= translate('budget_remaining', $i18n) ?></div>
-        <?php wallos_render_metric_explanation_trigger('budget_remaining', $metricExplanations, translate('budget_remaining', $i18n)); ?>
+        <div class="title"><?= translate('monthly_budget_remaining', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('budget_remaining', $metricExplanations, translate('monthly_budget_remaining', $i18n)); ?>
       </div>
       <?php
     }
@@ -278,8 +287,44 @@ if ($showStatsGraphs) {
       ?>
       <div class="statistic">
         <span><?= CurrencyFormatter::format($overBudgetAmount, $code) ?></span>
-        <div class="title"><?= translate('amount_over_budget', $i18n) ?></div>
-        <?php wallos_render_metric_explanation_trigger('amount_over_budget', $metricExplanations, translate('amount_over_budget', $i18n)); ?>
+        <div class="title"><?= translate('monthly_amount_over_budget', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('amount_over_budget', $metricExplanations, translate('monthly_amount_over_budget', $i18n)); ?>
+      </div>
+      <?php
+    }
+    if (isset($yearlyBudget) && $yearlyBudget > 0) {
+      ?>
+      <div class="statistic">
+        <span><?= CurrencyFormatter::format($yearlyBudget, $code) ?></span>
+        <div class="title"><?= translate('yearly_budget', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('yearly_budget', $metricExplanations, translate('yearly_budget', $i18n)); ?>
+      </div>
+      <?php
+    }
+    if (isset($yearlyBudgetUsed)) {
+      ?>
+      <div class="statistic">
+        <span><?= number_format($yearlyBudgetUsed, 2) ?>%</span>
+        <div class="title"><?= translate('yearly_budget_used', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('yearly_budget_used', $metricExplanations, translate('yearly_budget_used', $i18n)); ?>
+      </div>
+      <?php
+    }
+    if (isset($yearlyBudgetRemaining)) {
+      ?>
+      <div class="statistic">
+        <span><?= CurrencyFormatter::format($yearlyBudgetRemaining, $code) ?></span>
+        <div class="title"><?= translate('yearly_budget_remaining', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('yearly_budget_remaining', $metricExplanations, translate('yearly_budget_remaining', $i18n)); ?>
+      </div>
+      <?php
+    }
+    if (isset($yearlyOverBudgetAmount)) {
+      ?>
+      <div class="statistic">
+        <span><?= CurrencyFormatter::format($yearlyOverBudgetAmount, $code) ?></span>
+        <div class="title"><?= translate('yearly_amount_over_budget', $i18n) ?></div>
+        <?php wallos_render_metric_explanation_trigger('yearly_amount_over_budget', $metricExplanations, translate('yearly_amount_over_budget', $i18n)); ?>
       </div>
       <?php
     }

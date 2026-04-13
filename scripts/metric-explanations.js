@@ -18,9 +18,25 @@ function closeMetricExplanationModal() {
   document.body.classList.remove('no-scroll');
 }
 
-function formatMetricExplanationValue(value, currencyCode) {
+function escapeMetricExplanationHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatMetricExplanationValue(value, currencyCode, format = 'number') {
   const numericValue = Number(value || 0);
-  if (currencyCode) {
+  if (format === 'percent') {
+    return `${new Intl.NumberFormat(navigator.language, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(numericValue)}%`;
+  }
+
+  if (format === 'currency' && currencyCode) {
     return new Intl.NumberFormat(navigator.language, { style: 'currency', currency: currencyCode }).format(numericValue);
   }
 
@@ -33,11 +49,28 @@ function renderMetricExplanationSummary(payload) {
     return;
   }
 
+  const summaryCards = Array.isArray(payload.summary_cards) ? payload.summary_cards : [];
+  if (summaryCards.length) {
+    summary.innerHTML = summaryCards.map((card) => `
+      <div class="metric-explanation-summary-card">
+        <span>${escapeMetricExplanationHtml(card.label || '-')}</span>
+        <strong>${escapeMetricExplanationHtml(
+          formatMetricExplanationValue(
+            card.value || 0,
+            card.currency_code || payload.currency_code || '',
+            card.format || 'number',
+          ),
+        )}</strong>
+      </div>
+    `).join('');
+    return;
+  }
+
   const cards = [];
   cards.push(`
     <div class="metric-explanation-summary-card">
       <span>${translate('metric_explanation_total_label')}</span>
-      <strong>${formatMetricExplanationValue(payload.total || 0, payload.currency_code || '')}</strong>
+      <strong>${formatMetricExplanationValue(payload.total || 0, payload.currency_code || '', payload.total_format || (payload.currency_code ? 'currency' : 'number'))}</strong>
     </div>
   `);
 
@@ -45,7 +78,7 @@ function renderMetricExplanationSummary(payload) {
     cards.push(`
       <div class="metric-explanation-summary-card">
         <span>${translate('metric_explanation_reference_total')}</span>
-        <strong>${formatMetricExplanationValue(payload.reference_total || 0, payload.currency_code || '')}</strong>
+        <strong>${formatMetricExplanationValue(payload.reference_total || 0, payload.currency_code || '', 'currency')}</strong>
       </div>
     `);
   }
@@ -54,7 +87,7 @@ function renderMetricExplanationSummary(payload) {
     cards.push(`
       <div class="metric-explanation-summary-card">
         <span>${translate('metric_explanation_cost_total')}</span>
-        <strong>${formatMetricExplanationValue(payload.cost_total || 0, payload.currency_code || '')}</strong>
+        <strong>${formatMetricExplanationValue(payload.cost_total || 0, payload.currency_code || '', 'currency')}</strong>
       </div>
     `);
   }
@@ -63,7 +96,7 @@ function renderMetricExplanationSummary(payload) {
     cards.push(`
       <div class="metric-explanation-summary-card">
         <span>${translate('metric_explanation_actual_paid_total')}</span>
-        <strong>${formatMetricExplanationValue(payload.actual_paid_total || 0, payload.currency_code || '')}</strong>
+        <strong>${formatMetricExplanationValue(payload.actual_paid_total || 0, payload.currency_code || '', 'currency')}</strong>
       </div>
     `);
   }
@@ -72,7 +105,7 @@ function renderMetricExplanationSummary(payload) {
     cards.push(`
       <div class="metric-explanation-summary-card">
         <span>${translate('metric_explanation_projected_remaining_total')}</span>
-        <strong>${formatMetricExplanationValue(payload.projected_remaining_total || 0, payload.currency_code || '')}</strong>
+        <strong>${formatMetricExplanationValue(payload.projected_remaining_total || 0, payload.currency_code || '', 'currency')}</strong>
       </div>
     `);
   }
@@ -80,28 +113,21 @@ function renderMetricExplanationSummary(payload) {
   summary.innerHTML = cards.join('');
 }
 
-function renderMetricExplanationItems(payload) {
-  const itemsContainer = document.getElementById('metric-explanation-items');
-  if (!itemsContainer) {
-    return;
-  }
-
-  const items = Array.isArray(payload.items) ? payload.items : [];
+function renderMetricExplanationItemsList(items, payload) {
   if (!items.length) {
-    itemsContainer.innerHTML = `<div class="metric-explanation-empty">${translate('metric_explanation_no_items')}</div>`;
-    return;
+    return `<div class="metric-explanation-empty">${escapeMetricExplanationHtml(translate('metric_explanation_no_items'))}</div>`;
   }
 
-  itemsContainer.innerHTML = items.map((item) => {
+  return items.map((item) => {
     const itemName = item.subscription_name || item.name || '-';
     const itemCurrencyCode = item.currency_code || item.main_currency_code_snapshot || payload.currency_code || '';
     const primaryAmount =
       item.total_amount !== undefined
-        ? formatMetricExplanationValue(item.total_amount, itemCurrencyCode)
+        ? formatMetricExplanationValue(item.total_amount, itemCurrencyCode, 'currency')
         : item.amount_main_snapshot !== undefined
-          ? formatMetricExplanationValue(item.amount_main_snapshot, item.main_currency_code_snapshot || payload.currency_code || '')
+          ? formatMetricExplanationValue(item.amount_main_snapshot, item.main_currency_code_snapshot || payload.currency_code || '', 'currency')
           : item.monthly_equivalent !== undefined
-            ? formatMetricExplanationValue(item.monthly_equivalent, itemCurrencyCode)
+            ? formatMetricExplanationValue(item.monthly_equivalent, itemCurrencyCode, 'currency')
             : '-';
 
     const meta = [];
@@ -109,10 +135,10 @@ function renderMetricExplanationItems(payload) {
       meta.push(`${translate('cycle')}: ${item.billing_cycle}`);
     }
     if (item.price_per_charge !== undefined) {
-      meta.push(`${translate('price')}: ${formatMetricExplanationValue(item.price_per_charge, itemCurrencyCode)}`);
+      meta.push(`${translate('price')}: ${formatMetricExplanationValue(item.price_per_charge, itemCurrencyCode, 'currency')}`);
     }
     if (item.unit_amount !== undefined) {
-      meta.push(`${translate('subscription_payment_amount')}: ${formatMetricExplanationValue(item.unit_amount, itemCurrencyCode)}`);
+      meta.push(`${translate('subscription_payment_amount')}: ${formatMetricExplanationValue(item.unit_amount, itemCurrencyCode, 'currency')}`);
     }
     if (item.count !== undefined) {
       meta.push(`${translate('frequency')}: ${new Intl.NumberFormat(navigator.language).format(item.count)}`);
@@ -127,22 +153,48 @@ function renderMetricExplanationItems(payload) {
       meta.push(`${translate('subscription_payment_paid_at')}: ${item.paid_at}`);
     }
     if (item.amount_original !== undefined) {
-      meta.push(`${translate('subscription_payment_amount')}: ${formatMetricExplanationValue(item.amount_original, item.currency_code_snapshot || '')}`);
+      meta.push(`${translate('subscription_payment_amount')}: ${formatMetricExplanationValue(item.amount_original, item.currency_code_snapshot || '', 'currency')}`);
     }
     if (item.rule_summary) {
-      meta.push(`${translate('subscription_price_rules')}: ${item.rule_summary}`);
+      meta.push(`${translate('metric_explanation_rule_source')}: ${item.rule_summary}`);
+    }
+    if (item.note) {
+      meta.push(`${translate('notes')}: ${item.note}`);
     }
 
     return `
       <article class="metric-explanation-item">
         <div class="metric-explanation-item-headline">
-          <strong>${itemName}</strong>
-          <span>${primaryAmount}</span>
+          <strong>${escapeMetricExplanationHtml(itemName)}</strong>
+          <span>${escapeMetricExplanationHtml(primaryAmount)}</span>
         </div>
-        <div class="metric-explanation-item-meta">${meta.map((line) => `<span>${line}</span>`).join('')}</div>
+        <div class="metric-explanation-item-meta">${meta.map((line) => `<span>${escapeMetricExplanationHtml(line)}</span>`).join('')}</div>
       </article>
     `;
   }).join('');
+}
+
+function renderMetricExplanationItems(payload) {
+  const itemsContainer = document.getElementById('metric-explanation-items');
+  if (!itemsContainer) {
+    return;
+  }
+
+  const itemGroups = Array.isArray(payload.item_groups) ? payload.item_groups : [];
+  if (itemGroups.length) {
+    itemsContainer.innerHTML = itemGroups.map((group) => `
+      <section class="metric-explanation-group">
+        <div class="metric-explanation-group-title">${escapeMetricExplanationHtml(group.title || '-')}</div>
+        <div class="metric-explanation-group-items">
+          ${renderMetricExplanationItemsList(Array.isArray(group.items) ? group.items : [], payload)}
+        </div>
+      </section>
+    `).join('');
+    return;
+  }
+
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  itemsContainer.innerHTML = renderMetricExplanationItemsList(items, payload);
 }
 
 function openMetricExplanationModal(payload) {

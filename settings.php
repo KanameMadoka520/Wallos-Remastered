@@ -18,7 +18,7 @@ $themeJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/theme.js');
 $notificationsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/notifications.js');
 
 $pageSections = [
-    ['id' => 'settings-budget', 'label' => translate('monthly_budget', $i18n)],
+    ['id' => 'settings-budget', 'label' => translate('budget', $i18n)],
     ['id' => 'settings-household', 'label' => translate('household', $i18n)],
     ['id' => 'settings-notifications', 'label' => translate('notifications', $i18n)],
     ['id' => 'settings-categories', 'label' => translate('categories', $i18n)],
@@ -47,18 +47,38 @@ $pageSections = [
 
     <section class="account-section" id="settings-budget" data-page-section>
         <header>
-            <h2><?= translate('monthly_budget', $i18n) ?></h2>
+            <h2><?= translate('budget', $i18n) ?></h2>
         </header>
         <div class="account-budget">
-            <div class="form-group-inline">
-                <label for="budget"><?= $userData['currency_symbol'] ?></label>
-                <input type="number" id="budget" name="budget" autocomplete="off" value="<?= $userData['budget'] ?>"
-                    placeholder="<?= translate('budget', $i18n) ?>">
+            <div class="account-budget-grid">
+                <div class="account-budget-field">
+                    <label for="budget"><?= translate('monthly_budget', $i18n) ?></label>
+                    <div class="form-group-inline">
+                        <label for="budget"><?= $userData['currency_symbol'] ?></label>
+                        <input type="number" id="budget" name="budget" autocomplete="off"
+                            value="<?= $userData['budget'] ?>" placeholder="<?= translate('monthly_budget', $i18n) ?>"
+                            min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="account-budget-field">
+                    <label for="yearly_budget"><?= translate('yearly_budget', $i18n) ?></label>
+                    <div class="form-group-inline">
+                        <label for="yearly_budget"><?= $userData['currency_symbol'] ?></label>
+                        <input type="number" id="yearly_budget" name="yearly_budget" autocomplete="off"
+                            value="<?= $userData['yearly_budget'] ?? 0 ?>"
+                            placeholder="<?= translate('yearly_budget', $i18n) ?>" min="0" step="0.01">
+                    </div>
+                </div>
+            </div>
+            <div class="buttons">
                 <input type="submit" value="<?= translate('save', $i18n) ?>" id="saveBudget" onClick="saveBudget()" />
             </div>
             <div class="settings-notes">
                 <p>
                     <i class="fa-solid fa-circle-info"></i> <?= translate('budget_info', $i18n) ?>
+                </p>
+                <p>
+                    <i class="fa-solid fa-circle-info"></i> <?= translate('yearly_budget_info', $i18n) ?>
                 </p>
             </div>
         </div>
