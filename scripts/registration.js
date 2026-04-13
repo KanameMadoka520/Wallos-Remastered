@@ -5,7 +5,7 @@ function setCookie(name, value, days) {
     date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
     expires = "; expires=" + date.toUTCString();
   }
-  document.cookie = name + "=" + value + expires + "; SameSite=Lax";
+  document.cookie = name + "=" + value + expires + "; path=/; SameSite=Lax";
 }
 
 function storeFormFieldValue(fieldId) {
@@ -200,6 +200,7 @@ function checkThemeNeedsUpdate() {
     darkThemeCss.disabled = themePreference === 'light';
     const existingClasses = document.body.className.split(' ').filter(cls => cls && cls !== 'dark' && cls !== 'light');
     document.body.className = [...existingClasses, themePreference].join(' ');
+    document.cookie = `inUseTheme=${themePreference}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=Lax`;
     const themeColorMetaTag = document.querySelector('meta[name="theme-color"]');
     themeColorMetaTag.setAttribute('content', themePreference === 'dark' ? '#222222' : '#FFFFFF');
   }

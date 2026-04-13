@@ -62,10 +62,9 @@ if ($userCount > 0) {
     }
 }
 
-
-$theme = wallos_resolve_public_theme_cookie();
-$updateThemeSettings = false;
-
+$publicThemePreferences = wallos_resolve_public_theme_preferences();
+$theme = $publicThemePreferences['theme'];
+$updateThemeSettings = $publicThemePreferences['update_theme_settings'];
 $colorTheme = wallos_resolve_public_color_theme_cookie();
 
 $decorativeBackgroundEnabled = wallos_is_public_decorative_background_enabled();

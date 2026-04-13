@@ -57,6 +57,7 @@ $cookieExpire = time() + (30 * 24 * 60 * 60);
 if (isset($themeValue)) {
   setcookie('theme', $themeValue, [
     'expires' => $cookieExpire,
+    'path' => '/',
     'samesite' => 'Lax'
   ]);
 }
@@ -93,6 +94,21 @@ $dynamicWallpaperClass = $dynamicWallpaperEnabled ? "dynamic-wallpaper-enabled" 
 $dynamicWallpaperBlurEnabled = !isset($settings['dynamic_wallpaper_blur']) || (int) $settings['dynamic_wallpaper_blur'] === 1;
 $dynamicWallpaperBlurClass = $dynamicWallpaperBlurEnabled ? "dynamic-wallpaper-blur-enabled" : "dynamic-wallpaper-blur-disabled";
 setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
+  'expires' => $cookieExpire,
+  'path' => '/',
+  'samesite' => 'Lax'
+]);
+setcookie('colorTheme', $colorTheme, [
+  'expires' => $cookieExpire,
+  'path' => '/',
+  'samesite' => 'Lax'
+]);
+setcookie('dynamicWallpaper', $dynamicWallpaperEnabled ? '1' : '0', [
+  'expires' => $cookieExpire,
+  'path' => '/',
+  'samesite' => 'Lax'
+]);
+setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   'expires' => $cookieExpire,
   'path' => '/',
   'samesite' => 'Lax'

@@ -6,8 +6,11 @@ require_once 'includes/checkuser.php';
 require_once 'includes/i18n/languages.php';
 require_once 'includes/i18n/getlang.php';
 require_once 'includes/i18n/' . $lang . '.php';
+require_once 'includes/theme_resolver.php';
 
 require_once 'includes/version.php';
+
+$loginJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/login.js');
 
 $secondsInMonth = 30 * 24 * 60 * 60;
 if (session_status() === PHP_SESSION_NONE) {
@@ -27,15 +30,10 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 $requestMode = true;
 $resetMode = false;
 
-$theme = "light";
-if (isset($_COOKIE['theme'])) {
-    $theme = $_COOKIE['theme'];
-}
-
-$colorTheme = "blue";
-if (isset($_COOKIE['colorTheme'])) {
-    $colorTheme = $_COOKIE['colorTheme'];
-}
+$publicThemePreferences = wallos_resolve_public_theme_preferences();
+$theme = $publicThemePreferences['theme'];
+$updateThemeSettings = $publicThemePreferences['update_theme_settings'];
+$colorTheme = wallos_resolve_public_color_theme_cookie();
 
 $settings = $db->querySingle("SELECT * FROM admin", true);
 if ($settings['smtp_address'] == "" || $settings['server_url'] == "") {
@@ -248,10 +246,13 @@ if (isset($_POST['password']) && $_POST['password'] != "" && isset($_POST['confi
         </section>
     </div>
     <script type="text/javascript">
+        window.update_theme_settings = <?= $updateThemeSettings ? 'true' : 'false' ?>;
+
         function openRegitrationPage() {
             window.location.href = "registration.php";
         }
     </script>
+    <script type="text/javascript" src="scripts/login.js?<?= $loginJsVersion ?>"></script>
 </body>
 
 </html>
