@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../theme_cookie_sync.php';
+
 if (!isset($userData)) {
     die("User data missing for OIDC login.");
 }
@@ -47,16 +49,7 @@ if (!isset($_COOKIE['sortOrder'])) {
     ]);
 }
 
-// Set color theme
-$query = "SELECT color_theme FROM settings WHERE user_id = :userId";
-$stmt = $db->prepare($query);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $stmt->execute();
-$settings = $result->fetchArray(SQLITE3_ASSOC);
-setcookie('colorTheme', $settings['color_theme'], [
-    'expires' => $cookieExpire,
-    'samesite' => 'Lax'
-]);
+wallos_sync_theme_cookies_for_user($db, $userId, $cookieExpire);
 
 // Done
 $db->close();

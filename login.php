@@ -9,6 +9,8 @@ require_once 'includes/user_status.php';
 require_once 'includes/request_logs.php';
 require_once 'includes/login_rate_limit.php';
 require_once 'includes/decorative_background.php';
+require_once 'includes/theme_resolver.php';
+require_once 'includes/theme_cookie_sync.php';
 
 require_once 'includes/version.php';
 
@@ -105,14 +107,7 @@ if ($adminRow['login_disabled'] == 1) {
             ]);
         }
 
-        $query = "SELECT color_theme FROM settings";
-        $stmt = $db->prepare($query);
-        $result = $stmt->execute();
-        $settings = $result->fetchArray(SQLITE3_ASSOC);
-        setcookie('colorTheme', $settings['color_theme'], [
-            'expires' => $cookieExpire,
-            'samesite' => 'Lax',
-        ]);
+        wallos_sync_theme_cookies_for_user($db, $userId, $cookieExpire);
 
         $cookieValue = $username . "|" . "abc123ABC" . "|" . $main_currency;
         setcookie('wallos_login', $cookieValue, [
@@ -135,18 +130,9 @@ if (isset($_SESSION['token'])) {
 }
 
 
-$theme = "light";
-$updateThemeSettings = false;
-if (isset($_COOKIE['theme'])) {
-    $theme = $_COOKIE['theme'];
-} else {
-    $updateThemeSettings = true;
-}
-
-$colorTheme = "blue";
-if (isset($_COOKIE['colorTheme'])) {
-    $colorTheme = $_COOKIE['colorTheme'];
-}
+$theme = wallos_resolve_public_theme_cookie();
+$updateThemeSettings = wallos_public_theme_requires_live_update();
+$colorTheme = wallos_resolve_public_color_theme_cookie();
 
 $decorativeBackgroundEnabled = wallos_is_public_decorative_background_enabled();
 $decorativeBackgroundClass = $decorativeBackgroundEnabled ? 'decorative-background-enabled' : 'decorative-background-disabled';
@@ -268,6 +254,7 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
                     if ($rememberMe) {
                         $_SESSION['pending_remember_me'] = true; // defer cookie until TOTP done
                     }
+                    wallos_sync_theme_cookies_for_user($db, $userId, $cookieExpire);
                     $db->close();
                     header("Location: totp.php");
                     exit();
@@ -306,15 +293,7 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
                     ]);
                 }
 
-                $query = "SELECT color_theme FROM settings WHERE user_id = :userId";
-                $stmt = $db->prepare($query);
-                $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-                $result = $stmt->execute();
-                $settings = $result->fetchArray(SQLITE3_ASSOC);
-                setcookie('colorTheme', $settings['color_theme'], [
-                    'expires' => $cookieExpire,
-                    'samesite' => 'Lax'
-                ]);
+                wallos_sync_theme_cookies_for_user($db, $userId, $cookieExpire);
 
                 $db->close();
                 header("Location: .");
@@ -411,7 +390,7 @@ wallos_log_request($db, 0, '');
     <link rel="stylesheet" href="styles/barlow.css">
     <link rel="stylesheet" href="styles/login-dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme == "light" ? "disabled" : "" ?>>
     <script type="text/javascript">
-        window.update_theme_settings = "<?= $updateThemeSettings ?>";
+        window.update_theme_settings = <?= $updateThemeSettings ? 'true' : 'false' ?>;
         window.color_theme = "<?= $colorTheme ?>";
     </script>
     <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>

@@ -5,6 +5,8 @@ require_once 'includes/checkuser.php';
 require_once 'includes/i18n/languages.php';
 require_once 'includes/i18n/getlang.php';
 require_once 'includes/i18n/' . $lang . '.php';
+require_once 'includes/theme_resolver.php';
+require_once 'includes/theme_cookie_sync.php';
 
 require_once 'includes/version.php';
 
@@ -27,17 +29,13 @@ if (!isset($_SESSION['totp_user_id'])) {
     exit();
 }
 
-$theme = "light";
-$updateThemeSettings = false;
-if (isset($_COOKIE['theme'])) {
-    $theme = $_COOKIE['theme'];
-} else {
-    $updateThemeSettings = true;
-}
+$theme = wallos_resolve_public_theme_cookie();
+$updateThemeSettings = wallos_public_theme_requires_live_update();
+$colorTheme = wallos_resolve_public_color_theme_cookie();
 
-$colorTheme = "blue";
-if (isset($_COOKIE['colorTheme'])) {
-    $colorTheme = $_COOKIE['colorTheme'];
+$pendingThemeSettings = wallos_fetch_theme_cookie_settings($db, $_SESSION['totp_user_id']);
+if ($pendingThemeSettings !== null) {
+    wallos_apply_public_theme_view_settings_from_row($pendingThemeSettings, $theme, $updateThemeSettings, $colorTheme);
 }
 
 $demoMode = getenv('DEMO_MODE');
@@ -138,15 +136,7 @@ if (isset($_POST['one-time-code'])) {
             ]);
         }
 
-        $query = "SELECT color_theme FROM settings WHERE user_id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
-        $result = $stmt->execute();
-        $settings = $result->fetchArray(SQLITE3_ASSOC);
-        setcookie('colorTheme', $settings['color_theme'], [
-            'expires' => $cookieExpire,
-            'samesite' => 'Lax'
-        ]);
+        wallos_sync_theme_cookies_for_user($db, $_SESSION['totp_user_id'], $cookieExpire);
 
         unset($_SESSION['totp_user_id']);
 
@@ -182,7 +172,7 @@ if (isset($_POST['one-time-code'])) {
     <link rel="stylesheet" href="styles/barlow.css">
     <link rel="stylesheet" href="styles/login-dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme == "light" ? "disabled" : "" ?>>
     <script type="text/javascript">
-        window.update_theme_settings = "<?= $updateThemeSettings ?>";
+        window.update_theme_settings = <?= $updateThemeSettings ? 'true' : 'false' ?>;
         window.color_theme = "<?= $colorTheme ?>";
     </script>
     <script type="text/javascript" src="scripts/login.js?<?= $version ?>"></script>
