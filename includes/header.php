@@ -14,14 +14,17 @@ require_once 'i18n/' . $lang . '.php';
 require_once 'getsettings.php';
 require_once 'decorative_background.php';
 require_once 'dynamic_wallpaper.php';
+require_once 'page_transitions.php';
 
 require_once 'version.php';
 
 $stylesCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/styles.css');
 $decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/decorative-background.css');
 $dynamicWallpaperCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/dynamic-wallpaper.css');
+$pageTransitionsCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/page-transitions.css');
 $decorativeBackgroundJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/decorative-background.js');
 $dynamicWallpaperJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/dynamic-wallpaper.js');
+$pageTransitionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/page-transitions.js');
 $i18nJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/' . $lang . '.js');
 $i18nGetLangJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/getlang.js');
 
@@ -124,6 +127,7 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   <meta name="apple-mobile-web-app-title" content="Wallos">
   <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
   <meta name="referrer" content="no-referrer">
+  <script>document.documentElement.classList.add('wallos-page-transition-enabled');</script>
   <link rel="icon" type="image/png" href="images/icon/favicon.ico" sizes="16x16">
   <link rel="apple-touch-icon" href="images/icon/apple-touch-icon.png">
   <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">
@@ -132,6 +136,7 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
   <link rel="stylesheet" href="styles/decorative-background.css?<?= $decorativeBackgroundCssVersion ?>">
   <link rel="stylesheet" href="styles/dynamic-wallpaper.css?<?= $dynamicWallpaperCssVersion ?>">
+  <link rel="stylesheet" href="styles/page-transitions.css?<?= $pageTransitionsCssVersion ?>">
   <link rel="stylesheet" href="styles/styles.css?<?= $stylesCssVersion ?>">
   <link rel="stylesheet" href="styles/dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme != "dark" ? "disabled" : "" ?>>
   <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
@@ -145,6 +150,7 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   <script type="text/javascript" src="scripts/common.js?<?= $version ?>"></script>
   <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
   <script type="text/javascript" src="scripts/dynamic-wallpaper.js?<?= $dynamicWallpaperJsVersion ?>"></script>
+  <script type="text/javascript" src="scripts/page-transitions.js?<?= $pageTransitionsJsVersion ?>"></script>
   <script type="text/javascript">
     window.theme = "<?= $theme ?>";
     window.update_theme_settings = "<?= $updateThemeSettings ?>";
@@ -221,6 +227,7 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
 <body class="<?= $theme ?> <?= $languages[$lang]['dir'] ?> <?= $mobileNavigation ?> <?= $decorativeBackgroundClass ?> <?= $dynamicWallpaperClass ?> <?= $dynamicWallpaperBlurClass ?>">
   <?php wallos_render_dynamic_wallpaper(); ?>
   <?php wallos_render_decorative_background('app'); ?>
+  <?php wallos_render_page_transition_overlay($lang); ?>
   <header>
     <div class="contain">
       <div class="logo">
