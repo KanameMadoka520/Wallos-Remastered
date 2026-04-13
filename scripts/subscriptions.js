@@ -13,6 +13,10 @@ let subscriptionImageViewerTouchStartY = 0;
 let currentPaymentHistorySubscriptionId = 0;
 let currentPaymentHistorySubscriptionName = "";
 let currentPaymentHistoryRecords = [];
+let currentPaymentHistorySummary = {};
+let currentPaymentHistoryCashflow = [];
+let currentPaymentHistoryForecast = [];
+let currentPaymentHistoryTab = "records";
 let currentPaymentModalSubscription = null;
 let currentPaymentModalMode = "create";
 let subscriptionPriceRules = [];
@@ -1021,42 +1025,115 @@ function closeSubscriptionPaymentHistoryModal() {
   currentPaymentHistorySubscriptionId = 0;
   currentPaymentHistorySubscriptionName = "";
   currentPaymentHistoryRecords = [];
+  currentPaymentHistorySummary = {};
+  currentPaymentHistoryCashflow = [];
+  currentPaymentHistoryForecast = [];
+  currentPaymentHistoryTab = "records";
 }
 
-function renderSubscriptionPaymentHistoryModal() {
-  const content = document.getElementById("subscription-payment-history-content");
-  const title = document.getElementById("subscription-payment-history-modal-title");
-  const addButton = document.getElementById("subscription-payment-history-add-button");
-  if (!content || !title || !addButton) {
-    return;
+function formatSubscriptionPaymentHistoryAmount(value, currencyCode) {
+  const numericValue = Number(value || 0);
+  if (currencyCode) {
+    return new Intl.NumberFormat(navigator.language, { style: 'currency', currency: currencyCode }).format(numericValue);
   }
 
-  title.textContent = `${translate('subscription_payment_history')}: ${currentPaymentHistorySubscriptionName || ''}`;
-  addButton.onclick = (event) => openSubscriptionPaymentModal(event, currentPaymentHistorySubscriptionId);
+  return new Intl.NumberFormat(navigator.language).format(numericValue);
+}
 
+function getSubscriptionPaymentHistorySummaryHtml() {
+  const summary = currentPaymentHistorySummary || {};
+  const currencyCode =
+    currentPaymentHistoryRecords[0]?.main_currency_code_snapshot ||
+    currentPaymentHistoryForecast[0]?.main_currency_code ||
+    '';
+  const summaryCards = [
+    {
+      label: translate('subscription_payment_summary_actual_this_year'),
+      value: formatSubscriptionPaymentHistoryAmount(summary.actual_this_year_total || 0, currencyCode),
+    },
+    {
+      label: translate('subscription_payment_summary_predicted_remaining'),
+      value: formatSubscriptionPaymentHistoryAmount(summary.predicted_remaining_total || 0, currencyCode),
+    },
+    {
+      label: translate('subscription_payment_summary_projected_total'),
+      value: formatSubscriptionPaymentHistoryAmount(summary.projected_total || 0, currencyCode),
+    },
+    {
+      label: translate('subscription_payment_summary_record_count'),
+      value: new Intl.NumberFormat(navigator.language).format(Number(summary.record_count || 0)),
+    },
+  ];
+
+  return `
+    <div class="subscription-payment-history-summary">
+      ${summaryCards.map((card) => `
+        <article class="subscription-payment-history-summary-card">
+          <span>${escapeHtml(card.label)}</span>
+          <strong>${escapeHtml(card.value)}</strong>
+        </article>
+      `).join('')}
+    </div>
+    <div class="subscription-payment-history-notes">
+      <div class="subscription-payment-history-note">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>${escapeHtml(translate('subscription_payment_ledger_notice'))}</span>
+      </div>
+      <div class="subscription-payment-history-note">
+        <i class="fa-solid fa-shuffle"></i>
+        <span>${escapeHtml(translate('subscription_payment_rule_replay_notice'))}</span>
+      </div>
+    </div>
+  `;
+}
+
+function getSubscriptionPaymentHistoryTabsHtml() {
+  const tabs = [
+    { id: 'records', label: translate('subscription_payment_history_tab_records'), icon: 'fa-clock-rotate-left' },
+    { id: 'cashflow', label: translate('subscription_payment_history_tab_cashflow'), icon: 'fa-chart-column' },
+    { id: 'forecast', label: translate('subscription_payment_history_tab_forecast'), icon: 'fa-wand-magic-sparkles' },
+  ];
+
+  return `
+    <div class="subscription-payment-history-tabs">
+      ${tabs.map((tab) => `
+        <button type="button"
+          class="subscription-payment-history-tab ${currentPaymentHistoryTab === tab.id ? 'is-active' : ''}"
+          onclick="setSubscriptionPaymentHistoryTab('${tab.id}')">
+          <i class="fa-solid ${tab.icon}"></i>
+          <span>${escapeHtml(tab.label)}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderSubscriptionPaymentHistoryRecordsHtml() {
   if (!currentPaymentHistoryRecords.length) {
-    content.innerHTML = `<div class="subscription-payment-record-empty">${translate('subscription_payment_history_empty')}</div>`;
-    return;
+    return `<div class="subscription-payment-record-empty">${translate('subscription_payment_history_empty')}</div>`;
   }
 
-  content.innerHTML = currentPaymentHistoryRecords.map((record) => {
+  return currentPaymentHistoryRecords.map((record) => {
     const noteHtml = record.note_html || "";
-    const amountLabel = record.currency_code_snapshot
-      ? new Intl.NumberFormat(navigator.language, { style: 'currency', currency: record.currency_code_snapshot }).format(Number(record.amount_original || 0))
-      : new Intl.NumberFormat(navigator.language).format(Number(record.amount_original || 0));
-    const mainAmountLabel = record.main_currency_code_snapshot
-      ? new Intl.NumberFormat(navigator.language, { style: 'currency', currency: record.main_currency_code_snapshot }).format(Number(record.amount_main_snapshot || 0))
-      : new Intl.NumberFormat(navigator.language).format(Number(record.amount_main_snapshot || 0));
+    const amountLabel = formatSubscriptionPaymentHistoryAmount(record.amount_original || 0, record.currency_code_snapshot || '');
+    const mainAmountLabel = formatSubscriptionPaymentHistoryAmount(record.amount_main_snapshot || 0, record.main_currency_code_snapshot || '');
+    const expectedAmountLabel = formatSubscriptionPaymentHistoryAmount(record.expected_amount_main || 0, record.main_currency_code_snapshot || '');
+    const ledgerDifference = Number(record.ledger_difference_main || 0);
+    const differencePrefix = ledgerDifference > 0 ? '+' : '';
+    const differenceLabel = `${differencePrefix}${formatSubscriptionPaymentHistoryAmount(ledgerDifference, record.main_currency_code_snapshot || '')}`;
 
     return `
       <article class="subscription-payment-record-item">
         <div class="subscription-payment-record-topline">
-          <strong>${record.paid_at || '-'}</strong>
-          <span>${amountLabel}</span>
+          <strong>${escapeHtml(record.paid_at || '-')}</strong>
+          <span>${escapeHtml(amountLabel)}</span>
         </div>
         <div class="subscription-payment-record-meta">
-          <span>${translate('subscription_payment_due_date')}: ${record.due_date || '-'}</span>
-          <span>${translate('subscription_payment_main_amount')}: ${mainAmountLabel}</span>
+          <span>${escapeHtml(`${translate('subscription_payment_due_date')}: ${record.due_date || '-'}`)}</span>
+          <span>${escapeHtml(`${translate('subscription_payment_main_amount')}: ${mainAmountLabel}`)}</span>
+          <span>${escapeHtml(`${translate('subscription_payment_expected_amount')}: ${expectedAmountLabel}`)}</span>
+          <span>${escapeHtml(`${translate('metric_explanation_rule_source')}: ${record.rule_summary_current || translate('metric_explanation_regular_price_source')}`)}</span>
+          ${Math.abs(ledgerDifference) > 0.001 ? `<span>${escapeHtml(`${translate('subscription_payment_ledger_difference')}: ${differenceLabel}`)}</span>` : ''}
         </div>
         ${noteHtml ? `<div class="subscription-markdown subscription-payment-record-note">${noteHtml}</div>` : ''}
         <div class="buttons subscription-payment-record-history-actions">
@@ -1070,6 +1147,110 @@ function renderSubscriptionPaymentHistoryModal() {
       </article>
     `;
   }).join('');
+}
+
+function renderSubscriptionPaymentCashflowHtml() {
+  if (!currentPaymentHistoryCashflow.length) {
+    return `<div class="subscription-payment-record-empty">${translate('subscription_payment_cashflow_empty')}</div>`;
+  }
+
+  const summary = currentPaymentHistorySummary || {};
+  const year = Number(summary.current_year || new Date().getFullYear());
+  const currencyCode =
+    currentPaymentHistoryRecords[0]?.main_currency_code_snapshot ||
+    currentPaymentHistoryForecast[0]?.main_currency_code ||
+    '';
+  const maxTotal = Math.max(...currentPaymentHistoryCashflow.map((row) => Number(row.total || 0)), 0.01);
+
+  return `
+    <div class="subscription-payment-cashflow-list">
+      ${currentPaymentHistoryCashflow.map((row) => {
+        const actualWidth = Math.max(0, Math.min(100, (Number(row.actual_total || 0) / maxTotal) * 100));
+        const predictedWidth = Math.max(0, Math.min(100 - actualWidth, (Number(row.predicted_total || 0) / maxTotal) * 100));
+        const monthLabel = new Date(year, Number(row.month_number || 1) - 1, 1).toLocaleDateString(navigator.language, {
+          month: 'short',
+          year: 'numeric',
+        });
+
+        return `
+          <article class="subscription-payment-cashflow-row">
+            <div class="subscription-payment-cashflow-topline">
+              <strong>${escapeHtml(monthLabel)}</strong>
+              <span>${escapeHtml(formatSubscriptionPaymentHistoryAmount(row.total || 0, currencyCode))}</span>
+            </div>
+            <div class="subscription-payment-cashflow-bar" aria-hidden="true">
+              <span class="actual" style="width: ${actualWidth}%;"></span>
+              <span class="predicted" style="width: ${predictedWidth}%;"></span>
+            </div>
+            <div class="subscription-payment-record-meta">
+              <span>${escapeHtml(`${translate('subscription_payment_cashflow_actual')}: ${formatSubscriptionPaymentHistoryAmount(row.actual_total || 0, currencyCode)}`)}</span>
+              <span>${escapeHtml(`${translate('subscription_payment_cashflow_predicted')}: ${formatSubscriptionPaymentHistoryAmount(row.predicted_total || 0, currencyCode)}`)}</span>
+            </div>
+          </article>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderSubscriptionPaymentForecastHtml() {
+  if (!currentPaymentHistoryForecast.length) {
+    return `<div class="subscription-payment-record-empty">${translate('subscription_payment_forecast_empty')}</div>`;
+  }
+
+  return currentPaymentHistoryForecast.map((item) => {
+    const amountLabel = formatSubscriptionPaymentHistoryAmount(item.amount_main || 0, item.main_currency_code || '');
+    const originalAmountLabel = formatSubscriptionPaymentHistoryAmount(item.amount_original || 0, item.currency_code || '');
+
+    return `
+      <article class="subscription-payment-record-item">
+        <div class="subscription-payment-record-topline">
+          <strong>${escapeHtml(item.due_date || '-')}</strong>
+          <span>${escapeHtml(amountLabel)}</span>
+        </div>
+        <div class="subscription-payment-record-meta">
+          <span>${escapeHtml(`${translate('subscription_payment_forecast_original_amount')}: ${originalAmountLabel}`)}</span>
+          <span>${escapeHtml(`${translate('metric_explanation_rule_source')}: ${item.rule_summary || translate('metric_explanation_regular_price_source')}`)}</span>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function renderSubscriptionPaymentHistoryActiveTabHtml() {
+  if (currentPaymentHistoryTab === 'cashflow') {
+    return renderSubscriptionPaymentCashflowHtml();
+  }
+
+  if (currentPaymentHistoryTab === 'forecast') {
+    return renderSubscriptionPaymentForecastHtml();
+  }
+
+  return renderSubscriptionPaymentHistoryRecordsHtml();
+}
+
+function setSubscriptionPaymentHistoryTab(tab) {
+  currentPaymentHistoryTab = tab;
+  renderSubscriptionPaymentHistoryModal();
+}
+
+function renderSubscriptionPaymentHistoryModal() {
+  const content = document.getElementById("subscription-payment-history-content");
+  const title = document.getElementById("subscription-payment-history-modal-title");
+  const addButton = document.getElementById("subscription-payment-history-add-button");
+  if (!content || !title || !addButton) {
+    return;
+  }
+
+  title.textContent = `${translate('subscription_payment_history')}: ${currentPaymentHistorySubscriptionName || ''}`;
+  addButton.onclick = (event) => openSubscriptionPaymentModal(event, currentPaymentHistorySubscriptionId);
+  content.innerHTML = `
+    ${getSubscriptionPaymentHistorySummaryHtml()}
+    ${getSubscriptionPaymentHistoryTabsHtml()}
+    <div class="subscription-payment-history-tabpanel">
+      ${renderSubscriptionPaymentHistoryActiveTabHtml()}
+    </div>
+  `;
 }
 
 function openSubscriptionPaymentHistoryModal(event, id) {
@@ -1098,6 +1279,9 @@ function openSubscriptionPaymentHistoryModal(event, id) {
       }
       currentPaymentHistorySubscriptionId = Number(data.subscription?.id || 0);
       currentPaymentHistorySubscriptionName = data.subscription?.name || '';
+      currentPaymentHistorySummary = data.summary || {};
+      currentPaymentHistoryCashflow = Array.isArray(data.cashflow) ? data.cashflow : [];
+      currentPaymentHistoryForecast = Array.isArray(data.forecast) ? data.forecast : [];
       currentPaymentHistoryRecords = Array.isArray(data.records) ? data.records : [];
       renderSubscriptionPaymentHistoryModal();
       modal.classList.add("is-open");
