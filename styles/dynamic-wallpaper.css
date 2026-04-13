@@ -390,13 +390,32 @@ body.dynamic-wallpaper-enabled > header .contain {
     padding-inline: 18px;
 }
 
-body.dynamic-wallpaper-enabled > .custom-edition-banner .contain {
+body.dynamic-wallpaper-enabled > .custom-edition-banner .contain,
+body.dynamic-wallpaper-enabled > .page-edition-footer .contain {
     padding-inline: 18px;
+}
+
+body.dynamic-wallpaper-enabled > .page-edition-footer {
+    background: transparent;
+    border-top-color: transparent;
+}
+
+body.dynamic-wallpaper-enabled > .page-edition-footer .contain {
+    margin-bottom: 12px;
+    background-color: rgba(10, 15, 24, 0.72);
+    backdrop-filter: blur(14px) saturate(1.06);
+    -webkit-backdrop-filter: blur(14px) saturate(1.06);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow:
+        0 14px 30px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 @media (max-width: 768px) {
     body.dynamic-wallpaper-enabled > header .contain,
-    body.dynamic-wallpaper-enabled > .custom-edition-banner .contain {
+    body.dynamic-wallpaper-enabled > .custom-edition-banner .contain,
+    body.dynamic-wallpaper-enabled > .page-edition-footer .contain {
         border-radius: 14px;
         padding-inline: 14px;
     }
