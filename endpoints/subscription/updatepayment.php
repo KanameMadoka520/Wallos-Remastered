@@ -38,6 +38,8 @@ try {
         $note
     );
 
+    wallos_recalculate_subscription_next_payment_from_history($db, $subscriptionId, $userId);
+
     echo json_encode([
         'success' => true,
         'message' => translate('subscription_payment_updated', $i18n),

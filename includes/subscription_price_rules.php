@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/currency_formatter.php';
+
 function wallos_get_subscription_cycle_interval_spec($cycleId, $frequency)
 {
     $frequency = max(1, (int) $frequency);

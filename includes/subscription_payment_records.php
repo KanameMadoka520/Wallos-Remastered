@@ -505,3 +505,75 @@ function wallos_advance_subscription_next_payment_after_record($db, $subscriptio
     $updateStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
     $updateStmt->execute();
 }
+
+function wallos_recalculate_subscription_next_payment_from_history($db, $subscriptionId, $userId)
+{
+    $stmt = $db->prepare('
+        SELECT id, start_date, next_payment, cycle, frequency
+        FROM subscriptions
+        WHERE id = :subscription_id AND user_id = :user_id
+        LIMIT 1
+    ');
+    $stmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $subscription = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+
+    if ($subscription === false) {
+        return;
+    }
+
+    $startDateValue = trim((string) ($subscription['start_date'] ?? ''));
+    $nextPaymentValue = trim((string) ($subscription['next_payment'] ?? ''));
+    $anchorValue = '';
+
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDateValue)) {
+        $anchorValue = $startDateValue;
+    } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $nextPaymentValue)) {
+        $anchorValue = $nextPaymentValue;
+    } else {
+        return;
+    }
+
+    $paidDueDates = [];
+    $paidDueDatesStmt = $db->prepare('
+        SELECT due_date
+        FROM subscription_payment_records
+        WHERE subscription_id = :subscription_id AND user_id = :user_id AND status = :status
+        ORDER BY due_date ASC, id ASC
+    ');
+    $paidDueDatesStmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+    $paidDueDatesStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $paidDueDatesStmt->bindValue(':status', 'paid', SQLITE3_TEXT);
+    $paidDueDatesResult = $paidDueDatesStmt->execute();
+    while ($paidDueDatesResult && ($row = $paidDueDatesResult->fetchArray(SQLITE3_ASSOC))) {
+        $dueDate = trim((string) ($row['due_date'] ?? ''));
+        if ($dueDate !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dueDate)) {
+            $paidDueDates[$dueDate] = true;
+        }
+    }
+
+    $cursor = new DateTime($anchorValue);
+    $interval = new DateInterval(wallos_get_subscription_interval_spec((int) ($subscription['cycle'] ?? 3), (int) ($subscription['frequency'] ?? 1)));
+    $nextUnpaidDueDate = null;
+
+    for ($iteration = 0; $iteration < 2400; $iteration++) {
+        $candidate = $cursor->format('Y-m-d');
+        if (empty($paidDueDates[$candidate])) {
+            $nextUnpaidDueDate = $candidate;
+            break;
+        }
+
+        $cursor->add($interval);
+    }
+
+    if ($nextUnpaidDueDate === null) {
+        $nextUnpaidDueDate = $cursor->format('Y-m-d');
+    }
+
+    $updateStmt = $db->prepare('UPDATE subscriptions SET next_payment = :next_payment WHERE id = :subscription_id AND user_id = :user_id');
+    $updateStmt->bindValue(':next_payment', $nextUnpaidDueDate, SQLITE3_TEXT);
+    $updateStmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+    $updateStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $updateStmt->execute();
+}
