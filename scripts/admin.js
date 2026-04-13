@@ -287,6 +287,8 @@ function saveAccountRegistrationsButton() {
   const require_email_validation = document.getElementById('requireEmail').checked ? 1 : 0;
   const server_url = document.getElementById('serverUrl').value;
   const disable_login = document.getElementById('disableLogin').checked ? 1 : 0;
+  const custom_edition_title = document.getElementById('customEditionTitle').value;
+  const custom_edition_subtitle = document.getElementById('customEditionSubtitle').value;
 
   const data = {
     open_registrations: open_registrations,
@@ -294,7 +296,9 @@ function saveAccountRegistrationsButton() {
     max_users: max_users,
     require_email_validation: require_email_validation,
     server_url: server_url,
-    disable_login: disable_login
+    disable_login: disable_login,
+    custom_edition_title: custom_edition_title,
+    custom_edition_subtitle: custom_edition_subtitle
   };
 
   fetch('endpoints/admin/saveopenregistrations.php', {

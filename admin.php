@@ -247,6 +247,16 @@ $pageSections = [
                 <label for="serverUrl"><?= translate('server_url', $i18n) ?></label>
                 <input type="text" id="serverUrl" autocomplete="off" value="<?= $settings['server_url'] ?>" />
             </div>
+            <div class="form-group">
+                <label for="customEditionTitle"><?= translate('custom_edition_title', $i18n) ?></label>
+                <input type="text" id="customEditionTitle" autocomplete="off"
+                    value="<?= htmlspecialchars($settings['custom_edition_title'] ?? 'Remastered', ENT_QUOTES, 'UTF-8') ?>" />
+            </div>
+            <div class="form-group">
+                <label for="customEditionSubtitle"><?= translate('custom_edition_subtitle', $i18n) ?></label>
+                    value="<?= htmlspecialchars($settings['custom_edition_subtitle'] ?? '基于wallos原版深度魔改', ENT_QUOTES, 'UTF-8') ?>" />
+                    value="<?= htmlspecialchars($settings['custom_edition_subtitle'] ?? '基于wallos原版深度魔改', ENT_QUOTES, 'UTF-8') ?>" />
+            </div>
             <div class="settings-notes">
                 <p>
                     <i class="fa-solid fa-circle-info"></i>
@@ -255,6 +265,10 @@ $pageSections = [
                 <p>
                     <i class="fa-solid fa-circle-info"></i>
                     <?= translate('server_url_password_reset', $i18n) ?>
+                </p>
+                <p>
+                    <i class="fa-solid fa-circle-info"></i>
+                    <?= translate('custom_edition_info', $i18n) ?>
                 </p>
             </div>
             <hr>

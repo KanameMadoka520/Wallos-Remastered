@@ -214,8 +214,8 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
           </div>
         </a>
         <div class="header-edition-info">
-          <span class="custom-edition-badge">tcymc自建服务版</span>
-          <span class="custom-edition-text">以自己物理机为后端，日本东京vps作为网关</span>
+          <span class="custom-edition-badge"><?= htmlspecialchars($settings['custom_edition_title'] ?? 'Remastered', ENT_QUOTES, 'UTF-8') ?></span>
+          <span class="custom-edition-text"><?= htmlspecialchars($settings['custom_edition_subtitle'] ?? '基于wallos原版深度魔改', ENT_QUOTES, 'UTF-8') ?></span>
         </div>
       </div>
       <nav>
@@ -307,12 +307,4 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
     <?php
   }
   ?>
-
-  <div class="custom-edition-banner">
-    <div class="contain">
-      <span class="custom-edition-badge">tcymc自建服务版</span>
-      <span class="custom-edition-text">以自己物理机为后端，日本东京vps作为网关</span>
-    </div>
-  </div>
-
   <main>
