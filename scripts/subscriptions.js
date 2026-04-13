@@ -1445,11 +1445,13 @@ function renderSubscriptionPaymentHistoryRecordsHtml() {
         </div>
         ${noteHtml ? `<div class="subscription-markdown subscription-payment-record-note">${noteHtml}</div>` : ''}
         <div class="buttons subscription-payment-record-history-actions">
-          <button type="button" class="secondary-button thin" onclick="openEditSubscriptionPaymentModal(event, ${currentPaymentHistorySubscriptionId}, ${record.id})">
-            ${translate('subscription_edit_payment')}
+          <button type="button" class="button secondary-button thin subscription-payment-history-toolbar-button" onclick="openEditSubscriptionPaymentModal(event, ${currentPaymentHistorySubscriptionId}, ${record.id})">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>${translate('subscription_edit_payment')}</span>
           </button>
-          <button type="button" class="warning-button thin" onclick="deleteSubscriptionPaymentRecord(event, ${currentPaymentHistorySubscriptionId}, ${record.id})">
-            ${translate('delete')}
+          <button type="button" class="button warning-button thin subscription-payment-history-toolbar-button" onclick="deleteSubscriptionPaymentRecord(event, ${currentPaymentHistorySubscriptionId}, ${record.id})">
+            <i class="fa-solid fa-trash"></i>
+            <span>${translate('delete')}</span>
           </button>
         </div>
       </article>
