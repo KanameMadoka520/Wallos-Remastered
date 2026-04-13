@@ -1,4 +1,9 @@
 let isDropdownOpen = false;
+let hasUserInteractedWithPage = false;
+const toastState = {
+  error: { hideTimer: null, progressTimer: null },
+  success: { hideTimer: null, progressTimer: null },
+};
 
 function toggleDropdown() {
   const dropdown = document.querySelector('.dropdown');
@@ -59,133 +64,36 @@ function setupPageNavigation() {
   });
 }
 
-function showErrorMessage(message) {
-  const toast = document.querySelector(".toast#errorToast");
-  const closeIcon = document.querySelector(".close-error");
-  const errorTitle = document.querySelector("#errorToast .text-1");
-  const errorMessage = document.querySelector(".errorMessage");
-  const progress = document.querySelector(".progress.error");
-  let timer1, timer2;
-  const normalizedContent = normalizeToastContent("error", message);
-  errorTitle.textContent = normalizedContent.title;
-  errorMessage.textContent = normalizedContent.body;
-  errorMessage.classList.toggle("is-empty", normalizedContent.body === "");
-  toast.classList.add("active");
-  progress.classList.add("active");
-  timer1 = setTimeout(() => {
-    toast.classList.remove("active");
-    closeIcon.removeEventListener("click", () => { });
-  }, 5000);
-
-  timer2 = setTimeout(() => {
-    progress.classList.remove("active");
-  }, 5300);
-
-  closeIcon.addEventListener("click", () => {
-    toast.classList.remove("active");
-
-    setTimeout(() => {
-      progress.classList.remove("active");
-    }, 300);
-
-    clearTimeout(timer1);
-    clearTimeout(timer2);
-    closeIcon.removeEventListener("click", () => { });
-  });
-}
-
-function showSuccessMessage(message) {
-  const toast = document.querySelector(".toast#successToast");
-  const closeIcon = document.querySelector(".close-success");
-  const successTitle = document.querySelector("#successToast .text-1");
-  const successMessage = document.querySelector(".successMessage");
-  const progress = document.querySelector(".progress.success");
-  let timer1, timer2;
-  const normalizedContent = normalizeToastContent("success", message);
-  successTitle.textContent = normalizedContent.title;
-  successMessage.textContent = normalizedContent.body;
-  successMessage.classList.toggle("is-empty", normalizedContent.body === "");
-  toast.classList.add("active");
-  progress.classList.add("active");
-  timer1 = setTimeout(() => {
-    toast.classList.remove("active");
-    closeIcon.removeEventListener("click", () => { });
-  }, 5000);
-
-  timer2 = setTimeout(() => {
-    progress.classList.remove("active");
-  }, 5300);
-
-  closeIcon.addEventListener("click", () => {
-    toast.classList.remove("active");
-
-    setTimeout(() => {
-      progress.classList.remove("active");
-    }, 300);
-
-    clearTimeout(timer1);
-    clearTimeout(timer2);
-    closeIcon.removeEventListener("click", () => { });
-  });
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-
-  const userLocale = navigator.language || navigator.languages[0];
-  document.cookie = `user_locale=${userLocale}; expires=Fri, 31 Dec 9999 23:59:59 GMT; SameSite=Lax`;
-
-  if (window.update_theme_settings) {
-    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const themePreference = prefersDarkMode ? 'dark' : 'light';
-    const darkThemeCss = document.querySelector("#dark-theme");
-    darkThemeCss.disabled = themePreference === 'light';
-
-    // Preserve existing classes on the body tag
-    const existingClasses = document.body.className.split(' ').filter(cls => cls !== 'dark' && cls !== 'light');
-    document.body.className = [...existingClasses, themePreference].join(' ');
-
-    document.cookie = `inUseTheme=${themePreference}; expires=Fri, 31 Dec 9999 23:59:59 GMT; SameSite=Lax`;
-    const themeColorMetaTag = document.querySelector('meta[name="theme-color"]');
-    themeColorMetaTag.setAttribute('content', themePreference === 'dark' ? '#222222' : '#FFFFFF');
+function closeToast(type) {
+  const toast = document.querySelector(type === "error" ? ".toast#errorToast" : ".toast#successToast");
+  const progress = document.querySelector(type === "error" ? ".progress.error" : ".progress.success");
+  if (!toast || !progress) {
+    return;
   }
 
-  document.addEventListener('mousedown', function (event) {
-    var dropdown = document.querySelector('.dropdown');
-    var dropdownContent = document.querySelector('.dropdown-content');
+  toast.classList.remove("active");
+  window.clearTimeout(toastState[type].hideTimer);
+  window.clearTimeout(toastState[type].progressTimer);
+  toastState[type].hideTimer = null;
+  toastState[type].progressTimer = null;
 
-    if (!dropdown.contains(event.target) && isDropdownOpen) {
-      dropdown.classList.remove('is-open');
-      isDropdownOpen = false;
-    }
-  });
-
-  document.querySelector('.dropdown-content').addEventListener('focus', function () {
-    isDropdownOpen = true;
-  });
-
-  setupPageNavigation();
-});
-
-function getCookie(name) {
-  const cookies = document.cookie.split(';');
-  for (let cookie of cookies) {
-    cookie = cookie.trim();
-    if (cookie.startsWith(`${name}=`)) {
-      return cookie.substring(name.length + 1);
-    }
-  }
-  return null;
+  window.setTimeout(() => {
+    progress.classList.remove("active");
+  }, 220);
 }
 
 function normalizeToastContent(type, message) {
   const fallbackTitle = type === "error" ? translate("error") : translate("success");
   const fallbackBody = type === "error" ? translate("toast_error_generic") : translate("toast_success_generic");
-  const rawMessage = String(message ?? "").trim();
+  const rawMessage = message instanceof Error
+    ? String(message.message || "").trim()
+    : String(message ?? "").trim();
 
   if (!rawMessage) {
     return {
       title: fallbackTitle,
       body: fallbackBody,
+      shouldDisplay: false,
     };
   }
 
@@ -199,14 +107,16 @@ function normalizeToastContent(type, message) {
     return {
       title: fallbackTitle,
       body: fallbackBody,
+      shouldDisplay: false,
     };
   }
 
-  const separatorMatch = rawMessage.match(/^([^:\n：]{1,60})[:：]\s*([\s\S]+)$/);
+  const separatorMatch = rawMessage.match(/^([^:\n：]{1,60})[:：]\s*([\s\S]+)$/u);
   if (separatorMatch) {
     return {
       title: separatorMatch[1].trim(),
       body: separatorMatch[2].trim(),
+      shouldDisplay: true,
     };
   }
 
@@ -215,6 +125,7 @@ function normalizeToastContent(type, message) {
     return {
       title: lineMatch[1].trim(),
       body: lineMatch[2].trim(),
+      shouldDisplay: true,
     };
   }
 
@@ -222,11 +133,115 @@ function normalizeToastContent(type, message) {
     return {
       title: rawMessage,
       body: "",
+      shouldDisplay: true,
     };
   }
 
   return {
     title: fallbackTitle,
     body: rawMessage,
+    shouldDisplay: true,
   };
+}
+
+function showToast(type, message) {
+  const toast = document.querySelector(type === "error" ? ".toast#errorToast" : ".toast#successToast");
+  const closeIcon = document.querySelector(type === "error" ? ".close-error" : ".close-success");
+  const titleNode = document.querySelector(type === "error" ? "#errorToast .text-1" : "#successToast .text-1");
+  const bodyNode = document.querySelector(type === "error" ? ".errorMessage" : ".successMessage");
+  const progress = document.querySelector(type === "error" ? ".progress.error" : ".progress.success");
+
+  if (!toast || !closeIcon || !titleNode || !bodyNode || !progress) {
+    return;
+  }
+
+  const normalized = normalizeToastContent(type, message);
+  if (!normalized.shouldDisplay && !hasUserInteractedWithPage) {
+    return;
+  }
+
+  titleNode.textContent = normalized.title;
+  bodyNode.textContent = normalized.body;
+  bodyNode.classList.toggle("is-empty", normalized.body === "");
+
+  closeToast(type);
+  toast.classList.add("active");
+  progress.classList.add("active");
+
+  toastState[type].hideTimer = window.setTimeout(() => {
+    closeToast(type);
+  }, 5000);
+
+  toastState[type].progressTimer = window.setTimeout(() => {
+    progress.classList.remove("active");
+  }, 5300);
+
+  closeIcon.onclick = () => closeToast(type);
+}
+
+function showErrorMessage(message) {
+  showToast("error", message);
+}
+
+function showSuccessMessage(message) {
+  showToast("success", message);
+}
+
+function markUserInteraction() {
+  hasUserInteractedWithPage = true;
+}
+
+document.addEventListener("pointerdown", markUserInteraction, { passive: true });
+document.addEventListener("keydown", markUserInteraction, { passive: true });
+
+document.addEventListener('DOMContentLoaded', function () {
+
+  const userLocale = navigator.language || navigator.languages[0];
+  document.cookie = `user_locale=${userLocale}; expires=Fri, 31 Dec 9999 23:59:59 GMT; SameSite=Lax`;
+
+  if (window.update_theme_settings) {
+    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const themePreference = prefersDarkMode ? 'dark' : 'light';
+    const darkThemeCss = document.querySelector("#dark-theme");
+    darkThemeCss.disabled = themePreference === 'light';
+
+    const existingClasses = document.body.className.split(' ').filter(cls => cls !== 'dark' && cls !== 'light');
+    document.body.className = [...existingClasses, themePreference].join(' ');
+
+    document.cookie = `inUseTheme=${themePreference}; expires=Fri, 31 Dec 9999 23:59:59 GMT; SameSite=Lax`;
+    const themeColorMetaTag = document.querySelector('meta[name="theme-color"]');
+    themeColorMetaTag.setAttribute('content', themePreference === 'dark' ? '#222222' : '#FFFFFF');
+  }
+
+  document.addEventListener('mousedown', function (event) {
+    const dropdown = document.querySelector('.dropdown');
+    if (!dropdown) {
+      return;
+    }
+
+    if (!dropdown.contains(event.target) && isDropdownOpen) {
+      dropdown.classList.remove('is-open');
+      isDropdownOpen = false;
+    }
+  });
+
+  const dropdownContent = document.querySelector('.dropdown-content');
+  if (dropdownContent) {
+    dropdownContent.addEventListener('focus', function () {
+      isDropdownOpen = true;
+    });
+  }
+
+  setupPageNavigation();
+});
+
+function getCookie(name) {
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    cookie = cookie.trim();
+    if (cookie.startsWith(`${name}=`)) {
+      return cookie.substring(name.length + 1);
+    }
+  }
+  return null;
 }
