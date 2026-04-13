@@ -31,6 +31,7 @@ $budget = $row['budget'] ?? 0;
 
 $currentMonth = date('m');
 $currentYear = date('Y');
+$calendarSelectableYearEnd = max(((int) $currentYear) + 15, ((int) $currentYear) + 5);
 $sameAsCurrent = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['month']) && isset($_GET['year'])) {
@@ -100,6 +101,8 @@ $row = $result->fetchArray(SQLITE3_ASSOC);
 $code = $row['code'];
 
 $yearsToLoad = $calendarYear - $currentYear + 1;
+$calendarSelectableYearEnd = max($calendarSelectableYearEnd, ((int) $calendarYear) + 5);
+$calendarSelectableYears = range((int) $currentYear, $calendarSelectableYearEnd);
 ?>
 
 <section class="contain">
@@ -148,6 +151,38 @@ $yearsToLoad = $calendarYear - $currentYear + 1;
       <span id="month" class="month"><?= translate('month-' . $calendarMonth, $i18n) ?> <?= $calendarYear ?></span>
       <button class="button tiny" id="next" onclick="nextMonth(<?= $calendarMonth ?>, <?= $calendarYear ?>)"><i
           class="fa-solid fa-chevron-right"></i></button>
+      <div class="calendar-nav-jump" id="calendar-nav-jump" data-current-year="<?= (int) $currentYear ?>"
+        data-current-month="<?= (int) $currentMonth ?>">
+        <div class="calendar-nav-select-group">
+          <span><?= translate('calendar_year_label', $i18n) ?></span>
+          <select id="calendarYearSelect" class="calendar-nav-select" onchange="syncCalendarJumpControls()">
+            <?php foreach ($calendarSelectableYears as $yearOption): ?>
+              <option value="<?= (int) $yearOption ?>" <?= (int) $calendarYear === (int) $yearOption ? 'selected' : '' ?>>
+                <?= (int) $yearOption ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="calendar-nav-select-group">
+          <span><?= translate('calendar_month_label', $i18n) ?></span>
+          <select id="calendarMonthSelect" class="calendar-nav-select">
+            <?php for ($monthOption = 1; $monthOption <= 12; $monthOption++): ?>
+              <?php
+              $monthValue = str_pad((string) $monthOption, 2, '0', STR_PAD_LEFT);
+              $isPastMonth = ((int) $calendarYear === (int) $currentYear) && ($monthOption < (int) $currentMonth);
+              ?>
+              <option value="<?= $monthOption ?>" <?= (int) $calendarMonth === $monthOption ? 'selected' : '' ?>
+                <?= $isPastMonth ? 'disabled' : '' ?>>
+                <?= translate('month-' . $monthValue, $i18n) ?>
+              </option>
+            <?php endfor; ?>
+          </select>
+        </div>
+        <button class="button secondary-button tiny calendar-jump-button" type="button" onclick="goToCalendarDate()">
+          <i class="fa-solid fa-arrow-right"></i>
+          <?= translate('calendar_jump_button', $i18n) ?>
+        </button>
+      </div>
     </div>
   </div>
   <div>

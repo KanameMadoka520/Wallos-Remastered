@@ -1448,10 +1448,16 @@ $pageSections = [
             </div>
             <div>
                 <h3><?= translate('dynamic_wallpaper_theme', $i18n) ?></h3>
+                <div class="settings-notes">
+                    <p>
+                        <i class="fa-solid fa-film"></i>
+                        <?= translate('dynamic_wallpaper_current_scheme', $i18n) ?>
+                    </p>
+                </div>
                 <div class="form-group-inline">
                     <input type="checkbox" id="dynamicwallpaper" name="dynamicwallpaper"
                         onChange="setDynamicWallpaper()" <?= !empty($settings['dynamic_wallpaper']) ? 'checked' : '' ?>>
-                    <label for="dynamicwallpaper"><?= translate('dynamic_wallpaper_theme', $i18n) ?></label>
+                    <label for="dynamicwallpaper"><?= translate('dynamic_wallpaper_scheme_tietie1', $i18n) ?></label>
                 </div>
                 <div class="form-group-inline">
                     <input type="checkbox" id="dynamicwallpaperblur" name="dynamicwallpaperblur"

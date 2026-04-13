@@ -4901,11 +4901,40 @@ button.dark-theme-button i {
   flex-direction: row;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
   font-size: 18px;
 }
 
 .calendar-nav .month {
   text-align: center;
+}
+
+.calendar-nav-jump {
+  margin-left: auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.calendar-nav-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 132px;
+}
+
+.calendar-nav-select-group span {
+  font-size: 12px;
+  color: rgba(var(--text-color-rgb), 0.72);
+}
+
+.calendar-nav-select {
+  min-width: 0;
+}
+
+.calendar-jump-button {
+  white-space: nowrap;
 }
 
 .calendar {
@@ -5006,6 +5035,23 @@ button.dark-theme-button i {
 .calendar .today .day {
   color: var(--main-color);
   font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .calendar-nav-jump {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .calendar-nav-select-group {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 0;
+  }
+
+  .calendar-jump-button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .over-budget {
