@@ -3445,14 +3445,17 @@ button.dark-theme-button i {
   transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.35);
   box-sizing: border-box;
   z-index: 5;
+  width: min(420px, calc(100vw - 32px));
+  max-width: min(420px, calc(100vw - 32px));
 }
 
 @media (max-width: 768px) {
   .toast {
-    bottom: 0px;
-    right: 0px;
-    left: 0px;
-    width: 100%;
+    bottom: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
   }
 
   .mobile-navigation .toast {
@@ -3466,7 +3469,8 @@ button.dark-theme-button i {
 
 .toast .toast-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  gap: 14px;
 }
 
 .toast-content .toast-icon {
@@ -3492,18 +3496,32 @@ button.dark-theme-button i {
 .toast-content .message {
   display: flex;
   flex-direction: column;
-  margin: 0 20px;
+  margin: 0 26px 0 0;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .toast-content .message .text {
   font-size: 16px;
   font-weight: 400;
   color: #666666;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .toast-content .message .text.text-1 {
   font-weight: 600;
   color: #333;
+  line-height: 1.35;
+}
+
+.toast-content .message .text.text-2 {
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
+.toast-content .message .text.text-2.is-empty {
+  display: none;
 }
 
 .toast .close {
