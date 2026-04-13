@@ -33,6 +33,15 @@ $formatter = new IntlDateFormatter(
 );
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
+  $mainCurrencyId = 0;
+  $mainCurrencyStmt = $db->prepare('SELECT main_currency FROM user WHERE id = :userId');
+  $mainCurrencyStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+  $mainCurrencyResult = $mainCurrencyStmt->execute();
+  $mainCurrencyRow = $mainCurrencyResult ? $mainCurrencyResult->fetchArray(SQLITE3_ASSOC) : false;
+  if ($mainCurrencyRow !== false) {
+    $mainCurrencyId = (int) ($mainCurrencyRow['main_currency'] ?? 0);
+  }
+
   $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
   $paymentRecordsMap = wallos_get_subscription_payment_records_map($db, $userId, 6);
   $paymentRecordCountMap = wallos_get_subscription_payment_record_count_map($db, $userId);
@@ -205,7 +214,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $print[$id]['payment_records'] = $paymentRecordsMap[$id] ?? [];
     $print[$id]['payment_record_count'] = (int) ($paymentRecordCountMap[$id] ?? 0);
     $print[$id]['payment_total_main'] = (float) ($paymentTotalMap[$id] ?? 0);
-    $print[$id]['payment_total_currency_code'] = $currencies[$main_currency]['code'] ?? $print[$id]['currency_code'];
+    $print[$id]['payment_total_currency_code'] = $currencies[$mainCurrencyId]['code'] ?? $print[$id]['currency_code'];
     $print[$id]['price_rules'] = $priceRulesMap[$id] ?? [];
     $print[$id]['remaining_value'] = wallos_build_subscription_remaining_value_snapshot(
       $db,

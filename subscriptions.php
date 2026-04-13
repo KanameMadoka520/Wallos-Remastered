@@ -178,6 +178,7 @@ $headerClass = count($subscriptions) > 0 ? "main-actions" : "main-actions hidden
 $effectiveUserGroup = wallos_get_effective_user_group($userData['user_group'] ?? WALLOS_USER_GROUP_FREE, $isAdmin);
 $canUploadSubscriptionImages = wallos_can_upload_subscription_images($isAdmin, $userData['user_group'] ?? WALLOS_USER_GROUP_FREE);
 $subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
+$mainCurrencyId = (int) ($userData['main_currency'] ?? $main_currency ?? 0);
 $uploadedImagesMap = wallos_get_subscription_uploaded_images_map($db, $userId);
 $paymentRecordsMap = wallos_get_subscription_payment_records_map($db, $userId, 6);
 $paymentRecordCountMap = wallos_get_subscription_payment_record_count_map($db, $userId);
@@ -318,7 +319,7 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
       $print[$id]['payment_records'] = $paymentRecordsMap[$id] ?? [];
       $print[$id]['payment_record_count'] = (int) ($paymentRecordCountMap[$id] ?? 0);
       $print[$id]['payment_total_main'] = (float) ($paymentTotalMap[$id] ?? 0);
-      $print[$id]['payment_total_currency_code'] = $currencies[$main_currency]['code'] ?? $print[$id]['currency_code'];
+      $print[$id]['payment_total_currency_code'] = $currencies[$mainCurrencyId]['code'] ?? $print[$id]['currency_code'];
       $print[$id]['price_rules'] = $priceRulesMap[$id] ?? [];
       $print[$id]['remaining_value'] = wallos_build_subscription_remaining_value_snapshot(
         $db,
@@ -647,7 +648,7 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
     <div class="form-group">
       <label for="manual_cycle_used_value_main"><?= translate('subscription_manual_used_value', $i18n) ?></label>
       <div class="form-group-inline">
-        <label for="manual_cycle_used_value_main"><?= htmlspecialchars($currencies[$main_currency]['symbol'] ?: $currencies[$main_currency]['code'], ENT_QUOTES, 'UTF-8') ?></label>
+        <label for="manual_cycle_used_value_main"><?= htmlspecialchars($currencies[$mainCurrencyId]['symbol'] ?: $currencies[$mainCurrencyId]['code'], ENT_QUOTES, 'UTF-8') ?></label>
         <input type="number" step="0.01" min="0" id="manual_cycle_used_value_main" name="manual_cycle_used_value_main"
           autocomplete="off" placeholder="<?= translate('subscription_manual_used_value', $i18n) ?>">
       </div>
