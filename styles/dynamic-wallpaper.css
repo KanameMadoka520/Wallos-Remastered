@@ -13,8 +13,7 @@ body.dynamic-wallpaper-enabled > header,
 body.dynamic-wallpaper-enabled > .custom-edition-banner,
 body.dynamic-wallpaper-enabled > main,
 body.dynamic-wallpaper-enabled > .content,
-body.dynamic-wallpaper-enabled > .mobile-nav,
-body.dynamic-wallpaper-enabled > .toast {
+body.dynamic-wallpaper-enabled > .mobile-nav {
     position: relative;
 }
 
@@ -40,6 +39,7 @@ body.dynamic-wallpaper-enabled > .mobile-nav {
 }
 
 body.dynamic-wallpaper-enabled > .toast {
+    position: fixed;
     z-index: 2000;
 }
 
