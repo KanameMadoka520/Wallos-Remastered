@@ -8,6 +8,7 @@ require_once 'includes/subscription_trash.php';
 require_once 'includes/subscription_payment_records.php';
 require_once 'includes/subscription_payment_history.php';
 require_once 'includes/subscription_price_rules.php';
+require_once 'includes/page_immersive_toggle.php';
 
 include_once 'includes/list_subscriptions.php';
 
@@ -210,7 +211,7 @@ $subscriptionPagePreferences = [
   }
 </style>
 
-<section class="contain contain-wide subscriptions-page-layout">
+<section class="contain contain-wide subscriptions-page-layout" data-page-ui-hide-target>
   <header class="<?= $headerClass ?>" id="main-actions">
     <div class="inline-row">
       <button class="button" onClick="addSubscription()">
@@ -416,7 +417,7 @@ $subscriptionPagePreferences = [
     ?>
   </div>
 </section>
-<section class="contain contain-wide subscription-recycle-bin-section account-section">
+<section class="contain contain-wide subscription-recycle-bin-section account-section" data-page-ui-hide-target>
   <div class="collapsible-section-header">
     <button type="button" class="collapsible-section-toggle" data-target="subscription-recycle-bin-body"
       aria-expanded="false" onClick="toggleSubscriptionSection(this)">
@@ -471,7 +472,7 @@ $subscriptionPagePreferences = [
     <?php endif; ?>
   </div>
 </section>
-<section class="subscription-form" id="subscription-form">
+<section class="subscription-form" id="subscription-form" data-page-ui-hide-target>
   <header>
     <h3 id="form-title"><?= translate('add_subscription', $i18n) ?></h3>
     <span class="fa-solid fa-xmark close-form" onClick="closeAddSubscription()"></span>
@@ -855,7 +856,7 @@ $subscriptionPagePreferences = [
     </div>
   </form>
 </section>
-<section class="subscription-modal subscription-payment-modal" id="subscription-payment-modal">
+<section class="subscription-modal subscription-payment-modal" id="subscription-payment-modal" data-page-ui-hide-target>
   <header>
     <h3 id="subscription-payment-modal-title"><?= translate('subscription_record_payment', $i18n) ?></h3>
     <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionPaymentModal()"></span>
@@ -920,7 +921,7 @@ $subscriptionPagePreferences = [
     </div>
   </form>
 </section>
-<section class="subscription-modal subscription-payment-history-modal" id="subscription-payment-history-modal">
+<section class="subscription-modal subscription-payment-history-modal" id="subscription-payment-history-modal" data-page-ui-hide-target>
   <header>
     <h3 id="subscription-payment-history-modal-title"><?= translate('subscription_payment_history', $i18n) ?></h3>
     <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionPaymentHistoryModal()"></span>
@@ -963,7 +964,7 @@ $subscriptionPagePreferences = [
     </button>
   </div>
 </section>
-<section class="subscription-image-viewer" id="subscription-image-viewer">
+<section class="subscription-image-viewer" id="subscription-image-viewer" data-page-ui-hide-target>
   <header>
     <div class="subscription-image-viewer-header">
       <div>
@@ -1015,6 +1016,7 @@ $subscriptionPagePreferences = [
     </button>
   </div>
 </section>
+<?php wallos_render_page_immersive_toggle($lang); ?>
 <script>
   window.subscriptionPagePreferences = <?= json_encode($subscriptionPagePreferences, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>

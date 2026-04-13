@@ -5,6 +5,7 @@ require_once 'includes/getdbkeys.php';
 require_once 'includes/user_groups.php';
 require_once 'includes/subscription_trash.php';
 require_once 'includes/metric_explanations.php';
+require_once 'includes/page_immersive_toggle.php';
 
 function formatPrice($price, $currencyCode, $currencies)
 {
@@ -98,7 +99,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 
 ?>
 
-<section class="contain dashboard">
+<section class="contain dashboard" data-page-ui-hide-target>
     <?php
         if ($isAdmin && $settings['update_notification']) {
             if (!is_null($settings['latest_version'])) {
@@ -529,6 +530,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 </section>
 
 <?php wallos_render_metric_explanation_modal($i18n); ?>
+<?php wallos_render_page_immersive_toggle($lang); ?>
 
 
 <script src="scripts/dashboard.js?<?= $version ?>"></script>
