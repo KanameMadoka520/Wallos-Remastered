@@ -318,7 +318,6 @@ OK
 - 贡献指南：`CONTRIBUTING.md`
 - 变更记录：`CHANGELOG.md`
 - 安全策略：`SECURITY.md`
-- 蔚蓝档案过场学习资料：`蔚蓝档案过场学习资料.md`
 
 ## 许可证
 
