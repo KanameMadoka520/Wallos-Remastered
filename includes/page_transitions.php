@@ -26,7 +26,7 @@ function wallos_get_page_transition_setting_labels($lang)
             'enable_label' => '启用页面切换动画',
             'enable_info' => '进入页面和点击站内跳转时使用带过场的切页动画。关闭后恢复普通即时切页。',
             'style_label' => '动画方案',
-            'style_info' => '切幕为当前通用方案；蔚蓝档案会使用独立的浅蓝白 HUD 风格，忽视其他动画风格设定。',
+            'style_info' => '切幕为当前通用方案；蔚蓝档案为固定浅蓝白 HUD 风格；蔚蓝档案-跟随主题配色会保留同样的终端结构，但配色跟随当前主题。',
             'styles' => [
                 'shutter' => [
                     'name' => '切幕',
@@ -35,6 +35,10 @@ function wallos_get_page_transition_setting_labels($lang)
                 'bluearchive' => [
                     'name' => '蔚蓝档案',
                     'description' => '浅蓝白 HUD 面板、档案终端与学园战术界面感',
+                ],
+                'bluearchive_theme' => [
+                    'name' => '蔚蓝档案-跟随主题配色',
+                    'description' => '沿用档案终端结构，但会跟随当前主题主配色变化',
                 ],
             ],
         ];
@@ -45,7 +49,7 @@ function wallos_get_page_transition_setting_labels($lang)
         'enable_label' => 'Enable page transition animation',
         'enable_info' => 'Use a cinematic transition overlay for page entry and internal navigation. Disable it to return to instant page switches.',
         'style_label' => 'Animation Style',
-        'style_info' => 'Shutter keeps the current generic scene-wipe. Blue Archive uses its own light blue tactical HUD language and ignores other transition style settings.',
+        'style_info' => 'Shutter keeps the current generic scene-wipe. Blue Archive uses a fixed light blue HUD language, while Blue Archive - Theme Driven keeps the same structure but follows your active theme colors.',
         'styles' => [
             'shutter' => [
                 'name' => 'Shutter',
@@ -54,6 +58,10 @@ function wallos_get_page_transition_setting_labels($lang)
             'bluearchive' => [
                 'name' => 'Blue Archive',
                 'description' => 'Light blue HUD panels with an academy terminal feel',
+            ],
+            'bluearchive_theme' => [
+                'name' => 'Blue Archive - Theme Driven',
+                'description' => 'Keeps the archive terminal structure but follows the active theme colors',
             ],
         ],
     ];
@@ -100,6 +108,20 @@ function wallos_render_page_transition_overlay($lang, $pageTitle)
             <div class="wallos-page-transition-ba-footer-bar"></div>
             <div class="wallos-page-transition-ba-gridline wallos-page-transition-ba-gridline-a"></div>
             <div class="wallos-page-transition-ba-gridline wallos-page-transition-ba-gridline-b"></div>
+            <div class="wallos-page-transition-ba-corner wallos-page-transition-ba-corner-top-left"></div>
+            <div class="wallos-page-transition-ba-corner wallos-page-transition-ba-corner-top-right"></div>
+            <div class="wallos-page-transition-ba-corner wallos-page-transition-ba-corner-bottom-left"></div>
+            <div class="wallos-page-transition-ba-corner wallos-page-transition-ba-corner-bottom-right"></div>
+            <div class="wallos-page-transition-ba-triangles">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="wallos-page-transition-ba-datapanel">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
             <div class="wallos-page-transition-ba-hud-card wallos-page-transition-ba-hud-card-left">
                 <span class="wallos-page-transition-ba-label"><?= htmlspecialchars($labels['bluearchive_system'], ENT_QUOTES, 'UTF-8') ?></span>
                 <strong>01</strong>
