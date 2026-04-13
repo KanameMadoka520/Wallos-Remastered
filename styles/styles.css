@@ -207,7 +207,7 @@ header .logo .logo-image svg {
   position: fixed;
   top: 18px;
   right: 18px;
-  z-index: 10050;
+  z-index: 11020;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -217,6 +217,7 @@ header .logo .logo-image svg {
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.14);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto !important;
 }
 
 .wallos-page-immersive-toggle > i {
@@ -1541,10 +1542,27 @@ button.mobile-action-renew {
   margin-top: 24px;
 }
 
+.subscription-recycle-bin-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .subscription-recycle-bin-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
+}
+
+.subscription-recycle-bin-modal {
+  width: min(70vw, 1320px);
+  max-width: min(calc(100vw - 32px), 1320px);
+}
+
+.subscription-recycle-bin-modal-body {
+  max-height: min(72vh, 860px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .subscription-trash-card {
@@ -1610,6 +1628,11 @@ button.mobile-action-renew {
 .subscription-payment-history-modal {
   width: min(50vw, 980px);
   max-width: min(calc(100vw - 32px), 980px);
+}
+
+.subscription-payment-modal {
+  width: min(40vw, 760px);
+  max-width: min(calc(100vw - 32px), 760px);
 }
 
 .subscription-payment-history-toolbar {

@@ -1172,6 +1172,31 @@ function closeSubscriptionPaymentHistoryModal() {
   reopenPaymentHistoryAfterPaymentModalClose = false;
 }
 
+function openSubscriptionRecycleBinModal(event = null) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  const modal = document.getElementById("subscription-recycle-bin-modal");
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.add("is-open");
+  document.body.classList.add('no-scroll');
+}
+
+function closeSubscriptionRecycleBinModal() {
+  const modal = document.getElementById("subscription-recycle-bin-modal");
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.remove("is-open");
+  document.body.classList.remove('no-scroll');
+}
+
 function formatSubscriptionPaymentHistoryAmount(value, currencyCode) {
   const numericValue = Number(value || 0);
   if (currencyCode) {
@@ -3020,6 +3045,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const subscriptionPaymentDueDateInput = document.querySelector("#subscription-payment-due-date");
 
   mountSubscriptionOverlayToBody("#subscription-form");
+  mountSubscriptionOverlayToBody("#subscription-recycle-bin-modal");
   mountSubscriptionOverlayToBody("#subscription-payment-modal");
   mountSubscriptionOverlayToBody("#subscription-payment-history-modal");
   mountSubscriptionOverlayToBody("#subscription-image-viewer");

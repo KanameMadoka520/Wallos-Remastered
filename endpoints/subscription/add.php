@@ -7,6 +7,7 @@ require_once '../../includes/getsettings.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_sort.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/subscription_payment_records.php';
 require_once '../../includes/subscription_payment_history.php';
 require_once '../../includes/subscription_price_rules.php';
 require_once '../../includes/user_groups.php';
@@ -466,6 +467,21 @@ try {
 
     if (!$isEdit) {
         $subscriptionId = $db->lastInsertRowID();
+
+        if ((float) $price > 0) {
+            $initialPaymentDate = trim((string) $startDate) !== '' ? trim((string) $startDate) : (new DateTime())->format('Y-m-d');
+            wallos_record_subscription_payment(
+                $db,
+                $userId,
+                (int) $subscriptionId,
+                $initialPaymentDate,
+                $initialPaymentDate,
+                (float) $price,
+                (int) $currencyId,
+                (int) $paymentMethodId,
+                ''
+            );
+        }
     }
 
     if (!empty($removeUploadedImageIds)) {

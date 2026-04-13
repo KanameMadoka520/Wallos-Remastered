@@ -2,6 +2,7 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/subscription_payment_records.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -33,6 +34,7 @@ if ($subscriptionToRenew === false) {
 }
 
 $nextPaymentDate = new DateTime($subscriptionToRenew['next_payment']);
+$renewedDueDate = $subscriptionToRenew['next_payment'];
 $frequency = $subscriptionToRenew['frequency'];
 $cycle = $cycles[$subscriptionToRenew['cycle']]['name'];
 
@@ -55,21 +57,39 @@ while ($nextPaymentDate < $currentDate || $nextPaymentDate == new DateTime($subs
     $nextPaymentDate->add($interval);
 }
 
-// Update the subscription's next_payment date
-$updateQuery = "UPDATE subscriptions SET next_payment = :nextPaymentDate WHERE id = :subscriptionId";
-$updateStmt = $db->prepare($updateQuery);
-$updateStmt->bindValue(':nextPaymentDate', $nextPaymentDate->format('Y-m-d'));
-$updateStmt->bindValue(':subscriptionId', $subscriptionId);
-$updateStmt->execute();
+try {
+    $db->exec('BEGIN IMMEDIATE');
 
-if ($updateStmt->execute()) {
+    wallos_record_subscription_payment(
+        $db,
+        $userId,
+        (int) $subscriptionId,
+        $renewedDueDate,
+        $currentDateString,
+        (float) $subscriptionToRenew['price'],
+        (int) $subscriptionToRenew['currency_id'],
+        (int) $subscriptionToRenew['payment_method_id'],
+        ''
+    );
+
+    $updateQuery = "UPDATE subscriptions SET next_payment = :nextPaymentDate WHERE id = :subscriptionId";
+    $updateStmt = $db->prepare($updateQuery);
+    $updateStmt->bindValue(':nextPaymentDate', $nextPaymentDate->format('Y-m-d'));
+    $updateStmt->bindValue(':subscriptionId', $subscriptionId);
+
+    if (!$updateStmt->execute()) {
+        throw new RuntimeException('Failed to update next payment date.');
+    }
+
+    $db->exec('COMMIT');
     $response = [
         "success" => true,
         "message" => translate('success', $i18n),
         "id" => $subscriptionId
     ];
     echo json_encode($response);
-} else {
+} catch (Throwable $throwable) {
+    $db->exec('ROLLBACK');
     die(json_encode([
         "success" => false,
         "message" => translate("error", $i18n)

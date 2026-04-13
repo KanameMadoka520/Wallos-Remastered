@@ -218,6 +218,12 @@ $subscriptionPagePreferences = [
         <i class="fa-solid fa-circle-plus"></i>
         <?= translate('new_subscription', $i18n) ?>
       </button>
+      <button class="button secondary-button tiny subscription-recycle-bin-trigger" type="button"
+        onClick="openSubscriptionRecycleBinModal(event)">
+        <i class="fa-solid fa-trash-can"></i>
+        <span><?= translate('subscription_recycle_bin', $i18n) ?></span>
+        <span class="section-count-badge"><?= count($trashedSubscriptions) ?></span>
+      </button>
       <button class="button secondary-button tiny mobile-grow" type="button" id="generateSubscriptionImageVariantsButton"
         onClick="generateSubscriptionImageVariants()">
         <i class="fa-solid fa-wand-magic-sparkles"></i>
@@ -417,18 +423,15 @@ $subscriptionPagePreferences = [
     ?>
   </div>
 </section>
-<section class="contain contain-wide subscription-recycle-bin-section account-section" data-page-ui-hide-target>
-  <div class="collapsible-section-header">
-    <button type="button" class="collapsible-section-toggle" data-target="subscription-recycle-bin-body"
-      aria-expanded="false" onClick="toggleSubscriptionSection(this)">
-      <span class="collapsible-section-heading">
-        <span><?= translate('subscription_recycle_bin', $i18n) ?></span>
-        <span class="section-count-badge"><?= count($trashedSubscriptions) ?></span>
-      </span>
-      <i class="fa-solid fa-chevron-down"></i>
-    </button>
-  </div>
-  <div class="collapsible-section-body is-collapsed" id="subscription-recycle-bin-body">
+<section class="subscription-modal subscription-recycle-bin-modal" id="subscription-recycle-bin-modal" data-page-ui-hide-target>
+  <header>
+    <h3>
+      <?= translate('subscription_recycle_bin', $i18n) ?>
+      <span class="section-count-badge"><?= count($trashedSubscriptions) ?></span>
+    </h3>
+    <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionRecycleBinModal()"></span>
+  </header>
+  <div class="subscription-recycle-bin-modal-body">
     <?php if (!empty($trashedSubscriptions)): ?>
       <div class="subscription-recycle-bin-list">
         <?php foreach ($trashedSubscriptions as $trashedSubscription): ?>
