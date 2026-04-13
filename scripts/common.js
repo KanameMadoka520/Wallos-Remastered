@@ -64,6 +64,71 @@ function setupPageNavigation() {
   });
 }
 
+function getPageImmersiveStorageKey() {
+  const normalizedPath = String(window.location.pathname || "")
+    .replace(/[^a-z0-9/_-]/gi, "")
+    .replace(/^\/+/, "");
+
+  return `wallos-page-ui-hidden:${normalizedPath || "root"}`;
+}
+
+function updatePageImmersiveToggleButton(hidden) {
+  const button = document.querySelector("[data-page-immersive-toggle]");
+  if (!button) {
+    return;
+  }
+
+  const label = hidden ? (button.dataset.showLabel || "Show UI") : (button.dataset.hideLabel || "Hide UI");
+  const icon = button.querySelector("i");
+  const text = button.querySelector("span");
+
+  button.setAttribute("aria-pressed", hidden ? "true" : "false");
+  button.setAttribute("title", label);
+
+  if (text) {
+    text.textContent = label;
+  }
+
+  if (icon) {
+    icon.className = hidden ? "fa-solid fa-eye" : "fa-solid fa-eye-slash";
+  }
+}
+
+function setPageImmersiveUiState(hidden) {
+  document.body.classList.toggle("page-ui-hidden", hidden);
+  updatePageImmersiveToggleButton(hidden);
+}
+
+function initializePageImmersiveToggle() {
+  const button = document.querySelector("[data-page-immersive-toggle]");
+  if (!button) {
+    return;
+  }
+
+  let hidden = false;
+  const storageKey = getPageImmersiveStorageKey();
+
+  try {
+    hidden = window.sessionStorage.getItem(storageKey) === "1";
+  } catch (error) {
+    hidden = false;
+  }
+
+  setPageImmersiveUiState(hidden);
+
+  button.addEventListener("click", () => {
+    const nextHidden = !document.body.classList.contains("page-ui-hidden");
+
+    try {
+      window.sessionStorage.setItem(storageKey, nextHidden ? "1" : "0");
+    } catch (error) {
+      // Ignore sessionStorage persistence failures.
+    }
+
+    setPageImmersiveUiState(nextHidden);
+  });
+}
+
 function closeToast(type) {
   const toast = document.querySelector(type === "error" ? ".toast#errorToast" : ".toast#successToast");
   const progress = document.querySelector(type === "error" ? ".progress.error" : ".progress.success");
@@ -233,6 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   setupPageNavigation();
+  initializePageImmersiveToggle();
 });
 
 function getCookie(name) {

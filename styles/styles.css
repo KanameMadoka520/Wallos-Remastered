@@ -203,6 +203,45 @@ header .logo .logo-image svg {
   height: 16px;
 }
 
+.wallos-page-immersive-toggle {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 10050;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-inline: 16px;
+  background-color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.wallos-page-immersive-toggle > i {
+  font-size: 14px;
+}
+
+body.page-ui-hidden > header,
+body.page-ui-hidden > footer,
+body.page-ui-hidden > .custom-edition-banner,
+body.page-ui-hidden .mobile-nav,
+body.page-ui-hidden [data-page-ui-hide-target],
+body.page-ui-hidden .metric-explanation-modal,
+body.page-ui-hidden .toast,
+body.page-ui-hidden .progress {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .wallos-page-immersive-toggle {
+    top: 12px;
+    right: 12px;
+    padding-inline: 14px;
+  }
+}
+
 .dropdown {
   position: relative;
   display: inline-block;
