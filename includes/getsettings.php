@@ -2,6 +2,40 @@
 
 require_once __DIR__ . '/custom_edition.php';
 
+function wallos_normalize_subscription_display_columns_setting($value)
+{
+    $columns = (int) $value;
+    return in_array($columns, [1, 2, 3], true) ? $columns : 1;
+}
+
+function wallos_normalize_subscription_image_layout_setting($value)
+{
+    $mode = trim((string) $value);
+    return in_array($mode, ['focus', 'grid'], true) ? $mode : 'focus';
+}
+
+function wallos_normalize_subscription_value_visibility_setting($value)
+{
+    $decoded = json_decode((string) $value, true);
+    if (!is_array($decoded)) {
+        $decoded = [];
+    }
+
+    $legacyMetricsVisible = !(
+        array_key_exists('invested', $decoded)
+        && $decoded['invested'] === false
+        && array_key_exists('remaining', $decoded)
+        && $decoded['remaining'] === false
+        && array_key_exists('used', $decoded)
+        && $decoded['used'] === false
+    );
+
+    return [
+        'metrics' => array_key_exists('metrics', $decoded) ? (bool) $decoded['metrics'] : $legacyMetricsVisible,
+        'payment_records' => array_key_exists('payment_records', $decoded) ? (bool) $decoded['payment_records'] : true,
+    ];
+}
+
 $query = "SELECT * FROM settings WHERE user_id = :userId";
 $stmt = $db->prepare($query);
 $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
@@ -34,6 +68,10 @@ if ($settings !== false) {
     $settings['decorativeBackground'] = !isset($settings['decorative_background']) || $settings['decorative_background'] ? 'true' : 'false';
     $settings['dynamicWallpaper'] = !empty($settings['dynamic_wallpaper']) ? 'true' : 'false';
     $settings['dynamicWallpaperBlur'] = !isset($settings['dynamic_wallpaper_blur']) || $settings['dynamic_wallpaper_blur'] ? 'true' : 'false';
+    $settings['subscriptionDisplayColumns'] = wallos_normalize_subscription_display_columns_setting($settings['subscription_display_columns'] ?? 1);
+    $settings['subscriptionValueVisibility'] = wallos_normalize_subscription_value_visibility_setting($settings['subscription_value_visibility'] ?? '');
+    $settings['subscriptionImageLayoutForm'] = wallos_normalize_subscription_image_layout_setting($settings['subscription_image_layout_form'] ?? 'focus');
+    $settings['subscriptionImageLayoutDetail'] = wallos_normalize_subscription_image_layout_setting($settings['subscription_image_layout_detail'] ?? 'focus');
 }
 
 $query = "SELECT * FROM custom_colors WHERE user_id = :userId";
