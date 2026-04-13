@@ -96,6 +96,8 @@ $dynamicWallpaperEnabled = !empty($settings['dynamic_wallpaper']);
 $dynamicWallpaperClass = $dynamicWallpaperEnabled ? "dynamic-wallpaper-enabled" : "dynamic-wallpaper-disabled";
 $dynamicWallpaperBlurEnabled = !isset($settings['dynamic_wallpaper_blur']) || (int) $settings['dynamic_wallpaper_blur'] === 1;
 $dynamicWallpaperBlurClass = $dynamicWallpaperBlurEnabled ? "dynamic-wallpaper-blur-enabled" : "dynamic-wallpaper-blur-disabled";
+$pageTransitionEnabled = !empty($settings['pageTransitionEnabled']);
+$pageTransitionStyle = $settings['pageTransitionStyle'] ?? 'shutter';
 setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   'expires' => $cookieExpire,
   'path' => '/',
@@ -127,7 +129,45 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   <meta name="apple-mobile-web-app-title" content="Wallos">
   <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
   <meta name="referrer" content="no-referrer">
-  <script>document.documentElement.classList.add('wallos-page-transition-enabled');</script>
+  <script>
+    (function () {
+      const html = document.documentElement;
+      const contextKey = 'wallos-page-transition-context';
+      const transitionEnabled = <?= $pageTransitionEnabled ? 'true' : 'false' ?>;
+      const transitionStyle = <?= json_encode($pageTransitionStyle, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+      let transitionContext = null;
+
+      window.pageTransitionEnabled = transitionEnabled;
+      window.pageTransitionStyle = transitionStyle;
+      html.dataset.pageTransitionStyle = transitionStyle;
+
+      if (!transitionEnabled) {
+        return;
+      }
+
+      try {
+        const rawContext = window.sessionStorage.getItem(contextKey);
+        if (rawContext) {
+          const parsedContext = JSON.parse(rawContext);
+          if (parsedContext && parsedContext.active && (Date.now() - Number(parsedContext.timestamp || 0)) < 4000) {
+            transitionContext = parsedContext;
+            window.__wallosPageTransitionContext = parsedContext;
+          } else {
+            window.sessionStorage.removeItem(contextKey);
+          }
+        }
+      } catch (error) {
+        transitionContext = null;
+      }
+
+      html.classList.add('wallos-page-transition-enabled', 'wallos-page-transition-loading');
+      if (transitionContext) {
+        html.classList.add('wallos-page-transition-resume');
+      } else {
+        html.classList.add('wallos-page-transition-initial');
+      }
+    })();
+  </script>
   <link rel="icon" type="image/png" href="images/icon/favicon.ico" sizes="16x16">
   <link rel="apple-touch-icon" href="images/icon/apple-touch-icon.png">
   <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">

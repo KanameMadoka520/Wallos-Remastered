@@ -14,6 +14,12 @@ function wallos_normalize_subscription_image_layout_setting($value)
     return in_array($mode, ['focus', 'grid'], true) ? $mode : 'focus';
 }
 
+function wallos_normalize_page_transition_style_setting($value)
+{
+    $style = trim((string) $value);
+    return in_array($style, ['shutter', 'nova', 'scanline', 'ribbon'], true) ? $style : 'shutter';
+}
+
 function wallos_normalize_subscription_value_visibility_setting($value)
 {
     $decoded = json_decode((string) $value, true);
@@ -68,6 +74,8 @@ if ($settings !== false) {
     $settings['decorativeBackground'] = !isset($settings['decorative_background']) || $settings['decorative_background'] ? 'true' : 'false';
     $settings['dynamicWallpaper'] = !empty($settings['dynamic_wallpaper']) ? 'true' : 'false';
     $settings['dynamicWallpaperBlur'] = !isset($settings['dynamic_wallpaper_blur']) || $settings['dynamic_wallpaper_blur'] ? 'true' : 'false';
+    $settings['pageTransitionEnabled'] = !isset($settings['page_transition_enabled']) || (int) $settings['page_transition_enabled'] === 1;
+    $settings['pageTransitionStyle'] = wallos_normalize_page_transition_style_setting($settings['page_transition_style'] ?? 'shutter');
     $settings['subscriptionDisplayColumns'] = wallos_normalize_subscription_display_columns_setting($settings['subscription_display_columns'] ?? 1);
     $settings['subscriptionValueVisibility'] = wallos_normalize_subscription_value_visibility_setting($settings['subscription_value_visibility'] ?? '');
     $settings['subscriptionImageLayoutForm'] = wallos_normalize_subscription_image_layout_setting($settings['subscription_image_layout_form'] ?? 'focus');
