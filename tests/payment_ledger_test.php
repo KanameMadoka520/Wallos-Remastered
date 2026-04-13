@@ -134,7 +134,27 @@ try {
     wallos_ledger_assert_float($forecast[1]['amount_main'], 100, '未命中规则时未来预测应回退到常规定价');
     wallos_ledger_print_ok('未来预测会跳过已支付账期并命中特殊价格规则');
 
+    $shortRangeForecast = wallos_build_subscription_future_payment_forecast(
+        $db,
+        $subscription,
+        1,
+        $priceRules,
+        $paidDueDates,
+        [1 => ['code' => 'USD'], 2 => ['code' => 'EUR']],
+        ['metric_explanation_regular_price_source' => 'Regular subscription price', 'subscription_price_rule_one_time_summary' => '%s on due date %s'],
+        6,
+        new DateTime('2026-03-15'),
+        new DateTime('2026-04-15')
+    );
+    wallos_ledger_assert_equal(count($shortRangeForecast), 1, '较短预测范围应只保留窗口内账期');
+    wallos_ledger_assert_equal($shortRangeForecast[0]['due_date'], '2026-04-01', '较短预测范围应命中窗口内的应付日期');
+    wallos_ledger_print_ok('预测范围切换会影响未来账期列表');
+
     $records = wallos_get_subscription_payment_records($db, 9, 1, 0);
+    $availableYears = wallos_build_subscription_payment_history_available_years($subscription, $records, new DateTime('2026-03-15'));
+    wallos_ledger_assert_equal($availableYears, [2027, 2026], '账本年份列表应覆盖当前年与下一年，并按倒序返回');
+    wallos_ledger_print_ok('账本年份切换列表生成正确');
+
     $cashflow = wallos_build_subscription_yearly_cashflow($records, $forecast, 2026);
     wallos_ledger_assert_float($cashflow[0]['actual_total'], 100, '一月现金流应计入历史实付');
     wallos_ledger_assert_float($cashflow[3]['predicted_total'], 20, '四月现金流应计入预测付款');
