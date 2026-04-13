@@ -3447,6 +3447,9 @@ button.dark-theme-button i {
   z-index: 5;
   width: min(420px, calc(100vw - 32px));
   max-width: min(420px, calc(100vw - 32px));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 @media (max-width: 768px) {
@@ -3465,6 +3468,9 @@ button.dark-theme-button i {
 
 .toast.active {
   transform: translateX(0%);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .toast .toast-content {
