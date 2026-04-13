@@ -278,6 +278,39 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             <div class="budget-subscriptions">
                 <h2><?= translate('your_budget', $i18n) ?></h2>
                 <div class="dashboard-subscriptions-container">
+                    <?php if (isset($yearlyBudget) && $yearlyBudget > 0 && !empty($yearlyBudgetVisualizationSegments)) { ?>
+                        <section class="budget-visualizer">
+                            <div class="budget-visualizer-header">
+                                <div>
+                                    <h3><?= translate('yearly_budget_breakdown', $i18n) ?></h3>
+                                    <p><?= translate('yearly_budget_breakdown_info', $i18n) ?></p>
+                                </div>
+                                <div class="budget-visualizer-figures">
+                                    <strong><?= CurrencyFormatter::format($currentYearProjectedSpend, $currencies[$userData['main_currency']]['code']) ?></strong>
+                                    <span>/ <?= CurrencyFormatter::format($yearlyBudget, $currencies[$userData['main_currency']]['code']) ?></span>
+                                </div>
+                            </div>
+                            <div class="budget-visualizer-bar" aria-hidden="true">
+                                <?php foreach ($yearlyBudgetVisualizationSegments as $segment): ?>
+                                    <?php if (($segment['value'] ?? 0) <= 0) { continue; } ?>
+                                    <span class="budget-visualizer-segment"
+                                        style="width: <?= max(4, round(((float) ($segment['ratio'] ?? 0)) * 100, 2)) ?>%; background-color: <?= htmlspecialchars($segment['color'], ENT_QUOTES, 'UTF-8') ?>;"
+                                        title="<?= htmlspecialchars($segment['label'] . ': ' . CurrencyFormatter::format($segment['value'], $currencies[$userData['main_currency']]['code']), ENT_QUOTES, 'UTF-8') ?>"></span>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="budget-visualizer-legend">
+                                <?php foreach ($yearlyBudgetVisualizationSegments as $segment): ?>
+                                    <?php if (($segment['value'] ?? 0) <= 0) { continue; } ?>
+                                    <div class="budget-visualizer-legend-item">
+                                        <span class="budget-visualizer-swatch"
+                                            style="background-color: <?= htmlspecialchars($segment['color'], ENT_QUOTES, 'UTF-8') ?>;"></span>
+                                        <span class="budget-visualizer-label"><?= htmlspecialchars($segment['label'], ENT_QUOTES, 'UTF-8') ?></span>
+                                        <strong><?= CurrencyFormatter::format($segment['value'], $currencies[$userData['main_currency']]['code']) ?></strong>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+                    <?php } ?>
                     <div class="dashboard-subscriptions-list">
                         <?php if (isset($amountDueThisMonth)) { ?>
                             <div class="subscription-item thin">
