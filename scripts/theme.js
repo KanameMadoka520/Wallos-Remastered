@@ -15,6 +15,34 @@ function applyDecorativeBackgroundState(enabled) {
   }
 }
 
+function applyDynamicWallpaperState(enabled) {
+  document.body.classList.toggle('dynamic-wallpaper-enabled', enabled);
+  document.body.classList.toggle('dynamic-wallpaper-disabled', !enabled);
+  if (window.WallosDynamicWallpaper && typeof window.WallosDynamicWallpaper.setEnabled === 'function') {
+    window.WallosDynamicWallpaper.setEnabled(enabled);
+  }
+  updateDynamicWallpaperControls();
+}
+
+function applyDynamicWallpaperBlurState(enabled) {
+  document.body.classList.toggle('dynamic-wallpaper-blur-enabled', enabled);
+  document.body.classList.toggle('dynamic-wallpaper-blur-disabled', !enabled);
+  if (window.WallosDynamicWallpaper && typeof window.WallosDynamicWallpaper.setBlur === 'function') {
+    window.WallosDynamicWallpaper.setBlur(enabled);
+  }
+}
+
+function updateDynamicWallpaperControls() {
+  const wallpaperCheckbox = document.getElementById('dynamicwallpaper');
+  const blurCheckbox = document.getElementById('dynamicwallpaperblur');
+
+  if (!wallpaperCheckbox || !blurCheckbox) {
+    return;
+  }
+
+  blurCheckbox.disabled = !wallpaperCheckbox.checked;
+}
+
 function switchTheme() {
   const darkThemeCss = document.querySelector("#dark-theme");
   darkThemeCss.disabled = !darkThemeCss.disabled;
@@ -315,3 +343,84 @@ function setDecorativeBackground() {
       checkbox.disabled = false;
     });
 }
+
+function setDynamicWallpaper() {
+  const checkbox = document.getElementById('dynamicwallpaper');
+  if (!checkbox) {
+    return;
+  }
+
+  const enabled = checkbox.checked;
+  checkbox.disabled = true;
+
+  fetch('endpoints/settings/dynamic_wallpaper.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ value: enabled })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        applyDynamicWallpaperState(enabled);
+        showSuccessMessage(data.message);
+      } else {
+        checkbox.checked = !enabled;
+        updateDynamicWallpaperControls();
+        showErrorMessage(data.message);
+      }
+    })
+    .catch(() => {
+      checkbox.checked = !enabled;
+      updateDynamicWallpaperControls();
+      showErrorMessage(translate('unknown_error'));
+    })
+    .finally(() => {
+      checkbox.disabled = false;
+    });
+}
+
+function setDynamicWallpaperBlur() {
+  const checkbox = document.getElementById('dynamicwallpaperblur');
+  if (!checkbox) {
+    return;
+  }
+
+  const enabled = checkbox.checked;
+  checkbox.disabled = true;
+
+  fetch('endpoints/settings/dynamic_wallpaper_blur.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify({ value: enabled })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        applyDynamicWallpaperBlurState(enabled);
+        showSuccessMessage(data.message);
+      } else {
+        checkbox.checked = !enabled;
+        showErrorMessage(data.message);
+      }
+    })
+    .catch(() => {
+      checkbox.checked = !enabled;
+      showErrorMessage(translate('unknown_error'));
+    })
+    .finally(() => {
+      checkbox.disabled = false;
+      updateDynamicWallpaperControls();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  applyDynamicWallpaperState(!!window.dynamicWallpaperEnabled);
+  applyDynamicWallpaperBlurState(!!window.dynamicWallpaperBlurEnabled);
+  updateDynamicWallpaperControls();
+});

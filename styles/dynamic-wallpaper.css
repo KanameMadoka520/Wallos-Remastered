@@ -1,0 +1,195 @@
+body.dynamic-wallpaper-enabled {
+    background: transparent !important;
+    position: relative;
+}
+
+body.dynamic-wallpaper-enabled .wallos-decorative-background {
+    display: none;
+}
+
+body.dynamic-wallpaper-enabled > header,
+body.dynamic-wallpaper-enabled > .custom-edition-banner,
+body.dynamic-wallpaper-enabled > main,
+body.dynamic-wallpaper-enabled > .content,
+body.dynamic-wallpaper-enabled > .mobile-nav,
+body.dynamic-wallpaper-enabled > .toast {
+    position: relative;
+}
+
+body.dynamic-wallpaper-enabled > header {
+    z-index: 40;
+}
+
+body.dynamic-wallpaper-enabled > .custom-edition-banner {
+    z-index: 30;
+}
+
+body.dynamic-wallpaper-enabled > main,
+body.dynamic-wallpaper-enabled > .content {
+    z-index: 10;
+}
+
+body.dynamic-wallpaper-enabled > .mobile-nav {
+    z-index: 50;
+}
+
+body.dynamic-wallpaper-enabled > .toast {
+    z-index: 2000;
+}
+
+body.dynamic-wallpaper-enabled .dropdown-content {
+    z-index: 120;
+}
+
+:root {
+    --wallos-wallpaper-brightness: 0.88;
+    --wallos-wallpaper-contrast: 1.06;
+    --wallos-wallpaper-overlay-opacity: 0.68;
+    --wallos-wallpaper-overlay-blur: 12px;
+    --wallos-wallpaper-tint-opacity: 0.18;
+}
+
+body.dark.dynamic-wallpaper-enabled {
+    --wallos-wallpaper-overlay-rgb: 10, 18, 30;
+    --wallos-wallpaper-tint-rgb: 18, 28, 44;
+}
+
+body.light.dynamic-wallpaper-enabled {
+    --wallos-wallpaper-overlay-rgb: 235, 242, 250;
+    --wallos-wallpaper-tint-rgb: 216, 228, 242;
+}
+
+.wallos-dynamic-wallpaper {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 220ms ease;
+}
+
+body.dynamic-wallpaper-enabled .wallos-dynamic-wallpaper {
+    opacity: 1;
+}
+
+.wallos-dynamic-wallpaper-video {
+    position: absolute;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    filter: brightness(var(--wallos-wallpaper-brightness)) contrast(var(--wallos-wallpaper-contrast));
+    transform: translateZ(0) scale(1.015);
+    will-change: transform, filter;
+}
+
+.wallos-dynamic-wallpaper-overlay,
+.wallos-dynamic-wallpaper-overlay::before {
+    position: absolute;
+    inset: 0;
+}
+
+.wallos-dynamic-wallpaper-overlay {
+    background:
+        linear-gradient(
+            180deg,
+            rgba(var(--wallos-wallpaper-overlay-rgb), var(--wallos-wallpaper-overlay-opacity)),
+            rgba(var(--wallos-wallpaper-overlay-rgb), calc(var(--wallos-wallpaper-overlay-opacity) * 0.92))
+        );
+}
+
+.wallos-dynamic-wallpaper-overlay::before {
+    content: "";
+    backdrop-filter: blur(var(--wallos-wallpaper-overlay-blur)) saturate(1.08);
+    -webkit-backdrop-filter: blur(var(--wallos-wallpaper-overlay-blur)) saturate(1.08);
+    background: rgba(var(--wallos-wallpaper-tint-rgb), var(--wallos-wallpaper-tint-opacity));
+}
+
+body.dynamic-wallpaper-blur-disabled .wallos-dynamic-wallpaper-overlay::before {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(var(--wallos-wallpaper-tint-rgb), 0.08);
+}
+
+body.dynamic-wallpaper-enabled .account-section,
+body.dynamic-wallpaper-enabled .graph,
+body.dynamic-wallpaper-enabled .statistic,
+body.dynamic-wallpaper-enabled .subscription,
+body.dynamic-wallpaper-enabled .subscription-form,
+body.dynamic-wallpaper-enabled .subscription-modal,
+body.dynamic-wallpaper-enabled .dashboard-subscriptions-list > .subscription-item,
+body.dynamic-wallpaper-enabled .dropdown-content,
+body.dynamic-wallpaper-enabled .filtermenu-content,
+body.dynamic-wallpaper-enabled .page-navigation,
+body.dynamic-wallpaper-enabled .payments-list .payments-payment,
+body.dynamic-wallpaper-enabled .subscription-trash-card,
+body.dynamic-wallpaper-enabled .subscription-payment-record-item,
+body.dynamic-wallpaper-enabled .subscription-payment-cashflow-row,
+body.dynamic-wallpaper-enabled .subscription-value-metric-card,
+body.dynamic-wallpaper-enabled .subscription-image-viewer,
+body.dynamic-wallpaper-enabled .user-card,
+body.dynamic-wallpaper-enabled .invite-code-card,
+body.dynamic-wallpaper-enabled .access-log-card {
+    background-color: rgba(var(--box-background-color-rgb), 0.72);
+    backdrop-filter: blur(14px) saturate(1.08);
+    -webkit-backdrop-filter: blur(14px) saturate(1.08);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow:
+        0 20px 56px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+body.dark.dynamic-wallpaper-enabled .account-section,
+body.dark.dynamic-wallpaper-enabled .graph,
+body.dark.dynamic-wallpaper-enabled .statistic,
+body.dark.dynamic-wallpaper-enabled .subscription,
+body.dark.dynamic-wallpaper-enabled .subscription-form,
+body.dark.dynamic-wallpaper-enabled .subscription-modal,
+body.dark.dynamic-wallpaper-enabled .dashboard-subscriptions-list > .subscription-item,
+body.dark.dynamic-wallpaper-enabled .dropdown-content,
+body.dark.dynamic-wallpaper-enabled .filtermenu-content,
+body.dark.dynamic-wallpaper-enabled .page-navigation,
+body.dark.dynamic-wallpaper-enabled .payments-list .payments-payment,
+body.dark.dynamic-wallpaper-enabled .subscription-trash-card,
+body.dark.dynamic-wallpaper-enabled .subscription-payment-record-item,
+body.dark.dynamic-wallpaper-enabled .subscription-payment-cashflow-row,
+body.dark.dynamic-wallpaper-enabled .subscription-value-metric-card,
+body.dark.dynamic-wallpaper-enabled .subscription-image-viewer,
+body.dark.dynamic-wallpaper-enabled .user-card,
+body.dark.dynamic-wallpaper-enabled .invite-code-card,
+body.dark.dynamic-wallpaper-enabled .access-log-card {
+    background-color: rgba(var(--box-background-color-rgb), 0.66);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dynamic-wallpaper-enabled > header .contain,
+body.dynamic-wallpaper-enabled > .custom-edition-banner .contain {
+    background-color: rgba(var(--box-background-color-rgb), 0.52);
+    backdrop-filter: blur(14px) saturate(1.06);
+    -webkit-backdrop-filter: blur(14px) saturate(1.06);
+    border-radius: 18px;
+}
+
+body.dynamic-wallpaper-enabled > header .contain {
+    margin-top: 12px;
+    padding-inline: 18px;
+}
+
+body.dynamic-wallpaper-enabled > .custom-edition-banner .contain {
+    padding-inline: 18px;
+}
+
+@media (max-width: 768px) {
+    body.dynamic-wallpaper-enabled > header .contain,
+    body.dynamic-wallpaper-enabled > .custom-edition-banner .contain {
+        border-radius: 14px;
+        padding-inline: 14px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wallos-dynamic-wallpaper-video {
+        filter: brightness(calc(var(--wallos-wallpaper-brightness) - 0.04)) contrast(var(--wallos-wallpaper-contrast));
+    }
+}

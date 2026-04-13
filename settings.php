@@ -1446,6 +1446,29 @@ $pageSections = [
                 </div>
             </div>
             <div>
+                <h3><?= translate('dynamic_wallpaper_theme', $i18n) ?></h3>
+                <div class="form-group-inline">
+                    <input type="checkbox" id="dynamicwallpaper" name="dynamicwallpaper"
+                        onChange="setDynamicWallpaper()" <?= !empty($settings['dynamic_wallpaper']) ? 'checked' : '' ?>>
+                    <label for="dynamicwallpaper"><?= translate('dynamic_wallpaper_theme', $i18n) ?></label>
+                </div>
+                <div class="form-group-inline">
+                    <input type="checkbox" id="dynamicwallpaperblur" name="dynamicwallpaperblur"
+                        onChange="setDynamicWallpaperBlur()" <?= (!isset($settings['dynamic_wallpaper_blur']) || $settings['dynamic_wallpaper_blur']) ? 'checked' : '' ?>>
+                    <label for="dynamicwallpaperblur"><?= translate('dynamic_wallpaper_blur_overlay', $i18n) ?></label>
+                </div>
+                <div class="settings-notes">
+                    <p>
+                        <i class="fa-solid fa-flask"></i>
+                        <?= translate('dynamic_wallpaper_theme_info', $i18n) ?>
+                    </p>
+                    <p>
+                        <i class="fa-solid fa-circle-info"></i>
+                        <?= translate('dynamic_wallpaper_blur_overlay_info', $i18n) ?>
+                    </p>
+                </div>
+            </div>
+            <div>
                 <h3><?= translate('custom_colors', $i18n) ?></h3>
                 <div class="custom-colors wrap">
                     <div class="form-group-inline mobile-grow color-picker-button">

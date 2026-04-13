@@ -30,6 +30,8 @@ if ($settings !== false) {
     $settings['mobileNavigation'] = $settings['mobile_nav'] ? 'true': 'false';
     $settings['showSubscriptionProgress'] = $settings['show_subscription_progress'] ? 'true': 'false';
     $settings['decorativeBackground'] = !isset($settings['decorative_background']) || $settings['decorative_background'] ? 'true' : 'false';
+    $settings['dynamicWallpaper'] = !empty($settings['dynamic_wallpaper']) ? 'true' : 'false';
+    $settings['dynamicWallpaperBlur'] = !isset($settings['dynamic_wallpaper_blur']) || $settings['dynamic_wallpaper_blur'] ? 'true' : 'false';
 }
 
 $query = "SELECT * FROM custom_colors WHERE user_id = :userId";
