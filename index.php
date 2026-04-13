@@ -325,46 +325,90 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                         <?php } ?>
                         <?php if (isset($budget) && $budget > 0) { ?>
                             <div class="subscription-item thin">
-                                <p class="subscription-item-title"><?= translate("budget", $i18n) ?></p>
+                                <p class="subscription-item-title"><?= translate("monthly_budget", $i18n) ?></p>
                                 <div class="subscription-item-info">
                                     <p class="subscription-item-value">
                                         <?= formatPrice($budget, $currencies[$userData['main_currency']]['code'], $currencies) ?>
                                     </p>
                                 </div>
-                                <?php wallos_render_metric_explanation_trigger('budget', $metricExplanations, translate('budget', $i18n)); ?>
+                                <?php wallos_render_metric_explanation_trigger('budget', $metricExplanations, translate('monthly_budget', $i18n)); ?>
                             </div>
                         <?php } ?>
                         <?php if (isset($budgetUsed)) { ?>
                             <div class="subscription-item thin">
-                                <p class="subscription-item-title"><?= translate("budget_used", $i18n) ?></p>
+                                <p class="subscription-item-title"><?= translate("monthly_budget_used", $i18n) ?></p>
                                 <div class="subscription-item-info">
                                     <p class="subscription-item-value">
                                         <?= number_format($budgetUsed, 2) ?>%
                                     </p>
                                 </div>
-                                <?php wallos_render_metric_explanation_trigger('budget_used', $metricExplanations, translate('budget_used', $i18n)); ?>
+                                <?php wallos_render_metric_explanation_trigger('budget_used', $metricExplanations, translate('monthly_budget_used', $i18n)); ?>
                             </div>
                         <?php } ?>
                         <?php if (isset($budgetLeft)) { ?>
                             <div class="subscription-item thin">
-                                <p class="subscription-item-title"><?= translate("budget_remaining", $i18n) ?></p>
+                                <p class="subscription-item-title"><?= translate("monthly_budget_remaining", $i18n) ?></p>
                                 <div class="subscription-item-info">
                                     <p class="subscription-item-value">
                                         <?= formatPrice($budgetLeft, $currencies[$userData['main_currency']]['code'], $currencies) ?>
                                     </p>
                                 </div>
-                                <?php wallos_render_metric_explanation_trigger('budget_remaining', $metricExplanations, translate('budget_remaining', $i18n)); ?>
+                                <?php wallos_render_metric_explanation_trigger('budget_remaining', $metricExplanations, translate('monthly_budget_remaining', $i18n)); ?>
                             </div>
                         <?php } ?>
                         <?php if (isset($overBudgetAmount) && $overBudgetAmount > 0) { ?>
                             <div class="subscription-item thin">
-                                <p class="subscription-item-title"><?= translate("over_budget", $i18n) ?></p>
+                                <p class="subscription-item-title"><?= translate("monthly_amount_over_budget", $i18n) ?></p>
                                 <div class="subscription-item-info">
                                     <p class="subscription-item-value">
                                         <?= formatPrice($overBudgetAmount, $currencies[$userData['main_currency']]['code'], $currencies) ?>
                                     </p>
                                 </div>
-                                <?php wallos_render_metric_explanation_trigger('amount_over_budget', $metricExplanations, translate('amount_over_budget', $i18n)); ?>
+                                <?php wallos_render_metric_explanation_trigger('amount_over_budget', $metricExplanations, translate('monthly_amount_over_budget', $i18n)); ?>
+                            </div>
+                        <?php } ?>
+                        <?php if (isset($yearlyBudget) && $yearlyBudget > 0) { ?>
+                            <div class="subscription-item thin">
+                                <p class="subscription-item-title"><?= translate("yearly_budget", $i18n) ?></p>
+                                <div class="subscription-item-info">
+                                    <p class="subscription-item-value">
+                                        <?= formatPrice($yearlyBudget, $currencies[$userData['main_currency']]['code'], $currencies) ?>
+                                    </p>
+                                </div>
+                                <?php wallos_render_metric_explanation_trigger('yearly_budget', $metricExplanations, translate('yearly_budget', $i18n)); ?>
+                            </div>
+                        <?php } ?>
+                        <?php if (isset($yearlyBudgetUsed)) { ?>
+                            <div class="subscription-item thin">
+                                <p class="subscription-item-title"><?= translate("yearly_budget_used", $i18n) ?></p>
+                                <div class="subscription-item-info">
+                                    <p class="subscription-item-value">
+                                        <?= number_format($yearlyBudgetUsed, 2) ?>%
+                                    </p>
+                                </div>
+                                <?php wallos_render_metric_explanation_trigger('yearly_budget_used', $metricExplanations, translate('yearly_budget_used', $i18n)); ?>
+                            </div>
+                        <?php } ?>
+                        <?php if (isset($yearlyBudgetRemaining)) { ?>
+                            <div class="subscription-item thin">
+                                <p class="subscription-item-title"><?= translate("yearly_budget_remaining", $i18n) ?></p>
+                                <div class="subscription-item-info">
+                                    <p class="subscription-item-value">
+                                        <?= formatPrice($yearlyBudgetRemaining, $currencies[$userData['main_currency']]['code'], $currencies) ?>
+                                    </p>
+                                </div>
+                                <?php wallos_render_metric_explanation_trigger('yearly_budget_remaining', $metricExplanations, translate('yearly_budget_remaining', $i18n)); ?>
+                            </div>
+                        <?php } ?>
+                        <?php if (isset($yearlyOverBudgetAmount) && $yearlyOverBudgetAmount > 0) { ?>
+                            <div class="subscription-item thin">
+                                <p class="subscription-item-title"><?= translate("yearly_amount_over_budget", $i18n) ?></p>
+                                <div class="subscription-item-info">
+                                    <p class="subscription-item-value">
+                                        <?= formatPrice($yearlyOverBudgetAmount, $currencies[$userData['main_currency']]['code'], $currencies) ?>
+                                    </p>
+                                </div>
+                                <?php wallos_render_metric_explanation_trigger('yearly_amount_over_budget', $metricExplanations, translate('yearly_amount_over_budget', $i18n)); ?>
                             </div>
                         <?php } ?>
                     </div>

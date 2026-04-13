@@ -34,6 +34,7 @@ let i18n = {
     metric_explanation_cost_total: '比較成本',
     metric_explanation_actual_paid_total: '已實付部分',
     metric_explanation_projected_remaining_total: '剩餘預測部分',
+    metric_explanation_rule_source: '規則命中來源',
     metric_explanation_no_items: '這個指標目前沒有可展開的明細項。',
     subscription_payment_due_date: '應付日期',
     subscription_payment_paid_at: '實際支付時間',
@@ -42,6 +43,10 @@ let i18n = {
     edit_subscription: "編輯訂閱",
     add_subscription: "新增訂閱",
     confirm_delete_subscription: "您確定要刪除此訂閱嗎？",
+    delete: '刪除',
+    cycle: '週期',
+    frequency: '頻率',
+    next_payment: '下次支付時間',
     // Settings
     network_response_error: "網路無回應",
     failed_add_member: '新增成員失敗',

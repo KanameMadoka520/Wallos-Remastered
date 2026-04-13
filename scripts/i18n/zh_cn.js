@@ -34,6 +34,7 @@ let i18n = {
     'metric_explanation_cost_total': '比较成本',
     'metric_explanation_actual_paid_total': '已实付部分',
     'metric_explanation_projected_remaining_total': '剩余预测部分',
+    'metric_explanation_rule_source': '规则命中来源',
     'metric_explanation_no_items': '这个指标当前没有可展开的明细项。',
     'subscription_payment_due_date': '应付日期',
     'subscription_payment_paid_at': '实际支付时间',
@@ -42,6 +43,10 @@ let i18n = {
     'edit_subscription': "编辑订阅",
     'add_subscription': "添加订阅",
     'confirm_delete_subscription': "您确定要删除此订阅吗？",
+    'delete': '删除',
+    'cycle': '周期',
+    'frequency': '频率',
+    'next_payment': '下次支付时间',
     // Settings
     'network_response_error': "网络响应不正常",
     'failed_add_member': '添加成员失败',

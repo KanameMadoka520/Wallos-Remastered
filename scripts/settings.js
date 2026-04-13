@@ -23,6 +23,8 @@ function saveBudget() {
   button.disabled = true;
 
   const budget = document.getElementById("budget").value;
+  const yearlyBudgetInput = document.getElementById("yearly_budget");
+  const yearlyBudget = yearlyBudgetInput ? yearlyBudgetInput.value : 0;
 
   fetch('endpoints/user/budget.php', {
     method: 'POST',
@@ -30,7 +32,10 @@ function saveBudget() {
       'Content-Type': 'application/json',
       'X-CSRF-Token': window.csrfToken,
     },
-    body: JSON.stringify({budget: budget}),
+    body: JSON.stringify({
+      budget: budget,
+      yearly_budget: yearlyBudget,
+    }),
   })
     .then(response => response.json())
     .then(data => {

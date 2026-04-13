@@ -4909,6 +4909,23 @@ input[type="radio"]:checked+label::after {
   font-size: 20px;;
 }
 
+.account-budget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.account-budget-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-budget-field>label {
+  font-weight: 600;
+}
+
 .metric-explanation-modal {
   max-width: 820px;
 }
@@ -4961,6 +4978,24 @@ input[type="radio"]:checked+label::after {
 }
 
 .metric-explanation-items {
+  display: grid;
+  gap: 12px;
+}
+
+.metric-explanation-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metric-explanation-group-title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(var(--text-color-rgb), 0.68);
+}
+
+.metric-explanation-group-items {
   display: grid;
   gap: 12px;
 }

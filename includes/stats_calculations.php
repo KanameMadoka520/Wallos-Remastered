@@ -39,6 +39,24 @@ function getPriceConverted($price, $currency, $database, $userId)
     }
 }
 
+function wallos_stats_build_summary_card($label, $value, $format = 'currency', $currencyCode = '')
+{
+    return [
+        'label' => (string) $label,
+        'value' => round((float) $value, 2),
+        'format' => (string) $format,
+        'currency_code' => (string) $currencyCode,
+    ];
+}
+
+function wallos_stats_build_item_group($title, array $items)
+{
+    return [
+        'title' => (string) $title,
+        'items' => array_values($items),
+    ];
+}
+
 // Get categories
 $categories = array();
 $query = "SELECT * FROM categories WHERE user_id = :userId ORDER BY 'order' ASC";
@@ -94,6 +112,7 @@ $paidDueDatesThisYear = wallos_get_paid_due_dates_map($db, $userId, $currentYear
 $projectedRemainingYearCost = 0;
 $mainCurrencyCode = $currencies[$userData['main_currency']]['code'] ?? '';
 $monthlyCostBreakdown = [];
+$yearlyCostBreakdown = [];
 $amountDueThisMonthSummary = [];
 $projectedYearSummary = [];
 $actualPaidThisMonthRecords = wallos_get_subscription_payment_records_for_period($db, $userId, $currentMonthStart, $currentMonthEnd, true);
@@ -108,7 +127,7 @@ $totalSavingsPerMonth = 0;
 $totalCostsInReplacementsPerMonth = 0;
 
 $statsSubtitleParts = [];
-$query = "SELECT name, price, logo, frequency, cycle, currency_id, next_payment, payer_user_id, category_id, payment_method_id, inactive, replacement_subscription_id FROM subscriptions";
+$query = "SELECT id, name, price, logo, frequency, cycle, currency_id, next_payment, start_date, payer_user_id, category_id, payment_method_id, inactive, replacement_subscription_id FROM subscriptions";
 $conditions = [];
 $params = [];
 
@@ -202,6 +221,15 @@ if ($result) {
                     'next_payment' => $next_payment,
                     'currency_code' => $mainCurrencyCode,
                 ];
+                $yearlyCostBreakdown[] = [
+                    'name' => $name,
+                    'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
+                    'price_per_charge' => round((float) $originalSubscriptionPrice, 2),
+                    'monthly_equivalent' => round((float) $price, 2),
+                    'total_amount' => round((float) ($price * 12), 2),
+                    'next_payment' => $next_payment,
+                    'currency_code' => $mainCurrencyCode,
+                ];
 
                 // Calculate ammount due this month
                 $nextPaymentDate = DateTime::createFromFormat('Y-m-d', trim($next_payment));
@@ -225,6 +253,9 @@ if ($result) {
                             $timesToPay = $weeksRemaining / $frequency;
                         }
                         $effectivePrice = wallos_get_effective_subscription_price_for_due_date($subscription, $priceRules, $nextPaymentDateKey, $db, $userId);
+                        $ruleSourceSummary = $effectivePrice['matched_rule']
+                            ? wallos_format_subscription_price_rule_summary($effectivePrice['matched_rule'], $currencies, $i18n)
+                            : translate('metric_explanation_regular_price_source', $i18n);
                         $lineAmount = $effectivePrice['amount_main'] * $timesToPay;
                         $amountDueThisMonth += $lineAmount;
                         $amountDueThisMonthSummary[] = [
@@ -235,9 +266,7 @@ if ($result) {
                             'total_amount' => round((float) $lineAmount, 2),
                             'next_due' => $nextPaymentDateKey,
                             'currency_code' => $mainCurrencyCode,
-                            'rule_summary' => $effectivePrice['matched_rule']
-                                ? wallos_format_subscription_price_rule_summary($effectivePrice['matched_rule'], $currencies, $i18n)
-                                : '',
+                            'rule_summary' => $ruleSourceSummary,
                         ];
                     }
                 }
@@ -253,6 +282,9 @@ if ($result) {
                             $forecastDateString = $forecastDate->format('Y-m-d');
                             if ($forecastDate >= $todayDate && empty($paidDueDatesThisYear[$subscriptionId][$forecastDateString])) {
                                 $effectivePrice = wallos_get_effective_subscription_price_for_due_date($subscription, $priceRules, $forecastDateString, $db, $userId);
+                                $ruleSourceSummary = $effectivePrice['matched_rule']
+                                    ? wallos_format_subscription_price_rule_summary($effectivePrice['matched_rule'], $currencies, $i18n)
+                                    : translate('metric_explanation_regular_price_source', $i18n);
                                 $projectedRemainingYearCost += $effectivePrice['amount_main'];
                                 $projectedYearSummary[] = [
                                     'name' => $name,
@@ -262,9 +294,7 @@ if ($result) {
                                     'total_amount' => round((float) $effectivePrice['amount_main'], 2),
                                     'next_due' => $forecastDateString,
                                     'currency_code' => $mainCurrencyCode,
-                                    'rule_summary' => $effectivePrice['matched_rule']
-                                        ? wallos_format_subscription_price_rule_summary($effectivePrice['matched_rule'], $currencies, $i18n)
-                                        : '',
+                                    'rule_summary' => $ruleSourceSummary,
                                 ];
                             }
                             $forecastDate->add($interval);
@@ -339,7 +369,7 @@ function wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n)
 $showVsBudgetGraph = false;
 $vsBudgetDataPoints = [];
 if (isset($userData['budget']) && $userData['budget'] > 0) {
-    $budget = $userData['budget'];
+    $budget = (float) $userData['budget'];
     $budgetLeft = $budget - $totalCostPerMonth;
     $budgetLeft = $budgetLeft < 0 ? 0 : $budgetLeft;
     $budgetUsed = ($totalCostPerMonth / $budget) * 100;
@@ -358,6 +388,17 @@ if (isset($userData['budget']) && $userData['budget'] > 0) {
             "y" => $totalCostPerMonth,
         ],
     ];
+}
+
+if (isset($userData['yearly_budget']) && $userData['yearly_budget'] > 0) {
+    $yearlyBudget = (float) $userData['yearly_budget'];
+    $yearlyBudgetRemaining = $yearlyBudget - $currentYearProjectedSpend;
+    $yearlyBudgetRemaining = $yearlyBudgetRemaining < 0 ? 0 : $yearlyBudgetRemaining;
+    $yearlyBudgetUsed = ($currentYearProjectedSpend / $yearlyBudget) * 100;
+    $yearlyBudgetUsed = $yearlyBudgetUsed > 100 ? 100 : $yearlyBudgetUsed;
+    if ($currentYearProjectedSpend > $yearlyBudget) {
+        $yearlyOverBudgetAmount = $currentYearProjectedSpend - $yearlyBudget;
+    }
 }
 
 $showCantConverErrorMessage = false;
@@ -399,7 +440,7 @@ $metricExplanations = [
         'formula' => translate('yearly_cost_explanation_formula', $i18n),
         'currency_code' => $mainCurrencyCode,
         'total' => round((float) $totalCostPerYear, 2),
-        'items' => array_values($monthlyCostBreakdown),
+        'items' => array_values($yearlyCostBreakdown),
     ],
     'amount_due' => [
         'title' => translate('amount_due', $i18n),
@@ -427,46 +468,137 @@ $metricExplanations = [
         'formula' => translate('projected_yearly_spend_explanation_formula', $i18n),
         'currency_code' => $mainCurrencyCode,
         'total' => round((float) $currentYearProjectedSpend, 2),
-        'items' => array_values($projectedYearSummary),
-        'actual_paid_total' => round((float) $currentYearActualPaid, 2),
-        'projected_remaining_total' => round((float) $projectedRemainingYearCost, 2),
+        'summary_cards' => [
+            wallos_stats_build_summary_card(translate('metric_explanation_total_label', $i18n), $currentYearProjectedSpend, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_actual_paid_total', $i18n), $currentYearActualPaid, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_projected_remaining_total', $i18n), $projectedRemainingYearCost, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_standardized_total', $i18n), $totalCostPerYear, 'currency', $mainCurrencyCode),
+        ],
+        'item_groups' => [
+            wallos_stats_build_item_group(translate('metric_explanation_group_standardized_reference', $i18n), $yearlyCostBreakdown),
+            wallos_stats_build_item_group(translate('metric_explanation_group_actual_paid_history', $i18n), $actualPaidThisYearRecords),
+            wallos_stats_build_item_group(translate('metric_explanation_group_projected_remaining', $i18n), $projectedYearSummary),
+        ],
     ],
 ];
 
 if (isset($budget) && $budget > 0) {
     $metricExplanations['budget'] = [
-        'title' => translate('budget', $i18n),
+        'title' => translate('monthly_budget', $i18n),
         'formula' => translate('budget_explanation_formula', $i18n),
         'currency_code' => $mainCurrencyCode,
         'total' => round((float) $budget, 2),
-        'items' => [],
+        'summary_cards' => [
+            wallos_stats_build_summary_card(translate('metric_explanation_total_label', $i18n), $budget, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_cost_total', $i18n), $totalCostPerMonth, 'currency', $mainCurrencyCode),
+        ],
+        'item_groups' => [
+            wallos_stats_build_item_group(translate('metric_explanation_group_standardized_monthly_cost', $i18n), $monthlyCostBreakdown),
+        ],
     ];
     $metricExplanations['budget_used'] = [
-        'title' => translate('budget_used', $i18n),
+        'title' => translate('monthly_budget_used', $i18n),
         'formula' => translate('budget_used_explanation_formula', $i18n),
         'currency_code' => $mainCurrencyCode,
         'total' => round((float) ($budgetUsed ?? 0), 2),
-        'reference_total' => round((float) $budget, 2),
-        'cost_total' => round((float) $totalCostPerMonth, 2),
-        'items' => array_values($monthlyCostBreakdown),
+        'summary_cards' => [
+            wallos_stats_build_summary_card(translate('metric_explanation_total_label', $i18n), $budgetUsed ?? 0, 'percent'),
+            wallos_stats_build_summary_card(translate('metric_explanation_reference_total', $i18n), $budget, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_cost_total', $i18n), $totalCostPerMonth, 'currency', $mainCurrencyCode),
+        ],
+        'item_groups' => [
+            wallos_stats_build_item_group(translate('metric_explanation_group_standardized_monthly_cost', $i18n), $monthlyCostBreakdown),
+        ],
     ];
     $metricExplanations['budget_remaining'] = [
-        'title' => translate('budget_remaining', $i18n),
+        'title' => translate('monthly_budget_remaining', $i18n),
         'formula' => translate('budget_remaining_explanation_formula', $i18n),
         'currency_code' => $mainCurrencyCode,
         'total' => round((float) ($budgetLeft ?? 0), 2),
-        'reference_total' => round((float) $budget, 2),
-        'cost_total' => round((float) $totalCostPerMonth, 2),
-        'items' => array_values($monthlyCostBreakdown),
+        'summary_cards' => [
+            wallos_stats_build_summary_card(translate('metric_explanation_total_label', $i18n), $budgetLeft ?? 0, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_reference_total', $i18n), $budget, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_cost_total', $i18n), $totalCostPerMonth, 'currency', $mainCurrencyCode),
+        ],
+        'item_groups' => [
+            wallos_stats_build_item_group(translate('metric_explanation_group_standardized_monthly_cost', $i18n), $monthlyCostBreakdown),
+        ],
     ];
     $metricExplanations['amount_over_budget'] = [
-        'title' => translate('amount_over_budget', $i18n),
+        'title' => translate('monthly_amount_over_budget', $i18n),
         'formula' => translate('amount_over_budget_explanation_formula', $i18n),
         'currency_code' => $mainCurrencyCode,
         'total' => round((float) ($overBudgetAmount ?? 0), 2),
-        'reference_total' => round((float) $budget, 2),
-        'cost_total' => round((float) $totalCostPerMonth, 2),
-        'items' => array_values($monthlyCostBreakdown),
+        'summary_cards' => [
+            wallos_stats_build_summary_card(translate('metric_explanation_total_label', $i18n), $overBudgetAmount ?? 0, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_reference_total', $i18n), $budget, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_cost_total', $i18n), $totalCostPerMonth, 'currency', $mainCurrencyCode),
+        ],
+        'item_groups' => [
+            wallos_stats_build_item_group(translate('metric_explanation_group_standardized_monthly_cost', $i18n), $monthlyCostBreakdown),
+        ],
+    ];
+}
+
+if (isset($yearlyBudget) && $yearlyBudget > 0) {
+    $yearlyBudgetGroups = [
+        wallos_stats_build_item_group(translate('metric_explanation_group_standardized_reference', $i18n), $yearlyCostBreakdown),
+        wallos_stats_build_item_group(translate('metric_explanation_group_actual_paid_history', $i18n), $actualPaidThisYearRecords),
+        wallos_stats_build_item_group(translate('metric_explanation_group_projected_remaining', $i18n), $projectedYearSummary),
+    ];
+
+    $metricExplanations['yearly_budget'] = [
+        'title' => translate('yearly_budget', $i18n),
+        'formula' => translate('yearly_budget_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) $yearlyBudget, 2),
+        'summary_cards' => [
+            wallos_stats_build_summary_card(translate('metric_explanation_total_label', $i18n), $yearlyBudget, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_projected_total', $i18n), $currentYearProjectedSpend, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_actual_paid_total', $i18n), $currentYearActualPaid, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_projected_remaining_total', $i18n), $projectedRemainingYearCost, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_standardized_total', $i18n), $totalCostPerYear, 'currency', $mainCurrencyCode),
+        ],
+        'item_groups' => $yearlyBudgetGroups,
+    ];
+    $metricExplanations['yearly_budget_used'] = [
+        'title' => translate('yearly_budget_used', $i18n),
+        'formula' => translate('yearly_budget_used_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) ($yearlyBudgetUsed ?? 0), 2),
+        'summary_cards' => [
+            wallos_stats_build_summary_card(translate('metric_explanation_total_label', $i18n), $yearlyBudgetUsed ?? 0, 'percent'),
+            wallos_stats_build_summary_card(translate('metric_explanation_reference_total', $i18n), $yearlyBudget, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_projected_total', $i18n), $currentYearProjectedSpend, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_standardized_total', $i18n), $totalCostPerYear, 'currency', $mainCurrencyCode),
+        ],
+        'item_groups' => $yearlyBudgetGroups,
+    ];
+    $metricExplanations['yearly_budget_remaining'] = [
+        'title' => translate('yearly_budget_remaining', $i18n),
+        'formula' => translate('yearly_budget_remaining_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) ($yearlyBudgetRemaining ?? 0), 2),
+        'summary_cards' => [
+            wallos_stats_build_summary_card(translate('metric_explanation_total_label', $i18n), $yearlyBudgetRemaining ?? 0, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_reference_total', $i18n), $yearlyBudget, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_projected_total', $i18n), $currentYearProjectedSpend, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_standardized_total', $i18n), $totalCostPerYear, 'currency', $mainCurrencyCode),
+        ],
+        'item_groups' => $yearlyBudgetGroups,
+    ];
+    $metricExplanations['yearly_amount_over_budget'] = [
+        'title' => translate('yearly_amount_over_budget', $i18n),
+        'formula' => translate('yearly_amount_over_budget_explanation_formula', $i18n),
+        'currency_code' => $mainCurrencyCode,
+        'total' => round((float) ($yearlyOverBudgetAmount ?? 0), 2),
+        'summary_cards' => [
+            wallos_stats_build_summary_card(translate('metric_explanation_total_label', $i18n), $yearlyOverBudgetAmount ?? 0, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_reference_total', $i18n), $yearlyBudget, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_projected_total', $i18n), $currentYearProjectedSpend, 'currency', $mainCurrencyCode),
+            wallos_stats_build_summary_card(translate('metric_explanation_standardized_total', $i18n), $totalCostPerYear, 'currency', $mainCurrencyCode),
+        ],
+        'item_groups' => $yearlyBudgetGroups,
     ];
 }
 

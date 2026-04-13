@@ -34,6 +34,7 @@ let i18n = {
   metric_explanation_cost_total: "Compared Cost",
   metric_explanation_actual_paid_total: "Actually Paid",
   metric_explanation_projected_remaining_total: "Projected Remaining",
+  metric_explanation_rule_source: "Rule Source",
   metric_explanation_no_items: "No detailed items are available for this metric.",
   subscription_payment_due_date: "Due Date",
   subscription_payment_paid_at: "Paid At",
@@ -42,6 +43,10 @@ let i18n = {
   edit_subscription: "Edit subscription",
   add_subscription: "Add subscription",
   confirm_delete_subscription: "Are you sure you want to delete this subscription?",
+  delete: "Delete",
+  cycle: "Cycle",
+  frequency: "Frequency",
+  next_payment: "Next Payment",
   // Settings
   network_response_error: "Network response was not ok",
   failed_add_member: "Failed to add member",
