@@ -22,6 +22,42 @@ function currentMoth() {
     window.location.href = `calendar.php`;
 }
 
+function syncCalendarJumpControls() {
+  const container = document.getElementById('calendar-nav-jump');
+  const yearSelect = document.getElementById('calendarYearSelect');
+  const monthSelect = document.getElementById('calendarMonthSelect');
+
+  if (!container || !yearSelect || !monthSelect) {
+    return;
+  }
+
+  const currentYear = Number(container.dataset.currentYear || 0);
+  const currentMonth = Number(container.dataset.currentMonth || 1);
+  const selectedYear = Number(yearSelect.value || currentYear);
+
+  Array.from(monthSelect.options).forEach((option) => {
+    const monthValue = Number(option.value || 0);
+    option.disabled = selectedYear === currentYear && monthValue < currentMonth;
+  });
+
+  if (monthSelect.selectedOptions.length > 0 && monthSelect.selectedOptions[0].disabled) {
+    monthSelect.value = String(currentMonth);
+  }
+}
+
+function goToCalendarDate() {
+  const yearSelect = document.getElementById('calendarYearSelect');
+  const monthSelect = document.getElementById('calendarMonthSelect');
+
+  if (!yearSelect || !monthSelect) {
+    return;
+  }
+
+  const selectedYear = Number(yearSelect.value || new Date().getFullYear());
+  const selectedMonth = Number(monthSelect.value || new Date().getMonth() + 1);
+  window.location.href = `calendar.php?month=${selectedMonth}&year=${selectedYear}`;
+}
+
 function closeSubscriptionModal() {
     const modal = document.getElementById('subscriptionModal');
     modal.classList.remove('is-open');
@@ -133,3 +169,7 @@ function copyToClipboard() {
           showErrorMessage(translate('unknown_error'));
       });
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+  syncCalendarJumpControls();
+});
