@@ -1494,7 +1494,31 @@ button.mobile-action-renew {
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: flex-end;
   margin-bottom: 14px;
+}
+
+.subscription-payment-history-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-right: auto;
+}
+
+.subscription-payment-history-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.subscription-payment-history-control label {
+  font-size: 12px;
+  color: rgba(var(--text-color-rgb), 0.72);
+}
+
+.subscription-payment-history-control select {
+  min-width: 0;
 }
 
 .subscription-payment-history-content {
@@ -1576,6 +1600,27 @@ button.mobile-action-renew {
   gap: 12px;
 }
 
+.subscription-payment-section-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid rgba(var(--main-color-rgb), 0.12);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background-color: rgba(var(--main-color-rgb), 0.03);
+}
+
+.subscription-payment-section-intro strong {
+  color: var(--main-color);
+}
+
+.subscription-payment-section-intro span {
+  color: rgba(var(--text-color-rgb), 0.74);
+  font-size: 13px;
+}
+
 .subscription-payment-cashflow-list {
   display: grid;
   gap: 12px;
@@ -1615,6 +1660,15 @@ button.mobile-action-renew {
 }
 
 @media (max-width: 768px) {
+  .subscription-payment-history-controls {
+    width: 100%;
+  }
+
+  .subscription-payment-history-control {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 0;
+  }
+
   .subscription-payment-history-toolbar {
     justify-content: stretch;
   }

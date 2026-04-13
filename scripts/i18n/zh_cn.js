@@ -50,6 +50,9 @@ let i18n = {
     'subscription_payment_history_tab_records': '账本记录',
     'subscription_payment_history_tab_cashflow': '年度现金流',
     'subscription_payment_history_tab_forecast': '未来预测',
+    'subscription_payment_history_year_label': '现金流年份',
+    'subscription_payment_history_range_label': '预测范围',
+    'subscription_payment_forecast_range_notice': '预测列表会遵循当前特殊价格规则，并跳过已经被实际支付账本覆盖的应付日期。',
     'subscription_payment_cashflow_empty': '当前还没有可展示的年度现金流数据。',
     'subscription_payment_cashflow_actual': '实际',
     'subscription_payment_cashflow_predicted': '预测',
@@ -62,6 +65,7 @@ let i18n = {
     'delete': '删除',
     'cycle': '周期',
     'frequency': '频率',
+    'months': '个月',
     'next_payment': '下次支付时间',
     // Settings
     'network_response_error': "网络响应不正常",

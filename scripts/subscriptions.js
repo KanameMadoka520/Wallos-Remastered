@@ -16,7 +16,10 @@ let currentPaymentHistoryRecords = [];
 let currentPaymentHistorySummary = {};
 let currentPaymentHistoryCashflow = [];
 let currentPaymentHistoryForecast = [];
+let currentPaymentHistoryAvailableYears = [];
 let currentPaymentHistoryTab = "records";
+let currentPaymentHistoryYear = new Date().getFullYear();
+let currentPaymentHistoryRangeMonths = 12;
 let reopenPaymentHistoryAfterPaymentModalClose = false;
 let currentPaymentModalSubscription = null;
 let currentPaymentModalMode = "create";
@@ -916,7 +919,13 @@ function refreshSubscriptionsPreservingState(options = {}) {
         if (options.historyTab) {
           currentPaymentHistoryTab = options.historyTab;
         }
-        return openSubscriptionPaymentHistoryModal(null, Number(options.subscriptionId || 0), { preserveTab: true });
+        if (options.historyYear) {
+          currentPaymentHistoryYear = Number(options.historyYear);
+        }
+        if (options.historyRangeMonths) {
+          currentPaymentHistoryRangeMonths = Number(options.historyRangeMonths);
+        }
+        return openSubscriptionPaymentHistoryModal(null, Number(options.subscriptionId || 0), { preserveTab: true, preserveFilters: true });
       }
 
       return null;
@@ -1082,7 +1091,10 @@ function closeSubscriptionPaymentHistoryModal() {
   currentPaymentHistorySummary = {};
   currentPaymentHistoryCashflow = [];
   currentPaymentHistoryForecast = [];
+  currentPaymentHistoryAvailableYears = [];
   currentPaymentHistoryTab = "records";
+  currentPaymentHistoryYear = new Date().getFullYear();
+  currentPaymentHistoryRangeMonths = 12;
   reopenPaymentHistoryAfterPaymentModalClose = false;
 }
 
@@ -1163,6 +1175,30 @@ function getSubscriptionPaymentHistoryTabsHtml() {
   `;
 }
 
+function syncSubscriptionPaymentHistoryControls() {
+  const yearSelect = document.getElementById("subscription-payment-history-year");
+  const rangeSelect = document.getElementById("subscription-payment-history-range");
+
+  if (yearSelect) {
+    yearSelect.innerHTML = currentPaymentHistoryAvailableYears.map((year) => `
+      <option value="${escapeHtml(year)}">${escapeHtml(year)}</option>
+    `).join('');
+    yearSelect.value = String(currentPaymentHistoryYear);
+    yearSelect.onchange = function () {
+      currentPaymentHistoryYear = Number(this.value || new Date().getFullYear());
+      openSubscriptionPaymentHistoryModal(null, currentPaymentHistorySubscriptionId, { preserveTab: true, preserveFilters: true });
+    };
+  }
+
+  if (rangeSelect) {
+    rangeSelect.value = String(currentPaymentHistoryRangeMonths);
+    rangeSelect.onchange = function () {
+      currentPaymentHistoryRangeMonths = Number(this.value || 12);
+      openSubscriptionPaymentHistoryModal(null, currentPaymentHistorySubscriptionId, { preserveTab: true, preserveFilters: true });
+    };
+  }
+}
+
 function renderSubscriptionPaymentHistoryRecordsHtml() {
   if (!currentPaymentHistoryRecords.length) {
     return `<div class="subscription-payment-record-empty">${translate('subscription_payment_history_empty')}</div>`;
@@ -1216,8 +1252,14 @@ function renderSubscriptionPaymentCashflowHtml() {
     currentPaymentHistoryForecast[0]?.main_currency_code ||
     '';
   const maxTotal = Math.max(...currentPaymentHistoryCashflow.map((row) => Number(row.total || 0)), 0.01);
+  const actualTotal = currentPaymentHistoryCashflow.reduce((sum, row) => sum + Number(row.actual_total || 0), 0);
+  const predictedTotal = currentPaymentHistoryCashflow.reduce((sum, row) => sum + Number(row.predicted_total || 0), 0);
 
   return `
+    <div class="subscription-payment-section-intro">
+      <strong>${escapeHtml(`${translate('subscription_payment_history_year_label')}: ${currentPaymentHistoryYear}`)}</strong>
+      <span>${escapeHtml(`${translate('subscription_payment_cashflow_actual')}: ${formatSubscriptionPaymentHistoryAmount(actualTotal, currencyCode)} / ${translate('subscription_payment_cashflow_predicted')}: ${formatSubscriptionPaymentHistoryAmount(predictedTotal, currencyCode)}`)}</span>
+    </div>
     <div class="subscription-payment-cashflow-list">
       ${currentPaymentHistoryCashflow.map((row) => {
         const actualWidth = Math.max(0, Math.min(100, (Number(row.actual_total || 0) / maxTotal) * 100));
@@ -1253,7 +1295,12 @@ function renderSubscriptionPaymentForecastHtml() {
     return `<div class="subscription-payment-record-empty">${translate('subscription_payment_forecast_empty')}</div>`;
   }
 
-  return currentPaymentHistoryForecast.map((item) => {
+  return `
+    <div class="subscription-payment-section-intro">
+      <strong>${escapeHtml(`${translate('subscription_payment_history_range_label')}: ${currentPaymentHistoryRangeMonths} ${translate('months')}`)}</strong>
+      <span>${escapeHtml(translate('subscription_payment_forecast_range_notice'))}</span>
+    </div>
+    ${currentPaymentHistoryForecast.map((item) => {
     const amountLabel = formatSubscriptionPaymentHistoryAmount(item.amount_main || 0, item.main_currency_code || '');
     const originalAmountLabel = formatSubscriptionPaymentHistoryAmount(item.amount_original || 0, item.currency_code || '');
 
@@ -1269,7 +1316,7 @@ function renderSubscriptionPaymentForecastHtml() {
         </div>
       </article>
     `;
-  }).join('');
+  }).join('')}`;
 }
 
 function renderSubscriptionPaymentHistoryActiveTabHtml() {
@@ -1306,6 +1353,7 @@ function renderSubscriptionPaymentHistoryModal() {
       ${renderSubscriptionPaymentHistoryActiveTabHtml()}
     </div>
   `;
+  syncSubscriptionPaymentHistoryControls();
 }
 
 function openSubscriptionPaymentHistoryModal(event, id, options = {}) {
@@ -1323,8 +1371,18 @@ function openSubscriptionPaymentHistoryModal(event, id, options = {}) {
   if (!options.preserveTab || currentPaymentHistorySubscriptionId !== Number(id || 0)) {
     currentPaymentHistoryTab = "records";
   }
+  if (!options.preserveFilters || currentPaymentHistorySubscriptionId !== Number(id || 0)) {
+    currentPaymentHistoryYear = new Date().getFullYear();
+    currentPaymentHistoryRangeMonths = 12;
+  }
 
-  fetch(`endpoints/subscription/paymenthistory.php?id=${id}`)
+  const params = new URLSearchParams({
+    id: String(id),
+    year: String(currentPaymentHistoryYear),
+    range: String(currentPaymentHistoryRangeMonths),
+  });
+
+  fetch(`endpoints/subscription/paymenthistory.php?${params.toString()}`)
     .then((response) => {
       if (!response.ok) {
         throw new Error(translate('failed_to_load_subscription'));
@@ -1337,6 +1395,9 @@ function openSubscriptionPaymentHistoryModal(event, id, options = {}) {
       }
       currentPaymentHistorySubscriptionId = Number(data.subscription?.id || 0);
       currentPaymentHistorySubscriptionName = data.subscription?.name || '';
+      currentPaymentHistoryAvailableYears = Array.isArray(data.filters?.available_years) ? data.filters.available_years.map((year) => Number(year)) : [new Date().getFullYear()];
+      currentPaymentHistoryYear = Number(data.filters?.selected_year || currentPaymentHistoryYear);
+      currentPaymentHistoryRangeMonths = Number(data.filters?.selected_range_months || currentPaymentHistoryRangeMonths);
       currentPaymentHistorySummary = data.summary || {};
       currentPaymentHistoryCashflow = Array.isArray(data.cashflow) ? data.cashflow : [];
       currentPaymentHistoryForecast = Array.isArray(data.forecast) ? data.forecast : [];
@@ -1399,10 +1460,14 @@ function deleteSubscriptionPaymentRecord(event, subscriptionId, recordId) {
       if (data.success) {
         showSuccessMessage(data.message || translate("success"));
         const preservedTab = currentPaymentHistoryTab;
+        const preservedYear = currentPaymentHistoryYear;
+        const preservedRangeMonths = currentPaymentHistoryRangeMonths;
         refreshSubscriptionsPreservingState({
           initiator: "payment-history",
           subscriptionId,
           historyTab: preservedTab,
+          historyYear: preservedYear,
+          historyRangeMonths: preservedRangeMonths,
           reopenHistory: true,
         }).catch(() => showErrorMessage(translate("error")));
       } else {
@@ -2820,6 +2885,8 @@ document.addEventListener('DOMContentLoaded', function () {
             showSuccessMessage(data.message || translate("success"));
             const shouldReopenHistory = reopenPaymentHistoryAfterPaymentModalClose && Number(payload.id || 0) > 0;
             const preservedTab = currentPaymentHistoryTab;
+            const preservedYear = currentPaymentHistoryYear;
+            const preservedRangeMonths = currentPaymentHistoryRangeMonths;
             const openSubscriptionIds = getOpenSubscriptionIds();
             closeSubscriptionPaymentModal({ skipReopenHistory: true });
             refreshSubscriptionsPreservingState({
@@ -2827,6 +2894,8 @@ document.addEventListener('DOMContentLoaded', function () {
               openSubscriptionIds,
               subscriptionId: payload.id,
               historyTab: preservedTab,
+              historyYear: preservedYear,
+              historyRangeMonths: preservedRangeMonths,
               reopenHistory: shouldReopenHistory,
             }).catch(() => showErrorMessage(translate("error")));
           } else {

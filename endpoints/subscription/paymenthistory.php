@@ -59,13 +59,34 @@ foreach ($records as &$record) {
 }
 unset($record);
 
+$today = new DateTime('today');
+$availableYears = wallos_build_subscription_payment_history_available_years($subscription, $records, $today);
+$currentYear = (int) $today->format('Y');
+$selectedYear = (int) ($_GET['year'] ?? $currentYear);
+if (!in_array($selectedYear, $availableYears, true)) {
+    $selectedYear = $currentYear;
+}
+
+$allowedRanges = [6, 12, 24, 36];
+$selectedRangeMonths = (int) ($_GET['range'] ?? 12);
+if (!in_array($selectedRangeMonths, $allowedRanges, true)) {
+    $selectedRangeMonths = 12;
+}
+
 $currentYear = (int) date('Y');
 $yearStart = new DateTime($currentYear . '-01-01');
 $yearEnd = new DateTime($currentYear . '-12-31');
-$today = new DateTime('today');
 $paidDueDates = wallos_get_subscription_paid_due_dates_from_records($records);
-$forecast = wallos_build_subscription_future_payment_forecast($db, $subscription, $userId, $priceRules, $paidDueDates, $currencies, $i18n, 18, $today, $yearEnd);
-$cashflow = wallos_build_subscription_yearly_cashflow($records, $forecast, $currentYear);
+$summaryForecast = wallos_build_subscription_future_payment_forecast($db, $subscription, $userId, $priceRules, $paidDueDates, $currencies, $i18n, 600, $today, $yearEnd);
+
+$forecastEndDate = clone $today;
+$forecastEndDate->add(new DateInterval('P' . $selectedRangeMonths . 'M'));
+$forecast = wallos_build_subscription_future_payment_forecast($db, $subscription, $userId, $priceRules, $paidDueDates, $currencies, $i18n, 600, $today, $forecastEndDate);
+
+$selectedYearStart = new DateTime($selectedYear . '-01-01');
+$selectedYearEnd = new DateTime($selectedYear . '-12-31');
+$selectedYearForecast = wallos_build_subscription_future_payment_forecast($db, $subscription, $userId, $priceRules, $paidDueDates, $currencies, $i18n, 600, $selectedYearStart, $selectedYearEnd);
+$cashflow = wallos_build_subscription_yearly_cashflow($records, $selectedYearForecast, $selectedYear);
 
 $actualThisYearTotal = 0.0;
 foreach ($records as $record) {
@@ -82,7 +103,7 @@ foreach ($records as $record) {
 }
 
 $predictedRemainingTotal = 0.0;
-foreach ($forecast as $forecastItem) {
+foreach ($summaryForecast as $forecastItem) {
     $predictedRemainingTotal += (float) ($forecastItem['amount_main'] ?? 0);
 }
 
@@ -92,6 +113,11 @@ echo json_encode([
         'id' => (int) $subscription['id'],
         'name' => htmlspecialchars_decode($subscription['name'] ?? '', ENT_QUOTES),
         'next_payment' => (string) ($subscription['next_payment'] ?? ''),
+    ],
+    'filters' => [
+        'available_years' => $availableYears,
+        'selected_year' => $selectedYear,
+        'selected_range_months' => $selectedRangeMonths,
     ],
     'summary' => [
         'record_count' => count($records),

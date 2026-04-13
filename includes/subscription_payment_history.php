@@ -145,3 +145,48 @@ function wallos_build_subscription_yearly_cashflow(array $records, array $foreca
 
     return array_values($rows);
 }
+
+function wallos_build_subscription_payment_history_available_years(array $subscription, array $records, DateTime $today = null)
+{
+    $today = $today ?: new DateTime('today');
+    $years = [];
+
+    $startDateValue = trim((string) ($subscription['start_date'] ?? ''));
+    $nextPaymentValue = trim((string) ($subscription['next_payment'] ?? ''));
+
+    if (wallos_payment_history_is_valid_date($startDateValue)) {
+        $years[(int) substr($startDateValue, 0, 4)] = true;
+    }
+
+    if (wallos_payment_history_is_valid_date($nextPaymentValue)) {
+        $years[(int) substr($nextPaymentValue, 0, 4)] = true;
+    }
+
+    foreach ($records as $record) {
+        foreach (['paid_at', 'due_date'] as $field) {
+            $value = trim((string) ($record[$field] ?? ''));
+            if (wallos_payment_history_is_valid_date($value)) {
+                $years[(int) substr($value, 0, 4)] = true;
+            }
+        }
+    }
+
+    $currentYear = (int) $today->format('Y');
+    $years[$currentYear] = true;
+    $years[$currentYear + 1] = true;
+
+    if (empty($years)) {
+        return [$currentYear];
+    }
+
+    $minYear = min(array_keys($years));
+    $maxYear = max(array_keys($years));
+
+    $expandedYears = [];
+    for ($year = $minYear; $year <= $maxYear; $year++) {
+        $expandedYears[] = $year;
+    }
+
+    rsort($expandedYears, SORT_NUMERIC);
+    return $expandedYears;
+}

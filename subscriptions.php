@@ -835,6 +835,21 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
     <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionPaymentHistoryModal()"></span>
   </header>
   <div class="subscription-payment-history-toolbar">
+    <div class="subscription-payment-history-controls">
+      <div class="subscription-payment-history-control">
+        <label for="subscription-payment-history-year"><?= translate('subscription_payment_history_year', $i18n) ?></label>
+        <select id="subscription-payment-history-year"></select>
+      </div>
+      <div class="subscription-payment-history-control">
+        <label for="subscription-payment-history-range"><?= translate('subscription_payment_history_range', $i18n) ?></label>
+        <select id="subscription-payment-history-range">
+          <option value="6"><?= translate('subscription_payment_history_range_6_months', $i18n) ?></option>
+          <option value="12"><?= translate('subscription_payment_history_range_12_months', $i18n) ?></option>
+          <option value="24"><?= translate('subscription_payment_history_range_24_months', $i18n) ?></option>
+          <option value="36"><?= translate('subscription_payment_history_range_36_months', $i18n) ?></option>
+        </select>
+      </div>
+    </div>
     <button type="button" class="secondary-button thin" id="subscription-payment-history-add-button">
       <i class="fa-solid fa-plus"></i>
       <span><?= translate('subscription_record_payment', $i18n) ?></span>
