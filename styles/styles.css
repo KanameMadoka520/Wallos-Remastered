@@ -1492,12 +1492,17 @@ button.mobile-action-renew {
 .subscription-payment-history-toolbar {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 14px;
 }
 
 .subscription-payment-history-content {
   display: grid;
   gap: 12px;
+  max-height: min(62vh, 720px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .subscription-payment-history-summary {
@@ -1607,6 +1612,25 @@ button.mobile-action-renew {
 
 .subscription-payment-cashflow-bar .predicted {
   background-color: rgba(245, 166, 35, 0.88);
+}
+
+@media (max-width: 768px) {
+  .subscription-payment-history-toolbar {
+    justify-content: stretch;
+  }
+
+  .subscription-payment-history-toolbar > .secondary-button {
+    width: 100%;
+  }
+
+  .subscription-payment-history-tab {
+    flex: 1 1 calc(50% - 10px);
+    justify-content: center;
+  }
+
+  .subscription-payment-history-content {
+    max-height: min(60vh, 640px);
+  }
 }
 
 @media (max-width: 900px) {

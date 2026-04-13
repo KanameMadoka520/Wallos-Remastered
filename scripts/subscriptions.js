@@ -17,6 +17,7 @@ let currentPaymentHistorySummary = {};
 let currentPaymentHistoryCashflow = [];
 let currentPaymentHistoryForecast = [];
 let currentPaymentHistoryTab = "records";
+let reopenPaymentHistoryAfterPaymentModalClose = false;
 let currentPaymentModalSubscription = null;
 let currentPaymentModalMode = "create";
 let subscriptionPriceRules = [];
@@ -883,7 +884,46 @@ function resetSubscriptionPaymentForm() {
   currentPaymentModalMode = "create";
 }
 
-function closeSubscriptionPaymentModal() {
+function getOpenSubscriptionIds() {
+  return Array.from(document.querySelectorAll(".subscription.is-open"))
+    .map((element) => Number(element.dataset.id || 0))
+    .filter((id) => id > 0);
+}
+
+function reopenSubscriptionCards(subscriptionIds = []) {
+  subscriptionIds.forEach((id) => {
+    const subscriptionElement = document.querySelector(`.subscription[data-id="${id}"]`);
+    if (subscriptionElement && !subscriptionElement.classList.contains("is-open")) {
+      subscriptionElement.classList.add("is-open");
+    }
+  });
+
+  if (subscriptionIds.length > 0) {
+    scheduleSubscriptionMasonryLayout();
+  }
+}
+
+function refreshSubscriptionsPreservingState(options = {}) {
+  const openSubscriptionIds = Array.isArray(options.openSubscriptionIds) && options.openSubscriptionIds.length > 0
+    ? options.openSubscriptionIds
+    : getOpenSubscriptionIds();
+
+  return fetchSubscriptions(null, null, options.initiator || "refresh")
+    .then(() => {
+      reopenSubscriptionCards(openSubscriptionIds);
+
+      if (options.reopenHistory && Number(options.subscriptionId || 0) > 0) {
+        if (options.historyTab) {
+          currentPaymentHistoryTab = options.historyTab;
+        }
+        return openSubscriptionPaymentHistoryModal(null, Number(options.subscriptionId || 0), { preserveTab: true });
+      }
+
+      return null;
+    });
+}
+
+function closeSubscriptionPaymentModal(options = {}) {
   const modal = document.getElementById("subscription-payment-modal");
   if (!modal) {
     return;
@@ -895,6 +935,19 @@ function closeSubscriptionPaymentModal() {
     document.body.classList.remove('no-scroll');
   }
   resetSubscriptionPaymentForm();
+
+  if (!options.skipReopenHistory && reopenPaymentHistoryAfterPaymentModalClose && currentPaymentHistorySubscriptionId > 0) {
+    reopenPaymentHistoryAfterPaymentModalClose = false;
+    const historyModalElement = document.getElementById("subscription-payment-history-modal");
+    if (historyModalElement) {
+      historyModalElement.classList.add("is-open");
+      document.body.classList.add('no-scroll');
+      renderSubscriptionPaymentHistoryModal();
+    }
+    return;
+  }
+
+  reopenPaymentHistoryAfterPaymentModalClose = false;
 }
 
 function fillSubscriptionPaymentForm(subscription) {
@@ -990,6 +1043,7 @@ function openSubscriptionPaymentModal(event, id) {
 
   resetSubscriptionPaymentForm();
   document.body.classList.add('no-scroll');
+  reopenPaymentHistoryAfterPaymentModalClose = !!(historyModal && historyModal.classList.contains("is-open"));
   if (historyModal && historyModal.classList.contains("is-open")) {
     historyModal.classList.remove("is-open");
   }
@@ -1029,6 +1083,7 @@ function closeSubscriptionPaymentHistoryModal() {
   currentPaymentHistoryCashflow = [];
   currentPaymentHistoryForecast = [];
   currentPaymentHistoryTab = "records";
+  reopenPaymentHistoryAfterPaymentModalClose = false;
 }
 
 function formatSubscriptionPaymentHistoryAmount(value, currencyCode) {
@@ -1138,7 +1193,7 @@ function renderSubscriptionPaymentHistoryRecordsHtml() {
         ${noteHtml ? `<div class="subscription-markdown subscription-payment-record-note">${noteHtml}</div>` : ''}
         <div class="buttons subscription-payment-record-history-actions">
           <button type="button" class="secondary-button thin" onclick="openEditSubscriptionPaymentModal(event, ${currentPaymentHistorySubscriptionId}, ${record.id})">
-            ${translate('edit_subscription')}
+            ${translate('subscription_edit_payment')}
           </button>
           <button type="button" class="warning-button thin" onclick="deleteSubscriptionPaymentRecord(event, ${currentPaymentHistorySubscriptionId}, ${record.id})">
             ${translate('delete')}
@@ -1253,7 +1308,7 @@ function renderSubscriptionPaymentHistoryModal() {
   `;
 }
 
-function openSubscriptionPaymentHistoryModal(event, id) {
+function openSubscriptionPaymentHistoryModal(event, id, options = {}) {
   if (event) {
     event.stopPropagation();
     event.preventDefault();
@@ -1265,6 +1320,9 @@ function openSubscriptionPaymentHistoryModal(event, id) {
   }
 
   document.body.classList.add('no-scroll');
+  if (!options.preserveTab || currentPaymentHistorySubscriptionId !== Number(id || 0)) {
+    currentPaymentHistoryTab = "records";
+  }
 
   fetch(`endpoints/subscription/paymenthistory.php?id=${id}`)
     .then((response) => {
@@ -1310,6 +1368,7 @@ function openEditSubscriptionPaymentModal(event, subscriptionId, recordId) {
     return;
   }
 
+  reopenPaymentHistoryAfterPaymentModalClose = true;
   if (historyModal && historyModal.classList.contains("is-open")) {
     historyModal.classList.remove("is-open");
   }
@@ -1339,8 +1398,13 @@ function deleteSubscriptionPaymentRecord(event, subscriptionId, recordId) {
     .then((data) => {
       if (data.success) {
         showSuccessMessage(data.message || translate("success"));
-        openSubscriptionPaymentHistoryModal(null, subscriptionId);
-        window.setTimeout(() => window.location.reload(), 400);
+        const preservedTab = currentPaymentHistoryTab;
+        refreshSubscriptionsPreservingState({
+          initiator: "payment-history",
+          subscriptionId,
+          historyTab: preservedTab,
+          reopenHistory: true,
+        }).catch(() => showErrorMessage(translate("error")));
       } else {
         showErrorMessage(data.message || translate("error"));
       }
@@ -2498,7 +2562,7 @@ function fetchSubscriptions(id, event, initiator) {
     getSubscriptions += getSubscriptions.includes("?") ? `&renewalType=${activeFilters['renewalType']}` : `?renewalType=${activeFilters['renewalType']}`;
   }
 
-  fetch(getSubscriptions)
+  return fetch(getSubscriptions)
     .then(response => response.text())
     .then(data => {
       if (data) {
@@ -2530,6 +2594,7 @@ function fetchSubscriptions(id, event, initiator) {
     })
     .catch(error => {
       console.error(translate('error_reloading_subscription'), error);
+      throw error;
     });
 }
 
@@ -2753,8 +2818,17 @@ document.addEventListener('DOMContentLoaded', function () {
         .then((data) => {
           if (data.success) {
             showSuccessMessage(data.message || translate("success"));
-            closeSubscriptionPaymentModal();
-            window.setTimeout(() => window.location.reload(), 350);
+            const shouldReopenHistory = reopenPaymentHistoryAfterPaymentModalClose && Number(payload.id || 0) > 0;
+            const preservedTab = currentPaymentHistoryTab;
+            const openSubscriptionIds = getOpenSubscriptionIds();
+            closeSubscriptionPaymentModal({ skipReopenHistory: true });
+            refreshSubscriptionsPreservingState({
+              initiator: "payment-save",
+              openSubscriptionIds,
+              subscriptionId: payload.id,
+              historyTab: preservedTab,
+              reopenHistory: shouldReopenHistory,
+            }).catch(() => showErrorMessage(translate("error")));
           } else {
             showErrorMessage(data.message || translate("error"));
           }
