@@ -13,12 +13,15 @@ require_once 'i18n/' . $lang . '.php';
 
 require_once 'getsettings.php';
 require_once 'decorative_background.php';
+require_once 'dynamic_wallpaper.php';
 
 require_once 'version.php';
 
 $stylesCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/styles.css');
 $decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/decorative-background.css');
+$dynamicWallpaperCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/dynamic-wallpaper.css');
 $decorativeBackgroundJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/decorative-background.js');
+$dynamicWallpaperJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/dynamic-wallpaper.js');
 $i18nJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/' . $lang . '.js');
 $i18nGetLangJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/getlang.js');
 
@@ -85,6 +88,10 @@ function hex2rgb($hex)
 $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
 $decorativeBackgroundEnabled = !isset($settings['decorative_background']) || (int) $settings['decorative_background'] === 1;
 $decorativeBackgroundClass = $decorativeBackgroundEnabled ? "decorative-background-enabled" : "decorative-background-disabled";
+$dynamicWallpaperEnabled = !empty($settings['dynamic_wallpaper']);
+$dynamicWallpaperClass = $dynamicWallpaperEnabled ? "dynamic-wallpaper-enabled" : "dynamic-wallpaper-disabled";
+$dynamicWallpaperBlurEnabled = !isset($settings['dynamic_wallpaper_blur']) || (int) $settings['dynamic_wallpaper_blur'] === 1;
+$dynamicWallpaperBlurClass = $dynamicWallpaperBlurEnabled ? "dynamic-wallpaper-blur-enabled" : "dynamic-wallpaper-blur-disabled";
 setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   'expires' => $cookieExpire,
   'path' => '/',
@@ -108,6 +115,7 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
   <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
   <link rel="stylesheet" href="styles/decorative-background.css?<?= $decorativeBackgroundCssVersion ?>">
+  <link rel="stylesheet" href="styles/dynamic-wallpaper.css?<?= $dynamicWallpaperCssVersion ?>">
   <link rel="stylesheet" href="styles/styles.css?<?= $stylesCssVersion ?>">
   <link rel="stylesheet" href="styles/dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme != "dark" ? "disabled" : "" ?>>
   <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
@@ -120,12 +128,21 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   <script type="text/javascript" src="scripts/all.js?<?= $version ?>"></script>
   <script type="text/javascript" src="scripts/common.js?<?= $version ?>"></script>
   <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
+  <script type="text/javascript" src="scripts/dynamic-wallpaper.js?<?= $dynamicWallpaperJsVersion ?>"></script>
   <script type="text/javascript">
     window.theme = "<?= $theme ?>";
     window.update_theme_settings = "<?= $updateThemeSettings ?>";
     window.lang = "<?= $lang ?>";
     window.colorTheme = "<?= $colorTheme ?>";
     window.mobileNavigation = "<?= $settings['mobileNavigation'] == "true" ?>";
+    window.dynamicWallpaperEnabled = <?= $dynamicWallpaperEnabled ? 'true' : 'false' ?>;
+    window.dynamicWallpaperBlurEnabled = <?= $dynamicWallpaperBlurEnabled ? 'true' : 'false' ?>;
+    window.WallosDynamicWallpaperConfig = {
+      breakpoint: 768,
+      desktopIndex: 3,
+      mobileIndex: 1,
+      sources: <?= json_encode(wallos_get_dynamic_wallpaper_sources(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
+    };
     window.csrfToken = "<?= htmlspecialchars(generate_csrf_token()) ?>";
   </script>
   <style>
@@ -177,7 +194,8 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   </script>
 </head>
 
-<body class="<?= $theme ?> <?= $languages[$lang]['dir'] ?> <?= $mobileNavigation ?> <?= $decorativeBackgroundClass ?>">
+<body class="<?= $theme ?> <?= $languages[$lang]['dir'] ?> <?= $mobileNavigation ?> <?= $decorativeBackgroundClass ?> <?= $dynamicWallpaperClass ?> <?= $dynamicWallpaperBlurClass ?>">
+  <?php wallos_render_dynamic_wallpaper(); ?>
   <?php wallos_render_decorative_background('app'); ?>
   <header>
     <div class="contain">
