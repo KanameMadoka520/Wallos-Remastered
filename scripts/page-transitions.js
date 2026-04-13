@@ -76,14 +76,12 @@
 
   function updateTransitionTitle(label) {
     const title = document.getElementById(transitionTitleId);
-    if (!title || !label) {
+    const normalizedLabel = String(label || "").replace(/\s+/g, " ").trim();
+    if (!title || normalizedLabel === "") {
       return;
     }
 
-    const normalizedLabel = String(label).replace(/\s+/g, " ").trim();
-    if (normalizedLabel !== "") {
-      title.textContent = normalizedLabel;
-    }
+    title.textContent = normalizedLabel;
   }
 
   function persistTransitionContext(label) {
@@ -152,6 +150,7 @@
 
     if (animateOnInit) {
       html.classList.add(loadingClass);
+      updateTransitionTitle(window.pageTransitionTitle || "");
       const transitionContext = html.classList.contains(resumeClass) ? consumeTransitionContext() : null;
       if (transitionContext?.label) {
         updateTransitionTitle(transitionContext.label);

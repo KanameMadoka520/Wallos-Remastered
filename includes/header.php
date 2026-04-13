@@ -18,6 +18,9 @@ require_once 'page_transitions.php';
 
 require_once 'version.php';
 
+$currentPage = basename($_SERVER['PHP_SELF'] ?? '');
+$pageTransitionTitle = wallos_resolve_page_transition_title($currentPage, $i18n);
+
 $stylesCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/styles.css');
 $decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/decorative-background.css');
 $dynamicWallpaperCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/dynamic-wallpaper.css');
@@ -135,10 +138,12 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
       const contextKey = 'wallos-page-transition-context';
       const transitionEnabled = <?= $pageTransitionEnabled ? 'true' : 'false' ?>;
       const transitionStyle = <?= json_encode($pageTransitionStyle, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+      const transitionPageTitle = <?= json_encode($pageTransitionTitle, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
       let transitionContext = null;
 
       window.pageTransitionEnabled = transitionEnabled;
       window.pageTransitionStyle = transitionStyle;
+      window.pageTransitionTitle = transitionPageTitle;
       html.dataset.pageTransitionStyle = transitionStyle;
 
       if (!transitionEnabled) {
@@ -267,7 +272,7 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
 <body class="<?= $theme ?> <?= $languages[$lang]['dir'] ?> <?= $mobileNavigation ?> <?= $decorativeBackgroundClass ?> <?= $dynamicWallpaperClass ?> <?= $dynamicWallpaperBlurClass ?>">
   <?php wallos_render_dynamic_wallpaper(); ?>
   <?php wallos_render_decorative_background('app'); ?>
-  <?php wallos_render_page_transition_overlay($lang); ?>
+  <?php wallos_render_page_transition_overlay($lang, $pageTransitionTitle); ?>
   <header>
     <div class="contain">
       <div class="logo">
