@@ -53,6 +53,7 @@ while ($currencyResult && ($row = $currencyResult->fetchArray(SQLITE3_ASSOC))) {
 $records = wallos_get_subscription_payment_records($db, $subscriptionId, $userId, 0);
 $priceRules = wallos_get_subscription_price_rules($db, $subscriptionId, $userId, true);
 $records = wallos_enrich_subscription_payment_records_with_rule_replay($db, $subscription, $userId, $records, $priceRules, $currencies, $i18n);
+$remainingValue = wallos_build_subscription_remaining_value_snapshot($db, $subscription, $userId, $priceRules, $records, $currencies, $i18n);
 
 foreach ($records as &$record) {
     $record['note_html'] = wallos_render_markdown($record['note'] ?? '');
@@ -107,6 +108,11 @@ foreach ($summaryForecast as $forecastItem) {
     $predictedRemainingTotal += (float) ($forecastItem['amount_main'] ?? 0);
 }
 
+$investedTotal = 0.0;
+foreach ($records as $record) {
+    $investedTotal += (float) ($record['amount_main_snapshot'] ?? 0);
+}
+
 echo json_encode([
     'success' => true,
     'subscription' => [
@@ -121,10 +127,12 @@ echo json_encode([
     ],
     'summary' => [
         'record_count' => count($records),
+        'invested_total' => round($investedTotal, 2),
         'actual_this_year_total' => round($actualThisYearTotal, 2),
         'predicted_remaining_total' => round($predictedRemainingTotal, 2),
         'projected_total' => round($actualThisYearTotal + $predictedRemainingTotal, 2),
         'current_year' => $currentYear,
+        'remaining_value' => $remainingValue,
     ],
     'cashflow' => $cashflow,
     'forecast' => $forecast,

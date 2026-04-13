@@ -1411,6 +1411,45 @@ button.mobile-action-renew {
   color: rgba(var(--text-color-rgb), 0.7);
 }
 
+.subscription-value-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.subscription-value-metric-card {
+  border: 1px solid var(--box-border-color);
+  border-radius: 14px;
+  background-color: rgba(var(--main-color-rgb), 0.03);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subscription-value-metric-card.emphasis {
+  background: linear-gradient(135deg, rgba(var(--main-color-rgb), 0.08), rgba(var(--accent-color-rgb), 0.05));
+  border-color: rgba(var(--main-color-rgb), 0.18);
+}
+
+.subscription-value-metric-label {
+  font-size: 13px;
+  color: rgba(var(--text-color-rgb), 0.72);
+}
+
+.subscription-value-metric-card strong {
+  font-size: 20px;
+  color: var(--main-color);
+}
+
+.subscription-value-metric-meta {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(var(--text-color-rgb), 0.76);
+}
+
 .subscription-stats-exclusion-note {
   margin-top: 10px;
 }
