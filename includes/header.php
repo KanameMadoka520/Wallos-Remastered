@@ -213,6 +213,10 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
             <?php include "images/siteicons/svg/logo.php"; ?>
           </div>
         </a>
+        <div class="header-edition-info">
+          <span class="custom-edition-badge">tcymc自建服务版</span>
+          <span class="custom-edition-text">以自己物理机为后端，日本东京vps作为网关</span>
+        </div>
       </div>
       <nav>
         <div class="dropdown">
