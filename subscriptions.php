@@ -219,7 +219,7 @@ $subscriptionPagePreferences = [
         <?= translate('new_subscription', $i18n) ?>
       </button>
       <button class="button secondary-button tiny subscription-recycle-bin-trigger" type="button"
-        onClick="openSubscriptionRecycleBinModal(event)">
+        onClick="openSubscriptionRecycleBinModal(event)" title="<?= translate('subscription_recycle_bin', $i18n) ?>">
         <i class="fa-solid fa-trash-can"></i>
         <span><?= translate('subscription_recycle_bin', $i18n) ?></span>
         <span class="section-count-badge"><?= count($trashedSubscriptions) ?></span>

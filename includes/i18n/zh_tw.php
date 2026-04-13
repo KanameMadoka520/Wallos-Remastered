@@ -526,6 +526,7 @@ $i18n = [
     "save_custom_css" => "儲存自訂 CSS",
     "calculate_monthly_price" => "計算並顯示所有訂閱的每月價格",
     "convert_prices" => "永遠以我的主要貨幣顯示價格（較慢）",
+    "convert_prices_requires_fixer_api" => "必須先填寫 Fixer API 才能啟用這個選項。",
     "show_original_price" => "在轉換或計算時同時顯示原始價格",
     "experience" => "使用體驗",
     "show_subscription_progress" => "顯示訂閱進度",

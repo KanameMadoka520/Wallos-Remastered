@@ -1594,9 +1594,19 @@ $pageSections = [
                         <?php
                         if ($settings['convert_currency'])
                             echo ' checked';
+                        if ($apiKey == "")
+                            echo ' disabled';
                         ?>>
                     <label for="convertcurrency"><?= translate('convert_prices', $i18n) ?></label>
                 </div>
+                <?php if ($apiKey == ""): ?>
+                    <div class="settings-notes">
+                        <p>
+                            <i class="fa-solid fa-circle-info"></i>
+                            <?= translate('convert_prices_requires_fixer_api', $i18n) ?>
+                        </p>
+                    </div>
+                <?php endif; ?>
             </div>
             <div>
                 <div class="form-group-inline">

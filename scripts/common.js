@@ -116,7 +116,9 @@ function initializePageImmersiveToggle() {
 
   setPageImmersiveUiState(hidden);
 
-  button.addEventListener("click", () => {
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     const nextHidden = !document.body.classList.contains("page-ui-hidden");
 
     try {
@@ -125,7 +127,23 @@ function initializePageImmersiveToggle() {
       // Ignore sessionStorage persistence failures.
     }
 
-    setPageImmersiveUiState(nextHidden);
+    if (nextHidden) {
+      document.body.classList.add("page-ui-fading-out");
+      window.setTimeout(() => {
+        document.body.classList.remove("page-ui-fading-out");
+        setPageImmersiveUiState(true);
+      }, 180);
+      return;
+    }
+
+    document.body.classList.remove("page-ui-hidden");
+    updatePageImmersiveToggleButton(false);
+    document.body.classList.add("page-ui-fading-in");
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document.body.classList.remove("page-ui-fading-in");
+      });
+    });
   });
 }
 
