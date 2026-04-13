@@ -254,7 +254,7 @@ $pageSections = [
             </div>
             <div class="form-group">
                 <label for="customEditionSubtitle"><?= translate('custom_edition_subtitle', $i18n) ?></label>
-                    value="<?= htmlspecialchars($settings['custom_edition_subtitle'] ?? '基于wallos原版深度魔改', ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="text" id="customEditionSubtitle" autocomplete="off"
                     value="<?= htmlspecialchars($settings['custom_edition_subtitle'] ?? '基于wallos原版深度魔改', ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="settings-notes">

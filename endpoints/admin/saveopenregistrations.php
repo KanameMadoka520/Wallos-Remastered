@@ -3,6 +3,7 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint_admin.php';
 require_once '../../includes/user_status.php';
+require_once '../../includes/custom_edition.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -13,16 +14,14 @@ $requireEmailVerification = $data['require_email_validation'];
 $serverUrl = $data['server_url'];
 $disableLogin = $data['disable_login'];
 $inviteOnlyRegistration = (int) ($data['invite_only_registration'] ?? 0);
-$customEditionTitle = trim((string) ($data['custom_edition_title'] ?? ''));
-$customEditionSubtitle = trim((string) ($data['custom_edition_subtitle'] ?? ''));
-
-if ($customEditionTitle === '') {
-    $customEditionTitle = 'Remastered';
-}
-
-if ($customEditionSubtitle === '') {
-    $customEditionSubtitle = '基于wallos原版深度魔改';
-}
+$customEditionTitle = wallos_normalize_custom_edition_value(
+    $data['custom_edition_title'] ?? '',
+    'Remastered'
+);
+$customEditionSubtitle = wallos_normalize_custom_edition_value(
+    $data['custom_edition_subtitle'] ?? '',
+    '基于wallos原版深度魔改'
+);
 
 if ($disableLogin == 1) {
     if ($openRegistrations == 1) {
