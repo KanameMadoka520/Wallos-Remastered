@@ -178,10 +178,10 @@ setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
           ;
         <?php endif; ?>
         <?php if (isset($settings['customColors']['text_color']) && !empty($settings['customColors']['text_color'])): ?>
-          --text-color:
+          --wallos-dynamic-text-color:
             <?= $settings['customColors']['text_color'] ?>
           ;
-          --text-color-rgb:
+          --wallos-dynamic-text-color-rgb:
             <?= hex2rgb($settings['customColors']['text_color']) ?>
           ;
         <?php endif; ?>
