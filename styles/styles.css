@@ -1544,6 +1544,12 @@ button.mobile-action-renew {
   margin-right: auto;
 }
 
+.subscription-payment-history-export-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .subscription-payment-history-control {
   display: flex;
   flex-direction: column;
@@ -1706,6 +1712,15 @@ button.mobile-action-renew {
   .subscription-payment-history-control {
     flex: 1 1 calc(50% - 10px);
     min-width: 0;
+  }
+
+  .subscription-payment-history-export-actions {
+    width: 100%;
+  }
+
+  .subscription-payment-history-export-actions > .secondary-button {
+    flex: 1 1 calc(50% - 10px);
+    justify-content: center;
   }
 
   .subscription-payment-history-toolbar {
