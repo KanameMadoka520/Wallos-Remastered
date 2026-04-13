@@ -863,6 +863,16 @@ $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscr
         </select>
       </div>
     </div>
+    <div class="subscription-payment-history-export-actions">
+      <button type="button" class="secondary-button thin" onClick="exportSubscriptionPaymentHistoryCurrentView('csv')">
+        <i class="fa-solid fa-file-csv"></i>
+        <span><?= translate('export_as_csv', $i18n) ?></span>
+      </button>
+      <button type="button" class="secondary-button thin" onClick="exportSubscriptionPaymentHistoryCurrentView('json')">
+        <i class="fa-solid fa-file-code"></i>
+        <span><?= translate('export_as_json', $i18n) ?></span>
+      </button>
+    </div>
     <button type="button" class="secondary-button thin" id="subscription-payment-history-add-button">
       <i class="fa-solid fa-plus"></i>
       <span><?= translate('subscription_record_payment', $i18n) ?></span>

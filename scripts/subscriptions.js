@@ -1107,6 +1107,142 @@ function formatSubscriptionPaymentHistoryAmount(value, currencyCode) {
   return new Intl.NumberFormat(navigator.language).format(numericValue);
 }
 
+function sanitizeSubscriptionPaymentHistoryFilenamePart(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "") || "subscription";
+}
+
+function escapeSubscriptionPaymentHistoryCsv(value) {
+  const normalized = String(value ?? "").replace(/\r?\n/g, " ").trim();
+  if (/[",\n]/.test(normalized)) {
+    return `"${normalized.replace(/"/g, '""')}"`;
+  }
+
+  return normalized;
+}
+
+function buildSubscriptionPaymentHistoryCsv(rows) {
+  if (!rows.length) {
+    return "";
+  }
+
+  const headers = Object.keys(rows[0]);
+  const body = rows.map((row) => headers.map((header) => escapeSubscriptionPaymentHistoryCsv(row[header])).join(","));
+  return [headers.join(","), ...body].join("\n");
+}
+
+function downloadSubscriptionPaymentHistoryTextFile(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const blobUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(blobUrl);
+}
+
+function getSubscriptionPaymentHistoryExportPayload() {
+  const subscriptionName = currentPaymentHistorySubscriptionName || "subscription";
+  const baseName = sanitizeSubscriptionPaymentHistoryFilenamePart(subscriptionName);
+  const yearSuffix = currentPaymentHistoryYear ? `-${currentPaymentHistoryYear}` : "";
+  const rangeSuffix = currentPaymentHistoryRangeMonths ? `-${currentPaymentHistoryRangeMonths}m` : "";
+
+  if (currentPaymentHistoryTab === "cashflow") {
+    return {
+      view: "cashflow",
+      filenameBase: `${baseName}-cashflow${yearSuffix}`,
+      rows: currentPaymentHistoryCashflow.map((row) => ({
+        month_number: row.month_number,
+        actual_total: row.actual_total,
+        predicted_total: row.predicted_total,
+        total: row.total,
+      })),
+      json: {
+        subscription_id: currentPaymentHistorySubscriptionId,
+        subscription_name: currentPaymentHistorySubscriptionName,
+        view: "cashflow",
+        selected_year: currentPaymentHistoryYear,
+        summary: currentPaymentHistorySummary,
+        rows: currentPaymentHistoryCashflow,
+      },
+    };
+  }
+
+  if (currentPaymentHistoryTab === "forecast") {
+    return {
+      view: "forecast",
+      filenameBase: `${baseName}-forecast${rangeSuffix}`,
+      rows: currentPaymentHistoryForecast.map((item) => ({
+        due_date: item.due_date,
+        amount_original: item.amount_original,
+        currency_code: item.currency_code,
+        amount_main: item.amount_main,
+        main_currency_code: item.main_currency_code,
+        rule_summary: item.rule_summary || "",
+      })),
+      json: {
+        subscription_id: currentPaymentHistorySubscriptionId,
+        subscription_name: currentPaymentHistorySubscriptionName,
+        view: "forecast",
+        selected_range_months: currentPaymentHistoryRangeMonths,
+        summary: currentPaymentHistorySummary,
+        rows: currentPaymentHistoryForecast,
+      },
+    };
+  }
+
+  return {
+    view: "ledger",
+    filenameBase: `${baseName}-ledger`,
+    rows: currentPaymentHistoryRecords.map((record) => ({
+      due_date: record.due_date,
+      paid_at: record.paid_at,
+      amount_original: record.amount_original,
+      currency_code_snapshot: record.currency_code_snapshot,
+      amount_main_snapshot: record.amount_main_snapshot,
+      main_currency_code_snapshot: record.main_currency_code_snapshot,
+      expected_amount_main: record.expected_amount_main,
+      ledger_difference_main: record.ledger_difference_main,
+      rule_summary_current: record.rule_summary_current || "",
+      note: record.note || "",
+    })),
+    json: {
+      subscription_id: currentPaymentHistorySubscriptionId,
+      subscription_name: currentPaymentHistorySubscriptionName,
+      view: "ledger",
+      summary: currentPaymentHistorySummary,
+      rows: currentPaymentHistoryRecords,
+    },
+  };
+}
+
+function exportSubscriptionPaymentHistoryCurrentView(format) {
+  const payload = getSubscriptionPaymentHistoryExportPayload();
+  if (!payload.rows.length) {
+    showErrorMessage(translate("subscription_payment_export_empty"));
+    return;
+  }
+
+  const exportedAt = new Date().toISOString().replace(/[:.]/g, "-");
+  if (format === "json") {
+    const jsonContent = JSON.stringify({
+      exported_at: new Date().toISOString(),
+      ...payload.json,
+    }, null, 2);
+    downloadSubscriptionPaymentHistoryTextFile(jsonContent, `${payload.filenameBase}-${exportedAt}.json`, "application/json;charset=utf-8");
+    return;
+  }
+
+  const csvContent = buildSubscriptionPaymentHistoryCsv(payload.rows);
+  downloadSubscriptionPaymentHistoryTextFile(csvContent, `${payload.filenameBase}-${exportedAt}.csv`, "text/csv;charset=utf-8");
+}
+
 function getSubscriptionPaymentHistorySummaryHtml() {
   const summary = currentPaymentHistorySummary || {};
   const currencyCode =

@@ -55,6 +55,7 @@ let i18n = {
     subscription_payment_history_year_label: '現金流年份',
     subscription_payment_history_range_label: '預測範圍',
     subscription_payment_forecast_range_notice: '預測清單會遵循目前的特殊價格規則，並跳過已被實際支付帳本覆蓋的應付日期。',
+    subscription_payment_export_empty: '目前這個帳本視圖沒有可匯出的資料列。',
     subscription_payment_cashflow_empty: '目前還沒有可顯示的年度現金流資料。',
     subscription_payment_cashflow_actual: '實際',
     subscription_payment_cashflow_predicted: '預測',

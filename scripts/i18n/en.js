@@ -61,6 +61,7 @@ let i18n = {
   subscription_payment_forecast_empty: "There are no remaining predicted payments for this subscription in the current window.",
   subscription_payment_forecast_original_amount: "Charge Amount",
   subscription_payment_forecast_range_notice: "Forecast entries respect current price rules and skip due dates already covered by actual-payment ledger records.",
+  subscription_payment_export_empty: "The current payment-history view does not contain any exportable rows.",
   failed_to_load_subscription: "Failed to load subscription",
   edit_subscription: "Edit subscription",
   add_subscription: "Add subscription",
