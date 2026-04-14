@@ -4,6 +4,7 @@ require_once 'includes/user_groups.php';
 require_once 'includes/user_status.php';
 require_once 'includes/subscription_media.php';
 require_once 'includes/backup_manager.php';
+require_once 'includes/backup_progress_messages.php';
 
 if ($isAdmin != 1) {
     header('Location: index.php');
@@ -163,6 +164,7 @@ $backupRetentionDays = wallos_get_backup_retention_days($db);
 $recentBackups = wallos_list_backups($db, 20, __DIR__);
 $recentBackupCount = count($recentBackups);
 $latestBackup = $recentBackups[0] ?? null;
+$backupProgressLabels = wallos_get_backup_progress_labels($lang);
 require_once 'includes/page_navigation.php';
 
 $pageSections = [
@@ -1097,6 +1099,21 @@ $pageSections = [
                     id="restoreDB" onClick="openRestoreDBFileSelect()" />
                 <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="restoreDB()"
                     accept=".zip">
+            </div>
+            <div class="backup-progress-card is-hidden is-pending" id="backupProgressCard"
+                data-idle-message="<?= htmlspecialchars($backupProgressLabels['idle_message'], ENT_QUOTES, 'UTF-8') ?>"
+                data-starting-message="<?= htmlspecialchars($backupProgressLabels['starting_message'], ENT_QUOTES, 'UTF-8') ?>">
+                <div class="backup-progress-card-header">
+                    <div class="backup-progress-card-title">
+                        <span><?= htmlspecialchars($backupProgressLabels['panel_title'], ENT_QUOTES, 'UTF-8') ?></span>
+                        <strong id="backupProgressPercent">0%</strong>
+                    </div>
+                    <span class="backup-progress-card-tone" id="backupProgressTone"><?= translate('backup', $i18n) ?></span>
+                </div>
+                <div class="backup-progress-bar" aria-hidden="true">
+                    <span id="backupProgressBar"></span>
+                </div>
+                <p class="backup-progress-message" id="backupProgressMessage"><?= htmlspecialchars($backupProgressLabels['idle_message'], ENT_QUOTES, 'UTF-8') ?></p>
             </div>
             <?php
             if (!empty($recentBackups)) {

@@ -4,6 +4,109 @@ define('WALLOS_BACKUP_DEFAULT_RETENTION_DAYS', 14);
 define('WALLOS_BACKUP_MAX_RETENTION_DAYS', 365);
 define('WALLOS_BACKUP_MANIFEST_VERSION', 1);
 
+function wallos_normalize_backup_operation_id($value)
+{
+    $operationId = trim((string) $value);
+    return preg_match('/^[A-Za-z0-9_-]{8,80}$/', $operationId) ? $operationId : '';
+}
+
+function wallos_get_backup_progress_file_path($operationId, $basePath = null)
+{
+    $normalizedOperationId = wallos_normalize_backup_operation_id($operationId);
+    if ($normalizedOperationId === '') {
+        return null;
+    }
+
+    $backupDirectory = wallos_ensure_backup_storage_dir($basePath);
+    return $backupDirectory . DIRECTORY_SEPARATOR . '.backup-progress-' . $normalizedOperationId . '.json';
+}
+
+function wallos_write_backup_progress_status($operationId, array $status, $basePath = null)
+{
+    $progressFilePath = wallos_get_backup_progress_file_path($operationId, $basePath);
+    if ($progressFilePath === null) {
+        return false;
+    }
+
+    $payload = [
+        'operationId' => wallos_normalize_backup_operation_id($operationId),
+        'state' => (string) ($status['state'] ?? 'running'),
+        'stage' => (string) ($status['stage'] ?? 'waiting'),
+        'progress' => max(0, min(100, (int) ($status['progress'] ?? 0))),
+        'message' => trim((string) ($status['message'] ?? '')),
+        'tone' => (string) ($status['tone'] ?? 'pending'),
+        'updatedAt' => date('c'),
+    ];
+
+    foreach (['downloadUrl', 'backupName'] as $optionalKey) {
+        if (isset($status[$optionalKey])) {
+            $payload[$optionalKey] = $status[$optionalKey];
+        }
+    }
+
+    $temporaryPath = $progressFilePath . '.' . bin2hex(random_bytes(2)) . '.tmp';
+    $encodedPayload = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if ($encodedPayload === false) {
+        return false;
+    }
+
+    if (@file_put_contents($temporaryPath, $encodedPayload, LOCK_EX) === false) {
+        return false;
+    }
+
+    return @rename($temporaryPath, $progressFilePath);
+}
+
+function wallos_read_backup_progress_status($operationId, $basePath = null)
+{
+    $progressFilePath = wallos_get_backup_progress_file_path($operationId, $basePath);
+    if ($progressFilePath === null || !is_file($progressFilePath)) {
+        return null;
+    }
+
+    $rawPayload = @file_get_contents($progressFilePath);
+    if ($rawPayload === false || trim($rawPayload) === '') {
+        return null;
+    }
+
+    $decodedPayload = json_decode($rawPayload, true);
+    return is_array($decodedPayload) ? $decodedPayload : null;
+}
+
+function wallos_emit_backup_progress($callback, $stage, $progress, array $context = [])
+{
+    if (!is_callable($callback)) {
+        return;
+    }
+
+    $callback([
+        'stage' => (string) $stage,
+        'progress' => max(0, min(100, (int) $progress)),
+        'context' => $context,
+    ]);
+}
+
+function wallos_count_directory_files($sourceDirectory)
+{
+    if (!is_dir($sourceDirectory)) {
+        return 0;
+    }
+
+    $count = 0;
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($sourceDirectory, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::LEAVES_ONLY
+    );
+
+    foreach ($iterator as $item) {
+        if ($item->isFile()) {
+            $count++;
+        }
+    }
+
+    return $count;
+}
+
 function wallos_get_backup_storage_dir($basePath = null)
 {
     $rootPath = $basePath !== null ? rtrim((string) $basePath, '/\\') : dirname(__DIR__);
@@ -157,9 +260,10 @@ function wallos_build_backup_manifest($databaseSnapshotPath, $logosDirectory)
     ];
 }
 
-function wallos_add_directory_to_zip($sourceDir, ZipArchive $zipArchive, $archiveRoot = '')
+function wallos_add_directory_to_zip($sourceDir, ZipArchive $zipArchive, $archiveRoot = '', $progressCallback = null, $progressStart = 0, $progressEnd = 100)
 {
     if (!is_dir($sourceDir)) {
+        wallos_emit_backup_progress($progressCallback, 'zip_archive', $progressEnd, ['current' => 0, 'total' => 0]);
         return;
     }
 
@@ -167,6 +271,9 @@ function wallos_add_directory_to_zip($sourceDir, ZipArchive $zipArchive, $archiv
     if ($normalizedArchiveRoot !== '') {
         $zipArchive->addEmptyDir($normalizedArchiveRoot);
     }
+
+    $totalFiles = wallos_count_directory_files($sourceDir);
+    $processedFiles = 0;
 
     $iterator = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($sourceDir, FilesystemIterator::SKIP_DOTS),
@@ -185,8 +292,21 @@ function wallos_add_directory_to_zip($sourceDir, ZipArchive $zipArchive, $archiv
             $zipArchive->addEmptyDir($archivePath);
         } else {
             $zipArchive->addFile($itemPath, $archivePath);
+            $processedFiles++;
+            $progress = $totalFiles > 0
+                ? $progressStart + (($progressEnd - $progressStart) * ($processedFiles / $totalFiles))
+                : $progressEnd;
+            wallos_emit_backup_progress($progressCallback, 'zip_archive', (int) round($progress), [
+                'current' => $processedFiles,
+                'total' => $totalFiles,
+            ]);
         }
     }
+
+    wallos_emit_backup_progress($progressCallback, 'zip_archive', $progressEnd, [
+        'current' => $processedFiles,
+        'total' => $totalFiles,
+    ]);
 }
 
 function wallos_create_backup_database_snapshot($databaseFile, $snapshotPath)
@@ -320,6 +440,7 @@ function wallos_cleanup_backup_temp_files($basePath = null, $maxAgeSeconds = 864
         if (
             strpos($entry, '.snapshot-') !== 0
             && !preg_match('/\.zip\.[A-Za-z0-9]+\.part$/', $entry)
+            && !preg_match('/^\.backup-progress-[A-Za-z0-9_-]+\.json$/', $entry)
         ) {
             continue;
         }
@@ -608,9 +729,10 @@ function wallos_copy_stream_to_file($stream, $destination)
     }
 }
 
-function wallos_copy_directory_tree($sourceDirectory, $destinationDirectory)
+function wallos_copy_directory_tree($sourceDirectory, $destinationDirectory, $progressCallback = null, $progressStart = 0, $progressEnd = 100)
 {
     if (!is_dir($sourceDirectory)) {
+        wallos_emit_backup_progress($progressCallback, 'copy_logos', $progressEnd, ['current' => 0, 'total' => 0]);
         return;
     }
 
@@ -624,6 +746,8 @@ function wallos_copy_directory_tree($sourceDirectory, $destinationDirectory)
     );
 
     $sourceDirectoryLength = strlen(rtrim($sourceDirectory, '/\\')) + 1;
+    $totalFiles = wallos_count_directory_files($sourceDirectory);
+    $processedFiles = 0;
 
     foreach ($iterator as $item) {
         $relativePath = substr($item->getPathname(), $sourceDirectoryLength);
@@ -642,7 +766,20 @@ function wallos_copy_directory_tree($sourceDirectory, $destinationDirectory)
         }
 
         copy($item->getPathname(), $destinationPath);
+        $processedFiles++;
+        $progress = $totalFiles > 0
+            ? $progressStart + (($progressEnd - $progressStart) * ($processedFiles / $totalFiles))
+            : $progressEnd;
+        wallos_emit_backup_progress($progressCallback, 'copy_logos', (int) round($progress), [
+            'current' => $processedFiles,
+            'total' => $totalFiles,
+        ]);
     }
+
+    wallos_emit_backup_progress($progressCallback, 'copy_logos', $progressEnd, [
+        'current' => $processedFiles,
+        'total' => $totalFiles,
+    ]);
 }
 
 function wallos_clear_directory_contents($directory)
@@ -789,7 +926,7 @@ function wallos_restore_backup_archive($archivePath, $projectRoot)
     }
 }
 
-function wallos_create_backup_archive($db, $mode = 'manual', $basePath = null)
+function wallos_create_backup_archive($db, $mode = 'manual', $basePath = null, $progressCallback = null)
 {
     $projectRoot = $basePath !== null ? rtrim((string) $basePath, '/\\') : dirname(__DIR__);
     $backupDirectory = wallos_ensure_backup_storage_dir($projectRoot);
@@ -810,12 +947,15 @@ function wallos_create_backup_archive($db, $mode = 'manual', $basePath = null)
 
     wallos_cleanup_backup_temp_files($projectRoot);
     try {
+        wallos_emit_backup_progress($progressCallback, 'preparing', 5);
         wallos_create_backup_database_snapshot($databaseFile, $snapshotPath);
+        wallos_emit_backup_progress($progressCallback, 'snapshot', 18);
         if (!is_dir($stagedLogosDirectory)) {
             mkdir($stagedLogosDirectory, 0755, true);
         }
-        wallos_copy_directory_tree($logosDirectory, $stagedLogosDirectory);
+        wallos_copy_directory_tree($logosDirectory, $stagedLogosDirectory, $progressCallback, 22, 60);
 
+        wallos_emit_backup_progress($progressCallback, 'manifest', 66);
         $manifest = wallos_build_backup_manifest($snapshotPath, $stagedLogosDirectory);
 
         $zip = new ZipArchive();
@@ -833,7 +973,8 @@ function wallos_create_backup_archive($db, $mode = 'manual', $basePath = null)
             ];
 
             $zip->addFile($snapshotPath, 'wallos.db');
-            wallos_add_directory_to_zip($stagedLogosDirectory, $zip, 'logos');
+            wallos_emit_backup_progress($progressCallback, 'zip_archive', 74, ['current' => 0, 'total' => 0]);
+            wallos_add_directory_to_zip($stagedLogosDirectory, $zip, 'logos', $progressCallback, 76, 94);
             $zip->addFromString('metadata.json', json_encode($metadata, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
             $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         } finally {
@@ -842,6 +983,7 @@ function wallos_create_backup_archive($db, $mode = 'manual', $basePath = null)
             }
         }
 
+        wallos_emit_backup_progress($progressCallback, 'finalizing', 97);
         if (!@rename($temporaryArchivePath, $archivePath)) {
             throw new RuntimeException('Cannot finalize backup archive');
         }
@@ -851,6 +993,9 @@ function wallos_create_backup_archive($db, $mode = 'manual', $basePath = null)
             throw new RuntimeException('Backup archive was not created');
         }
 
+        wallos_emit_backup_progress($progressCallback, 'completed', 100, [
+            'backup' => $backup,
+        ]);
         return $backup;
     } finally {
         wallos_delete_directory_tree($workspace);
