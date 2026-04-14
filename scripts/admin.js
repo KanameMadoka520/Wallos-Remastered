@@ -95,16 +95,89 @@ function saveSmtpSettingsButton() {
 function backupDB() {
   const button = document.getElementById("backupDB");
   button.disabled = true;
+  const operationId = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  let backupProgressPollTimer = null;
+
+  const stopPolling = () => {
+    if (backupProgressPollTimer) {
+      clearTimeout(backupProgressPollTimer);
+      backupProgressPollTimer = null;
+    }
+  };
+
+  const renderBackupProgress = (status) => {
+    const card = document.getElementById("backupProgressCard");
+    const percent = document.getElementById("backupProgressPercent");
+    const bar = document.getElementById("backupProgressBar");
+    const message = document.getElementById("backupProgressMessage");
+    const tone = document.getElementById("backupProgressTone");
+
+    if (!card || !percent || !bar || !message || !tone) {
+      return;
+    }
+
+    const progress = Math.max(0, Math.min(100, Number(status?.progress || 0)));
+    const state = String(status?.state || "running");
+    const toneValue = String(status?.tone || (state === "completed" ? "success" : state === "failed" ? "error" : "pending"));
+    const statusMessage = String(status?.message || card.dataset.idleMessage || "");
+
+    card.classList.remove("is-hidden", "is-pending", "is-success", "is-error");
+    card.classList.add(toneValue === "success" ? "is-success" : toneValue === "error" ? "is-error" : "is-pending");
+    percent.textContent = `${Math.round(progress)}%`;
+    bar.style.width = `${progress}%`;
+    message.textContent = statusMessage;
+    tone.textContent = state === "completed" ? translate("success") : state === "failed" ? translate("error") : translate("backup");
+  };
+
+  const pollBackupProgress = () => {
+    fetch(`endpoints/admin/backupstatus.php?operationId=${encodeURIComponent(operationId)}`, {
+      method: "GET",
+      headers: {
+        "X-CSRF-Token": window.csrfToken,
+      },
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.status) {
+          renderBackupProgress(data.status);
+          if (data.status.state === "completed" || data.status.state === "failed") {
+            stopPolling();
+            return;
+          }
+        }
+
+        backupProgressPollTimer = setTimeout(pollBackupProgress, 700);
+      })
+      .catch(() => {
+        backupProgressPollTimer = setTimeout(pollBackupProgress, 1200);
+      });
+  };
+
+  renderBackupProgress({
+    state: "running",
+    tone: "pending",
+    progress: 1,
+    message: document.getElementById("backupProgressCard")?.dataset.startingMessage || translate("backup"),
+  });
+  pollBackupProgress();
 
   fetch("endpoints/admin/createbackup.php", {
     method: "POST",
     headers: {
+      "Content-Type": "application/json",
       "X-CSRF-Token": window.csrfToken,
     },
+    body: JSON.stringify({ operationId }),
   })
     .then(response => response.json())
     .then(data => {
       if (data.success) {
+        renderBackupProgress({
+          state: "completed",
+          tone: "success",
+          progress: 100,
+          message: data.message,
+        });
         showSuccessMessage(data.message);
         const link = document.createElement("a");
         link.href = data.downloadUrl;
@@ -112,16 +185,29 @@ function backupDB() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        setTimeout(() => window.location.reload(), 600);
+        setTimeout(() => window.location.reload(), 900);
       } else {
+        renderBackupProgress({
+          state: "failed",
+          tone: "error",
+          progress: 100,
+          message: data.message || translate("backup_failed"),
+        });
         showErrorMessage(data.message || translate("backup_failed"));
       }
     })
     .catch(error => {
       console.error(error);
+      renderBackupProgress({
+        state: "failed",
+        tone: "error",
+        progress: 100,
+        message: translate("backup_failed"),
+      });
       showErrorMessage(translate("unknown_error"));
     })
     .finally(() => {
+      stopPolling();
       button.disabled = false;
     });
 }
