@@ -177,19 +177,30 @@ svg .text-color {
     width: 100%;
     min-width: 0;
     display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 170px);
     align-items: center;
-    column-gap: 10px;
+    column-gap: 8px;
+    padding: 8px 10px;
+    justify-content: start;
 }
 
 .public-page-language-switcher-inline select {
     width: 100%;
     min-width: 0;
+    max-width: 170px;
+    padding: 10px 12px;
 }
 
 .public-page-language-switcher-inline label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
     white-space: nowrap;
-    letter-spacing: 0.08em;
+    border: 0;
 }
 
 .public-auth-inline-action-button {
@@ -907,6 +918,15 @@ input[type="checkbox"]:checked::before {
 
     .public-auth-inline-actions {
         grid-template-columns: 1fr;
+    }
+
+    .public-page-language-switcher-inline {
+        grid-template-columns: auto minmax(0, 1fr);
+        width: 100%;
+    }
+
+    .public-page-language-switcher-inline select {
+        max-width: none;
     }
 
     .public-auth-inline-action-button {
