@@ -331,6 +331,24 @@ wallos_log_request($db, 0, '');
                                 <span><?= htmlspecialchars($publicPageBranding['subtitle'], ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
                         </div>
+                        <div class="public-auth-info-stack">
+                            <div class="registration-page-notice public-auth-info-card">
+                                <i class="fa-solid fa-circle-info"></i>
+                                <span><?= translate('registration_form_notice', $i18n) ?></span>
+                            </div>
+                            <?php
+                            if ($inviteOnlyRegistrationEnabled) {
+                                ?>
+                                <div class="settings-notes registration-settings-notes public-auth-info-card">
+                                    <p>
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        <?= translate('invite_only_registration_notice', $i18n) ?>
+                                    </p>
+                                </div>
+                                <?php
+                            }
+                            ?>
+                        </div>
                         <a class="button secondary-button public-page-feedback-button"
                             href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">
                             <i class="fa-solid fa-bug"></i>
@@ -340,10 +358,6 @@ wallos_log_request($db, 0, '');
                 </aside>
                 <div class="public-auth-panel">
                     <div class="public-auth-panel-frame">
-                        <div class="registration-page-notice">
-                            <i class="fa-solid fa-circle-info"></i>
-                            <span><?= translate('registration_form_notice', $i18n) ?></span>
-                        </div>
                         <?php
                         if ($hasErrors) {
                             ?>
@@ -474,18 +488,6 @@ wallos_log_request($db, 0, '');
                                 }
                                 ?>
                             </div>
-                            <?php
-                            if ($inviteOnlyRegistrationEnabled) {
-                                ?>
-                                <div class="settings-notes registration-settings-notes">
-                                    <p>
-                                        <i class="fa-solid fa-circle-info"></i>
-                                        <?= translate('invite_only_registration_notice', $i18n) ?>
-                                    </p>
-                                </div>
-                                <?php
-                            }
-                            ?>
                             <div class="form-group form-group-submit">
                                 <input type="submit" value="<?= translate('register', $i18n) ?>">
                             </div>
