@@ -164,8 +164,7 @@ svg .text-color {
 }
 
 .public-auth-inline-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
     align-items: stretch;
     gap: 14px;
     margin: 16px 0 8px;
@@ -174,20 +173,21 @@ svg .text-color {
 }
 
 .public-page-language-switcher-inline {
-    width: 100%;
+    width: min(100%, 228px);
     min-width: 0;
     display: grid;
-    grid-template-columns: auto minmax(0, 170px);
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     column-gap: 8px;
     padding: 8px 10px;
     justify-content: start;
+    flex: 0 1 228px;
 }
 
 .public-page-language-switcher-inline select {
     width: 100%;
     min-width: 0;
-    max-width: 170px;
+    max-width: 100%;
     padding: 10px 12px;
 }
 
@@ -207,6 +207,7 @@ svg .text-color {
     width: auto;
     min-width: 104px;
     padding: 0 18px;
+    flex: 0 0 auto;
     max-width: 100%;
     white-space: nowrap;
 }
@@ -917,12 +918,12 @@ input[type="checkbox"]:checked::before {
     }
 
     .public-auth-inline-actions {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
 
     .public-page-language-switcher-inline {
-        grid-template-columns: auto minmax(0, 1fr);
         width: 100%;
+        flex-basis: auto;
     }
 
     .public-page-language-switcher-inline select {
