@@ -164,17 +164,19 @@ svg .text-color {
 }
 
 .public-auth-inline-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) max-content;
+    display: flex;
     align-items: stretch;
     gap: 14px;
     margin: 16px 0 8px;
     width: 100%;
     max-width: 100%;
+    justify-content: flex-start;
+    overflow: hidden;
 }
 
 .public-page-language-switcher-inline {
-    width: 100%;
+    width: 214px;
+    max-width: 214px;
     min-width: 0;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -182,6 +184,8 @@ svg .text-color {
     column-gap: 8px;
     padding: 8px 10px;
     justify-content: start;
+    flex: 0 0 214px;
+    overflow: hidden;
 }
 
 .public-page-language-switcher-inline select {
@@ -189,6 +193,7 @@ svg .text-color {
     min-width: 0;
     max-width: 100%;
     padding: 10px 12px;
+    text-overflow: ellipsis;
 }
 
 .public-page-language-switcher-inline label {
@@ -205,10 +210,10 @@ svg .text-color {
 
 .public-auth-inline-actions .public-auth-inline-action-button,
 a.button.public-auth-inline-action-button {
-    width: auto;
+    width: fit-content;
     min-width: 104px;
     padding: 0 18px;
-    justify-self: end;
+    flex: 0 0 auto;
     max-width: 100%;
     white-space: nowrap;
 }
@@ -455,15 +460,19 @@ label {
 }
 
 .registration-page .public-auth-layout {
-    align-items: start;
+    align-items: stretch;
 }
 
 .registration-page .public-page-feedback-button {
-    margin-top: 16px;
+    margin-top: auto;
 }
 
 .registration-page .public-auth-panel-frame {
     margin-bottom: 10px;
+}
+
+.registration-page .public-auth-side-description {
+    margin: 8px 0 20px;
 }
 
 .login-page .public-auth-toolbar {
@@ -919,11 +928,13 @@ input[type="checkbox"]:checked::before {
     }
 
     .public-auth-inline-actions {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
 
     .public-page-language-switcher-inline {
         width: 100%;
+        max-width: none;
+        flex-basis: auto;
     }
 
     .public-page-language-switcher-inline select {
