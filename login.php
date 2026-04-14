@@ -408,7 +408,7 @@ wallos_log_request($db, 0, '');
 <body class="<?= $languages[$lang]['dir'] ?> public-page login-page public-entry-pending <?= $decorativeBackgroundClass ?>">
     <?php wallos_render_public_entry_overlay('login', $lang, $i18n); ?>
     <?php wallos_render_decorative_background('public'); ?>
-    <div class="public-page-floating-language">
+    <div class="public-page-floating-actions">
         <div class="public-page-language-switcher">
             <span class="public-page-language-icon" aria-hidden="true">
                 <i class="fa-solid fa-earth-asia"></i>
@@ -425,6 +425,9 @@ wallos_log_request($db, 0, '');
                 ?>
             </select>
         </div>
+        <?php if ($registrations) { ?>
+            <a class="button secondary-button public-page-top-action" href="registration.php"><?= translate('register', $i18n) ?></a>
+        <?php } ?>
     </div>
     <div class="content">
         <section class="container public-auth-shell public-auth-shell-login">
@@ -554,16 +557,6 @@ wallos_log_request($db, 0, '');
                                 ?>
                                 <div class="login-form-link">
                                     <a href="passwordreset.php"><?= translate('forgot_password', $i18n) ?></a>
-                                </div>
-                                <?php
-                            }
-                            ?>
-                            <?php
-                            if ($registrations) {
-                                ?>
-                                <div class="separator">
-                                    <input type="button" class="secondary-button" onclick="openRegitrationPage()"
-                                        value="<?= translate('register', $i18n) ?>"></input>
                                 </div>
                                 <?php
                             }
