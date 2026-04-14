@@ -229,10 +229,6 @@ if (isset($_POST['username'])) {
                 $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
                 $stmt->execute();
 
-                if (!wallos_insert_default_settings($db, $userId)) {
-                    throw new RuntimeException('failed');
-                }
-
                 $query = "SELECT * FROM admin";
                 $stmt = $db->prepare($query);
                 $result = $stmt->execute();
@@ -249,6 +245,10 @@ if (isset($_POST['username'])) {
 
                     $requireValidation = true;
                 }
+            }
+
+            if (!wallos_insert_default_settings($db, $userId)) {
+                throw new RuntimeException('failed');
             }
 
             if ($inviteOnlyRegistrationEnabled && $inviteCodeRow !== false) {

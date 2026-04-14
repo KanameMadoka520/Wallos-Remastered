@@ -40,5 +40,16 @@ function wallos_public_theme_requires_live_update()
 function wallos_resolve_public_color_theme_cookie()
 {
     $rawColorTheme = trim((string) ($_COOKIE['colorTheme'] ?? ''));
-    return $rawColorTheme !== '' ? $rawColorTheme : 'purple';
+    $allowedThemes = ['blue', 'red', 'green', 'yellow', 'purple'];
+
+    if (!in_array($rawColorTheme, $allowedThemes, true)) {
+        $rawColorTheme = 'purple';
+        setcookie('colorTheme', $rawColorTheme, [
+            'expires' => time() + (365 * 24 * 60 * 60),
+            'path' => '/',
+            'samesite' => 'Lax',
+        ]);
+    }
+
+    return $rawColorTheme;
 }

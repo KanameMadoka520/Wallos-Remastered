@@ -788,6 +788,15 @@ button.mobile-action-renew {
   display: none;
 }
 
+.subscription-container {
+  position: relative;
+  z-index: 0;
+}
+
+.subscription-container.actions-menu-open {
+  z-index: 40;
+}
+
 .subscription-container>.subscription-progress-container {
   position: absolute;
   bottom: 0px;
@@ -894,7 +903,7 @@ button.mobile-action-renew {
   position: absolute;
   right: -16px;
   top: 60px;
-  z-index: 2;
+  z-index: 60;
   flex-direction: column;
   color: var(--text-color);
   background-color: var(--box-background-color);
@@ -908,7 +917,7 @@ button.mobile-action-renew {
 .subscriptions.subscription-columns.subscription-columns-multi .subscription-main .actions {
   right: 0px;
   top: calc(100% + 8px);
-  z-index: 4;
+  z-index: 80;
 }
 
 .rtl .subscription-main .actions {

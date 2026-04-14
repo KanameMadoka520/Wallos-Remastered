@@ -3454,6 +3454,10 @@ document.addEventListener('click', function (event) {
   if (currentActions && !currentActions.contains(event.target)) {
     // Click was outside currentActions, close currentActions
     currentActions.classList.remove('is-open');
+    const currentContainer = currentActions.closest('.subscription-container');
+    if (currentContainer) {
+      currentContainer.classList.remove('actions-menu-open');
+    }
     currentActions = null;
   }
 });
@@ -3463,20 +3467,29 @@ function expandActions(event, subscriptionId) {
   event.preventDefault();
   const subscriptionDiv = document.querySelector(`.subscription[data-id="${subscriptionId}"]`);
   const actions = subscriptionDiv.querySelector('.actions');
+  const subscriptionContainer = subscriptionDiv.closest('.subscription-container');
 
   // Close all other open actions
   const allActions = document.querySelectorAll('.actions.is-open');
   allActions.forEach((openAction) => {
     if (openAction !== actions) {
       openAction.classList.remove('is-open');
+      const openContainer = openAction.closest('.subscription-container');
+      if (openContainer) {
+        openContainer.classList.remove('actions-menu-open');
+      }
     }
   });
 
   // Toggle the clicked actions
+  const shouldOpen = !actions.classList.contains('is-open');
   actions.classList.toggle('is-open');
+  if (subscriptionContainer) {
+    subscriptionContainer.classList.toggle('actions-menu-open', shouldOpen);
+  }
 
   // Update currentActions
-  if (actions.classList.contains('is-open')) {
+  if (shouldOpen) {
     currentActions = actions;
   } else {
     currentActions = null;

@@ -49,7 +49,7 @@ if (isset($settings['update_theme_setttings'])) {
   $updateThemeSettings = $settings['update_theme_setttings'];
 }
 
-$colorTheme = "blue";
+$colorTheme = "purple";
 if (isset($settings['color_theme'])) {
   $colorTheme = $settings['color_theme'];
 }
