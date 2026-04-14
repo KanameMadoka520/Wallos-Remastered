@@ -408,26 +408,26 @@ wallos_log_request($db, 0, '');
 <body class="<?= $languages[$lang]['dir'] ?> public-page login-page public-entry-pending <?= $decorativeBackgroundClass ?>">
     <?php wallos_render_public_entry_overlay('login', $lang, $i18n); ?>
     <?php wallos_render_decorative_background('public'); ?>
+    <div class="public-page-floating-language">
+        <div class="public-page-language-switcher">
+            <span class="public-page-language-icon" aria-hidden="true">
+                <i class="fa-solid fa-earth-asia"></i>
+            </span>
+            <label for="public-page-language-login"><?= translate('language', $i18n) ?>:</label>
+            <select id="public-page-language-login">
+                <?php
+                foreach ($languages as $code => $languageOption) {
+                    $selected = ($code === $lang) ? 'selected' : '';
+                    ?>
+                    <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
+                    <?php
+                }
+                ?>
+            </select>
+        </div>
+    </div>
     <div class="content">
         <section class="container public-auth-shell public-auth-shell-login">
-            <div class="public-auth-toolbar">
-                <div class="public-page-language-switcher">
-                    <span class="public-page-language-icon" aria-hidden="true">
-                        <i class="fa-solid fa-earth-asia"></i>
-                    </span>
-                    <label for="public-page-language-login"><?= translate('language', $i18n) ?>:</label>
-                    <select id="public-page-language-login">
-                        <?php
-                        foreach ($languages as $code => $languageOption) {
-                            $selected = ($code === $lang) ? 'selected' : '';
-                            ?>
-                            <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
-                            <?php
-                        }
-                        ?>
-                    </select>
-                </div>
-            </div>
             <div class="public-auth-layout">
                 <aside class="public-auth-aside">
                     <div class="public-auth-aside-inner">
@@ -448,31 +448,6 @@ wallos_log_request($db, 0, '');
                                 <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
                                 <span><?= htmlspecialchars($publicPageBranding['subtitle'], ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
-                        </div>
-                        <div class="public-auth-hud-grid">
-                            <article class="public-auth-hud-card">
-                                <span class="public-auth-hud-label">AUTH</span>
-                                <strong>LOGIN</strong>
-                                <p><?= translate('password', $i18n) ?> / Session / Cookie</p>
-                            </article>
-                            <article class="public-auth-hud-card">
-                                <span class="public-auth-hud-label">TRACK</span>
-                                <strong>WALLOS</strong>
-                                <p>Budget / Subscriptions / Calendar</p>
-                            </article>
-                            <article class="public-auth-hud-card">
-                                <span class="public-auth-hud-label">THEME</span>
-                                <strong>PURPLE</strong>
-                                <p><?= translate('language', $i18n) ?> / UI / Remastered</p>
-                            </article>
-                        </div>
-                        <div class="public-auth-payment-row" aria-hidden="true">
-                            <span><i class="fa-brands fa-cc-visa"></i></span>
-                            <span><i class="fa-brands fa-cc-mastercard"></i></span>
-                            <span><i class="fa-brands fa-paypal"></i></span>
-                            <span>CNY</span>
-                            <span>JPY</span>
-                            <span>USD</span>
                         </div>
                         <a class="button secondary-button public-page-feedback-button"
                             href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">
