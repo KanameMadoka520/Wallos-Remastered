@@ -164,14 +164,22 @@ svg .text-color {
 }
 
 .public-auth-inline-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: stretch;
     gap: 14px;
     margin: 16px 0 8px;
+    width: 100%;
+    max-width: 100%;
 }
 
 .public-page-language-switcher-inline {
-    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 10px;
 }
 
 .public-page-language-switcher-inline select {
@@ -179,11 +187,16 @@ svg .text-color {
     min-width: 0;
 }
 
+.public-page-language-switcher-inline label {
+    white-space: nowrap;
+    letter-spacing: 0.08em;
+}
+
 .public-auth-inline-action-button {
     width: auto;
-    min-width: 132px;
+    min-width: 104px;
     padding: 0 18px;
-    flex: 0 0 auto;
+    max-width: 100%;
     white-space: nowrap;
 }
 
@@ -893,7 +906,7 @@ input[type="checkbox"]:checked::before {
     }
 
     .public-auth-inline-actions {
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
 
     .public-auth-inline-action-button {
