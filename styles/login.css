@@ -164,7 +164,8 @@ svg .text-color {
 }
 
 .public-auth-inline-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
     align-items: stretch;
     gap: 14px;
     margin: 16px 0 8px;
@@ -173,7 +174,7 @@ svg .text-color {
 }
 
 .public-page-language-switcher-inline {
-    width: min(100%, 228px);
+    width: 100%;
     min-width: 0;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -181,7 +182,6 @@ svg .text-color {
     column-gap: 8px;
     padding: 8px 10px;
     justify-content: start;
-    flex: 0 1 228px;
 }
 
 .public-page-language-switcher-inline select {
@@ -203,11 +203,12 @@ svg .text-color {
     border: 0;
 }
 
-.public-auth-inline-action-button {
+.public-auth-inline-actions .public-auth-inline-action-button,
+a.button.public-auth-inline-action-button {
     width: auto;
     min-width: 104px;
     padding: 0 18px;
-    flex: 0 0 auto;
+    justify-self: end;
     max-width: 100%;
     white-space: nowrap;
 }
@@ -918,20 +919,21 @@ input[type="checkbox"]:checked::before {
     }
 
     .public-auth-inline-actions {
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
 
     .public-page-language-switcher-inline {
         width: 100%;
-        flex-basis: auto;
     }
 
     .public-page-language-switcher-inline select {
         max-width: none;
     }
 
-    .public-auth-inline-action-button {
+    .public-auth-inline-actions .public-auth-inline-action-button,
+    a.button.public-auth-inline-action-button {
         width: 100%;
+        justify-self: stretch;
     }
 
     .public-auth-aside-inner,
