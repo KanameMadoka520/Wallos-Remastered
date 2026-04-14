@@ -438,11 +438,6 @@ wallos_log_request($db, 0, '');
                         <span class="public-auth-page-code">LOGIN ACCESS</span>
                         <h1 class="public-auth-side-title"><?= translate('login', $i18n) ?></h1>
                         <p class="public-auth-side-description"><?= translate('tcy_selfhost_notice', $i18n) ?></p>
-                        <div class="public-auth-chip-row" aria-hidden="true">
-                            <span>HUD</span>
-                            <span>SYNC</span>
-                            <span>PURPLE</span>
-                        </div>
                         <div class="public-page-edition-note">
                             <div class="public-page-edition-content">
                                 <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
