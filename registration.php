@@ -488,29 +488,31 @@ wallos_log_request($db, 0, '');
                                 }
                                 ?>
                             </div>
-                            <div class="form-group form-group-submit">
-                                <input type="submit" value="<?= translate('register', $i18n) ?>">
-                            </div>
-                            <div class="public-auth-inline-actions">
-                                <div class="public-page-language-switcher public-page-language-switcher-inline">
-                                    <span class="public-page-language-icon" aria-hidden="true">
-                                        <i class="fa-solid fa-earth-asia"></i>
-                                    </span>
-                                    <label for="public-page-language"><?= translate('language', $i18n) ?>:</label>
-                                    <select id="public-page-language">
-                                        <?php
-                                        foreach ($languages as $code => $languageOption) {
-                                            $selected = ($code === $lang) ? 'selected' : '';
-                                            ?>
-                                            <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
-                                            <?php
-                                        }
-                                        ?>
-                                    </select>
+                            <div class="public-auth-form-footer">
+                                <div class="form-group form-group-submit">
+                                    <input type="submit" value="<?= translate('register', $i18n) ?>">
                                 </div>
-                                <?php if ($userCount > 0) { ?>
-                                    <a class="button secondary-button public-auth-inline-action-button" href="login.php"><?= translate('login', $i18n) ?></a>
-                                <?php } ?>
+                                <div class="public-auth-inline-actions">
+                                    <div class="public-page-language-switcher public-page-language-switcher-inline">
+                                        <span class="public-page-language-icon" aria-hidden="true">
+                                            <i class="fa-solid fa-earth-asia"></i>
+                                        </span>
+                                        <label for="public-page-language"><?= translate('language', $i18n) ?>:</label>
+                                        <select id="public-page-language">
+                                            <?php
+                                            foreach ($languages as $code => $languageOption) {
+                                                $selected = ($code === $lang) ? 'selected' : '';
+                                                ?>
+                                                <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
+                                                <?php
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    <?php if ($userCount > 0) { ?>
+                                        <a class="button secondary-button public-auth-inline-action-button" href="login.php"><?= translate('login', $i18n) ?></a>
+                                    <?php } ?>
+                                </div>
                             </div>
                         </form>
                         <?php
