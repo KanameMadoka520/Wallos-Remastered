@@ -399,8 +399,20 @@ label {
     padding-top: 34px;
 }
 
+.login-page .public-auth-layout {
+    align-items: start;
+}
+
 .login-page .public-auth-side-description {
     margin-bottom: 22px;
+}
+
+.login-page .public-page-feedback-button {
+    margin-top: 16px;
+}
+
+.login-page .public-auth-panel-frame {
+    margin-bottom: 10px;
 }
 
 .login-page .public-auth-toolbar {
