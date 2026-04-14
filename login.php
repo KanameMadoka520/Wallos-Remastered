@@ -408,27 +408,6 @@ wallos_log_request($db, 0, '');
 <body class="<?= $languages[$lang]['dir'] ?> public-page login-page public-entry-pending <?= $decorativeBackgroundClass ?>">
     <?php wallos_render_public_entry_overlay('login', $lang, $i18n); ?>
     <?php wallos_render_decorative_background('public'); ?>
-    <div class="public-page-floating-actions">
-        <div class="public-page-language-switcher">
-            <span class="public-page-language-icon" aria-hidden="true">
-                <i class="fa-solid fa-earth-asia"></i>
-            </span>
-            <label for="public-page-language-login"><?= translate('language', $i18n) ?>:</label>
-            <select id="public-page-language-login">
-                <?php
-                foreach ($languages as $code => $languageOption) {
-                    $selected = ($code === $lang) ? 'selected' : '';
-                    ?>
-                    <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
-                    <?php
-                }
-                ?>
-            </select>
-        </div>
-        <?php if ($registrations) { ?>
-            <a class="button secondary-button public-page-top-action" href="registration.php"><?= translate('register', $i18n) ?></a>
-        <?php } ?>
-    </div>
     <div class="content">
         <section class="container public-auth-shell public-auth-shell-login">
             <div class="public-auth-layout">
@@ -536,6 +515,27 @@ wallos_log_request($db, 0, '');
                                     <input type="submit" value="<?= translate('login', $i18n) ?>">
                                 </div>
                             <?php } ?>
+                            <div class="public-auth-inline-actions">
+                                <div class="public-page-language-switcher public-page-language-switcher-inline">
+                                    <span class="public-page-language-icon" aria-hidden="true">
+                                        <i class="fa-solid fa-earth-asia"></i>
+                                    </span>
+                                    <label for="public-page-language-login"><?= translate('language', $i18n) ?>:</label>
+                                    <select id="public-page-language-login">
+                                        <?php
+                                        foreach ($languages as $code => $languageOption) {
+                                            $selected = ($code === $lang) ? 'selected' : '';
+                                            ?>
+                                            <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
+                                            <?php
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <?php if ($registrations) { ?>
+                                    <a class="button secondary-button public-auth-inline-action-button" href="registration.php"><?= translate('register', $i18n) ?></a>
+                                <?php } ?>
+                            </div>
                             <?php
                             if ($oidcEnabled) {
                                 if (!$password_login_disabled) {
@@ -567,11 +567,6 @@ wallos_log_request($db, 0, '');
             </div>
         </section>
     </div>
-    <script type="text/javascript">
-        function openRegitrationPage() {
-            window.location.href = "registration.php";
-        }
-    </script>
 </body>
 
 </html>

@@ -118,28 +118,6 @@ svg .text-color {
     margin-bottom: 22px;
 }
 
-.public-page-floating-actions {
-    position: fixed;
-    top: 18px;
-    right: 18px;
-    z-index: 11000;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.public-page-floating-actions .public-page-language-switcher {
-    box-shadow: 0 18px 34px rgba(var(--public-accent-rgb), 0.14);
-}
-
-.public-page-top-action {
-    width: auto;
-    min-width: 116px;
-    padding: 0 18px;
-    min-height: 58px;
-    white-space: nowrap;
-}
-
 .public-page-language-switcher {
     display: inline-flex;
     align-items: center;
@@ -183,6 +161,30 @@ svg .text-color {
     min-width: 164px;
     width: auto;
     padding: 11px 14px;
+}
+
+.public-auth-inline-actions {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    margin: 16px 0 8px;
+}
+
+.public-page-language-switcher-inline {
+    flex: 1 1 auto;
+}
+
+.public-page-language-switcher-inline select {
+    width: 100%;
+    min-width: 0;
+}
+
+.public-auth-inline-action-button {
+    width: auto;
+    min-width: 132px;
+    padding: 0 18px;
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .public-auth-layout {
@@ -871,22 +873,6 @@ input[type="checkbox"]:checked::before {
         padding: 18px 12px 26px;
     }
 
-    .public-page-floating-actions {
-        top: 12px;
-        right: 12px;
-        left: 12px;
-        align-items: stretch;
-        flex-direction: column;
-    }
-
-    .public-page-floating-actions .public-page-language-switcher {
-        width: 100%;
-    }
-
-    .public-page-top-action {
-        width: 100%;
-    }
-
     .public-auth-shell {
         padding: 16px;
         border-radius: 26px;
@@ -904,6 +890,14 @@ input[type="checkbox"]:checked::before {
     .public-page-language-switcher select {
         width: 100%;
         min-width: 0;
+    }
+
+    .public-auth-inline-actions {
+        flex-direction: column;
+    }
+
+    .public-auth-inline-action-button {
+        width: 100%;
     }
 
     .public-auth-aside-inner,
