@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/timezone_settings.php';
 
 $databaseFile = '../../db/wallos.db';
 $db = new SQLite3($databaseFile);
@@ -10,6 +11,8 @@ $db->exec('PRAGMA foreign_keys = ON');
 if (!$db) {
     die('Connection to the database failed.');
 }
+
+wallos_apply_php_timezone(wallos_get_default_user_timezone());
 
 require_once 'i18n/languages.php';
 require_once 'i18n/getlang.php';
@@ -34,6 +37,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 }
 
 if ($userId > 0) {
+    wallos_apply_php_timezone(wallos_fetch_user_timezone($db, $userId));
     $userStmt = $db->prepare('SELECT id, username, account_status, trash_reason, scheduled_delete_at FROM user WHERE id = :userId');
     $userStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
     $userResult = $userStmt->execute();

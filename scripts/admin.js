@@ -863,6 +863,7 @@ function saveBackupSettingsButton() {
 
   const data = {
     backup_retention_days: document.getElementById("backupRetentionDays").value,
+    backup_timezone: document.getElementById("backupTimezone").value,
   };
 
   fetch("endpoints/admin/savebackupsettings.php", {

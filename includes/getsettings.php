@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/custom_edition.php';
+require_once __DIR__ . '/timezone_settings.php';
 
 function wallos_normalize_subscription_display_columns_setting($value)
 {
@@ -70,6 +71,7 @@ if ($settings !== false) {
     $settings['disabledToBottom'] = $settings['disabled_to_bottom'] ? 'true': 'false';
     $settings['showOriginalPrice'] = $settings['show_original_price'] ? 'true': 'false';
     $settings['mobileNavigation'] = $settings['mobile_nav'] ? 'true': 'false';
+    $settings['user_timezone'] = wallos_normalize_timezone_identifier($settings['user_timezone'] ?? '', wallos_get_default_user_timezone());
     $settings['showSubscriptionProgress'] = $settings['show_subscription_progress'] ? 'true': 'false';
     $settings['decorativeBackground'] = !isset($settings['decorative_background']) || $settings['decorative_background'] ? 'true' : 'false';
     $settings['dynamicWallpaper'] = !empty($settings['dynamic_wallpaper']) ? 'true' : 'false';

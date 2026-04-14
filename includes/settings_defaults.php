@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/timezone_settings.php';
+
 function wallos_get_settings_table_columns($db)
 {
     $columns = [];
@@ -27,6 +29,7 @@ function wallos_get_default_settings_payload($userId)
         'disabled_to_bottom' => 0,
         'show_original_price' => 0,
         'mobile_nav' => 0,
+        'user_timezone' => wallos_get_default_user_timezone(),
         'show_subscription_progress' => 0,
         'decorative_background' => 1,
         'dynamic_wallpaper' => 0,

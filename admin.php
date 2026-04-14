@@ -5,6 +5,7 @@ require_once 'includes/user_status.php';
 require_once 'includes/subscription_media.php';
 require_once 'includes/backup_manager.php';
 require_once 'includes/backup_progress_messages.php';
+require_once 'includes/timezone_settings.php';
 
 if ($isAdmin != 1) {
     header('Location: index.php');
@@ -161,6 +162,8 @@ $activeInviteCodeCount = count($activeInviteCodes);
 $deletedInviteCodeCount = count($deletedInviteCodes);
 $recentRequestLogCount = count($recentRequestLogs);
 $backupRetentionDays = wallos_get_backup_retention_days($db);
+$backupTimezone = wallos_normalize_timezone_identifier($settings['backup_timezone'] ?? '', wallos_get_default_backup_timezone());
+$timezoneOptions = wallos_get_timezone_options($backupTimezone);
 $recentBackups = wallos_list_backups($db, 20, __DIR__);
 $recentBackupCount = count($recentBackups);
 $latestBackup = $recentBackups[0] ?? null;
@@ -1085,6 +1088,26 @@ $pageSections = [
                 <label for="backupRetentionDays"><?= translate('backup_retention_days', $i18n) ?></label>
                 <input type="number" id="backupRetentionDays" min="1" max="365" autocomplete="off"
                     value="<?= (int) $backupRetentionDays ?>" />
+            </div>
+            <div class="form-group">
+                <label for="backupTimezone"><?= translate('backup_timezone', $i18n) ?></label>
+                <select id="backupTimezone">
+                    <?php
+                    foreach ($timezoneOptions as $timezoneOption) {
+                        ?>
+                        <option value="<?= htmlspecialchars($timezoneOption['value'], ENT_QUOTES, 'UTF-8') ?>" <?= $timezoneOption['selected'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($timezoneOption['label'], ENT_QUOTES, 'UTF-8') ?>
+                        </option>
+                        <?php
+                    }
+                    ?>
+                </select>
+                <div class="settings-notes">
+                    <p>
+                        <i class="fa-solid fa-circle-info"></i>
+                        <?= translate('backup_timezone_info', $i18n) ?>
+                    </p>
+                </div>
             </div>
             <div class="buttons backup-action-row">
                 <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('save', $i18n) ?>"

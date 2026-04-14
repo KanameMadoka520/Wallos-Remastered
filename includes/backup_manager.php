@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/timezone_settings.php';
 
 define('WALLOS_BACKUP_DEFAULT_RETENTION_DAYS', 14);
 define('WALLOS_BACKUP_MAX_RETENTION_DAYS', 365);
@@ -163,12 +164,15 @@ function wallos_format_backup_size($bytes)
     return number_format($size, $unitIndex === 0 ? 0 : 1) . ' ' . $units[$unitIndex];
 }
 
-function wallos_build_backup_file_name($mode)
+function wallos_build_backup_file_name($mode, $timezone = null)
 {
+    $normalizedTimezone = wallos_normalize_timezone_identifier($timezone, wallos_get_default_backup_timezone());
+    $dateTime = new DateTimeImmutable('now', new DateTimeZone($normalizedTimezone));
+
     return sprintf(
         'wallos-backup-%s-%s-%s.zip',
         wallos_normalize_backup_mode($mode),
-        date('Ymd-His'),
+        $dateTime->format('Ymd-His'),
         bin2hex(random_bytes(3))
     );
 }
@@ -248,13 +252,15 @@ function wallos_collect_backup_manifest_files($databaseSnapshotPath, $logosDirec
     return $files;
 }
 
-function wallos_build_backup_manifest($databaseSnapshotPath, $logosDirectory)
+function wallos_build_backup_manifest($databaseSnapshotPath, $logosDirectory, $timezone = null)
 {
     $files = wallos_collect_backup_manifest_files($databaseSnapshotPath, $logosDirectory);
+    $normalizedTimezone = wallos_normalize_timezone_identifier($timezone, wallos_get_default_backup_timezone());
+    $dateTime = new DateTimeImmutable('now', new DateTimeZone($normalizedTimezone));
 
     return [
         'version' => WALLOS_BACKUP_MANIFEST_VERSION,
-        'created_at' => date('c'),
+        'created_at' => $dateTime->format('c'),
         'file_count' => count($files),
         'files' => $files,
     ];
@@ -327,7 +333,7 @@ function wallos_create_backup_database_snapshot($databaseFile, $snapshotPath)
     }
 }
 
-function wallos_describe_backup_file($filePath)
+function wallos_describe_backup_file($filePath, $timezone = null)
 {
     $fileName = basename((string) $filePath);
     if (!is_file($filePath) || !preg_match('/\.zip$/i', $fileName)) {
@@ -345,6 +351,9 @@ function wallos_describe_backup_file($filePath)
     }
 
     $sizeBytes = (int) @filesize($filePath);
+    $normalizedTimezone = wallos_normalize_timezone_identifier($timezone, wallos_get_default_backup_timezone());
+    $dateTime = new DateTimeImmutable('@' . $modifiedAt);
+    $dateTime = $dateTime->setTimezone(new DateTimeZone($normalizedTimezone));
 
     return [
         'name' => $fileName,
@@ -353,7 +362,7 @@ function wallos_describe_backup_file($filePath)
         'size_bytes' => $sizeBytes,
         'size_label' => wallos_format_backup_size($sizeBytes),
         'modified_at' => $modifiedAt,
-        'created_at' => date('Y-m-d H:i:s', $modifiedAt),
+        'created_at' => $dateTime->format('Y-m-d H:i:s'),
         'download_url' => wallos_get_backup_download_url($fileName),
     ];
 }
@@ -362,6 +371,7 @@ function wallos_list_backups($db = null, $limit = 20, $basePath = null)
 {
     $backupDirectory = wallos_ensure_backup_storage_dir($basePath);
     $backups = [];
+    $backupTimezone = $db ? wallos_fetch_backup_timezone($db) : wallos_get_default_backup_timezone();
 
     $entries = @scandir($backupDirectory);
     if ($entries === false) {
@@ -373,7 +383,7 @@ function wallos_list_backups($db = null, $limit = 20, $basePath = null)
             continue;
         }
 
-        $description = wallos_describe_backup_file($backupDirectory . DIRECTORY_SEPARATOR . $entry);
+        $description = wallos_describe_backup_file($backupDirectory . DIRECTORY_SEPARATOR . $entry, $backupTimezone);
         if ($description !== null) {
             $backups[] = $description;
         }
@@ -408,7 +418,7 @@ function wallos_find_backup_by_name($fileName, $basePath = null)
         return null;
     }
 
-    return wallos_describe_backup_file($realFilePath);
+    return wallos_describe_backup_file($realFilePath, wallos_get_default_backup_timezone());
 }
 
 function wallos_delete_backup_by_name($fileName, $basePath = null)
@@ -932,13 +942,14 @@ function wallos_create_backup_archive($db, $mode = 'manual', $basePath = null, $
     $backupDirectory = wallos_ensure_backup_storage_dir($projectRoot);
     $databaseFile = $projectRoot . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . 'wallos.db';
     $logosDirectory = $projectRoot . DIRECTORY_SEPARATOR . 'images' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'logos';
+    $backupTimezone = $db ? wallos_fetch_backup_timezone($db) : wallos_get_default_backup_timezone();
 
     if (!is_file($databaseFile)) {
         throw new RuntimeException('Database file does not exist');
     }
 
     $mode = wallos_normalize_backup_mode($mode);
-    $fileName = wallos_build_backup_file_name($mode);
+    $fileName = wallos_build_backup_file_name($mode, $backupTimezone);
     $archivePath = $backupDirectory . DIRECTORY_SEPARATOR . $fileName;
     $temporaryArchivePath = $archivePath . '.' . bin2hex(random_bytes(3)) . '.part';
     $workspace = wallos_create_backup_workspace($projectRoot, 'backup');
@@ -956,7 +967,7 @@ function wallos_create_backup_archive($db, $mode = 'manual', $basePath = null, $
         wallos_copy_directory_tree($logosDirectory, $stagedLogosDirectory, $progressCallback, 22, 60);
 
         wallos_emit_backup_progress($progressCallback, 'manifest', 66);
-        $manifest = wallos_build_backup_manifest($snapshotPath, $stagedLogosDirectory);
+        $manifest = wallos_build_backup_manifest($snapshotPath, $stagedLogosDirectory, $backupTimezone);
 
         $zip = new ZipArchive();
         if ($zip->open($temporaryArchivePath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
@@ -966,7 +977,7 @@ function wallos_create_backup_archive($db, $mode = 'manual', $basePath = null, $
         try {
             $metadata = [
                 'mode' => $mode,
-                'created_at' => date('c'),
+                'created_at' => (new DateTimeImmutable('now', new DateTimeZone($backupTimezone)))->format('c'),
                 'includes' => ['wallos.db', 'logos/'],
                 'manifest_version' => WALLOS_BACKUP_MANIFEST_VERSION,
                 'manifest_file_count' => (int) $manifest['file_count'],
