@@ -218,7 +218,7 @@ function setDarkTheme(theme) {
 }
 
 function setTheme(themeColor) {
-  var currentTheme = 'blue';
+  var currentTheme = window.colorTheme === 'blue' ? 'blue' : 'purple';
   var themeIds = ['red-theme', 'green-theme', 'yellow-theme', 'purple-theme'];
 
   themeIds.forEach(function (id) {

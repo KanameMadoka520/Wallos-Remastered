@@ -18,7 +18,7 @@ if (isset($settings['theme'])) {
   $theme = $settings['theme'];
 }
 
-$colorTheme = "blue";
+$colorTheme = "purple";
 if (isset($settings['color_theme'])) {
   $colorTheme = $settings['color_theme'];
 }
