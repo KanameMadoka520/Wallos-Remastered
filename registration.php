@@ -11,6 +11,9 @@ require_once 'includes/request_logs.php';
 require_once 'includes/user_status.php';
 require_once 'includes/decorative_background.php';
 require_once 'includes/theme_resolver.php';
+require_once 'includes/settings_defaults.php';
+require_once 'includes/public_page_branding.php';
+require_once 'includes/public_entry_animation.php';
 
 require_once 'includes/version.php';
 
@@ -18,6 +21,8 @@ $loginCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/login.css');
 $registrationJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/registration.js');
 $decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/decorative-background.css');
 $decorativeBackgroundJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/decorative-background.js');
+$publicEntryTransitionCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/public-entry-transition.css');
+$publicEntryTransitionJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/public-entry-transition.js');
 
 function validate($value)
 {
@@ -66,6 +71,7 @@ $publicThemePreferences = wallos_resolve_public_theme_preferences();
 $theme = $publicThemePreferences['theme'];
 $updateThemeSettings = $publicThemePreferences['update_theme_settings'];
 $colorTheme = wallos_resolve_public_color_theme_cookie();
+$publicPageBranding = wallos_get_public_page_branding($db);
 
 $decorativeBackgroundEnabled = wallos_is_public_decorative_background_enabled();
 $decorativeBackgroundClass = $decorativeBackgroundEnabled ? 'decorative-background-enabled' : 'decorative-background-disabled';
@@ -223,11 +229,9 @@ if (isset($_POST['username'])) {
                 $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
                 $stmt->execute();
 
-                $query = "INSERT INTO settings (dark_theme, monthly_price, convert_currency, remove_background, color_theme, hide_disabled, user_id, disabled_to_bottom, show_original_price, mobile_nav) 
-                          VALUES (0, 0, 0, 0, 'purple', 0, :user_id, 0, 0, 0)";
-                $stmt = $db->prepare($query);
-                $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-                $stmt->execute();
+                if (!wallos_insert_default_settings($db, $userId)) {
+                    throw new RuntimeException('failed');
+                }
 
                 $query = "SELECT * FROM admin";
                 $stmt = $db->prepare($query);
@@ -287,6 +291,7 @@ wallos_log_request($db, 0, '');
     <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
     <link rel="stylesheet" href="styles/decorative-background.css?<?= $decorativeBackgroundCssVersion ?>">
     <link rel="stylesheet" href="styles/login.css?<?= $loginCssVersion ?>">
+    <link rel="stylesheet" href="styles/public-entry-transition.css?<?= $publicEntryTransitionCssVersion ?>">
     <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/green.css?<?= $version ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/yellow.css?<?= $version ?>" id="yellow-theme" <?= $colorTheme != "yellow" ? "disabled" : "" ?>>
@@ -296,14 +301,17 @@ wallos_log_request($db, 0, '');
     <link rel="stylesheet" href="styles/brands.css">
     <link rel="stylesheet" href="styles/barlow.css">
     <script type="text/javascript">
+        document.documentElement.classList.add('public-entry-js');
         window.update_theme_settings = <?= $updateThemeSettings ? 'true' : 'false' ?>;
         window.colorTheme = "<?= $colorTheme ?>";
     </script>
     <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
     <script type="text/javascript" src="scripts/registration.js?<?= $registrationJsVersion ?>"></script>
+    <script type="text/javascript" src="scripts/public-entry-transition.js?<?= $publicEntryTransitionJsVersion ?>"></script>
 </head>
 
-<body class="<?= $languages[$lang]['dir'] ?> public-page registration-page <?= $decorativeBackgroundClass ?>">
+<body class="<?= $languages[$lang]['dir'] ?> public-page registration-page public-entry-pending <?= $decorativeBackgroundClass ?>">
+    <?php wallos_render_public_entry_overlay('registration', $lang, $i18n); ?>
     <?php wallos_render_decorative_background('public'); ?>
     <div class="content">
         <section class="container registration-container">
@@ -335,8 +343,8 @@ wallos_log_request($db, 0, '');
             </header>
             <div class="public-page-edition-note">
                 <div class="public-page-edition-content">
-                    <span class="public-page-edition-badge">tcymc自建服务版</span>
-                    <span><?= translate('tcy_selfhost_notice', $i18n) ?></span>
+                    <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <span><?= htmlspecialchars($publicPageBranding['subtitle'], ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
                 <a class="button secondary-button public-page-feedback-button"
                     href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">

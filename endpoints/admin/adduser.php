@@ -3,6 +3,7 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint_admin.php';
 require_once '../../includes/default_user_seed.php';
+require_once '../../includes/settings_defaults.php';
 
 function validate($value)
 {
@@ -136,11 +137,12 @@ if ($newUserId > 1) {
         $stmt->execute();
     }
 
-    $query = "INSERT INTO settings (dark_theme, monthly_price, convert_currency, remove_background, color_theme, hide_disabled, user_id, disabled_to_bottom, show_original_price, mobile_nav)
-              VALUES (0, 0, 0, 0, 'purple', 0, :user_id, 0, 0, 0)";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':user_id', $newUserId, SQLITE3_INTEGER);
-    $stmt->execute();
+    if (!wallos_insert_default_settings($db, $newUserId)) {
+        die(json_encode([
+            'success' => false,
+            'message' => translate('error', $i18n)
+        ]));
+    }
 }
 
 $db->close();

@@ -11,6 +11,8 @@ require_once 'includes/login_rate_limit.php';
 require_once 'includes/decorative_background.php';
 require_once 'includes/theme_resolver.php';
 require_once 'includes/theme_cookie_sync.php';
+require_once 'includes/public_page_branding.php';
+require_once 'includes/public_entry_animation.php';
 
 require_once 'includes/version.php';
 
@@ -18,6 +20,8 @@ $loginCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/login.css');
 $loginJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/login.js');
 $decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/decorative-background.css');
 $decorativeBackgroundJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/decorative-background.js');
+$publicEntryTransitionCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/public-entry-transition.css');
+$publicEntryTransitionJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/public-entry-transition.js');
 
 function wallos_build_recycle_bin_login_message($i18n, $reason = '', $scheduledDeleteAt = '')
 {
@@ -133,6 +137,7 @@ if (isset($_SESSION['token'])) {
 $theme = wallos_resolve_public_theme_cookie();
 $updateThemeSettings = wallos_public_theme_requires_live_update();
 $colorTheme = wallos_resolve_public_color_theme_cookie();
+$publicPageBranding = wallos_get_public_page_branding($db);
 
 $decorativeBackgroundEnabled = wallos_is_public_decorative_background_enabled();
 $decorativeBackgroundClass = $decorativeBackgroundEnabled ? 'decorative-background-enabled' : 'decorative-background-disabled';
@@ -381,6 +386,7 @@ wallos_log_request($db, 0, '');
     <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
     <link rel="stylesheet" href="styles/decorative-background.css?<?= $decorativeBackgroundCssVersion ?>">
     <link rel="stylesheet" href="styles/login.css?<?= $loginCssVersion ?>">
+    <link rel="stylesheet" href="styles/public-entry-transition.css?<?= $publicEntryTransitionCssVersion ?>">
     <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/green.css?<?= $version ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
     <link rel="stylesheet" href="styles/themes/yellow.css?<?= $version ?>" id="yellow-theme" <?= $colorTheme != "yellow" ? "disabled" : "" ?>>
@@ -390,14 +396,17 @@ wallos_log_request($db, 0, '');
     <link rel="stylesheet" href="styles/barlow.css">
     <link rel="stylesheet" href="styles/login-dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme == "light" ? "disabled" : "" ?>>
     <script type="text/javascript">
+        document.documentElement.classList.add('public-entry-js');
         window.update_theme_settings = <?= $updateThemeSettings ? 'true' : 'false' ?>;
         window.color_theme = "<?= $colorTheme ?>";
     </script>
     <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
     <script type="text/javascript" src="scripts/login.js?<?= $loginJsVersion ?>"></script>
+    <script type="text/javascript" src="scripts/public-entry-transition.js?<?= $publicEntryTransitionJsVersion ?>"></script>
 </head>
 
-<body class="<?= $languages[$lang]['dir'] ?> public-page login-page <?= $decorativeBackgroundClass ?>">
+<body class="<?= $languages[$lang]['dir'] ?> public-page login-page public-entry-pending <?= $decorativeBackgroundClass ?>">
+    <?php wallos_render_public_entry_overlay('login', $lang, $i18n); ?>
     <?php wallos_render_decorative_background('public'); ?>
     <div class="content">
         <section class="container">
@@ -429,8 +438,8 @@ wallos_log_request($db, 0, '');
             </header>
             <div class="public-page-edition-note">
                 <div class="public-page-edition-content">
-                    <span class="public-page-edition-badge">tcymc自建服务版</span>
-                    <span><?= translate('tcy_selfhost_notice', $i18n) ?></span>
+                    <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <span><?= htmlspecialchars($publicPageBranding['subtitle'], ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
                 <a class="button secondary-button public-page-feedback-button"
                     href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">

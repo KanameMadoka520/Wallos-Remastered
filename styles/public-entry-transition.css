@@ -1,0 +1,512 @@
+html.public-entry-js .wallos-public-entry {
+    display: block;
+}
+
+.wallos-public-entry {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    overflow: hidden;
+    pointer-events: none;
+    isolation: isolate;
+}
+
+.wallos-public-entry[hidden] {
+    display: none !important;
+}
+
+html.public-entry-js body.public-entry-pending .wallos-public-entry,
+html.public-entry-js body.public-entry-active .wallos-public-entry {
+    opacity: 1;
+    visibility: visible;
+}
+
+html.public-entry-js body.public-entry-complete .wallos-public-entry {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.72s step-end;
+}
+
+.wallos-public-entry-backdrop,
+.wallos-public-entry-grid,
+.wallos-public-entry-aura,
+.wallos-public-entry-ring,
+.wallos-public-entry-scanline,
+.wallos-public-entry-shards,
+.wallos-public-entry-corners,
+.wallos-public-entry-stream,
+.wallos-public-entry-center {
+    position: absolute;
+    inset: 0;
+}
+
+.wallos-public-entry-backdrop {
+    background:
+        radial-gradient(circle at 16% 18%, rgba(253, 245, 255, 0.96), transparent 28%),
+        radial-gradient(circle at 78% 22%, rgba(212, 186, 255, 0.5), transparent 34%),
+        radial-gradient(circle at 48% 62%, rgba(174, 132, 255, 0.44), transparent 36%),
+        linear-gradient(135deg, #faf5ff 0%, #f3ebff 22%, #e7ddff 48%, #dbcdfc 72%, #c4a9ff 100%);
+    transform: scale(1.12);
+    animation: publicEntryBackdropZoom 1.88s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.wallos-public-entry-grid {
+    background-image:
+        linear-gradient(rgba(140, 94, 255, 0.16) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(140, 94, 255, 0.14) 1px, transparent 1px);
+    background-size: 76px 76px, 76px 76px;
+    opacity: 0.42;
+    transform: perspective(1000px) rotateX(72deg) translateY(24vh) scale(1.3);
+    transform-origin: center bottom;
+    animation: publicEntryGridDrift 1.9s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+.wallos-public-entry-aura {
+    filter: blur(32px);
+    opacity: 0.82;
+}
+
+.wallos-public-entry-aura-a {
+    inset: auto auto -20% -14%;
+    width: 54vw;
+    height: 54vw;
+    max-width: 720px;
+    max-height: 720px;
+    background: radial-gradient(circle, rgba(121, 71, 255, 0.56) 0%, rgba(121, 71, 255, 0.18) 42%, transparent 72%);
+    animation: publicEntryAuraRise 1.74s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+.wallos-public-entry-aura-b {
+    inset: -18% -8% auto auto;
+    width: 44vw;
+    height: 44vw;
+    max-width: 640px;
+    max-height: 640px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.64) 0%, rgba(181, 119, 255, 0.22) 46%, transparent 74%);
+    animation: publicEntryAuraDrift 1.82s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+.wallos-public-entry-ring {
+    inset: 50% auto auto 50%;
+    border-radius: 50%;
+    border: 1px solid rgba(126, 80, 255, 0.26);
+    transform: translate(-50%, -50%) scale(0.6);
+}
+
+.wallos-public-entry-ring-a {
+    width: min(72vw, 860px);
+    height: min(72vw, 860px);
+    animation: publicEntryRingPulse 1.7s cubic-bezier(0.2, 1, 0.32, 1) forwards;
+}
+
+.wallos-public-entry-ring-b {
+    width: min(48vw, 560px);
+    height: min(48vw, 560px);
+    border-color: rgba(255, 255, 255, 0.72);
+    animation: publicEntryRingPulse 1.7s cubic-bezier(0.2, 1, 0.32, 1) 0.08s forwards;
+}
+
+.wallos-public-entry-scanline {
+    inset: -10% auto auto -20%;
+    width: 140%;
+    height: 220px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 12%, rgba(211, 179, 255, 0.82) 48%, rgba(255, 255, 255, 0.12) 78%, transparent 100%);
+    transform: rotate(-8deg) translateY(-180px);
+    filter: blur(4px);
+    animation: publicEntrySweep 1.24s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+}
+
+.wallos-public-entry-shards span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: clamp(96px, 15vw, 220px);
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.92) 52%, transparent 100%);
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(var(--translate-x), var(--translate-y)) rotate(var(--rotate)) scaleX(0.2);
+    animation: publicEntryShardPulse 0.92s cubic-bezier(0.19, 1, 0.22, 1) var(--delay) forwards;
+}
+
+.wallos-public-entry-corner {
+    position: absolute;
+    width: clamp(74px, 12vw, 136px);
+    height: clamp(74px, 12vw, 136px);
+    border-color: rgba(129, 84, 255, 0.82);
+    border-style: solid;
+    opacity: 0;
+    animation: publicEntryCornerReveal 1.16s cubic-bezier(0.22, 1, 0.36, 1) 0.16s forwards;
+}
+
+.wallos-public-entry-corner-top-left {
+    top: clamp(24px, 4vw, 56px);
+    left: clamp(24px, 4vw, 56px);
+    border-width: 3px 0 0 3px;
+}
+
+.wallos-public-entry-corner-top-right {
+    top: clamp(24px, 4vw, 56px);
+    right: clamp(24px, 4vw, 56px);
+    border-width: 3px 3px 0 0;
+}
+
+.wallos-public-entry-corner-bottom-left {
+    bottom: clamp(24px, 4vw, 56px);
+    left: clamp(24px, 4vw, 56px);
+    border-width: 0 0 3px 3px;
+}
+
+.wallos-public-entry-corner-bottom-right {
+    bottom: clamp(24px, 4vw, 56px);
+    right: clamp(24px, 4vw, 56px);
+    border-width: 0 3px 3px 0;
+}
+
+.wallos-public-entry-stream {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 1.7vw, 20px);
+    inset: auto 0;
+    height: 44px;
+    padding: 0 clamp(18px, 3vw, 40px);
+    font-size: clamp(12px, 1vw, 14px);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(88, 42, 200, 0.82);
+    white-space: nowrap;
+    overflow: hidden;
+    opacity: 0;
+    animation: publicEntryTickerReveal 1s cubic-bezier(0.22, 1, 0.36, 1) 0.24s forwards;
+}
+
+.wallos-public-entry-stream::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.44), rgba(255, 255, 255, 0.08));
+    border-top: 1px solid rgba(134, 90, 255, 0.22);
+    border-bottom: 1px solid rgba(134, 90, 255, 0.22);
+    opacity: 0.72;
+}
+
+.wallos-public-entry-stream-left {
+    top: clamp(24px, 5vw, 54px);
+    justify-content: flex-start;
+}
+
+.wallos-public-entry-stream-right {
+    bottom: clamp(24px, 5vw, 54px);
+    justify-content: flex-end;
+}
+
+.wallos-public-entry-stream span {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 54px;
+    animation: publicEntryTokenFloat 1.2s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+    animation-delay: calc(var(--token-index, 0) * 0.04s + 0.12s);
+    transform: translateY(10px);
+    opacity: 0;
+}
+
+.wallos-public-entry-stream i {
+    font-size: 16px;
+}
+
+.wallos-public-entry-center {
+    inset: 50% auto auto 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    width: min(86vw, 760px);
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.wallos-public-entry-kicker,
+.wallos-public-entry-subtitle,
+.wallos-public-entry-meta span,
+.wallos-public-entry-title,
+.wallos-public-entry-progress {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: publicEntryTextRise 0.92s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+.wallos-public-entry-kicker {
+    font-size: clamp(12px, 1vw, 14px);
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(96, 46, 214, 0.82);
+    animation-delay: 0.06s;
+}
+
+.wallos-public-entry-title {
+    font-size: clamp(42px, 9vw, 104px);
+    font-weight: 700;
+    line-height: 0.94;
+    letter-spacing: 0.04em;
+    color: #5e25cf;
+    text-shadow: 0 10px 34px rgba(184, 147, 255, 0.26);
+    animation-delay: 0.12s;
+}
+
+.wallos-public-entry-subtitle {
+    font-size: clamp(15px, 1.7vw, 20px);
+    letter-spacing: 0.12em;
+    color: rgba(93, 51, 186, 0.9);
+    animation-delay: 0.2s;
+}
+
+.wallos-public-entry-progress {
+    position: relative;
+    width: min(74vw, 420px);
+    height: 10px;
+    margin-top: 2px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(120, 80, 224, 0.12);
+    border: 1px solid rgba(120, 80, 224, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32);
+    animation-delay: 0.28s;
+}
+
+.wallos-public-entry-progress span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(159, 122, 255, 0.8), rgba(255, 255, 255, 0.94));
+    animation: publicEntryProgressFill 1.2s cubic-bezier(0.2, 1, 0.3, 1) 0.34s forwards;
+}
+
+.wallos-public-entry-meta {
+    display: grid;
+    gap: 6px;
+    font-size: clamp(11px, 1vw, 13px);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(80, 42, 170, 0.76);
+}
+
+.wallos-public-entry-meta span:first-child {
+    animation-delay: 0.36s;
+}
+
+.wallos-public-entry-meta span:last-child {
+    animation-delay: 0.44s;
+}
+
+html.public-entry-js body.public-entry-active .content {
+    opacity: 0;
+    transform: translateY(28px) scale(0.986);
+    filter: blur(14px);
+}
+
+html.public-entry-js body.public-entry-complete .content {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+    transition:
+        opacity 0.84s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.84s cubic-bezier(0.16, 1, 0.3, 1),
+        filter 0.84s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.public-entry-js body.public-entry-active .container {
+    transform: translateY(16px) scale(0.985);
+}
+
+html.public-entry-js body.public-entry-complete .container {
+    transform: none;
+    transition: transform 0.84s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes publicEntryBackdropZoom {
+    0% {
+        opacity: 0;
+        transform: scale(1.16);
+    }
+    18% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes publicEntryGridDrift {
+    0% {
+        opacity: 0;
+        transform: perspective(1000px) rotateX(72deg) translateY(34vh) scale(1.42);
+    }
+    100% {
+        opacity: 0.42;
+        transform: perspective(1000px) rotateX(72deg) translateY(20vh) scale(1.22);
+    }
+}
+
+@keyframes publicEntryAuraRise {
+    0% {
+        opacity: 0;
+        transform: translate(-10%, 14%) scale(0.84);
+    }
+    100% {
+        opacity: 0.86;
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes publicEntryAuraDrift {
+    0% {
+        opacity: 0;
+        transform: translate(14%, -10%) scale(0.84);
+    }
+    100% {
+        opacity: 0.8;
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes publicEntryRingPulse {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.4);
+    }
+    32% {
+        opacity: 0.88;
+    }
+    100% {
+        opacity: 0.48;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes publicEntrySweep {
+    0% {
+        opacity: 0;
+        transform: rotate(-8deg) translateY(-180px);
+    }
+    12% {
+        opacity: 0.78;
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(-8deg) translateY(calc(100vh + 180px));
+    }
+}
+
+@keyframes publicEntryShardPulse {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translate(var(--translate-x), var(--translate-y)) rotate(var(--rotate)) scaleX(0.18);
+    }
+    32% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translate(var(--translate-x), var(--translate-y)) rotate(var(--rotate)) scaleX(1.22);
+    }
+}
+
+@keyframes publicEntryCornerReveal {
+    0% {
+        opacity: 0;
+        transform: scale(0.84);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes publicEntryTickerReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes publicEntryTokenFloat {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes publicEntryTextRise {
+    0% {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes publicEntryProgressFill {
+    0% {
+        width: 0;
+    }
+    100% {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .wallos-public-entry-stream {
+        gap: 10px;
+        height: 38px;
+        letter-spacing: 0.14em;
+    }
+
+    .wallos-public-entry-center {
+        width: min(92vw, 640px);
+        gap: 12px;
+    }
+
+    .wallos-public-entry-meta {
+        letter-spacing: 0.1em;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.public-entry-js body.public-entry-pending .content,
+    html.public-entry-js body.public-entry-active .content,
+    html.public-entry-js body.public-entry-pending .container,
+    html.public-entry-js body.public-entry-active .container,
+    .wallos-public-entry-backdrop,
+    .wallos-public-entry-grid,
+    .wallos-public-entry-aura,
+    .wallos-public-entry-ring,
+    .wallos-public-entry-scanline,
+    .wallos-public-entry-shards span,
+    .wallos-public-entry-corner,
+    .wallos-public-entry-stream,
+    .wallos-public-entry-stream span,
+    .wallos-public-entry-kicker,
+    .wallos-public-entry-title,
+    .wallos-public-entry-subtitle,
+    .wallos-public-entry-progress,
+    .wallos-public-entry-meta span,
+    .wallos-public-entry-progress span {
+        animation: none !important;
+        transition: none !important;
+    }
+}

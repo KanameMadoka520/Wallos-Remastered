@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../default_user_seed.php';
 require_once __DIR__ . '/../i18n/languages.php';
+require_once __DIR__ . '/../settings_defaults.php';
 
 // Try to extract first and last name from "name"
 $fullName = $userInfo['name'] ?? '';
@@ -96,10 +97,9 @@ if ($currency) {
 $userData['main_currency'] = $currency['id'];
 
 // Insert settings
-$stmt = $db->prepare("INSERT INTO settings (dark_theme, monthly_price, convert_currency, remove_background, color_theme, hide_disabled, user_id, disabled_to_bottom, show_original_price, mobile_nav) 
-                      VALUES (0, 0, 0, 0, 'purple', 0, :user_id, 0, 0, 0)");
-$stmt->bindValue(':user_id', $newUserId, SQLITE3_INTEGER);
-$stmt->execute();
+if (!wallos_insert_default_settings($db, $newUserId)) {
+    die("Failed to create user settings");
+}
 
 // Log the user in
 require_once('oidc_login.php');
