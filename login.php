@@ -437,7 +437,6 @@ wallos_log_request($db, 0, '');
                         </div>
                         <span class="public-auth-page-code">LOGIN ACCESS</span>
                         <h1 class="public-auth-side-title"><?= translate('login', $i18n) ?></h1>
-                        <p class="public-auth-side-description"><?= translate('tcy_selfhost_notice', $i18n) ?></p>
                         <div class="public-page-edition-note">
                             <div class="public-page-edition-content">
                                 <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
@@ -453,11 +452,6 @@ wallos_log_request($db, 0, '');
                 </aside>
                 <div class="public-auth-panel">
                     <div class="public-auth-panel-frame">
-                        <header class="public-auth-panel-header">
-                            <span class="public-auth-panel-code">ACCESS // AUTH</span>
-                            <h2><?= translate('please_login', $i18n) ?></h2>
-                            <p><?= translate('tcy_selfhost_notice', $i18n) ?></p>
-                        </header>
                         <?php
                         if ($loginFailed) {
                             ?>
