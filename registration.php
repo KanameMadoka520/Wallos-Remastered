@@ -324,6 +324,7 @@ wallos_log_request($db, 0, '');
                         </div>
                         <span class="public-auth-page-code">CREATE ACCOUNT</span>
                         <h1 class="public-auth-side-title"><?= translate('create_account', $i18n) ?></h1>
+                        <p class="public-auth-side-description"><?= translate('registration_form_notice', $i18n) ?></p>
                         <div class="public-page-edition-note">
                             <div class="public-page-edition-content">
                                 <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
