@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/header.php';
 require_once 'includes/user_groups.php';
+require_once 'includes/timezone_settings.php';
 
 // Fetch the avatars belonging to the logged-in user
 $uploadedAvatars = [];
@@ -25,6 +26,8 @@ if ($loginDisabled && !$userData['totp_enabled']) {
 }
 
 $canExportUploadedImages = wallos_can_upload_subscription_images($isAdmin, $userData['user_group'] ?? WALLOS_USER_GROUP_FREE);
+$userTimezone = wallos_normalize_timezone_identifier($settings['user_timezone'] ?? '', wallos_get_default_user_timezone());
+$timezoneOptions = wallos_get_timezone_options($userTimezone);
 
 require_once 'includes/page_navigation.php';
 
@@ -182,6 +185,26 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                                     <span>
                                         <a href="settings.php#settings-categories"><?= translate('settings', $i18n) ?></a>
                                     </span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="user_timezone"><?= translate('user_timezone', $i18n) ?>:</label>
+                            <select id="user_timezone" name="user_timezone">
+                                <?php
+                                foreach ($timezoneOptions as $timezoneOption) {
+                                    ?>
+                                    <option value="<?= htmlspecialchars($timezoneOption['value'], ENT_QUOTES, 'UTF-8') ?>" <?= $timezoneOption['selected'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($timezoneOption['label'], ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                    <?php
+                                }
+                                ?>
+                            </select>
+                            <div class="settings-notes">
+                                <p>
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    <?= translate('user_timezone_info', $i18n) ?>
                                 </p>
                             </div>
                         </div>

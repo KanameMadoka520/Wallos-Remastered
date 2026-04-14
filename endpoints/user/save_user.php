@@ -2,6 +2,8 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/inputvalidation.php';
 require_once '../../includes/validate_endpoint.php';
+require_once '../../includes/settings_defaults.php';
+require_once '../../includes/timezone_settings.php';
 
 header('Content-Type: application/json');
 
@@ -263,13 +265,14 @@ function resizeAndUploadAvatar($uploadedFile, $uploadDir, $name, $i18n)
 }
 
 if (
-    isset($_SESSION['username']) 
+    isset($_SESSION['username'])
     && isset($_POST['firstname'])
     && isset($_POST['lastname'])
     && isset($_POST['email']) && $_POST['email'] !== ""
     && isset($_POST['avatar']) && $_POST['avatar'] !== ""
     && isset($_POST['main_currency']) && $_POST['main_currency'] !== ""
     && isset($_POST['language']) && $_POST['language'] !== ""
+    && isset($_POST['user_timezone']) && $_POST['user_timezone'] !== ""
 ) {
 
     $firstname = validate($_POST['firstname']);
@@ -283,6 +286,15 @@ if (
     $user = $result->fetchArray(SQLITE3_ASSOC);
 
     $oldEmail = $user['email'];
+
+    $settingsQuery = $db->prepare('SELECT user_timezone FROM settings WHERE user_id = :userId');
+    $settingsQuery->bindValue(':userId', $userId, SQLITE3_INTEGER);
+    $settingsResult = $settingsQuery->execute();
+    $settingsRow = $settingsResult ? $settingsResult->fetchArray(SQLITE3_ASSOC) : false;
+    $oldUserTimezone = wallos_normalize_timezone_identifier(
+        $settingsRow['user_timezone'] ?? '',
+        wallos_get_default_user_timezone()
+    );
 
     if ($oldEmail != $email) {
         $query = "SELECT email FROM user WHERE email = :email AND id != :userId";
@@ -300,6 +312,7 @@ if (
     $avatar = filter_var($_POST['avatar'], FILTER_SANITIZE_URL);
     $main_currency = $_POST['main_currency'];
     $language = $_POST['language'];
+    $userTimezone = wallos_normalize_timezone_identifier($_POST['user_timezone'], wallos_get_default_user_timezone());
 
     if (!empty($_FILES['profile_pic']["name"])) {
         $file = $_FILES['profile_pic'];
@@ -354,6 +367,15 @@ if (
     $result = $stmt->execute();
 
     if ($result) {
+        if ($settingsRow === false) {
+            wallos_insert_default_settings($db, $userId);
+        }
+
+        $settingsUpdateStmt = $db->prepare('UPDATE settings SET user_timezone = :userTimezone WHERE user_id = :userId');
+        $settingsUpdateStmt->bindValue(':userTimezone', $userTimezone, SQLITE3_TEXT);
+        $settingsUpdateStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+        $settingsUpdateStmt->execute();
+
         $cookieExpire = time() + (30 * 24 * 60 * 60);
         $oldLanguage = isset($_COOKIE['language']) ? $_COOKIE['language'] : "en";
         $root = str_replace('/endpoints/user', '', dirname($_SERVER['PHP_SELF']));
@@ -371,7 +393,7 @@ if (
             update_exchange_rate($db, $userId);
         }
 
-        $reload = $oldLanguage != $language;
+        $reload = $oldLanguage != $language || $oldUserTimezone !== $userTimezone;
         save_user_response(true, translate('user_details_saved', $i18n), [
             "reload" => $reload
         ]);

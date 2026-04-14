@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/user_status.php';
 require_once __DIR__ . '/request_logs.php';
+require_once __DIR__ . '/timezone_settings.php';
 
 function wallos_logout_trashed_session_and_redirect(array $userData)
 {
@@ -55,6 +56,8 @@ if (isset($_GET['code']) && isset($_GET['state'])) {
             wallos_logout_trashed_session_and_redirect($userData);
         }
 
+        wallos_apply_php_timezone(wallos_fetch_user_timezone($db, $userData['id']));
+
         if ($userData['avatar'] == "") {
             $userData['avatar'] = "0";
         }
@@ -83,6 +86,8 @@ if (isset($_GET['code']) && isset($_GET['state'])) {
                 if (wallos_is_user_trashed($userData['account_status'] ?? WALLOS_USER_STATUS_ACTIVE)) {
                     wallos_logout_trashed_session_and_redirect($userData);
                 }
+
+                wallos_apply_php_timezone(wallos_fetch_user_timezone($db, $userData['id']));
 
                 if ($userData['avatar'] == "") {
                     $userData['avatar'] = "0";
