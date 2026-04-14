@@ -166,7 +166,7 @@ svg .text-color {
 .public-auth-inline-actions {
     display: flex;
     align-items: stretch;
-    gap: 14px;
+    gap: 10px;
     margin: 16px 0 8px;
     width: 100%;
     max-width: 100%;
@@ -175,16 +175,16 @@ svg .text-color {
 }
 
 .public-page-language-switcher-inline {
-    width: 214px;
-    max-width: 214px;
+    width: 188px;
+    max-width: 188px;
     min-width: 0;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
-    column-gap: 8px;
-    padding: 8px 10px;
+    column-gap: 6px;
+    padding: 8px 9px;
     justify-content: start;
-    flex: 0 0 214px;
+    flex: 0 0 188px;
     overflow: hidden;
 }
 
@@ -192,7 +192,7 @@ svg .text-color {
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    padding: 10px 12px;
+    padding: 10px 10px;
     text-overflow: ellipsis;
 }
 
@@ -211,8 +211,8 @@ svg .text-color {
 .public-auth-inline-actions .public-auth-inline-action-button,
 a.button.public-auth-inline-action-button {
     width: fit-content;
-    min-width: 104px;
-    padding: 0 18px;
+    min-width: 92px;
+    padding: 0 14px;
     flex: 0 0 auto;
     max-width: 100%;
     white-space: nowrap;
@@ -436,7 +436,7 @@ label {
 .public-page-feedback-button {
     width: 100%;
     justify-content: center;
-    margin-top: auto;
+    margin-top: 14px;
 }
 
 .login-page .public-auth-shell {
@@ -452,11 +452,7 @@ label {
 }
 
 .login-page .public-page-feedback-button {
-    margin-top: 16px;
-}
-
-.login-page .public-auth-panel-frame {
-    margin-bottom: 10px;
+    margin-top: 10px;
 }
 
 .registration-page .public-auth-layout {
@@ -464,15 +460,20 @@ label {
 }
 
 .registration-page .public-page-feedback-button {
-    margin-top: auto;
-}
-
-.registration-page .public-auth-panel-frame {
-    margin-bottom: 10px;
+    margin-top: 14px;
 }
 
 .registration-page .public-auth-side-description {
     margin: 8px 0 20px;
+}
+
+.public-auth-info-stack {
+    display: grid;
+    gap: 12px;
+}
+
+.public-auth-info-card {
+    margin-bottom: 0;
 }
 
 .login-page .public-auth-toolbar {
@@ -905,12 +906,12 @@ input[type="checkbox"]:checked::before {
 
 @media (max-width: 768px) {
     .content {
-        padding: 18px 12px 26px;
+        padding: 14px 10px 22px;
     }
 
     .public-auth-shell {
-        padding: 16px;
-        border-radius: 26px;
+        padding: 14px;
+        border-radius: 22px;
     }
 
     .public-auth-toolbar {
@@ -929,6 +930,8 @@ input[type="checkbox"]:checked::before {
 
     .public-auth-inline-actions {
         flex-direction: column;
+        gap: 10px;
+        margin-top: 14px;
     }
 
     .public-page-language-switcher-inline {
@@ -949,13 +952,39 @@ input[type="checkbox"]:checked::before {
 
     .public-auth-aside-inner,
     .public-auth-panel-frame {
-        padding: 22px 18px;
-        border-radius: 22px;
+        padding: 18px 14px;
+        border-radius: 18px;
     }
 
     .public-auth-logo {
-        width: 196px;
-        height: 74px;
+        width: 178px;
+        height: 68px;
+    }
+
+    .public-auth-side-title {
+        font-size: clamp(28px, 9vw, 36px);
+        margin: 10px 0 8px;
+    }
+
+    .public-auth-side-description,
+    .registration-page-notice,
+    .registration-settings-notes,
+    .public-page-edition-content {
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .public-page-feedback-button,
+    .public-auth-inline-actions .public-auth-inline-action-button,
+    a.button.public-auth-inline-action-button,
+    input[type="submit"],
+    input[type="button"],
+    a.button {
+        min-height: 50px;
+    }
+
+    .public-auth-layout {
+        gap: 14px;
     }
 
     .registration-form-grid {
