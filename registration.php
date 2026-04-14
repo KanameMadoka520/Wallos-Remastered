@@ -314,8 +314,8 @@ wallos_log_request($db, 0, '');
     <?php wallos_render_public_entry_overlay('registration', $lang, $i18n); ?>
     <?php wallos_render_decorative_background('public'); ?>
     <div class="content">
-        <section class="container registration-container">
-            <div class="public-page-toolbar">
+        <section class="container registration-container public-auth-shell public-auth-shell-registration">
+            <div class="public-auth-toolbar">
                 <div class="public-page-language-switcher">
                     <span class="public-page-language-icon" aria-hidden="true">
                         <i class="fa-solid fa-earth-asia"></i>
@@ -333,172 +333,237 @@ wallos_log_request($db, 0, '');
                     </select>
                 </div>
             </div>
-            <header>
-                <div class="logo-image" title="Wallos - Subscription Tracker">
-                    <?php include "images/siteicons/svg/logo.php"; ?>
-                </div>
-                <p>
-                    <?= translate('create_account', $i18n) ?>
-                </p>
-            </header>
-            <div class="public-page-edition-note">
-                <div class="public-page-edition-content">
-                    <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
-                    <span><?= htmlspecialchars($publicPageBranding['subtitle'], ENT_QUOTES, 'UTF-8') ?></span>
-                </div>
-                <a class="button secondary-button public-page-feedback-button"
-                    href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">
-                    <i class="fa-solid fa-bug"></i>
-                    <?= translate('issues_and_requests', $i18n) ?>
-                </a>
-            </div>
-            <div class="registration-page-notice">
-                <i class="fa-solid fa-circle-info"></i>
-                <span><?= translate('registration_form_notice', $i18n) ?></span>
-            </div>
-            <form action="registration.php" method="post" class="registration-form">
-                <input type="hidden" id="registration-language" name="language" value="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>">
-                <div class="registration-form-grid">
-                    <div class="form-group">
-                        <label for="username"><?= translate('username', $i18n) ?>:</label>
-                        <input type="text" id="username" name="username" autocomplete="username" required>
+            <div class="public-auth-layout">
+                <aside class="public-auth-aside">
+                    <div class="public-auth-aside-inner">
+                        <span class="public-auth-kicker">WALLOS // REMASTERED</span>
+                        <div class="logo-image public-auth-logo" title="Wallos - Subscription Tracker">
+                            <?php include "images/siteicons/svg/logo.php"; ?>
+                        </div>
+                        <span class="public-auth-page-code">CREATE ACCOUNT</span>
+                        <h1 class="public-auth-side-title"><?= translate('create_account', $i18n) ?></h1>
+                        <p class="public-auth-side-description"><?= translate('registration_form_notice', $i18n) ?></p>
+                        <div class="public-auth-chip-row" aria-hidden="true">
+                            <span>PROFILE</span>
+                            <span>CURRENCY</span>
+                            <span>TRACK</span>
+                        </div>
+                        <div class="public-page-edition-note">
+                            <div class="public-page-edition-content">
+                                <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <span><?= htmlspecialchars($publicPageBranding['subtitle'], ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                        </div>
+                        <div class="public-auth-hud-grid">
+                            <article class="public-auth-hud-card">
+                                <span class="public-auth-hud-label">PROFILE</span>
+                                <strong>CREATE</strong>
+                                <p><?= translate('username', $i18n) ?> / <?= translate('email', $i18n) ?></p>
+                            </article>
+                            <article class="public-auth-hud-card">
+                                <span class="public-auth-hud-label">BILLING</span>
+                                <strong>CURRENCY</strong>
+                                <p><?= translate('main_currency', $i18n) ?> / Budget / Renewals</p>
+                            </article>
+                            <article class="public-auth-hud-card">
+                                <span class="public-auth-hud-label">ACCESS</span>
+                                <strong><?= $inviteOnlyRegistrationEnabled ? 'INVITE' : 'READY' ?></strong>
+                                <p><?= $inviteOnlyRegistrationEnabled ? translate('invite_code', $i18n) : translate('register', $i18n) ?></p>
+                            </article>
+                        </div>
+                        <div class="public-auth-payment-row" aria-hidden="true">
+                            <span><i class="fa-brands fa-cc-visa"></i></span>
+                            <span><i class="fa-brands fa-cc-mastercard"></i></span>
+                            <span><i class="fa-brands fa-paypal"></i></span>
+                            <span>SYNC</span>
+                            <span>HUD</span>
+                            <span>UI</span>
+                        </div>
+                        <a class="button secondary-button public-page-feedback-button"
+                            href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">
+                            <i class="fa-solid fa-bug"></i>
+                            <?= translate('issues_and_requests', $i18n) ?>
+                        </a>
                     </div>
-                    <div class="form-group">
-                        <label for="email"><?= translate('email', $i18n) ?>:</label>
-                        <input type="email" id="email" name="email" autocomplete="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="firstname"><?= translate('firstname', $i18n) ?>:</label>
-                        <input type="text" id="firstname" name="firstname" autocomplete="given-name">
-                    </div>
-                    <div class="form-group">
-                        <label for="lastname"><?= translate('lastname', $i18n) ?>:</label>
-                        <input type="text" id="lastname" name="lastname" autocomplete="family-name">
-                    </div>
-                    <div class="form-group">
-                        <label for="password"><?= translate('password', $i18n) ?>:</label>
-                        <input type="password" id="password" name="password" autocomplete="new-password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm_password"><?= translate('confirm_password', $i18n) ?>:</label>
-                        <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="currency"><?= translate('main_currency', $i18n) ?>:</label>
-                        <select id="currency" name="main_currency" placeholder="<?= translate('currency', $i18n) ?>">
-                            <?php
-                            $selectedMainCurrencyCode = isset($_POST['main_currency']) && trim((string) $_POST['main_currency']) !== ''
-                                ? (string) $_POST['main_currency']
-                                : $defaultMainCurrencyCode;
-                            foreach ($currencies as $currency) {
-                                $selected = $currency['code'] === $selectedMainCurrencyCode ? 'selected' : '';
+                </aside>
+                <div class="public-auth-panel">
+                    <div class="public-auth-panel-frame">
+                        <header class="public-auth-panel-header">
+                            <span class="public-auth-panel-code">PROFILE // REGISTER</span>
+                            <h2><?= translate('create_account', $i18n) ?></h2>
+                            <p><?= translate('tcy_selfhost_notice', $i18n) ?></p>
+                        </header>
+                        <div class="registration-page-notice">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span><?= translate('registration_form_notice', $i18n) ?></span>
+                        </div>
+                        <?php
+                        if ($hasErrors) {
+                            ?>
+                            <ul class="error-box">
+                                <?php
+                                if ($passwordMismatch) {
+                                    ?>
+                                    <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('passwords_dont_match', $i18n) ?>
+                                    </li>
+                                    <?php
+                                }
                                 ?>
-                                <option value="<?= $currency['code'] ?>" <?= $selected ?>><?= $currency['name'] ?></option>
+                                <?php
+                                if ($usernameExists) {
+                                    ?>
+                                    <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('username_exists', $i18n) ?></li>
+                                    <?php
+                                }
+                                ?>
+                                <?php
+                                if ($emailExists) {
+                                    ?>
+                                    <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('email_exists', $i18n) ?></li>
+                                    <?php
+                                }
+                                ?>
+                                <?php
+                                if ($inviteCodeRequired) {
+                                    ?>
+                                    <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('invite_code_required', $i18n) ?></li>
+                                    <?php
+                                }
+                                ?>
+                                <?php
+                                if ($inviteCodeInvalid) {
+                                    ?>
+                                    <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('invite_code_invalid', $i18n) ?></li>
+                                    <?php
+                                }
+                                ?>
+                                <?php
+                                if ($registrationFailed) {
+                                    ?>
+                                    <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('registration_failed', $i18n) ?>
+                                    </li>
+                                    <?php
+                                }
+                                ?>
+                            </ul>
+                            <?php
+                        }
+                        ?>
+                        <form action="registration.php" method="post" class="registration-form public-auth-form">
+                            <input type="hidden" id="registration-language" name="language" value="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>">
+                            <div class="registration-form-grid">
+                                <div class="form-group">
+                                    <label for="username"><?= translate('username', $i18n) ?>:</label>
+                                    <div class="public-auth-input-wrap">
+                                        <span class="public-auth-input-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
+                                        <input type="text" id="username" name="username" autocomplete="username" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email"><?= translate('email', $i18n) ?>:</label>
+                                    <div class="public-auth-input-wrap">
+                                        <span class="public-auth-input-icon" aria-hidden="true"><i class="fa-solid fa-envelope"></i></span>
+                                        <input type="email" id="email" name="email" autocomplete="email" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="firstname"><?= translate('firstname', $i18n) ?>:</label>
+                                    <div class="public-auth-input-wrap">
+                                        <span class="public-auth-input-icon" aria-hidden="true"><i class="fa-solid fa-signature"></i></span>
+                                        <input type="text" id="firstname" name="firstname" autocomplete="given-name">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lastname"><?= translate('lastname', $i18n) ?>:</label>
+                                    <div class="public-auth-input-wrap">
+                                        <span class="public-auth-input-icon" aria-hidden="true"><i class="fa-solid fa-id-badge"></i></span>
+                                        <input type="text" id="lastname" name="lastname" autocomplete="family-name">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="password"><?= translate('password', $i18n) ?>:</label>
+                                    <div class="public-auth-input-wrap">
+                                        <span class="public-auth-input-icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></span>
+                                        <input type="password" id="password" name="password" autocomplete="new-password" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirm_password"><?= translate('confirm_password', $i18n) ?>:</label>
+                                    <div class="public-auth-input-wrap">
+                                        <span class="public-auth-input-icon" aria-hidden="true"><i class="fa-solid fa-key"></i></span>
+                                        <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="currency"><?= translate('main_currency', $i18n) ?>:</label>
+                                    <div class="public-auth-input-wrap">
+                                        <span class="public-auth-input-icon" aria-hidden="true"><i class="fa-solid fa-coins"></i></span>
+                                        <select id="currency" name="main_currency" placeholder="<?= translate('currency', $i18n) ?>">
+                                            <?php
+                                            $selectedMainCurrencyCode = isset($_POST['main_currency']) && trim((string) $_POST['main_currency']) !== ''
+                                                ? (string) $_POST['main_currency']
+                                                : $defaultMainCurrencyCode;
+                                            foreach ($currencies as $currency) {
+                                                $selected = $currency['code'] === $selectedMainCurrencyCode ? 'selected' : '';
+                                                ?>
+                                                <option value="<?= $currency['code'] ?>" <?= $selected ?>><?= $currency['name'] ?></option>
+                                                <?php
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <?php
+                                if ($inviteOnlyRegistrationEnabled) {
+                                    ?>
+                                    <div class="form-group">
+                                        <label for="invite_code"><?= translate('invite_code', $i18n) ?>:</label>
+                                        <div class="public-auth-input-wrap">
+                                            <span class="public-auth-input-icon" aria-hidden="true"><i class="fa-solid fa-ticket"></i></span>
+                                            <input type="text" id="invite_code" name="invite_code" autocomplete="off" required>
+                                        </div>
+                                    </div>
+                                    <?php
+                                }
+                                ?>
+                            </div>
+                            <?php
+                            if ($inviteOnlyRegistrationEnabled) {
+                                ?>
+                                <div class="settings-notes registration-settings-notes">
+                                    <p>
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        <?= translate('invite_only_registration_notice', $i18n) ?>
+                                    </p>
+                                </div>
                                 <?php
                             }
                             ?>
-                        </select>
+                            <div class="form-group form-group-submit">
+                                <input type="submit" value="<?= translate('register', $i18n) ?>">
+                            </div>
+                        </form>
+                        <?php
+                        if ($userCount == 0) {
+                            ?>
+                            <div class="separator">
+                                <input type="button" class="secondary-button" value="<?= translate('restore_database', $i18n) ?>"
+                                    id="restoreDB" onClick="openRestoreDBFileSelect()" />
+                                <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="restoreDB()"
+                                    accept=".zip">
+                            </div>
+                            <?php
+                        } else {
+                            ?>
+                            <div class="separator">
+                                <input id="goToLoginButton" type="button" class="secondary-button" value="<?= translate('login', $i18n) ?>">
+                            </div>
+                            <?php
+                        }
+                        ?>
                     </div>
-                    <?php
-                    if ($inviteOnlyRegistrationEnabled) {
-                        ?>
-                        <div class="form-group">
-                            <label for="invite_code"><?= translate('invite_code', $i18n) ?>:</label>
-                            <input type="text" id="invite_code" name="invite_code" autocomplete="off" required>
-                        </div>
-                        <?php
-                    }
-                    ?>
                 </div>
-                <?php
-                if ($inviteOnlyRegistrationEnabled) {
-                    ?>
-                    <div class="settings-notes registration-settings-notes">
-                        <p>
-                            <i class="fa-solid fa-circle-info"></i>
-                            <?= translate('invite_only_registration_notice', $i18n) ?>
-                        </p>
-                    </div>
-                    <?php
-                }
-                ?>
-
-                <?php
-                if ($hasErrors) {
-                    ?>
-                    <ul class="error-box">
-                        <?php
-                        if ($passwordMismatch) {
-                            ?>
-                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('passwords_dont_match', $i18n) ?>
-                            </li>
-                            <?php
-                        }
-                        ?>
-                        <?php
-                        if ($usernameExists) {
-                            ?>
-                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('username_exists', $i18n) ?></li>
-                            <?php
-                        }
-                        ?>
-                        <?php
-                        if ($emailExists) {
-                            ?>
-                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('email_exists', $i18n) ?></li>
-                            <?php
-                        }
-                        ?>
-                        <?php
-                        if ($inviteCodeRequired) {
-                            ?>
-                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('invite_code_required', $i18n) ?></li>
-                            <?php
-                        }
-                        ?>
-                        <?php
-                        if ($inviteCodeInvalid) {
-                            ?>
-                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('invite_code_invalid', $i18n) ?></li>
-                            <?php
-                        }
-                        ?>
-                        <?php
-                        if ($registrationFailed) {
-                            ?>
-                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('registration_failed', $i18n) ?>
-                            </li>
-                            <?php
-                        }
-                        ?>
-                    </ul>
-                    <?php
-                }
-                ?>
-
-
-                <div class="form-group form-group-submit">
-                    <input type="submit" value="<?= translate('register', $i18n) ?>">
-                </div>
-            </form>
-            <?php
-            if ($userCount == 0) {
-                ?>
-                <div class="separator">
-                    <input type="button" class="secondary-button" value="<?= translate('restore_database', $i18n) ?>"
-                        id="restoreDB" onClick="openRestoreDBFileSelect()" />
-                    <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="restoreDB()"
-                        accept=".zip">
-                </div>
-                <?php
-            } else {
-                ?>
-                <div class="separator">
-                    <input id="goToLoginButton" type="button" class="secondary-button" value="<?= translate('login', $i18n) ?>">
-                </div>
-                <?php
-            }
-            ?>
+            </div>
         </section>
     </div>
     <?php

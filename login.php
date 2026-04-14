@@ -409,8 +409,8 @@ wallos_log_request($db, 0, '');
     <?php wallos_render_public_entry_overlay('login', $lang, $i18n); ?>
     <?php wallos_render_decorative_background('public'); ?>
     <div class="content">
-        <section class="container">
-            <div class="public-page-toolbar">
+        <section class="container public-auth-shell public-auth-shell-login">
+            <div class="public-auth-toolbar">
                 <div class="public-page-language-switcher">
                     <span class="public-page-language-icon" aria-hidden="true">
                         <i class="fa-solid fa-earth-asia"></i>
@@ -428,135 +428,186 @@ wallos_log_request($db, 0, '');
                     </select>
                 </div>
             </div>
-            <header>
-                <div class="logo-image" title="Wallos - Subscription Tracker">
-                    <?php include "images/siteicons/svg/logo.php"; ?>
-                </div>
-                <p>
-                    <?= translate('please_login', $i18n) ?>
-                </p>
-            </header>
-            <div class="public-page-edition-note">
-                <div class="public-page-edition-content">
-                    <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
-                    <span><?= htmlspecialchars($publicPageBranding['subtitle'], ENT_QUOTES, 'UTF-8') ?></span>
-                </div>
-                <a class="button secondary-button public-page-feedback-button"
-                    href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">
-                    <i class="fa-solid fa-bug"></i>
-                    <?= translate('issues_and_requests', $i18n) ?>
-                </a>
-            </div>
-            <form action="login.php" method="post">
-                <?php if (!$password_login_disabled) { ?>
-                    <div class="form-group">
-                        <label for="username"><?= translate('username', $i18n) ?>:</label>
-                        <input type="text" id="username" name="username" autocomplete="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password"><?= translate('password', $i18n) ?>:</label>
-                        <input type="password" id="password" name="password" autocomplete="current-password" required>
-                    </div>
-                    <?php
-                    if (!$demoMode) {
-                        ?>
-                        <div class="form-group-inline">
-                            <input type="checkbox" id="remember" name="remember">
-                            <label for="remember"><?= translate('stay_logged_in', $i18n) ?></label>
+            <div class="public-auth-layout">
+                <aside class="public-auth-aside">
+                    <div class="public-auth-aside-inner">
+                        <span class="public-auth-kicker">WALLOS // REMASTERED</span>
+                        <div class="logo-image public-auth-logo" title="Wallos - Subscription Tracker">
+                            <?php include "images/siteicons/svg/logo.php"; ?>
                         </div>
-                        <?php
-                    }
-                    ?>
-                    <div class="form-group">
-                        <input type="submit" value="<?= translate('login', $i18n) ?>">
-                    </div>
-                <?php } ?>
-                <div class="form-group">
-                    <?php
-                    if ($oidcEnabled) {
-                        if (!$password_login_disabled) {
-                            ?>
-                            <span class="or-separator"><?= translate('or', $i18n) ?></span>
-                            <?php
-                        }
-                        ?>
-                        <a class="button secondary-button" href="<?= htmlspecialchars($oidc_auth_url) ?>">
-                            <?= translate('login_with', $i18n) ?>     <?= htmlspecialchars($oidc_name) ?>
+                        <span class="public-auth-page-code">LOGIN ACCESS</span>
+                        <h1 class="public-auth-side-title"><?= translate('login', $i18n) ?></h1>
+                        <p class="public-auth-side-description"><?= translate('tcy_selfhost_notice', $i18n) ?></p>
+                        <div class="public-auth-chip-row" aria-hidden="true">
+                            <span>HUD</span>
+                            <span>SYNC</span>
+                            <span>PURPLE</span>
+                        </div>
+                        <div class="public-page-edition-note">
+                            <div class="public-page-edition-content">
+                                <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <span><?= htmlspecialchars($publicPageBranding['subtitle'], ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                        </div>
+                        <div class="public-auth-hud-grid">
+                            <article class="public-auth-hud-card">
+                                <span class="public-auth-hud-label">AUTH</span>
+                                <strong>LOGIN</strong>
+                                <p><?= translate('password', $i18n) ?> / Session / Cookie</p>
+                            </article>
+                            <article class="public-auth-hud-card">
+                                <span class="public-auth-hud-label">TRACK</span>
+                                <strong>WALLOS</strong>
+                                <p>Budget / Subscriptions / Calendar</p>
+                            </article>
+                            <article class="public-auth-hud-card">
+                                <span class="public-auth-hud-label">THEME</span>
+                                <strong>PURPLE</strong>
+                                <p><?= translate('language', $i18n) ?> / UI / Remastered</p>
+                            </article>
+                        </div>
+                        <div class="public-auth-payment-row" aria-hidden="true">
+                            <span><i class="fa-brands fa-cc-visa"></i></span>
+                            <span><i class="fa-brands fa-cc-mastercard"></i></span>
+                            <span><i class="fa-brands fa-paypal"></i></span>
+                            <span>CNY</span>
+                            <span>JPY</span>
+                            <span>USD</span>
+                        </div>
+                        <a class="button secondary-button public-page-feedback-button"
+                            href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">
+                            <i class="fa-solid fa-bug"></i>
+                            <?= translate('issues_and_requests', $i18n) ?>
                         </a>
+                    </div>
+                </aside>
+                <div class="public-auth-panel">
+                    <div class="public-auth-panel-frame">
+                        <header class="public-auth-panel-header">
+                            <span class="public-auth-panel-code">ACCESS // AUTH</span>
+                            <h2><?= translate('please_login', $i18n) ?></h2>
+                            <p><?= translate('tcy_selfhost_notice', $i18n) ?></p>
+                        </header>
                         <?php
-                    }
-                    ?>
-                </div>
-                <?php
-                if ($loginFailed) {
-                    ?>
-                    <ul class="error-box">
-                        <?php
-                        if ($userEmailWaitingVerification) {
+                        if ($loginFailed) {
                             ?>
-                            <li><i
-                                    class="fa-solid fa-triangle-exclamation"></i><?= translate('user_email_waiting_verification', $i18n) ?>
-                            </li>
-                            <?php
-                        } else if ($loginRateLimitMessage !== '') {
-                            ?>
-                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= $loginRateLimitMessage ?></li>
-                            <?php
-                        } else if ($trashedAccountMessage !== '') {
-                            ?>
-                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= $trashedAccountMessage ?></li>
-                            <?php
-                        } else {
-                            ?>
-                            <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('login_failed', $i18n) ?></li>
-                            <?php
-                        }
-                        ?>
-                    </ul>
-                    <?php
-                }
-                if ($hasSuccessMessage) {
-                    ?>
-                    <ul class="success-box">
-                        <?php
-                        if (isset($_GET['validated']) && $_GET['validated'] == "true") {
-                            ?>
-                            <li><i class="fa-solid fa-check"></i><?= translate('email_verified', $i18n) ?></li>
-                            <?php
-                        } else if (isset($_GET['registered']) && $_GET['registered']) {
-                            ?>
-                                <li><i class="fa-solid fa-check"></i><?= translate('registration_successful', $i18n) ?></li>
+                            <ul class="error-box">
                                 <?php
-                                if (isset($_GET['requireValidation']) && $_GET['requireValidation'] == true) {
+                                if ($userEmailWaitingVerification) {
                                     ?>
-                                    <li><?= translate('user_email_waiting_verification', $i18n) ?></li>
-                                <?php
+                                    <li><i
+                                            class="fa-solid fa-triangle-exclamation"></i><?= translate('user_email_waiting_verification', $i18n) ?>
+                                    </li>
+                                    <?php
+                                } else if ($loginRateLimitMessage !== '') {
+                                    ?>
+                                    <li><i class="fa-solid fa-triangle-exclamation"></i><?= $loginRateLimitMessage ?></li>
+                                    <?php
+                                } else if ($trashedAccountMessage !== '') {
+                                    ?>
+                                    <li><i class="fa-solid fa-triangle-exclamation"></i><?= $trashedAccountMessage ?></li>
+                                    <?php
+                                } else {
+                                    ?>
+                                    <li><i class="fa-solid fa-triangle-exclamation"></i><?= translate('login_failed', $i18n) ?></li>
+                                    <?php
                                 }
+                                ?>
+                            </ul>
+                            <?php
+                        }
+                        if ($hasSuccessMessage) {
+                            ?>
+                            <ul class="success-box">
+                                <?php
+                                if (isset($_GET['validated']) && $_GET['validated'] == "true") {
+                                    ?>
+                                    <li><i class="fa-solid fa-check"></i><?= translate('email_verified', $i18n) ?></li>
+                                    <?php
+                                } else if (isset($_GET['registered']) && $_GET['registered']) {
+                                    ?>
+                                    <li><i class="fa-solid fa-check"></i><?= translate('registration_successful', $i18n) ?></li>
+                                    <?php
+                                    if (isset($_GET['requireValidation']) && $_GET['requireValidation'] == true) {
+                                        ?>
+                                        <li><?= translate('user_email_waiting_verification', $i18n) ?></li>
+                                        <?php
+                                    }
+                                }
+                                ?>
+                            </ul>
+                            <?php
                         }
                         ?>
-                    </ul>
-                    <?php
-                }
-
-                if ($resetPasswordEnabled) {
-                    ?>
-                    <div class="login-form-link">
-                        <a href="passwordreset.php"><?= translate('forgot_password', $i18n) ?></a>
+                        <form action="login.php" method="post" class="public-auth-form">
+                            <?php if (!$password_login_disabled) { ?>
+                                <div class="form-group">
+                                    <label for="username"><?= translate('username', $i18n) ?>:</label>
+                                    <div class="public-auth-input-wrap">
+                                        <span class="public-auth-input-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
+                                        <input type="text" id="username" name="username" autocomplete="username" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="password"><?= translate('password', $i18n) ?>:</label>
+                                    <div class="public-auth-input-wrap">
+                                        <span class="public-auth-input-icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></span>
+                                        <input type="password" id="password" name="password" autocomplete="current-password" required>
+                                    </div>
+                                </div>
+                                <?php
+                                if (!$demoMode) {
+                                    ?>
+                                    <div class="form-group-inline">
+                                        <input type="checkbox" id="remember" name="remember">
+                                        <label for="remember"><?= translate('stay_logged_in', $i18n) ?></label>
+                                    </div>
+                                    <?php
+                                }
+                                ?>
+                                <div class="form-group">
+                                    <input type="submit" value="<?= translate('login', $i18n) ?>">
+                                </div>
+                            <?php } ?>
+                            <?php
+                            if ($oidcEnabled) {
+                                if (!$password_login_disabled) {
+                                    ?>
+                                    <span class="or-separator"><?= translate('or', $i18n) ?></span>
+                                    <?php
+                                }
+                                ?>
+                                <div class="form-group">
+                                    <a class="button secondary-button" href="<?= htmlspecialchars($oidc_auth_url) ?>">
+                                        <?= translate('login_with', $i18n) ?> <?= htmlspecialchars($oidc_name) ?>
+                                    </a>
+                                </div>
+                                <?php
+                            }
+                            ?>
+                            <?php
+                            if ($resetPasswordEnabled) {
+                                ?>
+                                <div class="login-form-link">
+                                    <a href="passwordreset.php"><?= translate('forgot_password', $i18n) ?></a>
+                                </div>
+                                <?php
+                            }
+                            ?>
+                            <?php
+                            if ($registrations) {
+                                ?>
+                                <div class="separator">
+                                    <input type="button" class="secondary-button" onclick="openRegitrationPage()"
+                                        value="<?= translate('register', $i18n) ?>"></input>
+                                </div>
+                                <?php
+                            }
+                            ?>
+                        </form>
                     </div>
-                    <?php
-                }
-                ?>
-                <?php
-                if ($registrations) {
-                    ?>
-                    <div class="separator">
-                        <input type="button" class="secondary-button" onclick="openRegitrationPage()"
-                            value="<?= translate('register', $i18n) ?>"></input>
-                    </div>
-                    <?php
-                }
-                ?>
-            </form>
+                </div>
+            </div>
         </section>
     </div>
     <script type="text/javascript">

@@ -1,38 +1,61 @@
-body {
-    background-color: #303030;
-    color: #E0E0E0;
+body.public-page {
+    --public-surface: rgba(30, 22, 49, 0.8);
+    --public-surface-strong: rgba(39, 28, 63, 0.94);
+    --public-surface-muted: rgba(46, 34, 72, 0.72);
+    --public-border: rgba(var(--public-accent-rgb), 0.28);
+    --public-border-strong: rgba(var(--public-accent-rgb), 0.46);
+    --public-text: #f3ecff;
+    --public-text-soft: rgba(243, 236, 255, 0.76);
+    --public-text-faint: rgba(243, 236, 255, 0.54);
+    --public-field-bg: rgba(24, 18, 40, 0.9);
+    --public-field-border: rgba(var(--public-accent-rgb), 0.24);
+    --public-field-border-focus: rgba(var(--public-accent-rgb), 0.6);
+    --public-field-text: #f3ecff;
+    --public-highlight: rgba(255, 255, 255, 0.08);
+    --public-divider: rgba(var(--public-accent-rgb), 0.18);
+    background:
+        radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.05), transparent 22%),
+        radial-gradient(circle at 84% 14%, rgba(var(--public-accent-rgb), 0.18), transparent 22%),
+        linear-gradient(135deg, #120d1d 0%, #181126 30%, #1f1732 56%, #23193a 100%);
+    color: var(--public-text);
 }
 
 svg .text-color {
-    fill: #E0E0E0;
-}
-
-.container {
-    background-color: #222;
-    border: 1px solid #333;
-    box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
-}
-
-@media (max-width: 768px) {
-    .container {
-        background-color: transparent;
-        border: none;
-        box-shadow: none;
-    }
-}
-
-input[type="text"],
-input[type="email"],
-input[type="password"], 
-input[type="checkbox"],
-select {   
-    background-color: #555;
-    border: 1px solid #666;
-    color: #E0E0E0;
+    fill: var(--public-text);
 }
 
 input[type="text"]::placeholder,
 input[type="email"]::placeholder,
 input[type="password"]::placeholder {
-    color: #BBB;
+    color: rgba(243, 236, 255, 0.44);
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--public-field-bg) inset;
+    -webkit-text-fill-color: var(--public-field-text);
+}
+
+.public-auth-chip-row span,
+.public-auth-payment-row span,
+.public-auth-hud-card,
+.public-page-language-switcher,
+.public-page-edition-note,
+.registration-page-notice,
+.registration-settings-notes {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.toast {
+    background: rgba(28, 21, 43, 0.94);
+    border-color: rgba(var(--public-accent-rgb), 0.2);
+}
+
+.toast-content .message .text {
+    color: rgba(240, 232, 255, 0.74);
+}
+
+.toast-content .message .text.text-1 {
+    color: #f3ecff;
 }
