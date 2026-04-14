@@ -313,26 +313,29 @@ wallos_log_request($db, 0, '');
 <body class="<?= $languages[$lang]['dir'] ?> public-page registration-page public-entry-pending <?= $decorativeBackgroundClass ?>">
     <?php wallos_render_public_entry_overlay('registration', $lang, $i18n); ?>
     <?php wallos_render_decorative_background('public'); ?>
+    <div class="public-page-floating-actions">
+        <div class="public-page-language-switcher">
+            <span class="public-page-language-icon" aria-hidden="true">
+                <i class="fa-solid fa-earth-asia"></i>
+            </span>
+            <label for="public-page-language"><?= translate('language', $i18n) ?>:</label>
+            <select id="public-page-language">
+                <?php
+                foreach ($languages as $code => $languageOption) {
+                    $selected = ($code === $lang) ? 'selected' : '';
+                    ?>
+                    <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
+                    <?php
+                }
+                ?>
+            </select>
+        </div>
+        <?php if ($userCount > 0) { ?>
+            <a class="button secondary-button public-page-top-action" href="login.php"><?= translate('login', $i18n) ?></a>
+        <?php } ?>
+    </div>
     <div class="content">
         <section class="container registration-container public-auth-shell public-auth-shell-registration">
-            <div class="public-auth-toolbar">
-                <div class="public-page-language-switcher">
-                    <span class="public-page-language-icon" aria-hidden="true">
-                        <i class="fa-solid fa-earth-asia"></i>
-                    </span>
-                    <label for="public-page-language"><?= translate('language', $i18n) ?>:</label>
-                    <select id="public-page-language">
-                        <?php
-                        foreach ($languages as $code => $languageOption) {
-                            $selected = ($code === $lang) ? 'selected' : '';
-                            ?>
-                            <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
-                            <?php
-                        }
-                        ?>
-                    </select>
-                </div>
-            </div>
             <div class="public-auth-layout">
                 <aside class="public-auth-aside">
                     <div class="public-auth-aside-inner">
@@ -342,42 +345,11 @@ wallos_log_request($db, 0, '');
                         </div>
                         <span class="public-auth-page-code">CREATE ACCOUNT</span>
                         <h1 class="public-auth-side-title"><?= translate('create_account', $i18n) ?></h1>
-                        <p class="public-auth-side-description"><?= translate('registration_form_notice', $i18n) ?></p>
-                        <div class="public-auth-chip-row" aria-hidden="true">
-                            <span>PROFILE</span>
-                            <span>CURRENCY</span>
-                            <span>TRACK</span>
-                        </div>
                         <div class="public-page-edition-note">
                             <div class="public-page-edition-content">
                                 <span class="public-page-edition-badge"><?= htmlspecialchars($publicPageBranding['title'], ENT_QUOTES, 'UTF-8') ?></span>
                                 <span><?= htmlspecialchars($publicPageBranding['subtitle'], ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
-                        </div>
-                        <div class="public-auth-hud-grid">
-                            <article class="public-auth-hud-card">
-                                <span class="public-auth-hud-label">PROFILE</span>
-                                <strong>CREATE</strong>
-                                <p><?= translate('username', $i18n) ?> / <?= translate('email', $i18n) ?></p>
-                            </article>
-                            <article class="public-auth-hud-card">
-                                <span class="public-auth-hud-label">BILLING</span>
-                                <strong>CURRENCY</strong>
-                                <p><?= translate('main_currency', $i18n) ?> / Budget / Renewals</p>
-                            </article>
-                            <article class="public-auth-hud-card">
-                                <span class="public-auth-hud-label">ACCESS</span>
-                                <strong><?= $inviteOnlyRegistrationEnabled ? 'INVITE' : 'READY' ?></strong>
-                                <p><?= $inviteOnlyRegistrationEnabled ? translate('invite_code', $i18n) : translate('register', $i18n) ?></p>
-                            </article>
-                        </div>
-                        <div class="public-auth-payment-row" aria-hidden="true">
-                            <span><i class="fa-brands fa-cc-visa"></i></span>
-                            <span><i class="fa-brands fa-cc-mastercard"></i></span>
-                            <span><i class="fa-brands fa-paypal"></i></span>
-                            <span>SYNC</span>
-                            <span>HUD</span>
-                            <span>UI</span>
                         </div>
                         <a class="button secondary-button public-page-feedback-button"
                             href="https://github.com/KanameMadoka520/Wallos-Remastered/issues" target="_blank" rel="noreferrer">
@@ -388,11 +360,6 @@ wallos_log_request($db, 0, '');
                 </aside>
                 <div class="public-auth-panel">
                     <div class="public-auth-panel-frame">
-                        <header class="public-auth-panel-header">
-                            <span class="public-auth-panel-code">PROFILE // REGISTER</span>
-                            <h2><?= translate('create_account', $i18n) ?></h2>
-                            <p><?= translate('tcy_selfhost_notice', $i18n) ?></p>
-                        </header>
                         <div class="registration-page-notice">
                             <i class="fa-solid fa-circle-info"></i>
                             <span><?= translate('registration_form_notice', $i18n) ?></span>
@@ -551,12 +518,6 @@ wallos_log_request($db, 0, '');
                                     id="restoreDB" onClick="openRestoreDBFileSelect()" />
                                 <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="restoreDB()"
                                     accept=".zip">
-                            </div>
-                            <?php
-                        } else {
-                            ?>
-                            <div class="separator">
-                                <input id="goToLoginButton" type="button" class="secondary-button" value="<?= translate('login', $i18n) ?>">
                             </div>
                             <?php
                         }
