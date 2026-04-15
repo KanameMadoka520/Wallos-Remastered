@@ -8,6 +8,7 @@ require_once '../../includes/subscription_trash.php';
 require_once '../../includes/subscription_payment_records.php';
 require_once '../../includes/subscription_payment_history.php';
 require_once '../../includes/subscription_price_rules.php';
+require_once '../../includes/subscription_pages.php';
 
 include_once '../../includes/list_subscriptions.php';
 
@@ -55,6 +56,12 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
   $params = array();
   $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status";
+  $currentSubscriptionPageFilter = wallos_resolve_subscription_page_filter(
+    $db,
+    $userId,
+    $_GET['subscription_page'] ?? WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL
+  );
+  wallos_append_subscription_page_filter_clause($sql, $params, $currentSubscriptionPageFilter, 'subscription_page');
 
   if (isset($_GET['categories']) && $_GET['categories'] != "") {
     $allCategories = explode(',', $_GET['categories']);
@@ -289,20 +296,28 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     });
   }
 
-  if (isset($print)) {
+  $visibleSubscriptionCount = count($print ?? []);
+  if ($visibleSubscriptionCount > 0) {
     printSubscriptions($print, $sort, $categories, $members, $i18n, $colorTheme, "../../", $settings['disabledToBottom'], $settings['mobileNavigation'], $settings['showSubscriptionProgress'], $currencies, $lang);
   }
 
-  if (count($subscriptions) == 0) {
+  if ($visibleSubscriptionCount === 0) {
     ?>
     <div class="no-matching-subscriptions">
       <p>
         <?= translate('no_matching_subscriptions', $i18n) ?>
       </p>
-      <button class="button" onClick="clearFilters()">
-        <span clasS="fa-solid fa-minus-circle"></span>
-        <?= translate('clear_filters', $i18n) ?>
-      </button>
+      <?php if (wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) !== WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL): ?>
+        <button class="button" onClick="selectSubscriptionPageFilter('all')">
+          <span class="fa-solid fa-table-list"></span>
+          <?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?>
+        </button>
+      <?php else: ?>
+        <button class="button" onClick="clearFilters()">
+          <span clasS="fa-solid fa-minus-circle"></span>
+          <?= translate('clear_filters', $i18n) ?>
+        </button>
+      <?php endif; ?>
       <img src="images/siteimages/empty.png" alt="<?= translate('empty_page', $i18n) ?>" />
     </div>
     <?php

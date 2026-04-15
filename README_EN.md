@@ -103,6 +103,12 @@ OK
 - original image loading progress
 - one-click generation for missing legacy derived images
 
+### Subscription Organization
+
+- tab-like subscription pages for splitting large subscription lists
+- `All / Unassigned / Custom Pages` page filters on the subscriptions screen
+- page assignment can be changed when creating or editing a subscription
+
 ### Backup Lifecycle
 
 - automated `db + logos` backups
