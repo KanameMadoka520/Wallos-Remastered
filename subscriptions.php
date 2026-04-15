@@ -230,15 +230,18 @@ $subscriptionPagePreferences = [
     justify-content: space-between;
     gap: 12px;
     width: 100%;
-    margin-bottom: 12px;
+    flex: 1 1 100%;
+    margin-bottom: 0;
+    order: 2;
   }
 
   .subscription-page-tabs {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
+    max-width: 100%;
     overflow-x: auto;
     padding-bottom: 4px;
     scrollbar-width: thin;
@@ -352,6 +355,22 @@ $subscriptionPagePreferences = [
       flex-wrap: wrap;
     }
   }
+
+  .subscriptions-page-layout .inline-row {
+    flex: 1 1 100%;
+  }
+
+  .subscriptions-page-layout .top-actions {
+    order: 3;
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .subscriptions-page-layout .top-actions .search {
+    width: min(100%, 360px);
+    min-width: min(100%, 280px);
+  }
 </style>
 
 <section class="contain contain-wide subscriptions-page-layout" data-page-ui-hide-target>
@@ -425,50 +444,50 @@ $subscriptionPagePreferences = [
         <?php include 'includes/sort_options.php'; ?>
       </div>
     </div>
-    <div class="top-actions">
-      <div class="subscription-page-toolbar">
-        <div class="subscription-page-tabs" id="subscription-page-tabs" role="tablist"
-          data-current-filter="<?= htmlspecialchars(wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter), ENT_QUOTES, 'UTF-8') ?>">
-          <?php
-          $allFilterValue = WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL;
-          $allPageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $allFilterValue;
-          ?>
-          <button type="button" class="subscription-page-tab<?= $allPageActive ? ' is-active' : '' ?>"
-            data-page-filter="<?= $allFilterValue ?>" aria-pressed="<?= $allPageActive ? 'true' : 'false' ?>"
-            onClick="selectSubscriptionPageFilter('<?= $allFilterValue ?>', this)">
-            <span><?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?></span>
-            <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['all'] ?? count($subscriptions)) ?></span>
-          </button>
-          <?php
-          $unassignedFilterValue = WALLOS_SUBSCRIPTION_PAGE_FILTER_UNASSIGNED;
-          $unassignedPageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $unassignedFilterValue;
-          ?>
-          <button type="button" class="subscription-page-tab<?= $unassignedPageActive ? ' is-active' : '' ?>"
-            data-page-filter="<?= $unassignedFilterValue ?>" aria-pressed="<?= $unassignedPageActive ? 'true' : 'false' ?>"
-            onClick="selectSubscriptionPageFilter('<?= $unassignedFilterValue ?>', this)">
-            <span><?= wallos_translate_with_fallback('subscription_page_unassigned', 'Unassigned', $i18n) ?></span>
-            <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['unassigned'] ?? 0) ?></span>
-          </button>
-          <?php foreach ($subscriptionPages as $subscriptionPage): ?>
-            <?php
-            $pageFilterValue = (string) (int) $subscriptionPage['id'];
-            $pageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $pageFilterValue;
-            ?>
-            <button type="button" class="subscription-page-tab<?= $pageActive ? ' is-active' : '' ?>"
-              data-page-filter="<?= htmlspecialchars($pageFilterValue, ENT_QUOTES, 'UTF-8') ?>"
-              aria-pressed="<?= $pageActive ? 'true' : 'false' ?>"
-              onClick="selectSubscriptionPageFilter('<?= htmlspecialchars($pageFilterValue, ENT_QUOTES, 'UTF-8') ?>', this)">
-              <span><?= htmlspecialchars($subscriptionPage['name'], ENT_QUOTES, 'UTF-8') ?></span>
-              <span class="section-count-badge"><?= (int) ($subscriptionPage['subscription_count'] ?? 0) ?></span>
-            </button>
-          <?php endforeach; ?>
-        </div>
-        <button type="button" class="button secondary-button tiny subscription-page-manager-trigger"
-          onClick="openSubscriptionPagesManager(event)">
-          <i class="fa-solid fa-table-list"></i>
-          <span><?= wallos_translate_with_fallback('subscription_pages_manage', 'Manage Pages', $i18n) ?></span>
+    <div class="subscription-page-toolbar">
+      <div class="subscription-page-tabs" id="subscription-page-tabs" role="tablist"
+        data-current-filter="<?= htmlspecialchars(wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter), ENT_QUOTES, 'UTF-8') ?>">
+        <?php
+        $allFilterValue = WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL;
+        $allPageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $allFilterValue;
+        ?>
+        <button type="button" class="subscription-page-tab<?= $allPageActive ? ' is-active' : '' ?>"
+          data-page-filter="<?= $allFilterValue ?>" aria-pressed="<?= $allPageActive ? 'true' : 'false' ?>"
+          onClick="selectSubscriptionPageFilter('<?= $allFilterValue ?>', this)">
+          <span><?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?></span>
+          <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['all'] ?? count($subscriptions)) ?></span>
         </button>
+        <?php
+        $unassignedFilterValue = WALLOS_SUBSCRIPTION_PAGE_FILTER_UNASSIGNED;
+        $unassignedPageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $unassignedFilterValue;
+        ?>
+        <button type="button" class="subscription-page-tab<?= $unassignedPageActive ? ' is-active' : '' ?>"
+          data-page-filter="<?= $unassignedFilterValue ?>" aria-pressed="<?= $unassignedPageActive ? 'true' : 'false' ?>"
+          onClick="selectSubscriptionPageFilter('<?= $unassignedFilterValue ?>', this)">
+          <span><?= wallos_translate_with_fallback('subscription_page_unassigned', 'Unassigned', $i18n) ?></span>
+          <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['unassigned'] ?? 0) ?></span>
+        </button>
+        <?php foreach ($subscriptionPages as $subscriptionPage): ?>
+          <?php
+          $pageFilterValue = (string) (int) $subscriptionPage['id'];
+          $pageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $pageFilterValue;
+          ?>
+          <button type="button" class="subscription-page-tab<?= $pageActive ? ' is-active' : '' ?>"
+            data-page-filter="<?= htmlspecialchars($pageFilterValue, ENT_QUOTES, 'UTF-8') ?>"
+            aria-pressed="<?= $pageActive ? 'true' : 'false' ?>"
+            onClick="selectSubscriptionPageFilter('<?= htmlspecialchars($pageFilterValue, ENT_QUOTES, 'UTF-8') ?>', this)">
+            <span><?= htmlspecialchars($subscriptionPage['name'], ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="section-count-badge"><?= (int) ($subscriptionPage['subscription_count'] ?? 0) ?></span>
+          </button>
+        <?php endforeach; ?>
       </div>
+      <button type="button" class="button secondary-button tiny subscription-page-manager-trigger"
+        onClick="openSubscriptionPagesManager(event)">
+        <i class="fa-solid fa-table-list"></i>
+        <span><?= wallos_translate_with_fallback('subscription_pages_manage', 'Manage Pages', $i18n) ?></span>
+      </button>
+    </div>
+    <div class="top-actions">
       <div class="search">
         <input type="text" autocomplete="off" name="search" id="search" placeholder="<?= translate('search', $i18n) ?>"
           onkeyup="searchSubscriptions()" />
