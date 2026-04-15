@@ -5093,6 +5093,12 @@ button.dark-theme-button i {
   margin-bottom: 0;
 }
 
+.access-log-filter-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .access-log-results-summary {
   margin-bottom: 14px;
   opacity: 0.82;

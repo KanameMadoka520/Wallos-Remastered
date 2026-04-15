@@ -733,6 +733,54 @@ function renderAccessLogEntries(logs, resultContainer, ui) {
   resultContainer.appendChild(list);
 }
 
+function exportAdminAccessLogs(logs, filters, ui) {
+  const rows = [];
+  rows.push([ui.dataset.exportRuleLabel || 'Filter', 'Value']);
+  rows.push([ui.dataset.requestIdLabel, String(filters.request_id || '')]);
+  rows.push([ui.dataset.keywordLabel, String(filters.keyword || '')]);
+  rows.push([ui.dataset.methodLabel, String(filters.method || '')]);
+  rows.push([ui.dataset.startLabel, String(filters.start_at || '')]);
+  rows.push([ui.dataset.endLabel, String(filters.end_at || '')]);
+  rows.push([ui.dataset.limitLabel, String(filters.limit || '')]);
+  rows.push([]);
+  rows.push([
+    ui.dataset.idLabel || 'ID',
+    ui.dataset.methodLabel || 'Method',
+    'Path',
+    ui.dataset.userLabel || 'Username',
+    ui.dataset.ipLabel || 'IP',
+    ui.dataset.forwardedLabel || 'Forwarded For',
+    ui.dataset.agentLabel || 'User Agent',
+    ui.dataset.timeLabel || 'Time',
+    ui.dataset.headersLabel || 'Headers',
+  ]);
+
+  (logs || []).forEach((log) => {
+    rows.push([
+      String(log.id || ''),
+      String(log.method || ''),
+      String(log.path || ''),
+      String(log.username || ''),
+      String(log.ip_address || ''),
+      String(log.forwarded_for || ''),
+      String(log.user_agent || ''),
+      String(log.created_at || ''),
+      String(log.headers_json || ''),
+    ]);
+  });
+
+  const csvContent = rows.map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `wallos-access-logs-${Date.now()}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function fetchAdminAccessLogs(filters, resultSummary, resultContainer, searchButton, ui) {
   searchButton.disabled = true;
   resultSummary.textContent = ui.dataset.searchLabel || 'Loading...';
@@ -751,6 +799,8 @@ function fetchAdminAccessLogs(filters, resultSummary, resultContainer, searchBut
         throw new Error(data.message || (ui.dataset.errorLabel || 'Error'));
       }
 
+      resultContainer.dataset.logs = JSON.stringify(data.logs || []);
+      resultContainer.dataset.filters = JSON.stringify(data.filters || filters);
       renderAccessLogEntries(data.logs || [], resultContainer, ui);
       const logCount = Array.isArray(data.logs) ? data.logs.length : 0;
       resultSummary.textContent = (ui.dataset.showingLabel || 'Showing %1$d of %2$d matching access logs')
@@ -840,16 +890,45 @@ function openAccessLogsModal() {
   `;
 
   const actionField = document.createElement('div');
-  actionField.className = 'form-group';
+  actionField.className = 'form-group access-log-filter-actions';
   const searchButton = document.createElement('button');
   searchButton.type = 'button';
   searchButton.className = 'button thin';
   searchButton.textContent = ui.dataset.searchLabel || 'Search';
+
+  const exportButton = document.createElement('button');
+  exportButton.type = 'button';
+  exportButton.className = 'secondary-button thin';
+  exportButton.textContent = ui.dataset.exportLabel || 'Export Logs';
+
+  const clearButton = document.createElement('button');
+  clearButton.type = 'button';
+  clearButton.className = 'warning-button thin';
+  clearButton.textContent = ui.dataset.clearLabel || 'Clear Logs';
+
   actionField.appendChild(searchButton);
+  actionField.appendChild(exportButton);
+  actionField.appendChild(clearButton);
+
+  const startField = document.createElement('div');
+  startField.className = 'form-group';
+  startField.innerHTML = `
+    <label for="accessLogStart">${ui.dataset.startLabel}</label>
+    <input type="datetime-local" id="accessLogStart" />
+  `;
+
+  const endField = document.createElement('div');
+  endField.className = 'form-group';
+  endField.innerHTML = `
+    <label for="accessLogEnd">${ui.dataset.endLabel}</label>
+    <input type="datetime-local" id="accessLogEnd" />
+  `;
 
   filterGrid.appendChild(requestIdField);
   filterGrid.appendChild(keywordField);
   filterGrid.appendChild(methodField);
+  filterGrid.appendChild(startField);
+  filterGrid.appendChild(endField);
   filterGrid.appendChild(limitField);
   filterGrid.appendChild(actionField);
 
@@ -864,11 +943,44 @@ function openAccessLogsModal() {
       request_id: document.getElementById('accessLogRequestId')?.value || '',
       keyword: document.getElementById('accessLogKeyword')?.value || '',
       method: document.getElementById('accessLogMethod')?.value || '',
+      start_at: document.getElementById('accessLogStart')?.value || '',
+      end_at: document.getElementById('accessLogEnd')?.value || '',
       limit: document.getElementById('accessLogLimit')?.value || '100',
     }, resultSummary, resultContainer, searchButton, ui);
   };
 
   searchButton.addEventListener('click', runSearch);
+  exportButton.addEventListener('click', () => {
+    const logs = JSON.parse(resultContainer.dataset.logs || '[]');
+    const filters = JSON.parse(resultContainer.dataset.filters || '{}');
+    exportAdminAccessLogs(logs, filters, ui);
+  });
+  clearButton.addEventListener('click', () => {
+    if (!confirm(ui.dataset.clearConfirmLabel || 'Clear all access logs now?')) {
+      return;
+    }
+
+    clearButton.disabled = true;
+    fetch('endpoints/admin/clearaccesslogs.php', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': window.csrfToken,
+      },
+    })
+      .then(response => response.json())
+      .then((data) => {
+        if (!data.success) {
+          throw new Error(data.message || (ui.dataset.errorLabel || 'Error'));
+        }
+
+        showSuccessMessage(data.message);
+        runSearch();
+      })
+      .catch((error) => showErrorMessage(error.message || ui.dataset.errorLabel || 'Error'))
+      .finally(() => {
+        clearButton.disabled = false;
+      });
+  });
 
   body.appendChild(filterGrid);
   body.appendChild(resultSummary);

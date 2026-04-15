@@ -12,6 +12,23 @@ $requestId = max(0, (int) ($data['request_id'] ?? 0));
 $keyword = trim((string) ($data['keyword'] ?? ''));
 $method = strtoupper(trim((string) ($data['method'] ?? '')));
 $limit = max(20, min(500, (int) ($data['limit'] ?? 100)));
+$startAt = trim((string) ($data['start_at'] ?? ''));
+$endAt = trim((string) ($data['end_at'] ?? ''));
+
+function wallos_normalize_access_log_filter_datetime($value)
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '';
+    }
+
+    $dateTime = DateTime::createFromFormat('Y-m-d\TH:i', $value);
+    if (!$dateTime) {
+        $dateTime = DateTime::createFromFormat('Y-m-d H:i:s', $value);
+    }
+
+    return $dateTime ? $dateTime->format('Y-m-d H:i:s') : '';
+}
 
 $allowedMethods = ['', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 if (!in_array($method, $allowedMethods, true)) {
@@ -42,6 +59,18 @@ if ($keyword !== '') {
 if ($method !== '') {
     $conditions[] = 'method = :method';
     $params[':method'] = [$method, SQLITE3_TEXT];
+}
+
+$normalizedStartAt = wallos_normalize_access_log_filter_datetime($startAt);
+if ($normalizedStartAt !== '') {
+    $conditions[] = 'created_at >= :startAt';
+    $params[':startAt'] = [$normalizedStartAt, SQLITE3_TEXT];
+}
+
+$normalizedEndAt = wallos_normalize_access_log_filter_datetime($endAt);
+if ($normalizedEndAt !== '') {
+    $conditions[] = 'created_at <= :endAt';
+    $params[':endAt'] = [$normalizedEndAt, SQLITE3_TEXT];
 }
 
 $whereSql = '';
@@ -81,4 +110,12 @@ echo json_encode([
     'logs' => $logs,
     'total' => $total,
     'limit' => $limit,
+    'filters' => [
+        'request_id' => $requestId,
+        'keyword' => $keyword,
+        'method' => $method,
+        'start_at' => $normalizedStartAt,
+        'end_at' => $normalizedEndAt,
+        'limit' => $limit,
+    ],
 ]);
