@@ -10,6 +10,7 @@ require_once '../../includes/subscription_trash.php';
 require_once '../../includes/subscription_payment_records.php';
 require_once '../../includes/subscription_payment_history.php';
 require_once '../../includes/subscription_price_rules.php';
+require_once '../../includes/subscription_pages.php';
 require_once '../../includes/user_groups.php';
 require_once '../../includes/security_rate_limits.php';
 if (!file_exists('../../images/uploads/logos')) {
@@ -260,6 +261,12 @@ $inactive = isset($_POST['inactive']) ? true : false;
 $excludeFromStats = isset($_POST['exclude_from_stats']) ? true : false;
 $cancellationDate = $_POST['cancellation_date'] ?? null;
 $replacementSubscriptionId = $_POST['replacement_subscription_id'];
+$subscriptionPageId = wallos_resolve_subscription_page_assignment(
+    $db,
+    $userId,
+    $_POST['subscription_page_id'] ?? null,
+    $i18n
+);
 $manualCycleUsedValueMain = isset($_POST['manual_cycle_used_value_main']) && is_numeric($_POST['manual_cycle_used_value_main'])
     ? max(0, round((float) $_POST['manual_cycle_used_value_main'], 2))
     : 0;
@@ -402,13 +409,13 @@ try {
                             name, logo, price, currency_id, next_payment, cycle, frequency, notes,
                             payment_method_id, payer_user_id, category_id, notify, inactive, url,
                             notify_days_before, user_id, cancellation_date, replacement_subscription_id,
-                            auto_renew, start_date, detail_image, detail_image_urls, sort_order,
+                            auto_renew, start_date, detail_image, detail_image_urls, sort_order, subscription_page_id,
                             lifecycle_status, exclude_from_stats, manual_cycle_used_value_main, manual_cycle_used_value_cycle_start
                         ) VALUES (
                             :name, :logo, :price, :currencyId, :nextPayment, :cycle, :frequency, :notes,
                             :paymentMethodId, :payerUserId, :categoryId, :notify, :inactive, :url,
                             :notifyDaysBefore, :userId, :cancellationDate, :replacement_subscription_id,
-                            :autoRenew, :startDate, '', :detailImageUrls, :sortOrder,
+                            :autoRenew, :startDate, '', :detailImageUrls, :sortOrder, :subscriptionPageId,
                             :lifecycleStatus, :excludeFromStats, :manualCycleUsedValueMain, :manualCycleUsedValueCycleStart
                         )";
     } else {
@@ -433,6 +440,7 @@ try {
                             replacement_subscription_id = :replacement_subscription_id,
                             detail_image = '',
                             detail_image_urls = :detailImageUrls,
+                            subscription_page_id = :subscriptionPageId,
                             exclude_from_stats = :excludeFromStats,
                             manual_cycle_used_value_main = :manualCycleUsedValueMain,
                             manual_cycle_used_value_cycle_start = :manualCycleUsedValueCycleStart";
@@ -470,6 +478,7 @@ try {
     }
     $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
     $stmt->bindParam(':replacement_subscription_id', $replacementSubscriptionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':subscriptionPageId', $subscriptionPageId, $subscriptionPageId === null ? SQLITE3_NULL : SQLITE3_INTEGER);
     $stmt->bindParam(':detailImageUrls', $detailImageUrlsJson, SQLITE3_TEXT);
     $stmt->bindParam(':excludeFromStats', $excludeFromStats, SQLITE3_INTEGER);
     $stmt->bindParam(':manualCycleUsedValueMain', $manualCycleUsedValueMain, SQLITE3_FLOAT);

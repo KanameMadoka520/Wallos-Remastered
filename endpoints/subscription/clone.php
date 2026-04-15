@@ -34,13 +34,13 @@ $query = "INSERT INTO subscriptions (
     name, logo, price, currency_id, next_payment, cycle, frequency, notes,
     payment_method_id, payer_user_id, category_id, notify, url, inactive,
     notify_days_before, user_id, cancellation_date, replacement_subscription_id,
-    start_date, auto_renew, detail_image, detail_image_urls, sort_order, lifecycle_status, exclude_from_stats,
+    start_date, auto_renew, detail_image, detail_image_urls, sort_order, subscription_page_id, lifecycle_status, exclude_from_stats,
     manual_cycle_used_value_main, manual_cycle_used_value_cycle_start
 ) VALUES (
     :name, :logo, :price, :currency_id, :next_payment, :cycle, :frequency, :notes,
     :payment_method_id, :payer_user_id, :category_id, :notify, :url, :inactive,
     :notify_days_before, :user_id, :cancellation_date, :replacement_subscription_id,
-    :start_date, :auto_renew, :detail_image, :detail_image_urls, :sort_order, :lifecycle_status, :exclude_from_stats,
+    :start_date, :auto_renew, :detail_image, :detail_image_urls, :sort_order, :subscription_page_id, :lifecycle_status, :exclude_from_stats,
     :manual_cycle_used_value_main, :manual_cycle_used_value_cycle_start
 )";
 $cloneStmt = $db->prepare($query);
@@ -67,6 +67,7 @@ $cloneStmt->bindValue(':auto_renew', $subscriptionToClone['auto_renew'], SQLITE3
 $cloneStmt->bindValue(':detail_image', '', SQLITE3_TEXT);
 $cloneStmt->bindValue(':detail_image_urls', $subscriptionToClone['detail_image_urls'] ?? '[]', SQLITE3_TEXT);
 $cloneStmt->bindValue(':sort_order', $nextSortOrder, SQLITE3_INTEGER);
+$cloneStmt->bindValue(':subscription_page_id', isset($subscriptionToClone['subscription_page_id']) ? (int) $subscriptionToClone['subscription_page_id'] : null, isset($subscriptionToClone['subscription_page_id']) && $subscriptionToClone['subscription_page_id'] !== null ? SQLITE3_INTEGER : SQLITE3_NULL);
 $cloneStmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
 $cloneStmt->bindValue(':exclude_from_stats', (int) ($subscriptionToClone['exclude_from_stats'] ?? 0), SQLITE3_INTEGER);
 $cloneStmt->bindValue(':manual_cycle_used_value_main', 0, SQLITE3_FLOAT);

@@ -8,6 +8,7 @@ require_once 'includes/subscription_trash.php';
 require_once 'includes/subscription_payment_records.php';
 require_once 'includes/subscription_payment_history.php';
 require_once 'includes/subscription_price_rules.php';
+require_once 'includes/subscription_pages.php';
 require_once 'includes/page_immersive_toggle.php';
 
 include_once 'includes/list_subscriptions.php';
@@ -22,6 +23,18 @@ if ($settings['disabledToBottom'] === 'true') {
 }
 
 $params = array();
+$currentSubscriptionPageFilter = wallos_resolve_subscription_page_filter(
+  $db,
+  $userId,
+  $_GET['subscription_page'] ?? WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL
+);
+$subscriptionPagesPayload = wallos_get_subscription_pages_payload(
+  $db,
+  $userId,
+  isset($settings['hideDisabledSubscriptions']) && $settings['hideDisabledSubscriptions'] === 'true'
+);
+$subscriptionPages = $subscriptionPagesPayload['pages'];
+$subscriptionPageCounts = $subscriptionPagesPayload['counts'];
 
 if (isset($_COOKIE['sortOrder']) && $_COOKIE['sortOrder'] != "") {
   $sort = $_COOKIE['sortOrder'] ?? 'manual_order';
@@ -52,6 +65,7 @@ if ($sort == "payment_total_main" || $sort == "remaining_value") {
 }
 
 $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status";
+wallos_append_subscription_page_filter_clause($sql, $params, $currentSubscriptionPageFilter, 'subscription_page');
 
 if (isset($_GET['member'])) {
   $memberIds = explode(',', $_GET['member']);
@@ -175,7 +189,7 @@ if ($sortOrder == "payment_method_id") {
   });
 }
 
-$headerClass = count($subscriptions) > 0 ? "main-actions" : "main-actions hidden";
+$headerClass = ((int) ($subscriptionPageCounts['all'] ?? count($subscriptions))) > 0 ? "main-actions" : "main-actions hidden";
 $effectiveUserGroup = wallos_get_effective_user_group($userData['user_group'] ?? WALLOS_USER_GROUP_FREE, $isAdmin);
 $canUploadSubscriptionImages = wallos_can_upload_subscription_images($isAdmin, $userData['user_group'] ?? WALLOS_USER_GROUP_FREE);
 $subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
@@ -208,6 +222,135 @@ $subscriptionPagePreferences = [
 <style>
   .logo-preview:after {
     content: '<?= translate('upload_logo', $i18n) ?>';
+  }
+
+  .subscription-page-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  .subscription-page-tabs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .subscription-page-tab {
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+    background: var(--card-background-secondary, rgba(255, 255, 255, 0.92));
+    color: inherit;
+    border-radius: 999px;
+    min-height: 38px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    transition: transform .18s ease, border-color .18s ease, background-color .18s ease, box-shadow .18s ease;
+  }
+
+  .subscription-page-tab:hover {
+    transform: translateY(-1px);
+  }
+
+  .subscription-page-tab.is-active {
+    border-color: var(--theme-color, #7c5cff);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  .subscription-page-manager-trigger {
+    white-space: nowrap;
+  }
+
+  .subscription-pages-manager-modal {
+    max-width: 860px;
+    width: min(860px, 92vw);
+  }
+
+  .subscription-pages-manager-toolbar,
+  .subscription-pages-manager-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .subscription-pages-manager-create {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .subscription-pages-manager-create input {
+    flex: 1;
+  }
+
+  .subscription-pages-manager-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: 18px;
+    padding: 14px 16px;
+    background: var(--card-background-secondary, rgba(255, 255, 255, 0.92));
+  }
+
+  .subscription-pages-manager-item-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .subscription-page-name-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .subscription-pages-manager-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .subscription-pages-manager-empty {
+    border: 1px dashed var(--border-color, rgba(0, 0, 0, 0.14));
+    border-radius: 18px;
+    padding: 20px 18px;
+    text-align: center;
+    opacity: .78;
+  }
+
+  @media (max-width: 900px) {
+    .subscription-page-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .subscription-page-manager-trigger {
+      align-self: flex-start;
+    }
+
+    .subscription-pages-manager-item,
+    .subscription-pages-manager-create {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .subscription-pages-manager-item-actions {
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
   }
 </style>
 
@@ -283,6 +426,49 @@ $subscriptionPagePreferences = [
       </div>
     </div>
     <div class="top-actions">
+      <div class="subscription-page-toolbar">
+        <div class="subscription-page-tabs" id="subscription-page-tabs" role="tablist"
+          data-current-filter="<?= htmlspecialchars(wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter), ENT_QUOTES, 'UTF-8') ?>">
+          <?php
+          $allFilterValue = WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL;
+          $allPageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $allFilterValue;
+          ?>
+          <button type="button" class="subscription-page-tab<?= $allPageActive ? ' is-active' : '' ?>"
+            data-page-filter="<?= $allFilterValue ?>" aria-pressed="<?= $allPageActive ? 'true' : 'false' ?>"
+            onClick="selectSubscriptionPageFilter('<?= $allFilterValue ?>', this)">
+            <span><?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?></span>
+            <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['all'] ?? count($subscriptions)) ?></span>
+          </button>
+          <?php
+          $unassignedFilterValue = WALLOS_SUBSCRIPTION_PAGE_FILTER_UNASSIGNED;
+          $unassignedPageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $unassignedFilterValue;
+          ?>
+          <button type="button" class="subscription-page-tab<?= $unassignedPageActive ? ' is-active' : '' ?>"
+            data-page-filter="<?= $unassignedFilterValue ?>" aria-pressed="<?= $unassignedPageActive ? 'true' : 'false' ?>"
+            onClick="selectSubscriptionPageFilter('<?= $unassignedFilterValue ?>', this)">
+            <span><?= wallos_translate_with_fallback('subscription_page_unassigned', 'Unassigned', $i18n) ?></span>
+            <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['unassigned'] ?? 0) ?></span>
+          </button>
+          <?php foreach ($subscriptionPages as $subscriptionPage): ?>
+            <?php
+            $pageFilterValue = (string) (int) $subscriptionPage['id'];
+            $pageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $pageFilterValue;
+            ?>
+            <button type="button" class="subscription-page-tab<?= $pageActive ? ' is-active' : '' ?>"
+              data-page-filter="<?= htmlspecialchars($pageFilterValue, ENT_QUOTES, 'UTF-8') ?>"
+              aria-pressed="<?= $pageActive ? 'true' : 'false' ?>"
+              onClick="selectSubscriptionPageFilter('<?= htmlspecialchars($pageFilterValue, ENT_QUOTES, 'UTF-8') ?>', this)">
+              <span><?= htmlspecialchars($subscriptionPage['name'], ENT_QUOTES, 'UTF-8') ?></span>
+              <span class="section-count-badge"><?= (int) ($subscriptionPage['subscription_count'] ?? 0) ?></span>
+            </button>
+          <?php endforeach; ?>
+        </div>
+        <button type="button" class="button secondary-button tiny subscription-page-manager-trigger"
+          onClick="openSubscriptionPagesManager(event)">
+          <i class="fa-solid fa-table-list"></i>
+          <span><?= wallos_translate_with_fallback('subscription_pages_manage', 'Manage Pages', $i18n) ?></span>
+        </button>
+      </div>
       <div class="search">
         <input type="text" autocomplete="off" name="search" id="search" placeholder="<?= translate('search', $i18n) ?>"
           onkeyup="searchSubscriptions()" />
@@ -401,22 +587,32 @@ $subscriptionPagePreferences = [
       });
     }
 
-    if (isset($print)) {
+    $visibleSubscriptionCount = count($print ?? []);
+    if ($visibleSubscriptionCount > 0) {
       printSubscriptions($print, $sort, $categories, $members, $i18n, $colorTheme, "", $settings['disabledToBottom'], $settings['mobileNavigation'], $settings['showSubscriptionProgress'], $currencies, $lang);
     }
     $db->close();
 
-    if (count($subscriptions) == 0) {
+    if ($visibleSubscriptionCount === 0) {
       ?>
       <div class="empty-page">
         <img src="images/siteimages/empty.png" alt="<?= translate('empty_page', $i18n) ?>" />
         <p>
-          <?= translate('no_subscriptions_yet', $i18n) ?>
+          <?= wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL
+            ? translate('no_subscriptions_yet', $i18n)
+            : translate('no_matching_subscriptions', $i18n) ?>
         </p>
-        <button class="button" onClick="addSubscription()">
-          <i class="fa-solid fa-circle-plus"></i>
-          <?= translate('add_first_subscription', $i18n) ?>
-        </button>
+        <?php if (wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) !== WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL): ?>
+          <button class="button" onClick="selectSubscriptionPageFilter('all')">
+            <i class="fa-solid fa-table-list"></i>
+            <?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?>
+          </button>
+        <?php else: ?>
+          <button class="button" onClick="addSubscription()">
+            <i class="fa-solid fa-circle-plus"></i>
+            <?= translate('add_first_subscription', $i18n) ?>
+          </button>
+        <?php endif; ?>
       </div>
       <?php
     }
@@ -473,6 +669,64 @@ $subscriptionPagePreferences = [
         <?= translate('subscription_recycle_bin_empty', $i18n) ?>
       </div>
     <?php endif; ?>
+  </div>
+</section>
+<section class="subscription-modal subscription-pages-manager-modal" id="subscription-pages-manager-modal" data-page-ui-hide-target>
+  <header>
+    <h3><?= wallos_translate_with_fallback('subscription_pages', 'Subscription Pages', $i18n) ?></h3>
+    <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionPagesManager()"></span>
+  </header>
+  <div class="subscription-pages-manager-toolbar">
+    <div class="subscription-pages-manager-create">
+      <input type="text" id="subscription-page-create-name"
+        placeholder="<?= wallos_translate_with_fallback('subscription_page_name_placeholder', 'New page name', $i18n) ?>"
+        maxlength="<?= (int) WALLOS_SUBSCRIPTION_PAGE_NAME_MAX_LENGTH ?>">
+      <button type="button" class="button thin" onClick="createSubscriptionPage()">
+        <i class="fa-solid fa-plus"></i>
+        <span><?= wallos_translate_with_fallback('subscription_page_add', 'Add Page', $i18n) ?></span>
+      </button>
+    </div>
+    <div class="settings-notes compact">
+      <p>
+        <i class="fa-solid fa-circle-info"></i>
+        <?= wallos_translate_with_fallback('subscription_page_create_hint', 'Use tabs to split a large subscription list into manageable pages.', $i18n) ?>
+      </p>
+    </div>
+  </div>
+  <div class="subscription-pages-manager-list" id="subscription-pages-manager-list">
+    <?php if (empty($subscriptionPages)): ?>
+      <div class="subscription-pages-manager-empty">
+        <?= wallos_translate_with_fallback('subscription_page_empty', 'No custom pages yet. Create one above.', $i18n) ?>
+      </div>
+    <?php else: ?>
+      <?php foreach ($subscriptionPages as $subscriptionPage): ?>
+        <div class="subscription-pages-manager-item" data-page-id="<?= (int) $subscriptionPage['id'] ?>">
+          <div class="subscription-pages-manager-item-main">
+            <input type="text" class="subscription-page-name-input"
+              value="<?= htmlspecialchars($subscriptionPage['name'], ENT_QUOTES, 'UTF-8') ?>"
+              maxlength="<?= (int) WALLOS_SUBSCRIPTION_PAGE_NAME_MAX_LENGTH ?>">
+            <span class="section-count-badge"><?= (int) ($subscriptionPage['subscription_count'] ?? 0) ?></span>
+          </div>
+          <div class="subscription-pages-manager-item-actions">
+            <button type="button" class="button secondary-button thin"
+              onClick="renameSubscriptionPage(<?= (int) $subscriptionPage['id'] ?>, this)">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span><?= translate('save', $i18n) ?></span>
+            </button>
+            <button type="button" class="button secondary-button thin danger"
+              onClick="deleteSubscriptionPage(<?= (int) $subscriptionPage['id'] ?>)">
+              <i class="fa-solid fa-trash-can"></i>
+              <span><?= translate('delete', $i18n) ?></span>
+            </button>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+  </div>
+  <div class="buttons">
+    <button type="button" class="button secondary-button thin" onClick="closeSubscriptionPagesManager()">
+      <?= translate('close', $i18n) ?>
+    </button>
   </div>
 </section>
 <section class="subscription-form" id="subscription-form" data-page-ui-hide-target>
@@ -642,6 +896,16 @@ $subscriptionPagePreferences = [
           <?php
         }
         ?>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="subscription_page_id"><?= wallos_translate_with_fallback('subscription_page_field_label', 'Subscription Page', $i18n) ?></label>
+      <select id="subscription_page_id" name="subscription_page_id">
+        <option value=""><?= wallos_translate_with_fallback('subscription_page_unassigned', 'Unassigned', $i18n) ?></option>
+        <?php foreach ($subscriptionPages as $subscriptionPage): ?>
+          <option value="<?= (int) $subscriptionPage['id'] ?>"><?= htmlspecialchars($subscriptionPage['name'], ENT_QUOTES, 'UTF-8') ?></option>
+        <?php endforeach; ?>
       </select>
     </div>
 
@@ -1022,6 +1286,22 @@ $subscriptionPagePreferences = [
 <?php wallos_render_page_immersive_toggle($lang); ?>
 <script>
   window.subscriptionPagePreferences = <?= json_encode($subscriptionPagePreferences, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+  window.subscriptionPageState = <?= json_encode([
+    'currentFilter' => wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter),
+    'pages' => $subscriptionPages,
+    'counts' => $subscriptionPageCounts,
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+  window.subscriptionPageStrings = <?= json_encode([
+    'pagesTitle' => wallos_translate_with_fallback('subscription_pages', 'Subscription Pages', $i18n),
+    'manage' => wallos_translate_with_fallback('subscription_pages_manage', 'Manage Pages', $i18n),
+    'all' => wallos_translate_with_fallback('subscription_page_all', 'All', $i18n),
+    'unassigned' => wallos_translate_with_fallback('subscription_page_unassigned', 'Unassigned', $i18n),
+    'fieldLabel' => wallos_translate_with_fallback('subscription_page_field_label', 'Subscription Page', $i18n),
+    'add' => wallos_translate_with_fallback('subscription_page_add', 'Add Page', $i18n),
+    'empty' => wallos_translate_with_fallback('subscription_page_empty', 'No custom pages yet. Create one above.', $i18n),
+    'namePlaceholder' => wallos_translate_with_fallback('subscription_page_name_placeholder', 'New page name', $i18n),
+    'deleteConfirm' => wallos_translate_with_fallback('subscription_page_delete_confirm', 'Delete this page now? Subscriptions inside it will move to Unassigned.', $i18n),
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>
 <script src="scripts/libs/sortable.min.js"></script>
 <script src="scripts/subscriptions.js?<?= $subscriptionsJsVersion ?>"></script>

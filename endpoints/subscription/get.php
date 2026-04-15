@@ -40,6 +40,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $subscriptionData['payment_method_id'] = $row['payment_method_id'];
             $subscriptionData['payer_user_id'] = $row['payer_user_id'];
             $subscriptionData['category_id'] = $row['category_id'];
+            $subscriptionData['subscription_page_id'] = isset($row['subscription_page_id']) ? (int) $row['subscription_page_id'] : 0;
             $subscriptionData['notify'] = $row['notify'];
             $subscriptionData['inactive'] = $row['inactive'];
             $subscriptionData['exclude_from_stats'] = (int) ($row['exclude_from_stats'] ?? 0);

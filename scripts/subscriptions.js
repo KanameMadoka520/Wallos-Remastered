@@ -2,6 +2,7 @@ let isSortOptionsOpen = false;
 let scrollTopBeforeOpening = 0;
 const shouldScroll = window.innerWidth <= 768;
 const SUBSCRIPTION_IMAGE_VIEWER_SWIPE_THRESHOLD = 50;
+const SUBSCRIPTION_PAGES_ENDPOINT = "endpoints/subscriptionpages.php";
 let currentSubscriptionImageViewerSrc = "";
 let currentSubscriptionImageOriginalUrl = "";
 let currentSubscriptionImageDownloadUrl = "";
@@ -43,6 +44,12 @@ let subscriptionValueVisibility = {
   metrics: true,
   payment_records: true,
 };
+let currentSubscriptionPageFilter = "all";
+let subscriptionPages = [];
+let subscriptionPageCounts = {
+  all: 0,
+  unassigned: 0,
+};
 
 function toggleOpenSubscription(subId) {
   const subscriptionElement = document.querySelector('.subscription[data-id="' + subId + '"]');
@@ -73,6 +80,346 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function getSubscriptionPageStrings() {
+  return {
+    pagesTitle: window.subscriptionPageStrings?.pagesTitle || "Subscription Pages",
+    manage: window.subscriptionPageStrings?.manage || "Manage Pages",
+    all: window.subscriptionPageStrings?.all || "All",
+    unassigned: window.subscriptionPageStrings?.unassigned || "Unassigned",
+    fieldLabel: window.subscriptionPageStrings?.fieldLabel || "Subscription Page",
+    add: window.subscriptionPageStrings?.add || "Add Page",
+    empty: window.subscriptionPageStrings?.empty || "No custom pages yet. Create one above.",
+    namePlaceholder: window.subscriptionPageStrings?.namePlaceholder || "New page name",
+    deleteConfirm: window.subscriptionPageStrings?.deleteConfirm || "Delete this page now? Subscriptions inside it will move to Unassigned.",
+  };
+}
+
+function normalizeSubscriptionPageFilter(value) {
+  const rawValue = String(value ?? "").trim().toLowerCase();
+  if (rawValue === "" || rawValue === "all") {
+    return "all";
+  }
+
+  if (rawValue === "unassigned" || rawValue === "0") {
+    return "unassigned";
+  }
+
+  const pageId = Number(rawValue);
+  if (Number.isInteger(pageId) && pageId > 0) {
+    return String(pageId);
+  }
+
+  return "all";
+}
+
+function getDefaultSubscriptionPageSelection() {
+  return /^\d+$/.test(currentSubscriptionPageFilter) ? currentSubscriptionPageFilter : "";
+}
+
+function getCurrentSubscriptionPageFilter() {
+  return normalizeSubscriptionPageFilter(currentSubscriptionPageFilter);
+}
+
+function updateSubscriptionPageFilterUrl() {
+  if (!window.history?.replaceState) {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  const filterValue = getCurrentSubscriptionPageFilter();
+  if (filterValue === "all") {
+    url.searchParams.delete("subscription_page");
+  } else {
+    url.searchParams.set("subscription_page", filterValue);
+  }
+
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+function setSubscriptionPageFilterValue(filterValue, options = {}) {
+  currentSubscriptionPageFilter = normalizeSubscriptionPageFilter(filterValue);
+  renderSubscriptionPageTabs();
+
+  if (options.updateUrl !== false) {
+    updateSubscriptionPageFilterUrl();
+  }
+
+  if (options.fetch !== false) {
+    fetchSubscriptions(null, null, "subscription-page").catch(() => showErrorMessage(translate("error")));
+  }
+}
+
+function selectSubscriptionPageFilter(filterValue) {
+  setSubscriptionPageFilterValue(filterValue);
+}
+
+function renderSubscriptionPageTabs() {
+  const tabsContainer = document.getElementById("subscription-page-tabs");
+  if (!tabsContainer) {
+    return;
+  }
+
+  const strings = getSubscriptionPageStrings();
+  const activeFilter = getCurrentSubscriptionPageFilter();
+  const tabItems = [
+    {
+      filter: "all",
+      label: strings.all,
+      count: Number(subscriptionPageCounts.all || 0),
+    },
+    {
+      filter: "unassigned",
+      label: strings.unassigned,
+      count: Number(subscriptionPageCounts.unassigned || 0),
+    },
+    ...subscriptionPages.map((page) => ({
+      filter: String(page.id),
+      label: page.name || strings.fieldLabel,
+      count: Number(page.subscription_count || 0),
+    })),
+  ];
+
+  tabsContainer.innerHTML = tabItems.map((item) => `
+    <button type="button" class="subscription-page-tab${activeFilter === item.filter ? " is-active" : ""}"
+      data-page-filter="${escapeHtml(item.filter)}"
+      aria-pressed="${activeFilter === item.filter ? "true" : "false"}">
+      <span>${escapeHtml(item.label)}</span>
+      <span class="section-count-badge">${Number(item.count || 0)}</span>
+    </button>
+  `).join("");
+
+  tabsContainer.querySelectorAll("[data-page-filter]").forEach((button) => {
+    button.addEventListener("click", function () {
+      setSubscriptionPageFilterValue(this.getAttribute("data-page-filter"));
+    });
+  });
+}
+
+function renderSubscriptionPageSelectOptions(selectedValue = null) {
+  const select = document.getElementById("subscription_page_id");
+  if (!select) {
+    return;
+  }
+
+  const strings = getSubscriptionPageStrings();
+  const preservedValue = selectedValue !== null
+    ? String(selectedValue)
+    : (select.value || getDefaultSubscriptionPageSelection());
+
+  const optionsHtml = [
+    `<option value="">${escapeHtml(strings.unassigned)}</option>`,
+    ...subscriptionPages.map((page) => `<option value="${Number(page.id)}">${escapeHtml(page.name || strings.fieldLabel)}</option>`),
+  ];
+
+  select.innerHTML = optionsHtml.join("");
+  if (subscriptionPages.some((page) => String(page.id) === preservedValue)) {
+    select.value = preservedValue;
+  } else {
+    select.value = "";
+  }
+}
+
+function renderSubscriptionPagesManagerList() {
+  const list = document.getElementById("subscription-pages-manager-list");
+  if (!list) {
+    return;
+  }
+
+  const strings = getSubscriptionPageStrings();
+  if (!subscriptionPages.length) {
+    list.innerHTML = `<div class="subscription-pages-manager-empty">${escapeHtml(strings.empty)}</div>`;
+    return;
+  }
+
+  list.innerHTML = subscriptionPages.map((page) => `
+    <div class="subscription-pages-manager-item" data-page-id="${Number(page.id)}">
+      <div class="subscription-pages-manager-item-main">
+        <input type="text" class="subscription-page-name-input"
+          value="${escapeHtml(page.name || "")}"
+          maxlength="40">
+        <span class="section-count-badge">${Number(page.subscription_count || 0)}</span>
+      </div>
+      <div class="subscription-pages-manager-item-actions">
+        <button type="button" class="button secondary-button thin" data-subscription-page-action="save">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>${escapeHtml(translate("save"))}</span>
+        </button>
+        <button type="button" class="button secondary-button thin danger" data-subscription-page-action="delete">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>${escapeHtml(translate("delete"))}</span>
+        </button>
+      </div>
+    </div>
+  `).join("");
+
+  list.querySelectorAll("[data-subscription-page-action='save']").forEach((button) => {
+    button.addEventListener("click", function () {
+      const pageId = Number(this.closest("[data-page-id]")?.getAttribute("data-page-id") || 0);
+      renameSubscriptionPage(pageId, this);
+    });
+  });
+
+  list.querySelectorAll("[data-subscription-page-action='delete']").forEach((button) => {
+    button.addEventListener("click", function () {
+      const pageId = Number(this.closest("[data-page-id]")?.getAttribute("data-page-id") || 0);
+      deleteSubscriptionPage(pageId);
+    });
+  });
+}
+
+function applySubscriptionPagesPayload(payload, options = {}) {
+  subscriptionPages = Array.isArray(payload?.pages)
+    ? payload.pages.map((page) => ({
+      id: Number(page.id || 0),
+      name: String(page.name || ""),
+      sort_order: Number(page.sort_order || 0),
+      subscription_count: Number(page.subscription_count || 0),
+    }))
+    : [];
+
+  subscriptionPageCounts = {
+    all: Number(payload?.counts?.all || 0),
+    unassigned: Number(payload?.counts?.unassigned || 0),
+  };
+
+  if (/^\d+$/.test(currentSubscriptionPageFilter) && !subscriptionPages.some((page) => String(page.id) === currentSubscriptionPageFilter)) {
+    currentSubscriptionPageFilter = "all";
+    updateSubscriptionPageFilterUrl();
+  }
+
+  renderSubscriptionPageTabs();
+  renderSubscriptionPagesManagerList();
+  renderSubscriptionPageSelectOptions(options.selectedValue ?? null);
+}
+
+function refreshSubscriptionPages(options = {}) {
+  return fetch(SUBSCRIPTION_PAGES_ENDPOINT, {
+    method: "GET",
+    credentials: "same-origin",
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (!data.success) {
+        throw new Error(data.message || translate("error"));
+      }
+
+      applySubscriptionPagesPayload(data, options);
+      return data;
+    })
+    .catch((error) => {
+      if (!options.silent) {
+        showErrorMessage(error.message || translate("error"));
+      }
+      throw error;
+    });
+}
+
+function submitSubscriptionPageAction(payload, options = {}) {
+  return fetch(SUBSCRIPTION_PAGES_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": window.csrfToken,
+    },
+    body: JSON.stringify(payload),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (!data.success) {
+        throw new Error(data.message || translate("error"));
+      }
+
+      applySubscriptionPagesPayload(data, options);
+      showSuccessMessage(data.message || translate("success"));
+      return data;
+    })
+    .catch((error) => {
+      showErrorMessage(error.message || translate("error"));
+      throw error;
+    });
+}
+
+function openSubscriptionPagesManager(event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  const modal = document.getElementById("subscription-pages-manager-modal");
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.add("is-open");
+  document.body.classList.add("no-scroll");
+  renderSubscriptionPagesManagerList();
+}
+
+function closeSubscriptionPagesManager() {
+  const modal = document.getElementById("subscription-pages-manager-modal");
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.remove("is-open");
+  if (!document.querySelector(".subscription-form.is-open, .subscription-modal.is-open, .subscription-image-viewer.is-open")) {
+    document.body.classList.remove("no-scroll");
+  }
+}
+
+function createSubscriptionPage() {
+  const input = document.getElementById("subscription-page-create-name");
+  if (!input) {
+    return;
+  }
+
+  const name = input.value.trim();
+  submitSubscriptionPageAction({ action: "create", name }, { selectedValue: getDefaultSubscriptionPageSelection() })
+    .then(() => {
+      input.value = "";
+    })
+    .catch(() => {});
+}
+
+function renameSubscriptionPage(pageId, button = null) {
+  const pageRow = document.querySelector(`.subscription-pages-manager-item[data-page-id="${pageId}"]`);
+  const input = pageRow?.querySelector(".subscription-page-name-input");
+  if (!input || pageId <= 0) {
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  submitSubscriptionPageAction({ action: "update", page_id: pageId, name: input.value }, { selectedValue: getDefaultSubscriptionPageSelection() })
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+      }
+    });
+}
+
+function deleteSubscriptionPage(pageId) {
+  if (pageId <= 0) {
+    return;
+  }
+
+  if (!confirm(getSubscriptionPageStrings().deleteConfirm)) {
+    return;
+  }
+
+  submitSubscriptionPageAction({ action: "delete", page_id: pageId }, { selectedValue: getDefaultSubscriptionPageSelection() })
+    .then(() => {
+      if (String(pageId) === currentSubscriptionPageFilter) {
+        currentSubscriptionPageFilter = "unassigned";
+        updateSubscriptionPageFilterUrl();
+      }
+      return fetchSubscriptions(null, null, "subscription-page-delete");
+    })
+    .catch(() => {});
 }
 
 function normalizeSubscriptionDisplayColumnsPreference(value) {
@@ -2435,6 +2782,7 @@ function resetForm() {
   replacementSubscription.classList.add("hide");
   const form = document.querySelector("#subs-form");
   form.reset();
+  renderSubscriptionPageSelectOptions(getDefaultSubscriptionPageSelection());
   resetSubscriptionPriceRules();
   resetDetailImageControls();
   closeLogoSearch();
@@ -2471,6 +2819,7 @@ function fillEditFormFields(subscription) {
   paymentSelect.value = subscription.payment_method_id;
   const categorySelect = document.querySelector("#category");
   categorySelect.value = subscription.category_id;
+  renderSubscriptionPageSelectOptions(subscription.subscription_page_id ? String(subscription.subscription_page_id) : "");
   const payerSelect = document.querySelector("#payer_user");
   payerSelect.value = subscription.payer_user_id;
 
@@ -2872,6 +3221,11 @@ function fetchSubscriptions(id, event, initiator) {
   if (activeFilters['renewalType'] !== "") {
     getSubscriptions += getSubscriptions.includes("?") ? `&renewalType=${activeFilters['renewalType']}` : `?renewalType=${activeFilters['renewalType']}`;
   }
+  if (getCurrentSubscriptionPageFilter() !== "all") {
+    getSubscriptions += getSubscriptions.includes("?")
+      ? `&subscription_page=${encodeURIComponent(getCurrentSubscriptionPageFilter())}`
+      : `?subscription_page=${encodeURIComponent(getCurrentSubscriptionPageFilter())}`;
+  }
 
   return fetch(getSubscriptions)
     .then(response => response.text())
@@ -2886,6 +3240,15 @@ function fetchSubscriptions(id, event, initiator) {
         }
       }
 
+      return refreshSubscriptionPages({
+        selectedValue: document.querySelector("#subscription_page_id")?.value || getDefaultSubscriptionPageSelection(),
+        silent: true,
+      }).catch((error) => {
+        console.error("Failed to refresh subscription pages.", error);
+        return null;
+      });
+    })
+    .then(() => {
       if (initiator == "clone" && id && event) {
         openEditSubscription(event, id);
       }
@@ -2896,6 +3259,7 @@ function fetchSubscriptions(id, event, initiator) {
       applySubscriptionImageLayoutMode("detail");
       initializeSubscriptionMediaSortables();
       initializeSubscriptionCardSortable();
+      renderSubscriptionPageTabs();
       if (initiator === "add") {
         if (document.getElementsByClassName('subscription').length === 1) {
           setTimeout(() => {
@@ -3033,6 +3397,9 @@ document.addEventListener('DOMContentLoaded', function () {
   subscriptionDisplayColumns = normalizeSubscriptionDisplayColumnsPreference(
     window.subscriptionPagePreferences?.displayColumns
   );
+  currentSubscriptionPageFilter = normalizeSubscriptionPageFilter(
+    window.subscriptionPageState?.currentFilter
+  );
   subscriptionImageLayoutPreferences = {
     form: normalizeSubscriptionImageLayoutPreference(window.subscriptionPagePreferences?.imageLayout?.form),
     detail: normalizeSubscriptionImageLayoutPreference(window.subscriptionPagePreferences?.imageLayout?.detail),
@@ -3043,17 +3410,31 @@ document.addEventListener('DOMContentLoaded', function () {
   const subscriptionPaymentForm = document.querySelector("#subscription-payment-form");
   const subscriptionPaymentSaveButton = document.querySelector("#subscription-payment-save-button");
   const subscriptionPaymentDueDateInput = document.querySelector("#subscription-payment-due-date");
+  const subscriptionPageCreateInput = document.querySelector("#subscription-page-create-name");
 
   mountSubscriptionOverlayToBody("#subscription-form");
+  mountSubscriptionOverlayToBody("#subscription-pages-manager-modal");
   mountSubscriptionOverlayToBody("#subscription-recycle-bin-modal");
   mountSubscriptionOverlayToBody("#subscription-payment-modal");
   mountSubscriptionOverlayToBody("#subscription-payment-history-modal");
   mountSubscriptionOverlayToBody("#subscription-image-viewer");
+  applySubscriptionPagesPayload(window.subscriptionPageState || {}, {
+    selectedValue: getDefaultSubscriptionPageSelection(),
+  });
   renderSubscriptionPriceRules();
 
   if (subscriptionPaymentDueDateInput) {
     subscriptionPaymentDueDateInput.addEventListener("change", function () {
       applyPaymentRulePreviewForDueDate(this.value || "");
+    });
+  }
+
+  if (subscriptionPageCreateInput) {
+    subscriptionPageCreateInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        createSubscriptionPage();
+      }
     });
   }
 
@@ -3177,6 +3558,7 @@ document.addEventListener('DOMContentLoaded', function () {
   applySubscriptionDisplayColumns();
   applySubscriptionValueVisibility();
   applyAllSubscriptionImageLayoutModes();
+  renderSubscriptionPageTabs();
   closeSubscriptionImageViewer();
   initializeSubscriptionMediaSortables();
   initializeSubscriptionCardSortable();
