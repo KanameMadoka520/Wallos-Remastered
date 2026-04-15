@@ -66,6 +66,33 @@ function wallos_get_rate_limit_request_path()
     return '/' . ltrim((string) (parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? ''), '/');
 }
 
+function wallos_rate_limit_is_exempt_user($userId)
+{
+    return (int) $userId === 1;
+}
+
+function wallos_rate_limit_is_admin_only_path($path)
+{
+    $path = '/' . ltrim((string) $path, '/');
+
+    $adminOnlyPrefixes = [
+        '/endpoints/admin/',
+    ];
+
+    foreach ($adminOnlyPrefixes as $prefix) {
+        if (strpos($path, $prefix) === 0) {
+            return true;
+        }
+    }
+
+    $adminOnlyExactPaths = [
+        '/endpoints/db/backup.php',
+        '/endpoints/db/restore.php',
+    ];
+
+    return in_array($path, $adminOnlyExactPaths, true);
+}
+
 function wallos_rate_limit_is_exempt_backend_path($path)
 {
     $exemptPaths = [
@@ -282,7 +309,12 @@ function wallos_enforce_backend_request_rate_limit($db, $userId, $username, $i18
 {
     $settings = wallos_get_rate_limit_settings($db);
     $path = wallos_get_rate_limit_request_path();
-    if (!$settings['enabled'] || wallos_rate_limit_is_exempt_backend_path($path)) {
+    if (
+        !$settings['enabled']
+        || wallos_rate_limit_is_exempt_user($userId)
+        || wallos_rate_limit_is_admin_only_path($path)
+        || wallos_rate_limit_is_exempt_backend_path($path)
+    ) {
         return null;
     }
 
@@ -303,7 +335,7 @@ function wallos_enforce_backend_request_rate_limit($db, $userId, $username, $i18
 function wallos_enforce_subscription_image_upload_rate_limit($db, $userId, $username, $i18n, $fileCount, $byteCount)
 {
     $settings = wallos_get_rate_limit_settings($db);
-    if (!$settings['enabled'] || $fileCount <= 0) {
+    if (!$settings['enabled'] || $fileCount <= 0 || wallos_rate_limit_is_exempt_user($userId)) {
         return null;
     }
 
@@ -330,7 +362,7 @@ function wallos_enforce_subscription_image_upload_rate_limit($db, $userId, $user
 function wallos_enforce_subscription_image_download_rate_limit($db, $userId, $username, $i18n, $byteCount)
 {
     $settings = wallos_get_rate_limit_settings($db);
-    if (!$settings['enabled']) {
+    if (!$settings['enabled'] || wallos_rate_limit_is_exempt_user($userId)) {
         return null;
     }
 
