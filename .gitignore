@@ -7,6 +7,7 @@
 .env
 .env.*
 .tmp/
+交接文档.md
 *.log
 *.zip
 *.tar

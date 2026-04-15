@@ -120,5 +120,14 @@ This public repository has been cleaned up to avoid publishing private deploymen
 - private directory layouts
 - self-hosted banner text
 - environment-specific local path references
+- deployment-specific internal handoff notes
 
 Runtime-only files are also ignored through `.gitignore` and `.dockerignore`.
+
+## Related Documents
+
+- `README.md`
+- `CONTRIBUTING.md`
+- `CHANGELOG.md`
+- `SECURITY.md`
+- `FRP+Nginx+Fail2ban防刷站部署指南.md`
