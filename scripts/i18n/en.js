@@ -107,6 +107,7 @@ let i18n = {
   failed_save_category: "Failed to save category",
   failed_save_user: "Failed to save user details",
   failed_sort_payment_methods: "Failed to save payment method order",
+  backup: "Backup",
   backup_failed: "Backup failed",
   backup_verification_status_failed: "Verification failed",
   restore_failed: "Restore failed",

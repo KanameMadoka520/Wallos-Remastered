@@ -4,13 +4,19 @@ require_once '../../includes/validate_endpoint_admin.php';
 require_once '../../includes/backup_manager.php';
 require_once '../../includes/backup_progress_messages.php';
 
-$operationId = wallos_normalize_backup_operation_id($_GET['operationId'] ?? '');
+$rawData = file_get_contents('php://input');
+$data = json_decode($rawData, true);
+$operationId = wallos_normalize_backup_operation_id($data['operationId'] ?? '');
 if ($operationId === '') {
     echo json_encode([
         'success' => false,
         'message' => translate('error', $i18n),
     ]);
     exit;
+}
+
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
 }
 
 $status = wallos_read_backup_progress_status($operationId, __DIR__ . '/../../');

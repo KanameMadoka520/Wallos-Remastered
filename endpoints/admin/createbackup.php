@@ -40,6 +40,10 @@ if ($operationId === '') {
     exit;
 }
 
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 try {
     wallos_write_backup_progress_status(
         $operationId,
