@@ -199,9 +199,13 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
     $rememberMe = isset($_POST['remember']) ? true : false;
     $loginRateLimitIp = wallos_get_login_rate_limit_ip();
     $loginRateLimitUsername = wallos_normalize_login_rate_limit_username($username);
+    $skipLoginRateLimit = wallos_login_rate_limit_is_exempt_username($db, $loginRateLimitUsername);
+    $blockedUntil = '';
 
-    wallos_prune_login_attempts($db);
-    $blockedUntil = wallos_get_login_rate_limit_block($db, $loginRateLimitIp, $loginRateLimitUsername);
+    if (!$skipLoginRateLimit) {
+        wallos_prune_login_attempts($db);
+        $blockedUntil = wallos_get_login_rate_limit_block($db, $loginRateLimitIp, $loginRateLimitUsername);
+    }
 
     if ($blockedUntil !== '') {
         wallos_mark_login_failed($loginFailed);
@@ -307,14 +311,18 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
             }
 
         } else {
-            $blockedUntil = wallos_record_failed_login_attempt($db, $loginRateLimitIp, $loginRateLimitUsername);
+            $blockedUntil = $skipLoginRateLimit
+                ? ''
+                : wallos_record_failed_login_attempt($db, $loginRateLimitIp, $loginRateLimitUsername);
             wallos_mark_login_failed($loginFailed);
             if ($blockedUntil !== '') {
                 $loginRateLimitMessage = wallos_build_login_rate_limit_message($i18n, $blockedUntil);
             }
         }
     } else {
-        $blockedUntil = wallos_record_failed_login_attempt($db, $loginRateLimitIp, $loginRateLimitUsername);
+        $blockedUntil = $skipLoginRateLimit
+            ? ''
+            : wallos_record_failed_login_attempt($db, $loginRateLimitIp, $loginRateLimitUsername);
         wallos_mark_login_failed($loginFailed);
         if ($blockedUntil !== '') {
             $loginRateLimitMessage = wallos_build_login_rate_limit_message($i18n, $blockedUntil);

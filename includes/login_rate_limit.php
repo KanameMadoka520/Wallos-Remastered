@@ -74,6 +74,11 @@ function wallos_login_attempts_table_exists($db)
 
 function wallos_get_login_rate_limit_ip()
 {
+    $realIp = trim((string) ($_SERVER['HTTP_X_REAL_IP'] ?? ''));
+    if ($realIp !== '' && filter_var($realIp, FILTER_VALIDATE_IP)) {
+        return $realIp;
+    }
+
     $forwardedFor = trim((string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
     if ($forwardedFor !== '') {
         $parts = explode(',', $forwardedFor);
@@ -81,11 +86,6 @@ function wallos_get_login_rate_limit_ip()
         if (filter_var($candidate, FILTER_VALIDATE_IP)) {
             return $candidate;
         }
-    }
-
-    $realIp = trim((string) ($_SERVER['HTTP_X_REAL_IP'] ?? ''));
-    if ($realIp !== '' && filter_var($realIp, FILTER_VALIDATE_IP)) {
-        return $realIp;
     }
 
     $remoteAddr = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
@@ -104,6 +104,25 @@ function wallos_normalize_login_rate_limit_username($username)
     }
 
     return $username;
+}
+
+function wallos_login_rate_limit_is_exempt_username($db, $normalizedUsername)
+{
+    $normalizedUsername = wallos_normalize_login_rate_limit_username($normalizedUsername);
+    if ($normalizedUsername === '') {
+        return false;
+    }
+
+    $stmt = $db->prepare('SELECT 1 FROM user WHERE id = 1 AND LOWER(username) = :username LIMIT 1');
+    if ($stmt === false) {
+        return false;
+    }
+
+    $stmt->bindValue(':username', $normalizedUsername, SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $row = $result ? $result->fetchArray(SQLITE3_NUM) : false;
+
+    return $row !== false;
 }
 
 function wallos_prune_login_attempts($db)
