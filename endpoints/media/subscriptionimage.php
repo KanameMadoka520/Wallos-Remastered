@@ -1,6 +1,8 @@
 <?php
 require_once '../../includes/user_status.php';
 require_once '../../includes/subscription_media.php';
+require_once '../../includes/security_rate_limits.php';
+require_once '../../includes/i18n/languages.php';
 
 function wallos_media_deny($statusCode = 403)
 {
@@ -8,6 +10,22 @@ function wallos_media_deny($statusCode = 403)
     header('Content-Type: text/plain; charset=UTF-8');
     header('X-Content-Type-Options: nosniff');
     echo $statusCode === 404 ? 'Not Found' : 'Forbidden';
+    exit;
+}
+
+function wallos_media_deny_rate_limit(array $violation)
+{
+    wallos_set_rate_limit_notice_cookie(
+        $violation['message'] ?? 'Rate limit triggered',
+        $violation['retry_at'] ?? '',
+        $violation['code'] ?? 'rate_limit'
+    );
+
+    http_response_code(429);
+    header('Retry-After: 60');
+    header('Content-Type: text/plain; charset=UTF-8');
+    header('X-Content-Type-Options: nosniff');
+    echo $violation['message'] ?? 'Too many requests';
     exit;
 }
 
@@ -97,6 +115,14 @@ if ($currentUser === null) {
     wallos_media_deny(403);
 }
 
+$lang = 'en';
+$userLanguage = trim((string) ($currentUser['language'] ?? ''));
+if (array_key_exists($userLanguage, $languages)) {
+    $lang = $userLanguage;
+}
+require_once '../../includes/i18n/getlang.php';
+require_once '../../includes/i18n/' . $lang . '.php';
+
 $stmt = $db->prepare('SELECT * FROM subscription_uploaded_images WHERE id = :id LIMIT 1');
 $stmt->bindValue(':id', $imageId, SQLITE3_INTEGER);
 $result = $stmt->execute();
@@ -158,8 +184,20 @@ if ($safeFallbackName === '') {
     $safeFallbackName = 'subscription-image-' . $imageId;
 }
 
+$fileSize = (int) @filesize($absolutePath);
+$rateLimitViolation = wallos_enforce_subscription_image_download_rate_limit(
+    $db,
+    (int) ($currentUser['id'] ?? 0),
+    (string) ($currentUser['username'] ?? ''),
+    $i18n,
+    $fileSize
+);
+if ($rateLimitViolation !== null) {
+    wallos_media_deny_rate_limit($rateLimitViolation);
+}
+
 header('Content-Type: ' . $mimeType);
-header('Content-Length: ' . filesize($absolutePath));
+header('Content-Length: ' . $fileSize);
 header('Cache-Control: private, max-age=3600');
 header('X-Content-Type-Options: nosniff');
 header(

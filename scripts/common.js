@@ -1,5 +1,6 @@
 let isDropdownOpen = false;
 let hasUserInteractedWithPage = false;
+let lastRateLimitNoticeId = null;
 const toastState = {
   error: { hideTimer: null, progressTimer: null },
   success: { hideTimer: null, progressTimer: null },
@@ -317,6 +318,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   setupPageNavigation();
   initializePageImmersiveToggle();
+  consumeRateLimitNoticeCookie();
+  window.setInterval(consumeRateLimitNoticeCookie, 1500);
 });
 
 function getCookie(name) {
@@ -328,4 +331,31 @@ function getCookie(name) {
     }
   }
   return null;
+}
+
+function clearCookie(name) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+}
+
+function consumeRateLimitNoticeCookie() {
+  const rawCookie = getCookie('wallos_rate_limit_notice');
+  if (!rawCookie) {
+    return;
+  }
+
+  try {
+    const payload = JSON.parse(decodeURIComponent(rawCookie));
+    clearCookie('wallos_rate_limit_notice');
+
+    if (!payload || !payload.id || payload.id === lastRateLimitNoticeId) {
+      return;
+    }
+
+    lastRateLimitNoticeId = payload.id;
+    if (payload.message) {
+      showErrorMessage(payload.message);
+    }
+  } catch (error) {
+    clearCookie('wallos_rate_limit_notice');
+  }
 }

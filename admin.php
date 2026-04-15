@@ -162,6 +162,9 @@ $activeInviteCodeCount = count($activeInviteCodes);
 $deletedInviteCodeCount = count($deletedInviteCodes);
 $recentRequestLogCount = count($recentRequestLogs);
 $totalRequestLogCount = (int) $db->querySingle('SELECT COUNT(*) FROM request_logs');
+$securityAnomaliesTableExists = (bool) $db->querySingle("SELECT name FROM sqlite_master WHERE type='table' AND name='security_anomalies'");
+$securityAnomalyCount = $securityAnomaliesTableExists ? (int) $db->querySingle('SELECT COUNT(*) FROM security_anomalies') : 0;
+$securityAnomalyRecentCount = $securityAnomaliesTableExists ? (int) $db->querySingle("SELECT COUNT(*) FROM security_anomalies WHERE created_at >= datetime('now', '-1 day')") : 0;
 $backupRetentionDays = wallos_get_backup_retention_days($db);
 $backupTimezone = wallos_normalize_timezone_identifier($settings['backup_timezone'] ?? '', wallos_get_default_backup_timezone());
 $timezoneOptions = wallos_get_timezone_options($backupTimezone);
@@ -220,6 +223,32 @@ $pageSections = [
         data-ip-label="IP"
         data-forwarded-label="<?= htmlspecialchars(translate('forwarded_for', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-agent-label="<?= htmlspecialchars(translate('user_agent', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-error-label="<?= htmlspecialchars(translate('error', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
+    <div id="admin-security-anomaly-ui" style="display:none;"
+        data-title="<?= htmlspecialchars(translate('security_anomalies', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-close-label="<?= htmlspecialchars(translate('cancel', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-open-label="<?= htmlspecialchars(translate('open_security_anomaly_browser', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-clear-label="<?= htmlspecialchars(translate('clear_logs', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-clear-confirm-label="<?= htmlspecialchars(translate('clear_security_anomalies_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-type-label="<?= htmlspecialchars(translate('anomaly_type', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-keyword-label="<?= htmlspecialchars(translate('search', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-keyword-placeholder="<?= htmlspecialchars(translate('security_anomalies_keyword_placeholder', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-start-label="<?= htmlspecialchars(translate('start_time', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-end-label="<?= htmlspecialchars(translate('end_time', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-limit-label="<?= htmlspecialchars(translate('results_limit', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-search-label="<?= htmlspecialchars(translate('search', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-empty-label="<?= htmlspecialchars(translate('security_anomalies_empty', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-showing-label="<?= htmlspecialchars(translate('security_anomalies_showing_results_dynamic', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-export-label="<?= htmlspecialchars(translate('export_logs', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-export-rule-label="<?= htmlspecialchars(translate('filter', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-id-label="<?= htmlspecialchars(translate('request_id', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-headers-label="<?= htmlspecialchars(translate('request_headers', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-time-label="<?= htmlspecialchars(translate('time', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-user-label="<?= htmlspecialchars(translate('username', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-ip-label="IP"
+        data-forwarded-label="<?= htmlspecialchars(translate('forwarded_for', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-agent-label="<?= htmlspecialchars(translate('user_agent', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-message-label="<?= htmlspecialchars(translate('message', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-error-label="<?= htmlspecialchars(translate('error', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
     <div class="page-layout">
         <?php render_page_navigation(translate('admin', $i18n), $pageSections); ?>
@@ -860,10 +889,66 @@ $pageSections = [
     <header>
         <h2><?= translate('security_settings', $i18n) ?></h2> </header>
     <div class="admin-form">
+        <div class="form-group-inline">
+            <input type="checkbox" id="advancedRateLimitEnabled" <?= !empty($settings['advanced_rate_limit_enabled']) ? 'checked' : '' ?> />
+            <label for="advancedRateLimitEnabled"><?= translate('enable_advanced_rate_limits', $i18n) ?></label>
+        </div>
         <div class="form-group">
             <label for="login_rate_limit_max_attempts"><?= translate('login_rate_limit_max_attempts', $i18n) ?></label>
             <input type="number" name="login_rate_limit_max_attempts" id="login_rate_limit_max_attempts" min="1" max="50"
                 autocomplete="off" value="<?= (int) ($settings['login_rate_limit_max_attempts'] ?? 8) ?>" />
+        </div>
+        <div class="account-budget-grid">
+            <div class="form-group">
+                <label for="backend_request_limit_per_minute"><?= translate('backend_request_limit_per_minute', $i18n) ?></label>
+                <input type="number" id="backend_request_limit_per_minute" min="1" max="5000" autocomplete="off"
+                    value="<?= (int) ($settings['backend_request_limit_per_minute'] ?? 240) ?>" />
+            </div>
+            <div class="form-group">
+                <label for="backend_request_limit_per_hour"><?= translate('backend_request_limit_per_hour', $i18n) ?></label>
+                <input type="number" id="backend_request_limit_per_hour" min="1" max="20000" autocomplete="off"
+                    value="<?= (int) ($settings['backend_request_limit_per_hour'] ?? 3600) ?>" />
+            </div>
+            <div class="form-group">
+                <label for="image_upload_limit_per_minute"><?= translate('image_upload_limit_per_minute', $i18n) ?></label>
+                <input type="number" id="image_upload_limit_per_minute" min="1" max="1000" autocomplete="off"
+                    value="<?= (int) ($settings['image_upload_limit_per_minute'] ?? 20) ?>" />
+            </div>
+            <div class="form-group">
+                <label for="image_upload_limit_per_hour"><?= translate('image_upload_limit_per_hour', $i18n) ?></label>
+                <input type="number" id="image_upload_limit_per_hour" min="1" max="10000" autocomplete="off"
+                    value="<?= (int) ($settings['image_upload_limit_per_hour'] ?? 240) ?>" />
+            </div>
+            <div class="form-group">
+                <label for="image_upload_mb_per_minute"><?= translate('image_upload_mb_per_minute', $i18n) ?></label>
+                <input type="number" id="image_upload_mb_per_minute" min="1" max="50000" autocomplete="off"
+                    value="<?= (int) ($settings['image_upload_mb_per_minute'] ?? 120) ?>" />
+            </div>
+            <div class="form-group">
+                <label for="image_upload_mb_per_hour"><?= translate('image_upload_mb_per_hour', $i18n) ?></label>
+                <input type="number" id="image_upload_mb_per_hour" min="1" max="200000" autocomplete="off"
+                    value="<?= (int) ($settings['image_upload_mb_per_hour'] ?? 1200) ?>" />
+            </div>
+            <div class="form-group">
+                <label for="image_download_limit_per_minute"><?= translate('image_download_limit_per_minute', $i18n) ?></label>
+                <input type="number" id="image_download_limit_per_minute" min="1" max="10000" autocomplete="off"
+                    value="<?= (int) ($settings['image_download_limit_per_minute'] ?? 180) ?>" />
+            </div>
+            <div class="form-group">
+                <label for="image_download_limit_per_hour"><?= translate('image_download_limit_per_hour', $i18n) ?></label>
+                <input type="number" id="image_download_limit_per_hour" min="1" max="50000" autocomplete="off"
+                    value="<?= (int) ($settings['image_download_limit_per_hour'] ?? 2400) ?>" />
+            </div>
+            <div class="form-group">
+                <label for="image_download_mb_per_minute"><?= translate('image_download_mb_per_minute', $i18n) ?></label>
+                <input type="number" id="image_download_mb_per_minute" min="1" max="50000" autocomplete="off"
+                    value="<?= (int) ($settings['image_download_mb_per_minute'] ?? 300) ?>" />
+            </div>
+            <div class="form-group">
+                <label for="image_download_mb_per_hour"><?= translate('image_download_mb_per_hour', $i18n) ?></label>
+                <input type="number" id="image_download_mb_per_hour" min="1" max="200000" autocomplete="off"
+                    value="<?= (int) ($settings['image_download_mb_per_hour'] ?? 3000) ?>" />
+            </div>
         </div>
         <div class="form-group-inline">
             <input type="text" name="local_webhook_notifications_allowlist" id="local_webhook_notifications_allowlist" autocomplete="off"
@@ -881,6 +966,10 @@ $pageSections = [
                 <?= translate('login_rate_limit_max_attempts_info', $i18n) ?>
             </p>
             <p>
+                <i class="fa-solid fa-circle-info"></i>
+                <?= translate('advanced_rate_limits_info', $i18n) ?>
+            </p>
+            <p>
                 <i class="fa-solid fa-circle-info"></i> 
                 <?= translate('ssrf_protection_info', $i18n) ?>
             </p>
@@ -888,6 +977,20 @@ $pageSections = [
                 <i class="fa-solid fa-circle-info"></i>
                 <?= translate('local_webhook_info', $i18n) ?>
             </p>
+        </div>
+        <div class="access-log-summary-grid">
+            <div class="backup-summary-card">
+                <span><?= translate('security_anomalies', $i18n) ?></span>
+                <strong><?= (int) $securityAnomalyCount ?></strong>
+            </div>
+            <div class="backup-summary-card">
+                <span><?= translate('recent_security_anomalies', $i18n) ?></span>
+                <strong><?= (int) $securityAnomalyRecentCount ?></strong>
+            </div>
+        </div>
+        <div class="buttons">
+            <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('open_security_anomaly_browser', $i18n) ?>"
+                onClick="openSecurityAnomaliesModal()" />
         </div>
     </div>
 </section>

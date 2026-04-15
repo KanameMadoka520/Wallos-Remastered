@@ -6,6 +6,11 @@ function wallos_request_logging_skip_paths()
         '/health.php',
         '/endpoints/cronjobs/',
         '/endpoints/db/migrate.php',
+        '/endpoints/admin/accesslogs.php',
+        '/endpoints/admin/clearaccesslogs.php',
+        '/endpoints/admin/securityanomalies.php',
+        '/endpoints/admin/clearsecurityanomalies.php',
+        '/endpoints/admin/backupstatus.php',
     ];
 }
 

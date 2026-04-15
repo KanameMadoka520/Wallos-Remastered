@@ -420,10 +420,22 @@ function saveSecuritySettingsButton() {
 
   const allowlist = document.getElementById('local_webhook_notifications_allowlist').value;
   const loginRateLimitMaxAttempts = document.getElementById('login_rate_limit_max_attempts').value;
+  const advancedRateLimitEnabled = document.getElementById('advancedRateLimitEnabled').checked ? 1 : 0;
 
   const data = {
     local_webhook_notifications_allowlist: allowlist,
-    login_rate_limit_max_attempts: loginRateLimitMaxAttempts
+    login_rate_limit_max_attempts: loginRateLimitMaxAttempts,
+    advanced_rate_limit_enabled: advancedRateLimitEnabled,
+    backend_request_limit_per_minute: document.getElementById('backend_request_limit_per_minute').value,
+    backend_request_limit_per_hour: document.getElementById('backend_request_limit_per_hour').value,
+    image_upload_limit_per_minute: document.getElementById('image_upload_limit_per_minute').value,
+    image_upload_limit_per_hour: document.getElementById('image_upload_limit_per_hour').value,
+    image_upload_mb_per_minute: document.getElementById('image_upload_mb_per_minute').value,
+    image_upload_mb_per_hour: document.getElementById('image_upload_mb_per_hour').value,
+    image_download_limit_per_minute: document.getElementById('image_download_limit_per_minute').value,
+    image_download_limit_per_hour: document.getElementById('image_download_limit_per_hour').value,
+    image_download_mb_per_minute: document.getElementById('image_download_mb_per_minute').value,
+    image_download_mb_per_hour: document.getElementById('image_download_mb_per_hour').value,
   };
 
   fetch('endpoints/admin/savesecuritysettings.php', {
@@ -448,6 +460,271 @@ function saveSecuritySettingsButton() {
       showErrorMessage(error);
       button.disabled = false;
     });
+}
+
+function removeSecurityAnomaliesModal() {
+  const existingModal = document.getElementById('admin-security-anomaly-backdrop');
+  if (existingModal) {
+    existingModal.remove();
+  }
+}
+
+function renderSecurityAnomalyEntries(items, resultContainer, ui) {
+  resultContainer.innerHTML = '';
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const emptyState = document.createElement('div');
+    emptyState.className = 'settings-notes access-log-empty';
+    emptyState.innerHTML = `<p><i class="fa-solid fa-circle-info"></i>${ui.dataset.emptyLabel || 'No anomaly records yet.'}</p>`;
+    resultContainer.appendChild(emptyState);
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'access-log-list compact';
+
+  items.forEach((item) => {
+    const card = document.createElement('div');
+    card.className = 'access-log-card';
+
+    const header = document.createElement('div');
+    header.className = 'access-log-header';
+    header.innerHTML = `
+      <div class="access-log-card-title">
+        <span class="access-log-id-badge">#${String(item.id || '-')}</span>
+        <strong>${String(item.anomaly_type || '-')}</strong>
+      </div>
+      <span>${String(item.anomaly_code || '-')}</span>
+    `;
+
+    card.appendChild(header);
+    card.innerHTML += `
+      <p>${ui.dataset.messageLabel}: ${String(item.message || '-')}</p>
+      <p>${ui.dataset.userLabel}: ${String(item.username || '-')}</p>
+      <p>${ui.dataset.ipLabel}: ${String(item.ip_address || '-')}</p>
+      <p>${ui.dataset.forwardedLabel}: ${String(item.forwarded_for || '-')}</p>
+      <p>${ui.dataset.agentLabel}: ${String(item.user_agent || '-')}</p>
+      <p>${ui.dataset.timeLabel}: ${String(item.created_at || '-')}</p>
+    `;
+
+    const headersJson = String(item.headers_json || '').trim();
+    if (headersJson !== '') {
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.textContent = ui.dataset.headersLabel;
+      const pre = document.createElement('pre');
+      pre.textContent = headersJson;
+      details.appendChild(summary);
+      details.appendChild(pre);
+      card.appendChild(details);
+    }
+
+    const detailsJson = String(item.details_json || '').trim();
+    if (detailsJson !== '') {
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.textContent = 'Details';
+      const pre = document.createElement('pre');
+      pre.textContent = detailsJson;
+      details.appendChild(summary);
+      details.appendChild(pre);
+      card.appendChild(details);
+    }
+
+    list.appendChild(card);
+  });
+
+  resultContainer.appendChild(list);
+}
+
+function fetchSecurityAnomalies(filters, resultSummary, resultContainer, searchButton, ui) {
+  searchButton.disabled = true;
+  resultSummary.textContent = ui.dataset.searchLabel || 'Loading...';
+
+  fetch('endpoints/admin/securityanomalies.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify(filters),
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (!data.success) {
+        throw new Error(data.message || (ui.dataset.errorLabel || 'Error'));
+      }
+
+      resultContainer.dataset.logs = JSON.stringify(data.items || []);
+      resultContainer.dataset.filters = JSON.stringify(data.filters || filters);
+      renderSecurityAnomalyEntries(data.items || [], resultContainer, ui);
+      const itemCount = Array.isArray(data.items) ? data.items.length : 0;
+      resultSummary.textContent = (ui.dataset.showingLabel || 'Showing %1$d of %2$d matching access logs')
+        .replace('%1$d', String(itemCount))
+        .replace('%2$d', String(data.total || 0));
+    })
+    .catch((error) => {
+      resultSummary.textContent = ui.dataset.errorLabel || 'Error';
+      showErrorMessage(error.message || ui.dataset.errorLabel || 'Error');
+    })
+    .finally(() => {
+      searchButton.disabled = false;
+    });
+}
+
+function openSecurityAnomaliesModal() {
+  removeSecurityAnomaliesModal();
+
+  const ui = document.getElementById('admin-security-anomaly-ui');
+  if (!ui) {
+    showErrorMessage(translate('error'));
+    return;
+  }
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'admin-security-anomaly-backdrop';
+  backdrop.className = 'access-log-modal-backdrop';
+
+  const modal = document.createElement('div');
+  modal.className = 'access-log-modal';
+
+  const header = document.createElement('div');
+  header.className = 'access-log-modal-header';
+  header.innerHTML = `
+    <h3>${ui.dataset.title || 'Security Anomalies'}</h3>
+    <button type="button" class="secondary-button thin">${ui.dataset.closeLabel || 'Close'}</button>
+  `;
+  header.querySelector('button').addEventListener('click', removeSecurityAnomaliesModal);
+
+  const body = document.createElement('div');
+  body.className = 'access-log-modal-body';
+
+  const filterGrid = document.createElement('div');
+  filterGrid.className = 'access-log-filter-grid';
+
+  const typeField = document.createElement('div');
+  typeField.className = 'form-group';
+  typeField.innerHTML = `
+    <label for="securityAnomalyType">${ui.dataset.typeLabel}</label>
+    <select id="securityAnomalyType">
+      <option value="">ALL</option>
+      <option value="rate_limit">rate_limit</option>
+    </select>
+  `;
+
+  const keywordField = document.createElement('div');
+  keywordField.className = 'form-group';
+  keywordField.innerHTML = `
+    <label for="securityAnomalyKeyword">${ui.dataset.keywordLabel}</label>
+    <input type="text" id="securityAnomalyKeyword" autocomplete="off" placeholder="${ui.dataset.keywordPlaceholder || ''}" />
+  `;
+
+  const startField = document.createElement('div');
+  startField.className = 'form-group';
+  startField.innerHTML = `
+    <label for="securityAnomalyStart">${ui.dataset.startLabel}</label>
+    <input type="datetime-local" id="securityAnomalyStart" />
+  `;
+
+  const endField = document.createElement('div');
+  endField.className = 'form-group';
+  endField.innerHTML = `
+    <label for="securityAnomalyEnd">${ui.dataset.endLabel}</label>
+    <input type="datetime-local" id="securityAnomalyEnd" />
+  `;
+
+  const limitField = document.createElement('div');
+  limitField.className = 'form-group';
+  limitField.innerHTML = `
+    <label for="securityAnomalyLimit">${ui.dataset.limitLabel}</label>
+    <select id="securityAnomalyLimit">
+      <option value="50">50</option>
+      <option value="100" selected>100</option>
+      <option value="200">200</option>
+      <option value="300">300</option>
+      <option value="500">500</option>
+    </select>
+  `;
+
+  const actionField = document.createElement('div');
+  actionField.className = 'form-group access-log-filter-actions';
+
+  const searchButton = document.createElement('button');
+  searchButton.type = 'button';
+  searchButton.className = 'button thin';
+  searchButton.textContent = ui.dataset.searchLabel || 'Search';
+
+  const clearButton = document.createElement('button');
+  clearButton.type = 'button';
+  clearButton.className = 'warning-button thin';
+  clearButton.textContent = ui.dataset.clearLabel || 'Clear Logs';
+
+  actionField.appendChild(searchButton);
+  actionField.appendChild(clearButton);
+
+  filterGrid.appendChild(typeField);
+  filterGrid.appendChild(keywordField);
+  filterGrid.appendChild(startField);
+  filterGrid.appendChild(endField);
+  filterGrid.appendChild(limitField);
+  filterGrid.appendChild(actionField);
+
+  const resultSummary = document.createElement('p');
+  resultSummary.className = 'access-log-results-summary';
+
+  const resultContainer = document.createElement('div');
+
+  const runSearch = () => {
+    fetchSecurityAnomalies({
+      anomaly_type: document.getElementById('securityAnomalyType')?.value || '',
+      keyword: document.getElementById('securityAnomalyKeyword')?.value || '',
+      start_at: document.getElementById('securityAnomalyStart')?.value || '',
+      end_at: document.getElementById('securityAnomalyEnd')?.value || '',
+      limit: document.getElementById('securityAnomalyLimit')?.value || '100',
+    }, resultSummary, resultContainer, searchButton, ui);
+  };
+
+  searchButton.addEventListener('click', runSearch);
+  clearButton.addEventListener('click', () => {
+    if (!confirm(ui.dataset.clearConfirmLabel || 'Clear all anomalies now?')) {
+      return;
+    }
+
+    clearButton.disabled = true;
+    fetch('endpoints/admin/clearsecurityanomalies.php', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': window.csrfToken,
+      },
+    })
+      .then(response => response.json())
+      .then((data) => {
+        if (!data.success) {
+          throw new Error(data.message || (ui.dataset.errorLabel || 'Error'));
+        }
+        showSuccessMessage(data.message);
+        runSearch();
+      })
+      .catch((error) => showErrorMessage(error.message || ui.dataset.errorLabel || 'Error'))
+      .finally(() => {
+        clearButton.disabled = false;
+      });
+  });
+
+  body.appendChild(filterGrid);
+  body.appendChild(resultSummary);
+  body.appendChild(resultContainer);
+  modal.appendChild(header);
+  modal.appendChild(body);
+  backdrop.appendChild(modal);
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      removeSecurityAnomaliesModal();
+    }
+  });
+
+  document.body.appendChild(backdrop);
+  runSearch();
 }
 
 function removeUser(userId) {
