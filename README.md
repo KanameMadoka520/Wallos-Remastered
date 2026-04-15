@@ -301,6 +301,7 @@ OK
 - 自建节点说明
 - 自建版横幅文案
 - 私有域名和环境特有描述
+- 部署专用内部交接文档
 
 另外，本仓库已通过 `.gitignore` 和 `.dockerignore` 尽量避免纳入以下运行期内容：
 
@@ -315,6 +316,7 @@ OK
 
 - 中文说明：`README.md`
 - 英文说明：`README_EN.md`
+- 防刷站指南：`FRP+Nginx+Fail2ban防刷站部署指南.md`
 - 贡献指南：`CONTRIBUTING.md`
 - 变更记录：`CHANGELOG.md`
 - 安全策略：`SECURITY.md`
