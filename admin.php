@@ -934,6 +934,11 @@ $pageSections = [
             <input type="number" name="login_rate_limit_max_attempts" id="login_rate_limit_max_attempts" min="1" max="50"
                 autocomplete="off" value="<?= (int) ($settings['login_rate_limit_max_attempts'] ?? 8) ?>" />
         </div>
+        <div class="form-group">
+            <label for="login_rate_limit_block_minutes"><?= translate('login_rate_limit_block_minutes', $i18n) ?></label>
+            <input type="number" name="login_rate_limit_block_minutes" id="login_rate_limit_block_minutes" min="1" max="1440"
+                autocomplete="off" value="<?= (int) ($settings['login_rate_limit_block_minutes'] ?? 15) ?>" />
+        </div>
         <div class="account-budget-grid">
             <div class="form-group">
                 <label for="backend_request_limit_per_minute"><?= translate('backend_request_limit_per_minute', $i18n) ?></label>
@@ -1000,6 +1005,10 @@ $pageSections = [
             <p>
                 <i class="fa-solid fa-circle-info"></i> 
                 <?= translate('login_rate_limit_max_attempts_info', $i18n) ?>
+            </p>
+            <p>
+                <i class="fa-solid fa-circle-info"></i>
+                <?= translate('login_rate_limit_block_minutes_info', $i18n) ?>
             </p>
             <p>
                 <i class="fa-solid fa-circle-info"></i>
