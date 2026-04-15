@@ -161,6 +161,7 @@ $trashedUserCount = count($trashedUsers);
 $activeInviteCodeCount = count($activeInviteCodes);
 $deletedInviteCodeCount = count($deletedInviteCodes);
 $recentRequestLogCount = count($recentRequestLogs);
+$totalRequestLogCount = (int) $db->querySingle('SELECT COUNT(*) FROM request_logs');
 $backupRetentionDays = wallos_get_backup_retention_days($db);
 $backupTimezone = wallos_normalize_timezone_identifier($settings['backup_timezone'] ?? '', wallos_get_default_backup_timezone());
 $timezoneOptions = wallos_get_timezone_options($backupTimezone);
@@ -194,6 +195,26 @@ $pageSections = [
         data-close-label="<?= htmlspecialchars(translate('cancel', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-notice="<?= htmlspecialchars(translate('temporary_password_notice', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-copy-success="<?= htmlspecialchars(translate('copied_to_clipboard', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
+    <div id="admin-access-log-ui" style="display:none;"
+        data-title="<?= htmlspecialchars(translate('access_logs', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-close-label="<?= htmlspecialchars(translate('cancel', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-open-label="<?= htmlspecialchars(translate('access_logs_open_modal', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-request-id-label="<?= htmlspecialchars(translate('request_id', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-keyword-label="<?= htmlspecialchars(translate('search', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-keyword-placeholder="<?= htmlspecialchars(translate('access_logs_keyword_placeholder', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-method-label="<?= htmlspecialchars(translate('request_method', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-limit-label="<?= htmlspecialchars(translate('results_limit', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-search-label="<?= htmlspecialchars(translate('search', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-empty-label="<?= htmlspecialchars(translate('access_logs_empty', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-showing-label="<?= htmlspecialchars(translate('access_logs_showing_results_dynamic', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-id-label="<?= htmlspecialchars(translate('request_id', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-headers-label="<?= htmlspecialchars(translate('request_headers', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-time-label="<?= htmlspecialchars(translate('time', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-user-label="<?= htmlspecialchars(translate('username', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-ip-label="IP"
+        data-forwarded-label="<?= htmlspecialchars(translate('forwarded_for', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-agent-label="<?= htmlspecialchars(translate('user_agent', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-error-label="<?= htmlspecialchars(translate('error', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
     <div class="page-layout">
         <?php render_page_navigation(translate('admin', $i18n), $pageSections); ?>
         <div class="page-content">
@@ -941,44 +962,26 @@ $pageSections = [
             </button>
         </header>
         <div class="collapsible-section-body" id="admin-access-logs-body">
-            <?php
-            if (!empty($recentRequestLogs)) {
-                ?>
-                <div class="access-log-list">
-                    <?php
-                    foreach ($recentRequestLogs as $log) {
-                        ?>
-                        <div class="access-log-card">
-                            <div class="access-log-header">
-                                <strong><?= htmlspecialchars($log['method'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                <span><?= htmlspecialchars($log['path'], ENT_QUOTES, 'UTF-8') ?></span>
-                            </div>
-                            <p><?= translate('username', $i18n) ?>: <?= htmlspecialchars($log['username'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
-                            <p>IP: <?= htmlspecialchars($log['ip_address'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
-                            <p><?= translate('forwarded_for', $i18n) ?>: <?= htmlspecialchars($log['forwarded_for'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
-                            <p><?= translate('user_agent', $i18n) ?>: <?= htmlspecialchars($log['user_agent'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
-                            <p><?= translate('time', $i18n) ?>: <?= htmlspecialchars($log['created_at'], ENT_QUOTES, 'UTF-8') ?></p>
-                            <details>
-                                <summary><?= translate('request_headers', $i18n) ?></summary>
-                                <pre><?= htmlspecialchars($log['headers_json'], ENT_QUOTES, 'UTF-8') ?></pre>
-                            </details>
-                        </div>
-                        <?php
-                    }
-                    ?>
+            <div class="access-log-summary-grid">
+                <div class="backup-summary-card">
+                    <span><?= translate('recent_request_logs', $i18n) ?></span>
+                    <strong><?= (int) $recentRequestLogCount ?></strong>
                 </div>
-                <?php
-            } else {
-                ?>
-                <div class="settings-notes">
-                    <p>
-                        <i class="fa-solid fa-circle-info"></i>
-                        <?= translate('access_logs_empty', $i18n) ?>
-                    </p>
+                <div class="backup-summary-card">
+                    <span><?= translate('access_logs_total', $i18n) ?></span>
+                    <strong><?= (int) $totalRequestLogCount ?></strong>
                 </div>
-                <?php
-            }
-            ?>
+            </div>
+            <div class="settings-notes">
+                <p>
+                    <i class="fa-solid fa-circle-info"></i>
+                    <?= translate('access_logs_modal_info', $i18n) ?>
+                </p>
+            </div>
+            <div class="buttons">
+                <input type="button" class="button thin mobile-grow" value="<?= translate('access_logs_open_modal', $i18n) ?>"
+                    onClick="openAccessLogsModal()" />
+            </div>
         </div>
     </section>
 
