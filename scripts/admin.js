@@ -120,21 +120,24 @@ function backupDB() {
     const state = String(status?.state || "running");
     const toneValue = String(status?.tone || (state === "completed" ? "success" : state === "failed" ? "error" : "pending"));
     const statusMessage = String(status?.message || card.dataset.idleMessage || "");
+    const backupLabel = card.dataset.backupLabel || "Backup";
 
     card.classList.remove("is-hidden", "is-pending", "is-success", "is-error");
     card.classList.add(toneValue === "success" ? "is-success" : toneValue === "error" ? "is-error" : "is-pending");
     percent.textContent = `${Math.round(progress)}%`;
     bar.style.width = `${progress}%`;
     message.textContent = statusMessage;
-    tone.textContent = state === "completed" ? translate("success") : state === "failed" ? translate("error") : translate("backup");
+    tone.textContent = state === "completed" ? translate("success") : state === "failed" ? translate("error") : backupLabel;
   };
 
   const pollBackupProgress = () => {
-    fetch(`endpoints/admin/backupstatus.php?operationId=${encodeURIComponent(operationId)}`, {
-      method: "GET",
+    fetch("endpoints/admin/backupstatus.php", {
+      method: "POST",
       headers: {
+        "Content-Type": "application/json",
         "X-CSRF-Token": window.csrfToken,
       },
+      body: JSON.stringify({ operationId }),
     })
       .then(response => response.json())
       .then(data => {

@@ -1124,6 +1124,7 @@ $pageSections = [
                     accept=".zip">
             </div>
             <div class="backup-progress-card is-hidden is-pending" id="backupProgressCard"
+                data-backup-label="<?= htmlspecialchars(translate('backup', $i18n), ENT_QUOTES, 'UTF-8') ?>"
                 data-idle-message="<?= htmlspecialchars($backupProgressLabels['idle_message'], ENT_QUOTES, 'UTF-8') ?>"
                 data-starting-message="<?= htmlspecialchars($backupProgressLabels['starting_message'], ENT_QUOTES, 'UTF-8') ?>">
                 <div class="backup-progress-card-header">
