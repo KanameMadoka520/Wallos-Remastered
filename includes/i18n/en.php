@@ -787,6 +787,19 @@ $i18n = [
     "insert_totp_code" => "Insert TOTP code",
 
 
+    "rate_limit_presets" => "Rate Limit Presets",
+    "select_a_preset" => "Select A Preset",
+    "add_preset" => "Add Preset",
+    "save_preset" => "Save Preset",
+    "apply_preset" => "Apply Preset",
+    "delete_preset" => "Delete Preset",
+    "rate_limit_preset_name_prompt" => "Enter a name for the new rate limit preset:",
+    "delete_rate_limit_preset_confirm" => "Delete the selected rate limit preset now?",
+    "rate_limit_preset_applied_notice" => "Preset values have been loaded into the form. Click Save to make them active.",
+    "select_rate_limit_preset_first" => "Select a rate limit preset first.",
+    "rate_limit_preset_created" => "Rate limit preset created successfully.",
+    "rate_limit_preset_saved" => "Rate limit preset saved successfully.",
+    "rate_limit_preset_deleted" => "Rate limit preset deleted successfully.",
 ];
 
 
