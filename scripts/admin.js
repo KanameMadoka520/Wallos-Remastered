@@ -670,6 +670,223 @@ function showGeneratedPasswordModal(username, temporaryPassword) {
   passwordInput.select();
 }
 
+function removeAccessLogsModal() {
+  const existingModal = document.getElementById('admin-access-log-backdrop');
+  if (existingModal) {
+    existingModal.remove();
+  }
+}
+
+function renderAccessLogEntries(logs, resultContainer, ui) {
+  resultContainer.innerHTML = '';
+
+  if (!Array.isArray(logs) || logs.length === 0) {
+    const emptyState = document.createElement('div');
+    emptyState.className = 'settings-notes access-log-empty';
+    emptyState.innerHTML = `<p><i class="fa-solid fa-circle-info"></i>${ui.dataset.emptyLabel || 'No access logs are available yet.'}</p>`;
+    resultContainer.appendChild(emptyState);
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'access-log-list compact';
+
+  logs.forEach((log) => {
+    const card = document.createElement('div');
+    card.className = 'access-log-card';
+
+    const header = document.createElement('div');
+    header.className = 'access-log-header';
+    header.innerHTML = `
+      <div class="access-log-card-title">
+        <span class="access-log-id-badge">#${String(log.id || '-')}</span>
+        <strong>${String(log.method || '-')}</strong>
+      </div>
+      <span>${String(log.path || '-')}</span>
+    `;
+
+    const headerJson = String(log.headers_json || '').trim();
+
+    card.appendChild(header);
+    card.innerHTML += `
+      <p>${ui.dataset.userLabel}: ${String(log.username || '-')}</p>
+      <p>${ui.dataset.ipLabel}: ${String(log.ip_address || '-')}</p>
+      <p>${ui.dataset.forwardedLabel}: ${String(log.forwarded_for || '-')}</p>
+      <p>${ui.dataset.agentLabel}: ${String(log.user_agent || '-')}</p>
+      <p>${ui.dataset.timeLabel}: ${String(log.created_at || '-')}</p>
+    `;
+
+    if (headerJson !== '') {
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.textContent = ui.dataset.headersLabel;
+      const pre = document.createElement('pre');
+      pre.textContent = headerJson;
+      details.appendChild(summary);
+      details.appendChild(pre);
+      card.appendChild(details);
+    }
+
+    list.appendChild(card);
+  });
+
+  resultContainer.appendChild(list);
+}
+
+function fetchAdminAccessLogs(filters, resultSummary, resultContainer, searchButton, ui) {
+  searchButton.disabled = true;
+  resultSummary.textContent = ui.dataset.searchLabel || 'Loading...';
+
+  fetch('endpoints/admin/accesslogs.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': window.csrfToken,
+    },
+    body: JSON.stringify(filters),
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (!data.success) {
+        throw new Error(data.message || (ui.dataset.errorLabel || 'Error'));
+      }
+
+      renderAccessLogEntries(data.logs || [], resultContainer, ui);
+      const logCount = Array.isArray(data.logs) ? data.logs.length : 0;
+      resultSummary.textContent = (ui.dataset.showingLabel || 'Showing %1$d of %2$d matching access logs')
+        .replace('%1$d', String(logCount))
+        .replace('%2$d', String(data.total || 0));
+    })
+    .catch((error) => {
+      resultSummary.textContent = ui.dataset.errorLabel || 'Error';
+      showErrorMessage(error.message || ui.dataset.errorLabel || 'Error');
+    })
+    .finally(() => {
+      searchButton.disabled = false;
+    });
+}
+
+function openAccessLogsModal() {
+  removeAccessLogsModal();
+
+  const ui = document.getElementById('admin-access-log-ui');
+  if (!ui) {
+    showErrorMessage(translate('error'));
+    return;
+  }
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'admin-access-log-backdrop';
+  backdrop.className = 'access-log-modal-backdrop';
+
+  const modal = document.createElement('div');
+  modal.className = 'access-log-modal';
+
+  const header = document.createElement('div');
+  header.className = 'access-log-modal-header';
+  header.innerHTML = `
+    <h3>${ui.dataset.title || 'Access Logs'}</h3>
+    <button type="button" class="secondary-button thin">${ui.dataset.closeLabel || 'Close'}</button>
+  `;
+
+  const closeButton = header.querySelector('button');
+  closeButton.addEventListener('click', removeAccessLogsModal);
+
+  const body = document.createElement('div');
+  body.className = 'access-log-modal-body';
+
+  const filterGrid = document.createElement('div');
+  filterGrid.className = 'access-log-filter-grid';
+
+  const requestIdField = document.createElement('div');
+  requestIdField.className = 'form-group';
+  requestIdField.innerHTML = `
+    <label for="accessLogRequestId">${ui.dataset.requestIdLabel}</label>
+    <input type="number" id="accessLogRequestId" min="0" autocomplete="off" />
+  `;
+
+  const keywordField = document.createElement('div');
+  keywordField.className = 'form-group';
+  keywordField.innerHTML = `
+    <label for="accessLogKeyword">${ui.dataset.keywordLabel}</label>
+    <input type="text" id="accessLogKeyword" autocomplete="off" placeholder="${ui.dataset.keywordPlaceholder || ''}" />
+  `;
+
+  const methodField = document.createElement('div');
+  methodField.className = 'form-group';
+  methodField.innerHTML = `
+    <label for="accessLogMethod">${ui.dataset.methodLabel}</label>
+    <select id="accessLogMethod">
+      <option value="">ALL</option>
+      <option value="GET">GET</option>
+      <option value="POST">POST</option>
+      <option value="PUT">PUT</option>
+      <option value="PATCH">PATCH</option>
+      <option value="DELETE">DELETE</option>
+    </select>
+  `;
+
+  const limitField = document.createElement('div');
+  limitField.className = 'form-group';
+  limitField.innerHTML = `
+    <label for="accessLogLimit">${ui.dataset.limitLabel}</label>
+    <select id="accessLogLimit">
+      <option value="50">50</option>
+      <option value="100" selected>100</option>
+      <option value="200">200</option>
+      <option value="300">300</option>
+      <option value="500">500</option>
+    </select>
+  `;
+
+  const actionField = document.createElement('div');
+  actionField.className = 'form-group';
+  const searchButton = document.createElement('button');
+  searchButton.type = 'button';
+  searchButton.className = 'button thin';
+  searchButton.textContent = ui.dataset.searchLabel || 'Search';
+  actionField.appendChild(searchButton);
+
+  filterGrid.appendChild(requestIdField);
+  filterGrid.appendChild(keywordField);
+  filterGrid.appendChild(methodField);
+  filterGrid.appendChild(limitField);
+  filterGrid.appendChild(actionField);
+
+  const resultSummary = document.createElement('p');
+  resultSummary.className = 'access-log-results-summary';
+  resultSummary.textContent = ui.dataset.emptyLabel || '';
+
+  const resultContainer = document.createElement('div');
+
+  const runSearch = () => {
+    fetchAdminAccessLogs({
+      request_id: document.getElementById('accessLogRequestId')?.value || '',
+      keyword: document.getElementById('accessLogKeyword')?.value || '',
+      method: document.getElementById('accessLogMethod')?.value || '',
+      limit: document.getElementById('accessLogLimit')?.value || '100',
+    }, resultSummary, resultContainer, searchButton, ui);
+  };
+
+  searchButton.addEventListener('click', runSearch);
+
+  body.appendChild(filterGrid);
+  body.appendChild(resultSummary);
+  body.appendChild(resultContainer);
+
+  modal.appendChild(header);
+  modal.appendChild(body);
+  backdrop.appendChild(modal);
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      removeAccessLogsModal();
+    }
+  });
+
+  document.body.appendChild(backdrop);
+  runSearch();
+}
+
 function toggleAdminSection(button) {
   const targetId = button.dataset.target;
   const target = document.getElementById(targetId);

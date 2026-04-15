@@ -5032,6 +5032,124 @@ button.dark-theme-button i {
   overflow: auto;
 }
 
+.access-log-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.access-log-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: rgba(10, 10, 24, 0.46);
+  backdrop-filter: blur(10px);
+}
+
+.access-log-modal {
+  width: min(1200px, 100%);
+  max-height: min(88vh, 980px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  border: 1px solid var(--box-border-color);
+  background-color: var(--box-background-color);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+  overflow: hidden;
+}
+
+.access-log-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--box-border-color);
+}
+
+.access-log-modal-header h3 {
+  margin: 0;
+}
+
+.access-log-modal-body {
+  padding: 18px 22px 22px;
+  overflow: auto;
+}
+
+.access-log-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 140px) minmax(0, 1fr) minmax(0, 150px) minmax(0, 120px) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+
+.access-log-filter-grid .form-group {
+  margin-bottom: 0;
+}
+
+.access-log-results-summary {
+  margin-bottom: 14px;
+  opacity: 0.82;
+}
+
+.access-log-list.compact {
+  margin-top: 0;
+}
+
+.access-log-empty {
+  padding: 18px 0 4px;
+}
+
+.access-log-id-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background-color: rgba(var(--main-color-rgb), 0.1);
+  color: var(--main-color);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .access-log-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .access-log-filter-grid .button,
+  .access-log-filter-grid .secondary-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .access-log-modal-backdrop {
+    padding: 10px;
+  }
+
+  .access-log-modal {
+    max-height: calc(100vh - 20px);
+  }
+
+  .access-log-modal-header,
+  .access-log-modal-body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .access-log-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .generated-password-backdrop {
   position: fixed;
   inset: 0;
