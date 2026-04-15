@@ -19,6 +19,7 @@ require_once 'i18n/getlang.php';
 require_once 'i18n/' . $lang . '.php';
 require_once 'user_status.php';
 require_once 'request_logs.php';
+require_once 'security_rate_limits.php';
 
 $secondsInMonth = 30 * 24 * 60 * 60;
 if (session_status() === PHP_SESSION_NONE) {
@@ -69,6 +70,19 @@ if ($userId > 0) {
         exit;
     } else {
         wallos_log_request($db, $userRow['id'], $userRow['username'] ?? '');
+        $rateLimitViolation = wallos_enforce_backend_request_rate_limit($db, $userRow['id'], $userRow['username'] ?? '', $i18n);
+        if ($rateLimitViolation !== null) {
+            http_response_code((int) ($rateLimitViolation['status'] ?? 429));
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'rate_limit' => true,
+                'message' => $rateLimitViolation['message'],
+                'retry_at' => $rateLimitViolation['retry_at'],
+                'code' => $rateLimitViolation['code'],
+            ]);
+            exit;
+        }
     }
 }
 

@@ -11,6 +11,7 @@ require_once '../../includes/subscription_payment_records.php';
 require_once '../../includes/subscription_payment_history.php';
 require_once '../../includes/subscription_price_rules.php';
 require_once '../../includes/user_groups.php';
+require_once '../../includes/security_rate_limits.php';
 if (!file_exists('../../images/uploads/logos')) {
     mkdir('../../images/uploads/logos', 0777, true);
     mkdir('../../images/uploads/logos/avatars', 0777, true);
@@ -307,9 +308,27 @@ try {
 
 $detailImageUrlsJson = wallos_encode_subscription_image_urls($detailImageUrls);
 $uploadedFileCount = wallos_count_effective_uploaded_files($_FILES['detail_images'] ?? null);
+$uploadedFileBytes = 0;
+foreach (wallos_restructure_uploaded_files_array($_FILES['detail_images'] ?? null) as $uploadedFile) {
+    if (($uploadedFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+        $uploadedFileBytes += (int) ($uploadedFile['size'] ?? 0);
+    }
+}
 
 if (!$canUploadDetailImages && $uploadedFileCount > 0) {
     subscription_error_response(translate('subscription_image_no_upload_permission', $i18n));
+}
+
+$uploadRateLimitViolation = wallos_enforce_subscription_image_upload_rate_limit(
+    $db,
+    $userId,
+    (string) ($currentUser['username'] ?? ''),
+    $i18n,
+    $uploadedFileCount,
+    $uploadedFileBytes
+);
+if ($uploadRateLimitViolation !== null) {
+    subscription_error_response($uploadRateLimitViolation['message']);
 }
 
 $subscriptionId = $isEdit ? (int) $_POST['id'] : 0;
