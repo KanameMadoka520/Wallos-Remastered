@@ -20,6 +20,7 @@ if (!is_array($adminRow)) {
 $seedPresets = [
     WALLOS_RATE_LIMIT_TEST_PRESET_NAME => wallos_build_rate_limit_test_preset_config(),
     WALLOS_RATE_LIMIT_NORMAL_PRESET_NAME => wallos_build_rate_limit_preset_config_from_admin_row($adminRow),
+    WALLOS_RATE_LIMIT_RECOMMENDED_PRESET_NAME => wallos_build_rate_limit_recommended_preset_config(),
 ];
 
 foreach ($seedPresets as $presetName => $presetConfig) {

@@ -31,6 +31,35 @@ function wallos_get_login_rate_limit_max_attempts($db)
     return $configured;
 }
 
+function wallos_get_login_rate_limit_block_seconds($db)
+{
+    $defaultMinutes = (int) floor(WALLOS_LOGIN_RATE_LIMIT_BLOCK_SECONDS / 60);
+    $tableExists = $db->querySingle("SELECT name FROM sqlite_master WHERE type='table' AND name='admin'") !== null;
+    if (!$tableExists) {
+        return $defaultMinutes * 60;
+    }
+
+    $columnExists = false;
+    $columns = $db->query("PRAGMA table_info(admin)");
+    while ($columns && ($row = $columns->fetchArray(SQLITE3_ASSOC))) {
+        if (($row['name'] ?? '') === 'login_rate_limit_block_minutes') {
+            $columnExists = true;
+            break;
+        }
+    }
+
+    if (!$columnExists) {
+        return $defaultMinutes * 60;
+    }
+
+    $configuredMinutes = (int) $db->querySingle('SELECT login_rate_limit_block_minutes FROM admin WHERE id = 1');
+    if ($configuredMinutes < 1) {
+        $configuredMinutes = $defaultMinutes;
+    }
+
+    return $configuredMinutes * 60;
+}
+
 function wallos_login_attempts_table_exists($db)
 {
     static $exists = null;
@@ -157,7 +186,7 @@ function wallos_record_failed_login_attempt($db, $ipAddress, $username)
     $blockedUntil = '';
     $nextFailureCount = max($ipFailureCount, $userFailureCount) + 1;
     if ($nextFailureCount >= $maxAttempts) {
-        $blockedUntil = date('Y-m-d H:i:s', time() + WALLOS_LOGIN_RATE_LIMIT_BLOCK_SECONDS);
+        $blockedUntil = date('Y-m-d H:i:s', time() + wallos_get_login_rate_limit_block_seconds($db));
     }
 
     $stmt = $db->prepare('
