@@ -6,6 +6,7 @@ require_once 'includes/subscription_media.php';
 require_once 'includes/backup_manager.php';
 require_once 'includes/backup_progress_messages.php';
 require_once 'includes/timezone_settings.php';
+require_once 'includes/security_rate_limit_presets.php';
 
 if ($isAdmin != 1) {
     header('Location: index.php');
@@ -171,6 +172,8 @@ $timezoneOptions = wallos_get_timezone_options($backupTimezone);
 $recentBackups = wallos_list_backups($db, 20, __DIR__);
 $recentBackupCount = count($recentBackups);
 $latestBackup = $recentBackups[0] ?? null;
+$rateLimitPresets = wallos_get_rate_limit_presets($db);
+$rateLimitPresetsJson = json_encode($rateLimitPresets, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $backupProgressLabels = wallos_get_backup_progress_labels($lang);
 require_once 'includes/page_navigation.php';
 
@@ -250,6 +253,16 @@ $pageSections = [
         data-agent-label="<?= htmlspecialchars(translate('user_agent', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-message-label="<?= htmlspecialchars(translate('message', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-error-label="<?= htmlspecialchars(translate('error', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
+    <div id="admin-rate-limit-preset-ui" style="display:none;"
+        data-add-label="<?= htmlspecialchars(translate('add_preset', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-save-label="<?= htmlspecialchars(translate('save_preset', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-apply-label="<?= htmlspecialchars(translate('apply_preset', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-delete-label="<?= htmlspecialchars(translate('delete_preset', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-name-prompt="<?= htmlspecialchars(translate('rate_limit_preset_name_prompt', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-delete-confirm="<?= htmlspecialchars(translate('delete_rate_limit_preset_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-apply-notice="<?= htmlspecialchars(translate('rate_limit_preset_applied_notice', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-no-selection="<?= htmlspecialchars(translate('select_rate_limit_preset_first', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-presets='<?= htmlspecialchars($rateLimitPresetsJson ?: "[]", ENT_QUOTES, "UTF-8") ?>'></div>
     <div class="page-layout">
         <?php render_page_navigation(translate('admin', $i18n), $pageSections); ?>
         <div class="page-content">
@@ -889,6 +902,29 @@ $pageSections = [
     <header>
         <h2><?= translate('security_settings', $i18n) ?></h2> </header>
     <div class="admin-form">
+        <div class="form-group">
+            <label for="rateLimitPresetSelect"><?= translate('rate_limit_presets', $i18n) ?></label>
+            <select id="rateLimitPresetSelect">
+                <option value=""><?= translate('select_a_preset', $i18n) ?></option>
+                <?php
+                foreach ($rateLimitPresets as $preset) {
+                    ?>
+                    <option value="<?= (int) $preset['id'] ?>"><?= htmlspecialchars($preset['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php
+                }
+                ?>
+            </select>
+        </div>
+        <div class="buttons">
+            <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('apply_preset', $i18n) ?>"
+                onClick="applyRateLimitPresetButton()" />
+            <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('save_preset', $i18n) ?>"
+                onClick="saveRateLimitPresetButton()" />
+            <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('add_preset', $i18n) ?>"
+                onClick="addRateLimitPresetButton()" />
+            <input type="button" class="warning-button thin mobile-grow" value="<?= translate('delete_preset', $i18n) ?>"
+                onClick="deleteRateLimitPresetButton()" />
+        </div>
         <div class="form-group-inline">
             <input type="checkbox" id="advancedRateLimitEnabled" <?= !empty($settings['advanced_rate_limit_enabled']) ? 'checked' : '' ?> />
             <label for="advancedRateLimitEnabled"><?= translate('enable_advanced_rate_limits', $i18n) ?></label>

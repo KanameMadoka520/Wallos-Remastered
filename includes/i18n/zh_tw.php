@@ -818,6 +818,19 @@ $i18n = [
     "image_download_count_limit_hour_label" => "訂閱圖片下載每小時數量上限",
     "image_download_traffic_limit_minute_label" => "訂閱圖片下載每分鐘流量上限",
     "image_download_traffic_limit_hour_label" => "訂閱圖片下載每小時流量上限",
+    "rate_limit_presets" => "速率限制預設",
+    "select_a_preset" => "選擇一個預設",
+    "add_preset" => "新增預設",
+    "save_preset" => "儲存預設",
+    "apply_preset" => "套用預設",
+    "delete_preset" => "刪除預設",
+    "rate_limit_preset_name_prompt" => "請輸入新的速率限制預設名稱：",
+    "delete_rate_limit_preset_confirm" => "確認現在刪除所選速率限制預設嗎？",
+    "rate_limit_preset_applied_notice" => "預設值已載入表單，點擊儲存後才會正式生效。",
+    "select_rate_limit_preset_first" => "請先選擇一個速率限制預設。",
+    "rate_limit_preset_created" => "速率限制預設已建立。",
+    "rate_limit_preset_saved" => "速率限制預設已儲存。",
+    "rate_limit_preset_deleted" => "速率限制預設已刪除。",
 ];
 
 
