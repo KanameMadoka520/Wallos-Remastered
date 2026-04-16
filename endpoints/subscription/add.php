@@ -297,9 +297,9 @@ $currentUser = $userResult ? $userResult->fetchArray(SQLITE3_ASSOC) : false;
 $isAdminUser = $userId === 1;
 $currentUserGroup = wallos_normalize_user_group($currentUser['user_group'] ?? WALLOS_USER_GROUP_FREE);
 $canUploadDetailImages = wallos_can_upload_subscription_images($isAdminUser, $currentUserGroup);
-$compressDetailImages = $isAdminUser
+$compressDetailImages = $canUploadDetailImages
     ? (isset($_POST['compress_subscription_image']) && $_POST['compress_subscription_image'] === '1')
-    : $canUploadDetailImages;
+    : false;
 $mediaPolicy = wallos_get_subscription_media_policy($db);
 $uploadLimit = wallos_get_subscription_upload_limit_for_user($isAdminUser, $currentUserGroup, $mediaPolicy);
 
