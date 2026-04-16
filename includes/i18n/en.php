@@ -449,7 +449,7 @@ $i18n = [
     "homepage_upload_policy_title" => "Subscription Image Policy",
     "homepage_upload_policy_summary" => "To avoid malicious traffic spikes and excessive disk usage, subscription detail images have different limits depending on account group.",
     "homepage_upload_policy_admin" => "Your account is the administrator account. You can upload images to the server, and you may decide case by case whether the current upload should be compressed.",
-    "homepage_upload_policy_trusted" => "Your account is trusted. You can upload one image to the server per subscription, and uploaded images are always compressed automatically for storage safety.",
+    "homepage_upload_policy_trusted" => "Your account is trusted. You can upload one image to the server per subscription, and you may decide for each upload whether it should be compressed.",
     "homepage_upload_policy_free" => "Your account is Free. You can still attach up to 10 external image URLs per subscription, but uploading images to the server remains disabled until an administrator upgrades your account.",
     // Settings page
     "monthly_budget" => "Monthly Budget",
