@@ -82,6 +82,18 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function normalizeSubscriptionRequestError(error, fallbackMessage = null) {
+  if (window.WallosHttp?.normalizeError) {
+    return window.WallosHttp.normalizeError(error, fallbackMessage || translate("unknown_error"));
+  }
+
+  if (error instanceof Error && String(error.message || "").trim() !== "") {
+    return error.message.trim();
+  }
+
+  return fallbackMessage || translate("unknown_error");
+}
+
 function getSubscriptionPageStrings() {
   return {
     pagesTitle: window.subscriptionPageStrings?.pagesTitle || "Subscription Pages",
@@ -295,11 +307,9 @@ function applySubscriptionPagesPayload(payload, options = {}) {
 }
 
 function refreshSubscriptionPages(options = {}) {
-  return fetch(SUBSCRIPTION_PAGES_ENDPOINT, {
-    method: "GET",
-    credentials: "same-origin",
+  return window.WallosHttp.getJson(SUBSCRIPTION_PAGES_ENDPOINT, {
+    includeCsrf: false,
   })
-    .then((response) => response.json())
     .then((data) => {
       if (!data.success) {
         throw new Error(data.message || translate("error"));
@@ -310,22 +320,14 @@ function refreshSubscriptionPages(options = {}) {
     })
     .catch((error) => {
       if (!options.silent) {
-        showErrorMessage(error.message || translate("error"));
+        showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
       }
       throw error;
     });
 }
 
 function submitSubscriptionPageAction(payload, options = {}) {
-  return fetch(SUBSCRIPTION_PAGES_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify(payload),
-  })
-    .then((response) => response.json())
+  return window.WallosHttp.postJson(SUBSCRIPTION_PAGES_ENDPOINT, payload)
     .then((data) => {
       if (!data.success) {
         throw new Error(data.message || translate("error"));
@@ -336,7 +338,7 @@ function submitSubscriptionPageAction(payload, options = {}) {
       return data;
     })
     .catch((error) => {
-      showErrorMessage(error.message || translate("error"));
+      showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
       throw error;
     });
 }
@@ -1478,20 +1480,18 @@ function openSubscriptionPaymentModal(event, id) {
     historyModal.classList.remove("is-open");
   }
 
-  fetch(`endpoints/subscription/get.php?id=${id}`)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(translate('failed_to_load_subscription'));
-      }
-      return response.json();
-    })
+  window.WallosHttp.getJson(`endpoints/subscription/get.php?id=${id}`, {
+    includeCsrf: false,
+    requireOk: true,
+    fallbackErrorMessage: translate('failed_to_load_subscription'),
+  })
     .then((subscription) => {
       fillSubscriptionPaymentForm(subscription);
       modal.classList.add("is-open");
     })
     .catch((error) => {
       document.body.classList.remove('no-scroll');
-      showErrorMessage(error.message || translate("error"));
+      showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
     });
 }
 
@@ -1985,13 +1985,11 @@ function openSubscriptionPaymentHistoryModal(event, id, options = {}) {
     range: String(currentPaymentHistoryRangeMonths),
   });
 
-  fetch(`endpoints/subscription/paymenthistory.php?${params.toString()}`)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(translate('failed_to_load_subscription'));
-      }
-      return response.json();
-    })
+  window.WallosHttp.getJson(`endpoints/subscription/paymenthistory.php?${params.toString()}`, {
+    includeCsrf: false,
+    requireOk: true,
+    fallbackErrorMessage: translate('failed_to_load_subscription'),
+  })
     .then((data) => {
       if (!data.success) {
         throw new Error(data.message || translate('error'));
@@ -2010,7 +2008,7 @@ function openSubscriptionPaymentHistoryModal(event, id, options = {}) {
     })
     .catch((error) => {
       document.body.classList.remove('no-scroll');
-      showErrorMessage(error.message || translate("error"));
+      showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
     });
 }
 
@@ -2050,15 +2048,10 @@ function deleteSubscriptionPaymentRecord(event, subscriptionId, recordId) {
     return;
   }
 
-  fetch("endpoints/subscription/deletepayment.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({ id: subscriptionId, record_id: recordId }),
+  window.WallosHttp.postJson("endpoints/subscription/deletepayment.php", {
+    id: subscriptionId,
+    record_id: recordId,
   })
-    .then((response) => response.json())
     .then((data) => {
       if (data.success) {
         showSuccessMessage(data.message || translate("success"));
@@ -2077,7 +2070,7 @@ function deleteSubscriptionPaymentRecord(event, subscriptionId, recordId) {
         showErrorMessage(data.message || translate("error"));
       }
     })
-    .catch(() => showErrorMessage(translate("error")));
+    .catch((error) => showErrorMessage(normalizeSubscriptionRequestError(error, translate("error"))));
 }
 
 function getSubscriptionPriceRulesCurrencyOptionsHtml() {
@@ -2972,15 +2965,7 @@ function deleteSubscription(event, id) {
     return;
   }
 
-  fetch("endpoints/subscription/delete.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({ id: id }),
-  })
-    .then((response) => response.json())
+  window.WallosHttp.postJson("endpoints/subscription/delete.php", { id })
     .then((data) => {
       if (data.success) {
         showSuccessMessage(data.message || translate('subscription_deleted'));
@@ -2992,7 +2977,7 @@ function deleteSubscription(event, id) {
     })
     .catch((error) => {
       console.error("Error:", error);
-      showErrorMessage(translate('error_deleting_subscription'));
+      showErrorMessage(normalizeSubscriptionRequestError(error, translate('error_deleting_subscription')));
     });
 }
 
@@ -3015,15 +3000,7 @@ function toggleSubscriptionSection(button) {
 }
 
 function restoreSubscriptionFromRecycleBin(id) {
-  fetch("endpoints/subscription/restore.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({ id }),
-  })
-    .then((response) => response.json())
+  window.WallosHttp.postJson("endpoints/subscription/restore.php", { id })
     .then((data) => {
       if (data.success) {
         showSuccessMessage(data.message || translate("success"));
@@ -3032,7 +3009,7 @@ function restoreSubscriptionFromRecycleBin(id) {
         showErrorMessage(data.message || translate("error"));
       }
     })
-    .catch(() => showErrorMessage(translate("error")));
+    .catch((error) => showErrorMessage(normalizeSubscriptionRequestError(error, translate("error"))));
 }
 
 function permanentlyDeleteSubscription(id) {
@@ -3040,15 +3017,7 @@ function permanentlyDeleteSubscription(id) {
     return;
   }
 
-  fetch("endpoints/subscription/permanentdelete.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({ id }),
-  })
-    .then((response) => response.json())
+  window.WallosHttp.postJson("endpoints/subscription/permanentdelete.php", { id })
     .then((data) => {
       if (data.success) {
         showSuccessMessage(data.message || translate("success"));
@@ -3057,7 +3026,7 @@ function permanentlyDeleteSubscription(id) {
         showErrorMessage(data.message || translate("error"));
       }
     })
-    .catch(() => showErrorMessage(translate("error")));
+    .catch((error) => showErrorMessage(normalizeSubscriptionRequestError(error, translate("error"))));
 }
 
 
@@ -3065,20 +3034,10 @@ function cloneSubscription(event, id) {
   event.stopPropagation();
   event.preventDefault();
 
-  fetch("endpoints/subscription/clone.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({ id: id }),
+  window.WallosHttp.postJson("endpoints/subscription/clone.php", { id }, {
+    requireOk: true,
+    fallbackErrorMessage: translate("network_response_error"),
   })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(translate("network_response_error"));
-      }
-      return response.json();
-    })
     .then((data) => {
       if (data.success) {
         const newId = data.id;
@@ -3089,7 +3048,7 @@ function cloneSubscription(event, id) {
       }
     })
     .catch((error) => {
-      showErrorMessage(error.message || translate("error"));
+      showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
     });
 }
 
@@ -3098,20 +3057,10 @@ function renewSubscription(event, id) {
   event.stopPropagation();
   event.preventDefault();
 
-  fetch("endpoints/subscription/renew.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({ id: id }),
+  window.WallosHttp.postJson("endpoints/subscription/renew.php", { id }, {
+    requireOk: true,
+    fallbackErrorMessage: translate("network_response_error"),
   })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(translate("network_response_error"));
-      }
-      return response.json();
-    })
     .then((data) => {
       if (data.success) {
         const newId = data.id;
@@ -3122,7 +3071,7 @@ function renewSubscription(event, id) {
       }
     })
     .catch((error) => {
-      showErrorMessage(error.message || translate("error"));
+      showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
     });
 }
 
@@ -3171,12 +3120,12 @@ function displayImageResults(imageSources) {
   imageSources.forEach(src => {
     const img = document.createElement("img");
     img.src = src.thumbnail || src.image;
-    img.onclick = function () {
+    img.addEventListener("click", function () {
       selectWebLogo(src.thumbnail || src.image);
-    };
-    img.onerror = function () {
+    });
+    img.addEventListener("error", function () {
       this.parentNode.removeChild(this);
-    };
+    });
     logoResults.appendChild(img);
   });
 }
@@ -3195,6 +3144,154 @@ function closeLogoSearch() {
   logoSearchPopup.classList.remove("is-open");
   const logoResults = document.querySelector("#logo-search-images");
   logoResults.innerHTML = "";
+}
+
+function handleStaticSubscriptionAction(event) {
+  const trigger = event.target.closest("[data-subscription-action]");
+  if (!trigger) {
+    return;
+  }
+
+  const action = trigger.dataset.subscriptionAction || "";
+
+  switch (action) {
+  case "open-add-subscription":
+    addSubscription();
+    break;
+  case "open-recycle-bin":
+    openSubscriptionRecycleBinModal(event);
+    break;
+  case "close-recycle-bin":
+    closeSubscriptionRecycleBinModal();
+    break;
+  case "generate-image-variants":
+    generateSubscriptionImageVariants();
+    break;
+  case "set-display-columns":
+    setSubscriptionDisplayColumns(Number(trigger.dataset.columns || 1), trigger);
+    break;
+  case "toggle-value-metric":
+    toggleSubscriptionValueMetric(trigger.dataset.metric || "");
+    break;
+  case "toggle-sort-options":
+    toggleSortOptions();
+    break;
+  case "select-page-filter":
+    selectSubscriptionPageFilter(trigger.dataset.filter || "all");
+    break;
+  case "open-pages-manager":
+    openSubscriptionPagesManager(event);
+    break;
+  case "close-pages-manager":
+    closeSubscriptionPagesManager();
+    break;
+  case "clear-search":
+    clearSearch();
+    break;
+  case "create-page":
+    createSubscriptionPage();
+    break;
+  case "close-add-subscription":
+    closeAddSubscription();
+    break;
+  case "search-logo":
+    searchLogo();
+    break;
+  case "close-logo-search":
+    closeLogoSearch();
+    break;
+  case "autofill-next-payment":
+    autoFillNextPaymentDate(event);
+    break;
+  case "add-price-rule":
+    addSubscriptionPriceRule();
+    break;
+  case "set-image-layout":
+    setSubscriptionImageLayoutMode(
+      trigger.dataset.layoutScope || "form",
+      trigger.dataset.layoutMode || "focus",
+      trigger
+    );
+    break;
+  case "close-payment-modal":
+    closeSubscriptionPaymentModal();
+    break;
+  case "close-payment-history-modal":
+    closeSubscriptionPaymentHistoryModal();
+    break;
+  case "export-payment-history":
+    exportSubscriptionPaymentHistoryCurrentView(trigger.dataset.exportFormat || "csv");
+    break;
+  case "image-viewer-previous":
+    showPreviousSubscriptionImage();
+    break;
+  case "image-viewer-next":
+    showNextSubscriptionImage();
+    break;
+  case "close-image-viewer":
+    closeSubscriptionImageViewer();
+    break;
+  case "open-image-original":
+    openSubscriptionImageOriginal();
+    break;
+  case "download-image":
+    downloadSubscriptionImage();
+    break;
+  case "restore-from-recycle-bin":
+    restoreSubscriptionFromRecycleBin(Number(trigger.dataset.subscriptionId || 0));
+    break;
+  case "permanently-delete-subscription":
+    permanentlyDeleteSubscription(Number(trigger.dataset.subscriptionId || 0));
+    break;
+  default:
+    break;
+  }
+}
+
+function handleStaticSubscriptionInput(event) {
+  const inputType = event.target?.dataset?.subscriptionInput;
+  if (!inputType) {
+    return;
+  }
+
+  if (inputType === "search") {
+    searchSubscriptions();
+    return;
+  }
+
+  if (inputType === "subscription-name") {
+    setSearchButtonStatus();
+  }
+}
+
+function handleStaticSubscriptionChange(event) {
+  const changeType = event.target?.dataset?.subscriptionChange;
+  if (!changeType) {
+    return;
+  }
+
+  switch (changeType) {
+  case "logo-file":
+    handleFileSelect(event);
+    break;
+  case "notifications-toggle":
+    toggleNotificationDays();
+    break;
+  case "detail-image-upload":
+    handleDetailImageSelect(event);
+    break;
+  case "inactive-toggle":
+    toggleReplacementSub();
+    break;
+  default:
+    break;
+  }
+}
+
+function initializeStaticSubscriptionInteractions() {
+  document.addEventListener("click", handleStaticSubscriptionAction);
+  document.addEventListener("input", handleStaticSubscriptionInput);
+  document.addEventListener("change", handleStaticSubscriptionChange);
 }
 
 function fetchSubscriptions(id, event, initiator) {
@@ -3412,6 +3509,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const subscriptionPaymentDueDateInput = document.querySelector("#subscription-payment-due-date");
   const subscriptionPageCreateInput = document.querySelector("#subscription-page-create-name");
 
+  initializeStaticSubscriptionInteractions();
   mountSubscriptionOverlayToBody("#subscription-form");
   mountSubscriptionOverlayToBody("#subscription-pages-manager-modal");
   mountSubscriptionOverlayToBody("#subscription-recycle-bin-modal");
@@ -3508,15 +3606,10 @@ document.addEventListener('DOMContentLoaded', function () {
         note: document.querySelector("#subscription-payment-note")?.value || "",
       };
 
-      fetch(recordId > 0 ? "endpoints/subscription/updatepayment.php" : "endpoints/subscription/recordpayment.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": window.csrfToken,
-        },
-        body: JSON.stringify(payload),
-      })
-        .then((response) => response.json())
+      window.WallosHttp.postJson(
+        recordId > 0 ? "endpoints/subscription/updatepayment.php" : "endpoints/subscription/recordpayment.php",
+        payload
+      )
         .then((data) => {
           if (data.success) {
             showSuccessMessage(data.message || translate("success"));
@@ -3558,6 +3651,9 @@ document.addEventListener('DOMContentLoaded', function () {
   applySubscriptionDisplayColumns();
   applySubscriptionValueVisibility();
   applyAllSubscriptionImageLayoutModes();
+  setSearchButtonStatus();
+  toggleNotificationDays();
+  toggleReplacementSub();
   renderSubscriptionPageTabs();
   closeSubscriptionImageViewer();
   initializeSubscriptionMediaSortables();
@@ -3604,13 +3700,7 @@ function generateSubscriptionImageVariants() {
 
   button.disabled = true;
 
-  fetch("endpoints/subscription/generatevariants.php", {
-    method: "POST",
-    headers: {
-      "X-CSRF-Token": window.csrfToken,
-    },
-  })
-    .then((response) => response.json())
+  window.WallosHttp.postJson("endpoints/subscription/generatevariants.php")
     .then((data) => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -3619,7 +3709,7 @@ function generateSubscriptionImageVariants() {
         showErrorMessage(data.message || translate("error"));
       }
     })
-    .catch(() => showErrorMessage(translate("error")))
+    .catch((error) => showErrorMessage(normalizeSubscriptionRequestError(error, translate("error"))))
     .finally(() => {
       button.disabled = false;
     });

@@ -153,6 +153,159 @@ function initializePageImmersiveToggle() {
   });
 }
 
+function buildWallosRequestHeaders(options = {}) {
+  const {
+    headers = {},
+    contentType = null,
+    includeCsrf = true,
+  } = options;
+  const finalHeaders = new Headers(headers);
+
+  if (contentType && !finalHeaders.has("Content-Type")) {
+    finalHeaders.set("Content-Type", contentType);
+  }
+
+  if (includeCsrf && window.csrfToken && !finalHeaders.has("X-CSRF-Token")) {
+    finalHeaders.set("X-CSRF-Token", window.csrfToken);
+  }
+
+  return finalHeaders;
+}
+
+function normalizeWallosRequestError(error, fallbackMessage = null) {
+  if (error instanceof Error && String(error.message || "").trim() !== "") {
+    return error.message.trim();
+  }
+
+  if (typeof error === "string" && error.trim() !== "") {
+    return error.trim();
+  }
+
+  return fallbackMessage || translate("unknown_error");
+}
+
+async function wallosRequest(url, options = {}) {
+  const {
+    method = "GET",
+    headers = {},
+    body = null,
+    contentType = null,
+    includeCsrf = true,
+    responseType = "json",
+    requireOk = false,
+    credentials = "same-origin",
+    fallbackErrorMessage = null,
+  } = options;
+
+  const response = await fetch(url, {
+    method,
+    headers: buildWallosRequestHeaders({
+      headers,
+      contentType,
+      includeCsrf,
+    }),
+    body,
+    credentials,
+  });
+
+  let data = null;
+
+  if (responseType === "json") {
+    try {
+      data = await response.json();
+    } catch (error) {
+      if (response.ok && !requireOk) {
+        data = null;
+      } else {
+        throw new Error(fallbackErrorMessage || translate("network_response_error"));
+      }
+    }
+  } else if (responseType === "text") {
+    data = await response.text();
+  } else if (responseType === "blob") {
+    data = await response.blob();
+  }
+
+  if (requireOk && !response.ok) {
+    throw new Error(
+      data?.message
+      || fallbackErrorMessage
+      || translate("network_response_error")
+    );
+  }
+
+  return { response, data };
+}
+
+async function wallosRequestJson(url, options = {}) {
+  const result = await wallosRequest(url, {
+    ...options,
+    responseType: "json",
+  });
+
+  return result.data;
+}
+
+function wallosGetJson(url, options = {}) {
+  return wallosRequestJson(url, {
+    ...options,
+    method: "GET",
+  });
+}
+
+function wallosPostJson(url, payload = {}, options = {}) {
+  return wallosRequestJson(url, {
+    ...options,
+    method: options.method || "POST",
+    contentType: "application/json",
+    body: JSON.stringify(payload),
+  });
+}
+
+function wallosPostForm(url, payload = {}, options = {}) {
+  const body = payload instanceof URLSearchParams || payload instanceof FormData
+    ? payload
+    : new URLSearchParams(payload);
+
+  return wallosRequestJson(url, {
+    ...options,
+    method: options.method || "POST",
+    contentType: body instanceof FormData ? null : "application/x-www-form-urlencoded",
+    body,
+  });
+}
+
+function wallosHandleJsonResult(data, options = {}) {
+  const {
+    successMessage = null,
+    errorMessage = null,
+    silentSuccess = false,
+    silentError = false,
+  } = options;
+
+  if (data?.success) {
+    if (!silentSuccess) {
+      showSuccessMessage(successMessage || data.message || translate("success"));
+    }
+    return true;
+  }
+
+  if (!silentError) {
+    showErrorMessage(errorMessage || data?.message || translate("error"));
+  }
+  return false;
+}
+
+window.WallosHttp = {
+  request: wallosRequest,
+  requestJson: wallosRequestJson,
+  getJson: wallosGetJson,
+  postJson: wallosPostJson,
+  postForm: wallosPostForm,
+  handleJsonResult: wallosHandleJsonResult,
+  normalizeError: normalizeWallosRequestError,
+};
+
 function closeToast(type) {
   const toast = document.querySelector(type === "error" ? ".toast#errorToast" : ".toast#successToast");
   const progress = document.querySelector(type === "error" ? ".progress.error" : ".progress.success");
