@@ -4,6 +4,7 @@ require_once 'includes/header.php';
 require_once 'includes/getdbkeys.php';
 require_once 'includes/user_groups.php';
 require_once 'includes/subscription_trash.php';
+require_once 'includes/subscription_media.php';
 require_once 'includes/metric_explanations.php';
 require_once 'includes/page_immersive_toggle.php';
 
@@ -64,6 +65,7 @@ $result = $stmt->execute();
 $user = $result->fetchArray(SQLITE3_ASSOC);
 $first_name = $user['firstname'] ?? $user['username'] ?? '';
 $effectiveUserGroup = wallos_get_effective_user_group($userData['user_group'] ?? WALLOS_USER_GROUP_FREE, $isAdmin);
+$subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
 
 // Fetch the next 3 enabled subscriptions up for payment
 $stmt = $db->prepare("SELECT id, logo, name, price, currency_id, next_payment, inactive FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status AND next_payment >= date('now') AND inactive = 0 ORDER BY next_payment ASC LIMIT 3");
@@ -140,7 +142,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             if ($effectiveUserGroup === 'admin') {
                 echo translate('homepage_upload_policy_admin', $i18n);
             } elseif ($effectiveUserGroup === WALLOS_USER_GROUP_TRUSTED) {
-                echo translate('homepage_upload_policy_trusted', $i18n);
+                echo sprintf(translate('homepage_upload_policy_trusted_dynamic', $i18n), (int) $subscriptionImagePolicy['trusted_upload_limit']);
             } else {
                 echo translate('homepage_upload_policy_free', $i18n);
             }

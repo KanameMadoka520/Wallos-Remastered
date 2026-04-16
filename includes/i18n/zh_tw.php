@@ -238,7 +238,7 @@ $i18n = [
     "subscription_image_external_urls_placeholder_dynamic" => "每行填寫一個圖片外鏈 URL，最多允許 %d 個。",
     "subscription_image_limits_notice" => "上傳到伺服器的圖片單張上限 10 MB，僅支援 JPEG、PNG、WebP。圖片外鏈必須使用 http 或 https，且每個訂閱最多 10 個。",
     "subscription_image_admin_notice" => "你目前是管理員，可以上傳圖片到伺服器，並可為本次上傳決定是否壓縮。為了安全，檔案仍會重新編碼。",
-    "subscription_image_trusted_notice" => "受信使用者可以為每個訂閱上傳 1 張圖片到伺服器，並可自行決定本次上傳是否壓縮。",
+    "subscription_image_trusted_notice" => "受信使用者可以在管理員設定的數量上限內上傳圖片到伺服器，並可依本次上傳自行決定是否壓縮。",
     "subscription_image_free_notice" => "Free 使用者不能上傳圖片到伺服器，但仍可填寫最多 10 個圖片外鏈。如需上傳權限，請聯絡管理員調整為受信使用者。",
     "subscription_image_compress_toggle" => "壓縮上傳到伺服器的圖片",
     "subscription_image_no_upload_permission" => "你目前的帳戶分組不允許為訂閱上傳圖片到伺服器。",
@@ -443,7 +443,7 @@ $i18n = [
     "homepage_upload_policy_title" => "訂閱圖片策略",
     "homepage_upload_policy_summary" => "為了防止惡意刷流量與後端硬碟被濫用，訂閱詳情圖片會依照帳戶分組套用不同限制。",
     "homepage_upload_policy_admin" => "你目前是管理員帳戶，可以上傳圖片到伺服器，並可依本次上傳自行決定是否壓縮。",
-    "homepage_upload_policy_trusted" => "你目前是受信使用者，可以為每個訂閱上傳 1 張圖片到伺服器，並可依本次上傳自行決定是否壓縮。",
+    "homepage_upload_policy_trusted_dynamic" => "你目前是受信使用者，可以為每個訂閱上傳最多 %d 張圖片到伺服器，並可依本次上傳自行決定是否壓縮。",
     "homepage_upload_policy_free" => "你目前是 Free 使用者，仍可為每個訂閱填寫最多 10 個圖片外鏈，但上傳圖片到伺服器會保持關閉，直到管理員為你提升權限。",
     // 設定頁面
     "monthly_budget" => "每月預算",
