@@ -207,6 +207,8 @@ $paymentTotalMap = wallos_get_subscription_payment_total_map($db, $userId);
 $priceRulesMap = wallos_get_subscription_price_rules_map($db, $userId, true);
 $subscriptionPagesJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-pages.js');
 $subscriptionPreferencesJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-preferences.js');
+$subscriptionMediaJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-media.js');
+$subscriptionImageViewerJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-image-viewer.js');
 $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscriptions.js');
 $subscriptionPagePreferences = wallos_get_subscription_page_preferences_payload($settings);
 $subscriptionDisplayColumns = (int) ($subscriptionPagePreferences['displayColumns'] ?? 1);
@@ -1439,6 +1441,8 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 <script src="scripts/libs/sortable.min.js"></script>
 <script src="scripts/subscription-pages.js?<?= $subscriptionPagesJsVersion ?>"></script>
 <script src="scripts/subscription-preferences.js?<?= $subscriptionPreferencesJsVersion ?>"></script>
+<script src="scripts/subscription-media.js?<?= $subscriptionMediaJsVersion ?>"></script>
+<script src="scripts/subscription-image-viewer.js?<?= $subscriptionImageViewerJsVersion ?>"></script>
 <script src="scripts/subscriptions.js?<?= $subscriptionsJsVersion ?>"></script>
 <?php
 if (isset($_GET['add'])) {
