@@ -223,6 +223,17 @@ $subscriptionPagePreferences = [
     'detail' => $subscriptionImageLayoutDetail,
   ],
 ];
+$subscriptionPageSaveActionLabel = $lang === 'zh_cn'
+  ? '保存名称'
+  : ($lang === 'zh_tw' ? '儲存名稱' : 'Save Name');
+$subscriptionPageDeleteActionLabel = $lang === 'zh_cn'
+  ? '删除分页'
+  : ($lang === 'zh_tw' ? '刪除分頁' : 'Delete Page');
+$subscriptionPageManageHint = $lang === 'zh_cn'
+  ? '修改分页名称后，请点击“保存名称”。删除分页不会删除订阅，只会把该分页下的订阅移回“未分页”。'
+  : ($lang === 'zh_tw'
+    ? '修改分頁名稱後，請點擊「儲存名稱」。刪除分頁不會刪除訂閱，只會把該分頁下的訂閱移回「未分頁」。'
+    : 'After editing a page name, click "Save Name". Deleting a page only moves subscriptions back to "Unassigned".');
 ?>
 <style>
   .logo-preview:after {
@@ -714,6 +725,10 @@ $subscriptionPagePreferences = [
         <i class="fa-solid fa-circle-info"></i>
         <?= wallos_translate_with_fallback('subscription_page_create_hint', 'Use tabs to split a large subscription list into manageable pages.', $i18n) ?>
       </p>
+      <p>
+        <i class="fa-solid fa-circle-info"></i>
+        <?= htmlspecialchars($subscriptionPageManageHint, ENT_QUOTES, 'UTF-8') ?>
+      </p>
     </div>
   </div>
   <div class="subscription-pages-manager-list" id="subscription-pages-manager-list">
@@ -733,11 +748,11 @@ $subscriptionPagePreferences = [
           <div class="subscription-pages-manager-item-actions">
             <button type="button" class="button secondary-button thin" data-subscription-action="save-page">
               <i class="fa-solid fa-floppy-disk"></i>
-              <span><?= translate('save', $i18n) ?></span>
+              <span><?= htmlspecialchars($subscriptionPageSaveActionLabel, ENT_QUOTES, 'UTF-8') ?></span>
             </button>
             <button type="button" class="button secondary-button thin danger" data-subscription-action="delete-page">
               <i class="fa-solid fa-trash-can"></i>
-              <span><?= translate('delete', $i18n) ?></span>
+              <span><?= htmlspecialchars($subscriptionPageDeleteActionLabel, ENT_QUOTES, 'UTF-8') ?></span>
             </button>
           </div>
         </div>
@@ -1324,6 +1339,9 @@ $subscriptionPagePreferences = [
     'empty' => wallos_translate_with_fallback('subscription_page_empty', 'No custom pages yet. Create one above.', $i18n),
     'namePlaceholder' => wallos_translate_with_fallback('subscription_page_name_placeholder', 'New page name', $i18n),
     'deleteConfirm' => wallos_translate_with_fallback('subscription_page_delete_confirm', 'Delete this page now? Subscriptions inside it will move to Unassigned.', $i18n),
+    'saveAction' => $subscriptionPageSaveActionLabel,
+    'deleteAction' => $subscriptionPageDeleteActionLabel,
+    'manageHint' => $subscriptionPageManageHint,
   ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>
 <script src="scripts/libs/sortable.min.js"></script>

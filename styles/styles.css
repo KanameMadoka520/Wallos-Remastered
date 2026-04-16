@@ -3052,6 +3052,70 @@ button.dark-theme-button i {
   gap: 16px;
 }
 
+.subscription-pages-manager-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.subscription-pages-manager-create {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.subscription-pages-manager-create input[type="text"] {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.subscription-pages-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.subscription-pages-manager-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--box-border-color);
+  border-radius: 16px;
+  background-color: rgba(var(--main-color-rgb), 0.04);
+}
+
+.subscription-pages-manager-item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.subscription-page-name-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.subscription-pages-manager-item-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.subscription-pages-manager-item-actions .button {
+  justify-content: center;
+  min-width: 144px;
+}
+
+.subscription-pages-manager-empty {
+  padding: 18px;
+  border: 1px dashed var(--box-border-color);
+  border-radius: 16px;
+  color: #777;
+  background-color: rgba(var(--main-color-rgb), 0.03);
+}
+
 .subscription-detail-images-group textarea {
   height: 128px;
   margin-top: 16px;
@@ -3464,6 +3528,18 @@ button.dark-theme-button i {
 
   .subscription-detail-image-actions {
     flex-basis: auto;
+  }
+
+  .subscription-pages-manager-create,
+  .subscription-pages-manager-item-main,
+  .subscription-pages-manager-item-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .subscription-pages-manager-item-actions .button {
+    min-width: 0;
+    width: 100%;
   }
 
   .subscription-media-gallery.has-multiple .subscription-media-item:first-child {
