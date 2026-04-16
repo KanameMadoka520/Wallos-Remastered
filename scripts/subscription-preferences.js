@@ -12,7 +12,7 @@
   };
   let preferencesSaveTimer = null;
   let shouldReloadAfterSave = false;
-  let reloadAfterSaveTimer = null;
+  let pendingReloadPreferenceSave = false;
   let bindMasonryImageEventsHandler = null;
   let scheduleMasonryLayoutHandler = null;
 
@@ -44,6 +44,31 @@
     };
   }
 
+  function setPendingReloadControls(disabled) {
+    document.querySelectorAll(
+      '[data-subscription-action="set-display-columns"], [data-subscription-action="toggle-value-metric"]'
+    ).forEach((button) => {
+      button.disabled = disabled;
+      button.setAttribute("aria-disabled", disabled ? "true" : "false");
+    });
+  }
+
+  function persistPreferences() {
+    return fetch(SUBSCRIPTION_PREFERENCES_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": window.csrfToken,
+      },
+      body: JSON.stringify({
+        display_columns: displayColumns,
+        value_visibility: valueVisibility,
+        image_layout_form: imageLayoutPreferences.form,
+        image_layout_detail: imageLayoutPreferences.detail,
+      }),
+    }).then((response) => response.json());
+  }
+
   function scheduleSave(options = {}) {
     updatePreferencesCache();
 
@@ -55,41 +80,34 @@
       window.clearTimeout(preferencesSaveTimer);
     }
 
-    preferencesSaveTimer = window.setTimeout(() => {
+    const runSave = () => {
       preferencesSaveTimer = null;
 
-      fetch(SUBSCRIPTION_PREFERENCES_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": window.csrfToken,
-        },
-        body: JSON.stringify({
-          display_columns: displayColumns,
-          value_visibility: valueVisibility,
-          image_layout_form: imageLayoutPreferences.form,
-          image_layout_detail: imageLayoutPreferences.detail,
-        }),
-      })
-        .then((response) => response.json())
+      persistPreferences()
         .then((data) => {
           if (data?.success && shouldReloadAfterSave) {
             shouldReloadAfterSave = false;
-
-            if (reloadAfterSaveTimer !== null) {
-              window.clearTimeout(reloadAfterSaveTimer);
-            }
-
-            reloadAfterSaveTimer = window.setTimeout(() => {
-              window.location.reload();
-            }, 220);
+            window.location.reload();
+            return;
           }
+
+          pendingReloadPreferenceSave = false;
+          setPendingReloadControls(false);
         })
         .catch((error) => {
           console.error("Failed to persist subscription page preferences.", error);
           shouldReloadAfterSave = false;
+          pendingReloadPreferenceSave = false;
+          setPendingReloadControls(false);
         });
-    }, 160);
+    };
+
+    if (options.immediate === true) {
+      runSave();
+      return;
+    }
+
+    preferencesSaveTimer = window.setTimeout(runSave, 160);
   }
 
   function loadValueVisibility(preferences = null) {
@@ -188,9 +206,14 @@
   }
 
   function setDisplayColumns(columns, button = null) {
+    if (pendingReloadPreferenceSave) {
+      return;
+    }
+
     displayColumns = normalizeDisplayColumns(columns);
-    scheduleSave({ reload: true });
-    applyDisplayColumns(displayColumns);
+    pendingReloadPreferenceSave = true;
+    setPendingReloadControls(true);
+    scheduleSave({ reload: true, immediate: true });
 
     if (button) {
       button.blur();
@@ -217,9 +240,14 @@
       return;
     }
 
+    if (pendingReloadPreferenceSave) {
+      return;
+    }
+
     valueVisibility[metricKey] = !valueVisibility[metricKey];
-    scheduleSave({ reload: true });
-    applyValueVisibility();
+    pendingReloadPreferenceSave = true;
+    setPendingReloadControls(true);
+    scheduleSave({ reload: true, immediate: true });
   }
 
   function initialize(options = {}) {
