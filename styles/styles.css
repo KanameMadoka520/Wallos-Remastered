@@ -3383,13 +3383,39 @@ button.dark-theme-button i {
   padding: 16px 0 20px;
   display: flex;
   justify-content: center;
+  align-items: center;
   position: relative;
+  overflow: hidden;
 }
 
 .subscription-image-viewer-content img {
   max-width: 100%;
   max-height: calc(100vh - 250px);
   object-fit: contain;
+  transition: opacity 0.14s ease;
+}
+
+.subscription-image-viewer-content.is-loading img {
+  opacity: 0;
+}
+
+.subscription-image-viewer-progress {
+  position: absolute;
+  inset: auto 16px 8px 16px;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background-color: rgba(var(--main-color-rgb), 0.14);
+  box-shadow: 0 0 0 1px rgba(var(--main-color-rgb), 0.08);
+}
+
+.subscription-image-viewer-progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(var(--main-color-rgb), 0.72), var(--main-color));
+  transition: width 0.12s linear;
 }
 
 .subscription-image-viewer .buttons {
