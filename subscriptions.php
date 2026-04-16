@@ -285,38 +285,39 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
   }
 
-  body.dynamic-wallpaper-enabled .subscription-page-tab {
-    background: rgba(14, 20, 30, 0.82);
-    color: var(--wallos-dynamic-text-color);
-    border-color: rgba(255, 255, 255, 0.22);
+  body.dynamic-wallpaper-enabled .subscriptions-page-layout .subscription-page-tab {
+    background: rgba(14, 20, 30, 0.82) !important;
+    color: var(--wallos-dynamic-text-color) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.05),
       0 10px 24px rgba(0, 0, 0, 0.18);
   }
 
-  body.dynamic-wallpaper-enabled .subscription-page-tab:hover {
-    background: rgba(22, 30, 44, 0.9);
-    border-color: rgba(255, 255, 255, 0.3);
+  body.dynamic-wallpaper-enabled .subscriptions-page-layout .subscription-page-tab:hover {
+    background: rgba(22, 30, 44, 0.9) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
   }
 
-  body.dynamic-wallpaper-enabled .subscription-page-tab.is-active {
-    background: rgba(28, 36, 54, 0.94);
-    color: #ffffff;
-    border-color: rgba(var(--main-color-rgb), 0.78);
+  body.dynamic-wallpaper-enabled .subscriptions-page-layout .subscription-page-tab.is-active {
+    background: rgba(28, 36, 54, 0.94) !important;
+    color: #ffffff !important;
+    border-color: rgba(var(--main-color-rgb), 0.78) !important;
     box-shadow:
       0 14px 28px rgba(0, 0, 0, 0.24),
       inset 0 0 0 1px rgba(var(--main-color-rgb), 0.22);
   }
 
-  body.dynamic-wallpaper-enabled .subscription-page-tab .section-count-badge {
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--wallos-dynamic-text-color);
+  body.dynamic-wallpaper-enabled .subscriptions-page-layout .subscription-page-tab .section-count-badge {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: var(--wallos-dynamic-text-color) !important;
     border: 1px solid rgba(255, 255, 255, 0.14);
   }
 
-  body.dynamic-wallpaper-enabled .subscription-page-tab.is-active .section-count-badge {
-    background: rgba(var(--main-color-rgb), 0.18);
-    color: #ffffff;
+  body.dynamic-wallpaper-enabled .subscriptions-page-layout .subscription-page-tab.is-active .section-count-badge {
+    background: rgba(var(--main-color-rgb), 0.18) !important;
+    color: #ffffff !important;
     border-color: rgba(var(--main-color-rgb), 0.3);
   }
 
