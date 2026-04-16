@@ -22,7 +22,9 @@ function wallos_render_metric_explanation_modal($i18n)
     <section class="subscription-modal metric-explanation-modal" id="metric-explanation-modal">
       <header>
         <h3 id="metric-explanation-title"><?= translate('metric_explanation_title', $i18n) ?></h3>
-        <span class="fa-solid fa-xmark close-form" onClick="closeMetricExplanationModal()"></span>
+        <button type="button" class="close-form" onClick="closeMetricExplanationModal()" aria-label="<?= translate('close', $i18n) ?>">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </header>
       <div class="metric-explanation-content">
         <div class="metric-explanation-section">
@@ -34,11 +36,6 @@ function wallos_render_metric_explanation_modal($i18n)
           <div class="metric-explanation-label"><?= translate('metric_explanation_items_label', $i18n) ?></div>
           <div class="metric-explanation-items" id="metric-explanation-items"></div>
         </div>
-      </div>
-      <div class="buttons">
-        <button type="button" class="secondary-button thin" onClick="closeMetricExplanationModal()">
-          <?= translate('close', $i18n) ?>
-        </button>
       </div>
     </section>
     <?php
