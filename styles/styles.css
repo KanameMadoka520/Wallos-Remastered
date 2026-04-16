@@ -3058,6 +3058,11 @@ button.dark-theme-button i {
   gap: 14px;
 }
 
+.subscription-pages-manager-modal {
+  width: min(75vw, 1240px);
+  max-width: min(75vw, 1240px);
+}
+
 .subscription-pages-manager-create {
   display: flex;
   gap: 12px;
@@ -3071,23 +3076,25 @@ button.dark-theme-button i {
 }
 
 .subscription-pages-manager-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  align-items: start;
 }
 
 .subscription-pages-manager-item {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
+  gap: 10px;
+  padding: 12px 14px;
   border: 1px solid var(--box-border-color);
   border-radius: 16px;
   background-color: rgba(var(--main-color-rgb), 0.04);
 }
 
 .subscription-pages-manager-item-main {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
 }
@@ -3098,14 +3105,15 @@ button.dark-theme-button i {
 }
 
 .subscription-pages-manager-item-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
 }
 
 .subscription-pages-manager-item-actions .button {
   justify-content: center;
-  min-width: 144px;
+  min-width: 0;
+  width: 100%;
 }
 
 .subscription-pages-manager-empty {
@@ -3535,6 +3543,16 @@ button.dark-theme-button i {
   .subscription-pages-manager-item-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .subscription-pages-manager-modal {
+    width: 92%;
+    max-width: 92%;
+  }
+
+  .subscription-pages-manager-list,
+  .subscription-pages-manager-item-actions {
+    grid-template-columns: 1fr;
   }
 
   .subscription-pages-manager-item-actions .button {
