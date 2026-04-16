@@ -195,6 +195,7 @@ async function wallosRequest(url, options = {}) {
     requireOk = false,
     credentials = "same-origin",
     fallbackErrorMessage = null,
+    allowEmptyJsonResponse = false,
   } = options;
 
   const response = await fetch(url, {
@@ -211,13 +212,18 @@ async function wallosRequest(url, options = {}) {
   let data = null;
 
   if (responseType === "json") {
-    try {
-      data = await response.json();
-    } catch (error) {
-      if (response.ok && !requireOk) {
+    const rawBody = await response.text();
+    if (rawBody.trim() === "") {
+      if (allowEmptyJsonResponse) {
         data = null;
       } else {
-        throw new Error(fallbackErrorMessage || translate("network_response_error"));
+        throw new Error(fallbackErrorMessage || translate("unknown_error"));
+      }
+    } else {
+      try {
+        data = JSON.parse(rawBody);
+      } catch (error) {
+        throw new Error(fallbackErrorMessage || translate("unknown_error"));
       }
     }
   } else if (responseType === "text") {

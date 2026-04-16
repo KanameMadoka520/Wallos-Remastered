@@ -21,11 +21,20 @@
   }
 
   function createWallosApiFromExisting(existingHttp) {
+    function ensureJsonPayload(data, options = {}) {
+      if (data === null || data === undefined) {
+        throw new Error(options.fallbackErrorMessage || options.errorMessage || translateFallback("unknown_error", "Unknown error"));
+      }
+
+      return data;
+    }
+
     return {
       requestJson(url, options = {}) {
-        return existingHttp.requestJson
+        return (existingHttp.requestJson
           ? existingHttp.requestJson(url, options)
-          : existingHttp.request(url, { ...options, responseType: "json" }).then((result) => result.data);
+          : existingHttp.request(url, { ...options, responseType: "json" }).then((result) => result.data))
+          .then((data) => ensureJsonPayload(data, options));
       },
       requestText(url, options = {}) {
         return existingHttp.request
@@ -33,15 +42,16 @@
           : Promise.reject(new Error(translateFallback("unknown_error", "Unknown error")));
       },
       getJson(url, options = {}) {
-        return existingHttp.getJson
+        return (existingHttp.getJson
           ? existingHttp.getJson(url, options)
-          : this.requestJson(url, { ...options, method: "GET" });
+          : this.requestJson(url, { ...options, method: "GET" }))
+          .then((data) => ensureJsonPayload(data, options));
       },
       getText(url, options = {}) {
         return this.requestText(url, { ...options, method: "GET" });
       },
       postJson(url, payload = {}, options = {}) {
-        return existingHttp.postJson
+        return (existingHttp.postJson
           ? existingHttp.postJson(url, payload, options)
           : this.requestJson(url, {
             ...options,
@@ -51,10 +61,11 @@
               "Content-Type": "application/json",
             },
             body: JSON.stringify(payload ?? {}),
-          });
+          }))
+          .then((data) => ensureJsonPayload(data, options));
       },
       postForm(url, payload = {}, options = {}) {
-        return existingHttp.postForm
+        return (existingHttp.postForm
           ? existingHttp.postForm(url, payload, options)
           : this.requestJson(url, {
             ...options,
@@ -62,7 +73,8 @@
             body: payload instanceof URLSearchParams || payload instanceof FormData
               ? payload
               : new URLSearchParams(payload || {}),
-          });
+          }))
+          .then((data) => ensureJsonPayload(data, options));
       },
       getErrorMessage(error, fallbackMessage) {
         if (typeof existingHttp.normalizeError === "function") {
