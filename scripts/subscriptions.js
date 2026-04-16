@@ -196,17 +196,13 @@ function renderSubscriptionPageTabs() {
   tabsContainer.innerHTML = tabItems.map((item) => `
     <button type="button" class="subscription-page-tab${activeFilter === item.filter ? " is-active" : ""}"
       data-page-filter="${escapeHtml(item.filter)}"
-      aria-pressed="${activeFilter === item.filter ? "true" : "false"}">
+      aria-pressed="${activeFilter === item.filter ? "true" : "false"}"
+      data-subscription-action="select-page-filter"
+      data-filter="${escapeHtml(item.filter)}">
       <span>${escapeHtml(item.label)}</span>
       <span class="section-count-badge">${Number(item.count || 0)}</span>
     </button>
   `).join("");
-
-  tabsContainer.querySelectorAll("[data-page-filter]").forEach((button) => {
-    button.addEventListener("click", function () {
-      setSubscriptionPageFilterValue(this.getAttribute("data-page-filter"));
-    });
-  });
 }
 
 function renderSubscriptionPageSelectOptions(selectedValue = null) {
@@ -254,31 +250,17 @@ function renderSubscriptionPagesManagerList() {
         <span class="section-count-badge">${Number(page.subscription_count || 0)}</span>
       </div>
       <div class="subscription-pages-manager-item-actions">
-        <button type="button" class="button secondary-button thin" data-subscription-page-action="save">
+        <button type="button" class="button secondary-button thin" data-subscription-action="save-page">
           <i class="fa-solid fa-floppy-disk"></i>
           <span>${escapeHtml(translate("save"))}</span>
         </button>
-        <button type="button" class="button secondary-button thin danger" data-subscription-page-action="delete">
+        <button type="button" class="button secondary-button thin danger" data-subscription-action="delete-page">
           <i class="fa-solid fa-trash-can"></i>
           <span>${escapeHtml(translate("delete"))}</span>
         </button>
       </div>
     </div>
   `).join("");
-
-  list.querySelectorAll("[data-subscription-page-action='save']").forEach((button) => {
-    button.addEventListener("click", function () {
-      const pageId = Number(this.closest("[data-page-id]")?.getAttribute("data-page-id") || 0);
-      renameSubscriptionPage(pageId, this);
-    });
-  });
-
-  list.querySelectorAll("[data-subscription-page-action='delete']").forEach((button) => {
-    button.addEventListener("click", function () {
-      const pageId = Number(this.closest("[data-page-id]")?.getAttribute("data-page-id") || 0);
-      deleteSubscriptionPage(pageId);
-    });
-  });
 }
 
 function applySubscriptionPagesPayload(payload, options = {}) {
@@ -1767,7 +1749,8 @@ function getSubscriptionPaymentHistoryTabsHtml() {
       ${tabs.map((tab) => `
         <button type="button"
           class="subscription-payment-history-tab ${currentPaymentHistoryTab === tab.id ? 'is-active' : ''}"
-          onclick="setSubscriptionPaymentHistoryTab('${tab.id}')">
+          data-subscription-action="set-payment-history-tab"
+          data-payment-history-tab="${escapeHtml(tab.id)}">
           <i class="fa-solid ${tab.icon}"></i>
           <span>${escapeHtml(tab.label)}</span>
         </button>
@@ -1829,11 +1812,17 @@ function renderSubscriptionPaymentHistoryRecordsHtml() {
         </div>
         ${noteHtml ? `<div class="subscription-markdown subscription-payment-record-note">${noteHtml}</div>` : ''}
         <div class="buttons subscription-payment-record-history-actions">
-          <button type="button" class="button secondary-button thin subscription-payment-history-toolbar-button" onclick="openEditSubscriptionPaymentModal(event, ${currentPaymentHistorySubscriptionId}, ${record.id})">
+          <button type="button" class="button secondary-button thin subscription-payment-history-toolbar-button"
+            data-subscription-action="edit-payment-record"
+            data-subscription-id="${Number(currentPaymentHistorySubscriptionId)}"
+            data-record-id="${Number(record.id)}">
             <i class="fa-solid fa-pen-to-square"></i>
             <span>${translate('subscription_edit_payment')}</span>
           </button>
-          <button type="button" class="button warning-button thin subscription-payment-history-toolbar-button" onclick="deleteSubscriptionPaymentRecord(event, ${currentPaymentHistorySubscriptionId}, ${record.id})">
+          <button type="button" class="button warning-button thin subscription-payment-history-toolbar-button"
+            data-subscription-action="delete-payment-record"
+            data-subscription-id="${Number(currentPaymentHistorySubscriptionId)}"
+            data-record-id="${Number(record.id)}">
             <i class="fa-solid fa-trash"></i>
             <span>${translate('delete')}</span>
           </button>
@@ -2154,7 +2143,8 @@ function renderSubscriptionPriceRules() {
       <div class="subscription-price-rule-card-header">
         <strong>${translate('subscription_price_rule_card_title')} ${index + 1}</strong>
         <button type="button" class="warning-button thin subscription-price-rule-remove"
-          onClick="removeSubscriptionPriceRule('${escapeHtml(rule.tempId)}')">
+          data-subscription-action="remove-price-rule"
+          data-rule-temp-id="${escapeHtml(rule.tempId)}">
           <i class="fa-solid fa-trash"></i>
           <span>${translate('delete')}</span>
         </button>
@@ -2162,7 +2152,7 @@ function renderSubscriptionPriceRules() {
       <div class="subscription-price-rule-grid">
         <div class="form-group">
           <label>${translate('subscription_price_rule_type')}</label>
-          <select onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'rule_type', this.value, true)">
+          <select data-subscription-change="price-rule-field" data-rule-temp-id="${escapeHtml(rule.tempId)}" data-rule-field="rule_type" data-rule-rerender="1">
             <option value="first_n_cycles" ${rule.rule_type === 'first_n_cycles' ? 'selected' : ''}>${translate('subscription_price_rule_type_first_n_cycles')}</option>
             <option value="date_range" ${rule.rule_type === 'date_range' ? 'selected' : ''}>${translate('subscription_price_rule_type_date_range')}</option>
             <option value="one_time" ${rule.rule_type === 'one_time' ? 'selected' : ''}>${translate('subscription_price_rule_type_one_time')}</option>
@@ -2170,42 +2160,42 @@ function renderSubscriptionPriceRules() {
         </div>
         <div class="form-group">
           <label>${translate('subscription_price_rule_price')}</label>
-          <input type="number" step="0.01" min="0" value="${escapeHtml(rule.price)}" oninput="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'price', this.value)">
+          <input type="number" step="0.01" min="0" value="${escapeHtml(rule.price)}" data-subscription-input="price-rule-field" data-rule-temp-id="${escapeHtml(rule.tempId)}" data-rule-field="price">
         </div>
         <div class="form-group">
           <label>${translate('subscription_price_rule_currency')}</label>
-          <select onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'currency_id', this.value)">${currencyOptionsHtml}</select>
+          <select data-subscription-change="price-rule-field" data-rule-temp-id="${escapeHtml(rule.tempId)}" data-rule-field="currency_id">${currencyOptionsHtml}</select>
         </div>
         <div class="form-group subscription-price-rule-conditional subscription-price-rule-first-cycles">
           <label>${translate('subscription_price_rule_max_cycles')}</label>
-          <input type="number" min="1" step="1" value="${escapeHtml(rule.max_cycles)}" oninput="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'max_cycles', this.value)">
+          <input type="number" min="1" step="1" value="${escapeHtml(rule.max_cycles)}" data-subscription-input="price-rule-field" data-rule-temp-id="${escapeHtml(rule.tempId)}" data-rule-field="max_cycles">
         </div>
         <div class="form-group subscription-price-rule-conditional subscription-price-rule-one-time">
           <label>${translate('subscription_price_rule_due_date')}</label>
           <div class="date-wrapper">
-            <input type="date" value="${escapeHtml(rule.start_date)}" onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'start_date', this.value)">
+            <input type="date" value="${escapeHtml(rule.start_date)}" data-subscription-change="price-rule-field" data-rule-temp-id="${escapeHtml(rule.tempId)}" data-rule-field="start_date">
           </div>
         </div>
         <div class="subscription-price-rule-date-range subscription-price-rule-conditional">
           <div class="form-group">
             <label>${translate('subscription_price_rule_start_date')}</label>
             <div class="date-wrapper">
-              <input type="date" value="${escapeHtml(rule.start_date)}" onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'start_date', this.value)">
+              <input type="date" value="${escapeHtml(rule.start_date)}" data-subscription-change="price-rule-field" data-rule-temp-id="${escapeHtml(rule.tempId)}" data-rule-field="start_date">
             </div>
           </div>
           <div class="form-group">
             <label>${translate('subscription_price_rule_end_date')}</label>
             <div class="date-wrapper">
-              <input type="date" value="${escapeHtml(rule.end_date)}" onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'end_date', this.value)">
+              <input type="date" value="${escapeHtml(rule.end_date)}" data-subscription-change="price-rule-field" data-rule-temp-id="${escapeHtml(rule.tempId)}" data-rule-field="end_date">
             </div>
           </div>
         </div>
         <div class="form-group subscription-price-rule-note-group">
           <label>${translate('notes')}</label>
-          <textarea rows="3" oninput="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'note', this.value)">${escapeHtml(rule.note)}</textarea>
+          <textarea rows="3" data-subscription-input="price-rule-field" data-rule-temp-id="${escapeHtml(rule.tempId)}" data-rule-field="note">${escapeHtml(rule.note)}</textarea>
         </div>
         <div class="form-group-inline grow subscription-price-rule-enabled">
-          <input type="checkbox" id="subscription-price-rule-enabled-${escapeHtml(rule.tempId)}" ${rule.enabled ? 'checked' : ''} onchange="updateSubscriptionPriceRuleField('${escapeHtml(rule.tempId)}', 'enabled', this.checked, false, true)">
+          <input type="checkbox" id="subscription-price-rule-enabled-${escapeHtml(rule.tempId)}" ${rule.enabled ? 'checked' : ''} data-subscription-change="price-rule-field" data-rule-temp-id="${escapeHtml(rule.tempId)}" data-rule-field="enabled" data-rule-checkbox="1">
           <label for="subscription-price-rule-enabled-${escapeHtml(rule.tempId)}" class="grow">${translate('subscription_price_rule_enabled')}</label>
         </div>
       </div>
@@ -2881,7 +2871,8 @@ function fillEditFormFields(subscription) {
 
   const deleteButton = document.querySelector("#deletesub");
   deleteButton.style = 'display: block';
-  deleteButton.setAttribute("onClick", `deleteSubscription(event, ${subscription.id})`);
+  deleteButton.dataset.subscriptionAction = "delete-subscription";
+  deleteButton.dataset.subscriptionId = String(subscription.id);
 
   const modal = document.getElementById('subscription-form');
   modal.classList.add("is-open");
@@ -2892,26 +2883,22 @@ function openEditSubscription(event, id) {
   scrollTopBeforeOpening = window.scrollY;
   const body = document.querySelector('body');
   body.classList.add('no-scroll');
-  const url = `endpoints/subscription/get.php?id=${id}`;
-  fetch(url)
-    .then((response) => {
-      if (response.ok) {
-        return response.json();
-      } else {
+  window.WallosApi.getJson(`endpoints/subscription/get.php?id=${id}`, {
+    includeCsrf: false,
+    requireOk: true,
+    fallbackErrorMessage: translate('failed_to_load_subscription'),
+  })
+    .then((subscription) => {
+      if (subscription?.error || subscription === "Error") {
         showErrorMessage(translate('failed_to_load_subscription'));
+        return;
       }
-    })
-    .then((data) => {
-      if (data.error || data === "Error") {
-        showErrorMessage(translate('failed_to_load_subscription'));
-      } else {
-        const subscription = data;
-        fillEditFormFields(subscription);
-      }
+
+      fillEditFormFields(subscription);
     })
     .catch((error) => {
       console.log(error);
-      showErrorMessage(translate('failed_to_load_subscription'));
+      showErrorMessage(normalizeSubscriptionRequestError(error, translate('failed_to_load_subscription')));
     });
 }
 
@@ -3146,6 +3133,44 @@ function closeLogoSearch() {
   logoResults.innerHTML = "";
 }
 
+function getActionSubscriptionId(trigger) {
+  return Number(
+    trigger?.dataset?.subscriptionId
+    || trigger?.closest("[data-subscription-id]")?.dataset?.subscriptionId
+    || 0
+  );
+}
+
+function getActionPageId(trigger) {
+  return Number(
+    trigger?.dataset?.pageId
+    || trigger?.closest("[data-page-id]")?.dataset?.pageId
+    || 0
+  );
+}
+
+function shouldSkipSubscriptionToggle(trigger, originalTarget) {
+  if (!trigger || !originalTarget) {
+    return false;
+  }
+
+  const interactiveTarget = originalTarget.closest("a, input, select, textarea, label");
+  return !!interactiveTarget && interactiveTarget !== trigger;
+}
+
+function syncSubscriptionPriceRuleField(target, rerenderFallback = false) {
+  const tempId = target?.dataset?.ruleTempId || "";
+  const field = target?.dataset?.ruleField || "";
+  if (!tempId || !field) {
+    return;
+  }
+
+  const isCheckbox = target.dataset.ruleCheckbox === "1";
+  const rerender = target.dataset.ruleRerender === "1" || rerenderFallback;
+  const value = isCheckbox ? target.checked : target.value;
+  updateSubscriptionPriceRuleField(tempId, field, value, rerender, isCheckbox);
+}
+
 function handleStaticSubscriptionAction(event) {
   const trigger = event.target.closest("[data-subscription-action]");
   if (!trigger) {
@@ -3182,6 +3207,12 @@ function handleStaticSubscriptionAction(event) {
   case "open-pages-manager":
     openSubscriptionPagesManager(event);
     break;
+  case "save-page":
+    renameSubscriptionPage(getActionPageId(trigger), trigger);
+    break;
+  case "delete-page":
+    deleteSubscriptionPage(getActionPageId(trigger));
+    break;
   case "close-pages-manager":
     closeSubscriptionPagesManager();
     break;
@@ -3207,6 +3238,8 @@ function handleStaticSubscriptionAction(event) {
     addSubscriptionPriceRule();
     break;
   case "set-image-layout":
+    event.stopPropagation();
+    event.preventDefault();
     setSubscriptionImageLayoutMode(
       trigger.dataset.layoutScope || "form",
       trigger.dataset.layoutMode || "focus",
@@ -3243,6 +3276,69 @@ function handleStaticSubscriptionAction(event) {
   case "permanently-delete-subscription":
     permanentlyDeleteSubscription(Number(trigger.dataset.subscriptionId || 0));
     break;
+  case "open-edit-subscription":
+    openEditSubscription(event, getActionSubscriptionId(trigger));
+    break;
+  case "delete-subscription":
+    deleteSubscription(event, getActionSubscriptionId(trigger));
+    break;
+  case "clone-subscription":
+    cloneSubscription(event, getActionSubscriptionId(trigger));
+    break;
+  case "renew-subscription":
+    renewSubscription(event, getActionSubscriptionId(trigger));
+    break;
+  case "toggle-open-subscription":
+    if (!shouldSkipSubscriptionToggle(trigger, event.target)) {
+      toggleOpenSubscription(getActionSubscriptionId(trigger));
+    }
+    break;
+  case "prevent-subscription-toggle":
+    event.stopPropagation();
+    break;
+  case "expand-subscription-actions":
+    expandActions(event, getActionSubscriptionId(trigger));
+    break;
+  case "open-subscription-image-viewer":
+    event.stopPropagation();
+    event.preventDefault();
+    openSubscriptionImageViewerFromElement(trigger);
+    break;
+  case "open-payment-history":
+    openSubscriptionPaymentHistoryModal(event, getActionSubscriptionId(trigger));
+    break;
+  case "open-payment-modal":
+    openSubscriptionPaymentModal(event, getActionSubscriptionId(trigger));
+    break;
+  case "toggle-filter-submenu":
+    toggleSubMenu(trigger.dataset.filterSubmenu || "");
+    break;
+  case "clear-filters":
+    clearFilters();
+    break;
+  case "set-sort-option":
+    setSortOption(trigger.dataset.sortOption || "manual_order");
+    break;
+  case "set-payment-history-tab":
+    setSubscriptionPaymentHistoryTab(trigger.dataset.paymentHistoryTab || "records");
+    break;
+  case "edit-payment-record":
+    openEditSubscriptionPaymentModal(
+      event,
+      Number(trigger.dataset.subscriptionId || 0),
+      Number(trigger.dataset.recordId || 0)
+    );
+    break;
+  case "delete-payment-record":
+    deleteSubscriptionPaymentRecord(
+      event,
+      Number(trigger.dataset.subscriptionId || 0),
+      Number(trigger.dataset.recordId || 0)
+    );
+    break;
+  case "remove-price-rule":
+    removeSubscriptionPriceRule(trigger.dataset.ruleTempId || "");
+    break;
   default:
     break;
   }
@@ -3261,6 +3357,11 @@ function handleStaticSubscriptionInput(event) {
 
   if (inputType === "subscription-name") {
     setSearchButtonStatus();
+    return;
+  }
+
+  if (inputType === "price-rule-field") {
+    syncSubscriptionPriceRuleField(event.target);
   }
 }
 
@@ -3282,6 +3383,9 @@ function handleStaticSubscriptionChange(event) {
     break;
   case "inactive-toggle":
     toggleReplacementSub();
+    break;
+  case "price-rule-field":
+    syncSubscriptionPriceRuleField(event.target, event.target.dataset.ruleRerender === "1");
     break;
   default:
     break;
@@ -3324,8 +3428,11 @@ function fetchSubscriptions(id, event, initiator) {
       : `?subscription_page=${encodeURIComponent(getCurrentSubscriptionPageFilter())}`;
   }
 
-  return fetch(getSubscriptions)
-    .then(response => response.text())
+  return window.WallosApi.getText(getSubscriptions, {
+    includeCsrf: false,
+    requireOk: true,
+    fallbackErrorMessage: translate('error_reloading_subscription'),
+  })
     .then(data => {
       if (data) {
         subscriptionsContainer.innerHTML = data;

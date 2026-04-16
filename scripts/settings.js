@@ -26,18 +26,10 @@ function saveBudget() {
   const yearlyBudgetInput = document.getElementById("yearly_budget");
   const yearlyBudget = yearlyBudgetInput ? yearlyBudgetInput.value : 0;
 
-  fetch('endpoints/user/budget.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({
-      budget: budget,
-      yearly_budget: yearlyBudget,
-    }),
+  window.WallosApi.postJson('endpoints/user/budget.php', {
+    budget: budget,
+    yearly_budget: yearlyBudget,
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -47,7 +39,7 @@ function saveBudget() {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(window.WallosApi.getErrorMessage(error, translate('unknown_error')));
     })
     .finally(() => {
       button.disabled = false;

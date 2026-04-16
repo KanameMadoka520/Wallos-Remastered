@@ -731,13 +731,11 @@ $subscriptionPagePreferences = [
             <span class="section-count-badge"><?= (int) ($subscriptionPage['subscription_count'] ?? 0) ?></span>
           </div>
           <div class="subscription-pages-manager-item-actions">
-            <button type="button" class="button secondary-button thin"
-              data-subscription-page-action="save">
+            <button type="button" class="button secondary-button thin" data-subscription-action="save-page">
               <i class="fa-solid fa-floppy-disk"></i>
               <span><?= translate('save', $i18n) ?></span>
             </button>
-            <button type="button" class="button secondary-button thin danger"
-              data-subscription-page-action="delete">
+            <button type="button" class="button secondary-button thin danger" data-subscription-action="delete-page">
               <i class="fa-solid fa-trash-can"></i>
               <span><?= translate('delete', $i18n) ?></span>
             </button>
