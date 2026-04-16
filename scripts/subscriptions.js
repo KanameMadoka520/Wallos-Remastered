@@ -294,8 +294,13 @@ function applySubscriptionPagesPayload(payload, options = {}) {
 function refreshSubscriptionPages(options = {}) {
   return window.WallosHttp.getJson(SUBSCRIPTION_PAGES_ENDPOINT, {
     includeCsrf: false,
+    fallbackErrorMessage: translate("unknown_error"),
   })
     .then((data) => {
+      if (!data || typeof data !== "object") {
+        throw new Error(translate("unknown_error"));
+      }
+
       if (!data.success) {
         throw new Error(data.message || translate("error"));
       }
@@ -312,8 +317,14 @@ function refreshSubscriptionPages(options = {}) {
 }
 
 function submitSubscriptionPageAction(payload, options = {}) {
-  return window.WallosHttp.postJson(SUBSCRIPTION_PAGES_ENDPOINT, payload)
+  return window.WallosHttp.postJson(SUBSCRIPTION_PAGES_ENDPOINT, payload, {
+    fallbackErrorMessage: translate("unknown_error"),
+  })
     .then((data) => {
+      if (!data || typeof data !== "object") {
+        throw new Error(translate("unknown_error"));
+      }
+
       if (!data.success) {
         throw new Error(data.message || translate("error"));
       }
