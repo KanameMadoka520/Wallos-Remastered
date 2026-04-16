@@ -31,6 +31,7 @@ let subscriptionPriceRules = [];
 let subscriptionPriceRuleTempIdCounter = 0;
 let detailImageGallerySortable = null;
 let detailSubscriptionGallerySortables = [];
+let subscriptionPagesManagerSortable = null;
 let detailImageTempIdCounter = 0;
 const SUBSCRIPTION_PREFERENCES_ENDPOINT = "endpoints/settings/subscription_preferences.php";
 let subscriptionMasonryLayoutFrame = null;
@@ -111,6 +112,7 @@ function getSubscriptionPageStrings() {
     saveAction: window.subscriptionPageStrings?.saveAction || "Save Name",
     deleteAction: window.subscriptionPageStrings?.deleteAction || "Delete Page",
     manageHint: window.subscriptionPageStrings?.manageHint || "After editing a page name, click \"Save Name\". Deleting a page only moves subscriptions back to \"Unassigned\".",
+    dragHandleTitle: window.subscriptionPageStrings?.dragHandleTitle || "Drag to reorder pages",
   };
 }
 
@@ -187,16 +189,16 @@ function renderSubscriptionPageTabs() {
       label: strings.all,
       count: Number(subscriptionPageCounts.all || 0),
     },
-    {
-      filter: "unassigned",
-      label: strings.unassigned,
-      count: Number(subscriptionPageCounts.unassigned || 0),
-    },
     ...subscriptionPages.map((page) => ({
       filter: String(page.id),
       label: page.name || strings.fieldLabel,
       count: Number(page.subscription_count || 0),
     })),
+    {
+      filter: "unassigned",
+      label: strings.unassigned,
+      count: Number(subscriptionPageCounts.unassigned || 0),
+    },
   ];
 
   tabsContainer.innerHTML = tabItems.map((item) => `
@@ -242,6 +244,11 @@ function renderSubscriptionPagesManagerList() {
   }
 
   const strings = getSubscriptionPageStrings();
+  if (subscriptionPagesManagerSortable) {
+    subscriptionPagesManagerSortable.destroy();
+    subscriptionPagesManagerSortable = null;
+  }
+
   if (!subscriptionPages.length) {
     list.innerHTML = `<div class="subscription-pages-manager-empty">${escapeHtml(strings.empty)}</div>`;
     return;
@@ -250,6 +257,9 @@ function renderSubscriptionPagesManagerList() {
   list.innerHTML = subscriptionPages.map((page) => `
     <div class="subscription-pages-manager-item" data-page-id="${Number(page.id)}">
       <div class="subscription-pages-manager-item-main">
+        <button type="button" class="subscription-page-drag-handle" title="${escapeHtml(strings.dragHandleTitle)}" aria-label="${escapeHtml(strings.dragHandleTitle)}">
+          <i class="fa-solid fa-grip-vertical"></i>
+        </button>
         <input type="text" class="subscription-page-name-input"
           value="${escapeHtml(page.name || "")}"
           maxlength="40">
@@ -267,6 +277,63 @@ function renderSubscriptionPagesManagerList() {
       </div>
     </div>
   `).join("");
+
+  initializeSubscriptionPagesManagerSortable();
+}
+
+function persistSubscriptionPageOrder(pageIds) {
+  return window.WallosHttp.postJson(SUBSCRIPTION_PAGES_ENDPOINT, {
+    action: "reorder",
+    page_ids: pageIds,
+  }, {
+    fallbackErrorMessage: translate("unknown_error"),
+  })
+    .then((data) => {
+      if (!data || typeof data !== "object") {
+        throw new Error(translate("unknown_error"));
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || translate("error"));
+      }
+
+      applySubscriptionPagesPayload(data, {
+        selectedValue: document.querySelector("#subscription_page_id")?.value || getDefaultSubscriptionPageSelection(),
+      });
+      return data;
+    });
+}
+
+function initializeSubscriptionPagesManagerSortable() {
+  const list = document.getElementById("subscription-pages-manager-list");
+  if (!list || typeof Sortable === "undefined") {
+    return;
+  }
+
+  const items = Array.from(list.querySelectorAll(".subscription-pages-manager-item"));
+  if (items.length <= 1) {
+    return;
+  }
+
+  subscriptionPagesManagerSortable = new Sortable(list, {
+    animation: 180,
+    handle: ".subscription-page-drag-handle",
+    draggable: ".subscription-pages-manager-item",
+    ghostClass: "subscription-pages-manager-item-ghost",
+    chosenClass: "subscription-pages-manager-item-chosen",
+    dragClass: "subscription-pages-manager-item-dragging",
+    onEnd() {
+      const orderedPageIds = Array.from(list.querySelectorAll(".subscription-pages-manager-item"))
+        .map((item) => Number(item.dataset.pageId || 0))
+        .filter((pageId) => pageId > 0);
+
+      persistSubscriptionPageOrder(orderedPageIds)
+        .catch((error) => {
+          showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
+          renderSubscriptionPagesManagerList();
+        });
+    },
+  });
 }
 
 function applySubscriptionPagesPayload(payload, options = {}) {
@@ -362,6 +429,11 @@ function closeSubscriptionPagesManager() {
   const modal = document.getElementById("subscription-pages-manager-modal");
   if (!modal) {
     return;
+  }
+
+  if (subscriptionPagesManagerSortable) {
+    subscriptionPagesManagerSortable.destroy();
+    subscriptionPagesManagerSortable = null;
   }
 
   modal.classList.remove("is-open");
