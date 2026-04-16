@@ -223,10 +223,11 @@ header .logo .logo-image svg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 38px;
-  padding: 9px 14px;
-  font-size: 14px;
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0;
+  border-radius: 999px;
   background-color: rgba(255, 255, 255, 0.92);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.14);
   backdrop-filter: blur(10px);
@@ -238,7 +239,11 @@ header .logo .logo-image svg {
 }
 
 .wallos-page-immersive-toggle > i {
-  font-size: 12px;
+  font-size: 14px;
+}
+
+.wallos-page-immersive-toggle > span {
+  display: none;
 }
 
 body.page-ui-hidden > header,
@@ -302,9 +307,9 @@ body.page-ui-fading-in .progress {
   .wallos-page-immersive-toggle {
     right: 12px;
     bottom: 12px;
-    min-height: 34px;
-    padding: 8px 12px;
-    font-size: 13px;
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
   }
 
   body.mobile-navigation .wallos-page-immersive-toggle {

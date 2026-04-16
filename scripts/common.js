@@ -85,6 +85,7 @@ function updatePageImmersiveToggleButton(hidden) {
 
   button.setAttribute("aria-pressed", hidden ? "true" : "false");
   button.setAttribute("title", label);
+  button.setAttribute("aria-label", label);
 
   if (text) {
     text.textContent = label;
