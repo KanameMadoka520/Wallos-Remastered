@@ -380,18 +380,18 @@ $subscriptionPagePreferences = [
 <section class="contain contain-wide subscriptions-page-layout" data-page-ui-hide-target>
   <header class="<?= $headerClass ?>" id="main-actions">
     <div class="inline-row">
-      <button class="button" onClick="addSubscription()">
+      <button class="button" data-subscription-action="open-add-subscription">
         <i class="fa-solid fa-circle-plus"></i>
         <?= translate('new_subscription', $i18n) ?>
       </button>
       <button class="button secondary-button tiny subscription-recycle-bin-trigger" type="button"
-        onClick="openSubscriptionRecycleBinModal(event)" title="<?= translate('subscription_recycle_bin', $i18n) ?>">
+        data-subscription-action="open-recycle-bin" title="<?= translate('subscription_recycle_bin', $i18n) ?>">
         <i class="fa-solid fa-trash-can"></i>
         <span><?= translate('subscription_recycle_bin', $i18n) ?></span>
         <span class="section-count-badge"><?= count($trashedSubscriptions) ?></span>
       </button>
       <button class="button secondary-button tiny mobile-grow" type="button" id="generateSubscriptionImageVariantsButton"
-        onClick="generateSubscriptionImageVariants()">
+        data-subscription-action="generate-image-variants">
         <i class="fa-solid fa-wand-magic-sparkles"></i>
         <?= translate('subscription_image_generate_variants', $i18n) ?>
       </button>
@@ -399,19 +399,19 @@ $subscriptionPagePreferences = [
         aria-label="<?= translate('subscription_layout_switch', $i18n) ?>">
         <button type="button" class="media-layout-button<?= $subscriptionDisplayColumns === 1 ? ' is-active' : '' ?>" data-subscription-columns="1"
           title="<?= translate('subscription_layout_single_column', $i18n) ?>"
-          aria-pressed="<?= $subscriptionDisplayColumns === 1 ? 'true' : 'false' ?>" onClick="setSubscriptionDisplayColumns(1, this)">
+          aria-pressed="<?= $subscriptionDisplayColumns === 1 ? 'true' : 'false' ?>" data-subscription-action="set-display-columns" data-columns="1">
           <i class="fa-solid fa-list"></i>
           <span><?= translate('subscription_layout_single_column', $i18n) ?></span>
         </button>
         <button type="button" class="media-layout-button<?= $subscriptionDisplayColumns === 2 ? ' is-active' : '' ?>" data-subscription-columns="2"
           title="<?= translate('subscription_layout_two_columns', $i18n) ?>"
-          aria-pressed="<?= $subscriptionDisplayColumns === 2 ? 'true' : 'false' ?>" onClick="setSubscriptionDisplayColumns(2, this)">
+          aria-pressed="<?= $subscriptionDisplayColumns === 2 ? 'true' : 'false' ?>" data-subscription-action="set-display-columns" data-columns="2">
           <i class="fa-solid fa-table-columns"></i>
           <span><?= translate('subscription_layout_two_columns', $i18n) ?></span>
         </button>
         <button type="button" class="media-layout-button<?= $subscriptionDisplayColumns === 3 ? ' is-active' : '' ?>" data-subscription-columns="3"
           title="<?= translate('subscription_layout_three_columns', $i18n) ?>"
-          aria-pressed="<?= $subscriptionDisplayColumns === 3 ? 'true' : 'false' ?>" onClick="setSubscriptionDisplayColumns(3, this)">
+          aria-pressed="<?= $subscriptionDisplayColumns === 3 ? 'true' : 'false' ?>" data-subscription-action="set-display-columns" data-columns="3">
           <i class="fa-solid fa-grip"></i>
           <span><?= translate('subscription_layout_three_columns', $i18n) ?></span>
         </button>
@@ -421,13 +421,13 @@ $subscriptionPagePreferences = [
         aria-label="<?= translate('subscription_value_metrics_display', $i18n) ?>">
         <button type="button" class="media-layout-button<?= !empty($subscriptionValueVisibility['metrics']) ? ' is-active' : '' ?>" data-subscription-value-toggle="metrics"
           title="<?= translate('subscription_value_metrics_display', $i18n) ?>" aria-pressed="<?= !empty($subscriptionValueVisibility['metrics']) ? 'true' : 'false' ?>"
-          onClick="toggleSubscriptionValueMetric('metrics')">
+          data-subscription-action="toggle-value-metric" data-metric="metrics">
           <i class="fa-solid fa-sack-dollar"></i>
           <span><?= translate('subscription_value_metrics_display', $i18n) ?></span>
         </button>
         <button type="button" class="media-layout-button<?= !empty($subscriptionValueVisibility['payment_records']) ? ' is-active' : '' ?>" data-subscription-value-toggle="payment_records"
           title="<?= translate('subscription_payment_history', $i18n) ?>" aria-pressed="<?= !empty($subscriptionValueVisibility['payment_records']) ? 'true' : 'false' ?>"
-          onClick="toggleSubscriptionValueMetric('payment_records')">
+          data-subscription-action="toggle-value-metric" data-metric="payment_records">
           <i class="fa-solid fa-receipt"></i>
           <span><?= translate('subscription_payment_history', $i18n) ?></span>
         </button>
@@ -441,7 +441,7 @@ $subscriptionPagePreferences = [
       </div>
 
       <div class="sort-container">
-        <button class="button secondary-button" value="Sort" onClick="toggleSortOptions()" id="sort-button"
+        <button class="button secondary-button" value="Sort" data-subscription-action="toggle-sort-options" id="sort-button"
           title="<?= translate('sort', $i18n) ?>">
           <i class="fa-solid fa-arrow-down-wide-short"></i>
         </button>
@@ -457,7 +457,7 @@ $subscriptionPagePreferences = [
         ?>
         <button type="button" class="subscription-page-tab<?= $allPageActive ? ' is-active' : '' ?>"
           data-page-filter="<?= $allFilterValue ?>" aria-pressed="<?= $allPageActive ? 'true' : 'false' ?>"
-          onClick="selectSubscriptionPageFilter('<?= $allFilterValue ?>', this)">
+          data-subscription-action="select-page-filter" data-filter="<?= htmlspecialchars($allFilterValue, ENT_QUOTES, 'UTF-8') ?>">
           <span><?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?></span>
           <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['all'] ?? count($subscriptions)) ?></span>
         </button>
@@ -467,7 +467,7 @@ $subscriptionPagePreferences = [
         ?>
         <button type="button" class="subscription-page-tab<?= $unassignedPageActive ? ' is-active' : '' ?>"
           data-page-filter="<?= $unassignedFilterValue ?>" aria-pressed="<?= $unassignedPageActive ? 'true' : 'false' ?>"
-          onClick="selectSubscriptionPageFilter('<?= $unassignedFilterValue ?>', this)">
+          data-subscription-action="select-page-filter" data-filter="<?= htmlspecialchars($unassignedFilterValue, ENT_QUOTES, 'UTF-8') ?>">
           <span><?= wallos_translate_with_fallback('subscription_page_unassigned', 'Unassigned', $i18n) ?></span>
           <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['unassigned'] ?? 0) ?></span>
         </button>
@@ -479,14 +479,14 @@ $subscriptionPagePreferences = [
           <button type="button" class="subscription-page-tab<?= $pageActive ? ' is-active' : '' ?>"
             data-page-filter="<?= htmlspecialchars($pageFilterValue, ENT_QUOTES, 'UTF-8') ?>"
             aria-pressed="<?= $pageActive ? 'true' : 'false' ?>"
-            onClick="selectSubscriptionPageFilter('<?= htmlspecialchars($pageFilterValue, ENT_QUOTES, 'UTF-8') ?>', this)">
+            data-subscription-action="select-page-filter" data-filter="<?= htmlspecialchars($pageFilterValue, ENT_QUOTES, 'UTF-8') ?>">
             <span><?= htmlspecialchars($subscriptionPage['name'], ENT_QUOTES, 'UTF-8') ?></span>
             <span class="section-count-badge"><?= (int) ($subscriptionPage['subscription_count'] ?? 0) ?></span>
           </button>
         <?php endforeach; ?>
       </div>
       <button type="button" class="button secondary-button tiny subscription-page-manager-trigger"
-        onClick="openSubscriptionPagesManager(event)">
+        data-subscription-action="open-pages-manager">
         <i class="fa-solid fa-table-list"></i>
         <span><?= wallos_translate_with_fallback('subscription_pages_manage', 'Manage Pages', $i18n) ?></span>
       </button>
@@ -494,9 +494,9 @@ $subscriptionPagePreferences = [
     <div class="top-actions">
       <div class="search">
         <input type="text" autocomplete="off" name="search" id="search" placeholder="<?= translate('search', $i18n) ?>"
-          onkeyup="searchSubscriptions()" />
+          data-subscription-input="search" />
         <span class="fa-solid fa-magnifying-glass search-icon"></span>
-        <span class="fa-solid fa-xmark clear-search" onClick="clearSearch()"></span>
+        <span class="fa-solid fa-xmark clear-search" data-subscription-action="clear-search"></span>
       </div>
     </div>
   </header>
@@ -626,12 +626,12 @@ $subscriptionPagePreferences = [
             : translate('no_matching_subscriptions', $i18n) ?>
         </p>
         <?php if (wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) !== WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL): ?>
-          <button class="button" onClick="selectSubscriptionPageFilter('all')">
+          <button class="button" data-subscription-action="select-page-filter" data-filter="all">
             <i class="fa-solid fa-table-list"></i>
             <?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?>
           </button>
         <?php else: ?>
-          <button class="button" onClick="addSubscription()">
+          <button class="button" data-subscription-action="open-add-subscription">
             <i class="fa-solid fa-circle-plus"></i>
             <?= translate('add_first_subscription', $i18n) ?>
           </button>
@@ -648,7 +648,7 @@ $subscriptionPagePreferences = [
       <?= translate('subscription_recycle_bin', $i18n) ?>
       <span class="section-count-badge"><?= count($trashedSubscriptions) ?></span>
     </h3>
-    <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionRecycleBinModal()"></span>
+    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-recycle-bin"></span>
   </header>
   <div class="subscription-recycle-bin-modal-body">
     <?php if (!empty($trashedSubscriptions)): ?>
@@ -677,10 +677,10 @@ $subscriptionPagePreferences = [
               <p><strong><?= translate('subscription_excluded_from_stats_badge', $i18n) ?>:</strong> <?= !empty($trashedSubscription['exclude_from_stats']) ? translate('enabled', $i18n) : translate('disabled', $i18n) ?></p>
             </div>
             <div class="buttons subscription-trash-card-actions">
-              <button type="button" class="secondary-button thin" onClick="restoreSubscriptionFromRecycleBin(<?= (int) $trashedSubscription['id'] ?>)">
+              <button type="button" class="secondary-button thin" data-subscription-action="restore-from-recycle-bin" data-subscription-id="<?= (int) $trashedSubscription['id'] ?>">
                 <?= translate('subscription_restore', $i18n) ?>
               </button>
-              <button type="button" class="warning-button thin" onClick="permanentlyDeleteSubscription(<?= (int) $trashedSubscription['id'] ?>)">
+              <button type="button" class="warning-button thin" data-subscription-action="permanently-delete-subscription" data-subscription-id="<?= (int) $trashedSubscription['id'] ?>">
                 <?= translate('subscription_permanently_delete', $i18n) ?>
               </button>
             </div>
@@ -697,14 +697,14 @@ $subscriptionPagePreferences = [
 <section class="subscription-modal subscription-pages-manager-modal" id="subscription-pages-manager-modal" data-page-ui-hide-target>
   <header>
     <h3><?= wallos_translate_with_fallback('subscription_pages', 'Subscription Pages', $i18n) ?></h3>
-    <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionPagesManager()"></span>
+    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-pages-manager"></span>
   </header>
   <div class="subscription-pages-manager-toolbar">
     <div class="subscription-pages-manager-create">
       <input type="text" id="subscription-page-create-name"
         placeholder="<?= wallos_translate_with_fallback('subscription_page_name_placeholder', 'New page name', $i18n) ?>"
         maxlength="<?= (int) WALLOS_SUBSCRIPTION_PAGE_NAME_MAX_LENGTH ?>">
-      <button type="button" class="button thin" onClick="createSubscriptionPage()">
+      <button type="button" class="button thin" data-subscription-action="create-page">
         <i class="fa-solid fa-plus"></i>
         <span><?= wallos_translate_with_fallback('subscription_page_add', 'Add Page', $i18n) ?></span>
       </button>
@@ -732,12 +732,12 @@ $subscriptionPagePreferences = [
           </div>
           <div class="subscription-pages-manager-item-actions">
             <button type="button" class="button secondary-button thin"
-              onClick="renameSubscriptionPage(<?= (int) $subscriptionPage['id'] ?>, this)">
+              data-subscription-page-action="save">
               <i class="fa-solid fa-floppy-disk"></i>
               <span><?= translate('save', $i18n) ?></span>
             </button>
             <button type="button" class="button secondary-button thin danger"
-              onClick="deleteSubscriptionPage(<?= (int) $subscriptionPage['id'] ?>)">
+              data-subscription-page-action="delete">
               <i class="fa-solid fa-trash-can"></i>
               <span><?= translate('delete', $i18n) ?></span>
             </button>
@@ -747,7 +747,7 @@ $subscriptionPagePreferences = [
     <?php endif; ?>
   </div>
   <div class="buttons">
-    <button type="button" class="button secondary-button thin" onClick="closeSubscriptionPagesManager()">
+    <button type="button" class="button secondary-button thin" data-subscription-action="close-pages-manager">
       <?= translate('close', $i18n) ?>
     </button>
   </div>
@@ -755,7 +755,7 @@ $subscriptionPagePreferences = [
 <section class="subscription-form" id="subscription-form" data-page-ui-hide-target>
   <header>
     <h3 id="form-title"><?= translate('add_subscription', $i18n) ?></h3>
-    <span class="fa-solid fa-xmark close-form" onClick="closeAddSubscription()"></span>
+    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-add-subscription"></span>
   </header>
   <form action="endpoints/subscription/add.php" method="post" id="subs-form" enctype="multipart/form-data"
     data-effective-user-group="<?= $effectiveUserGroup ?>"
@@ -774,23 +774,22 @@ $subscriptionPagePreferences = [
     <div class="form-group-inline">
       <input type="text" id="name" name="name" autocomplete="off"
         placeholder="<?= translate('subscription_name', $i18n) ?>"
-        onchange="setSearchButtonStatus()" onkeypress="this.onchange();" onpaste="this.onchange();"
-        oninput="this.onchange();" required>
+        data-subscription-input="subscription-name" required>
       <label for="logo" class="logo-preview">
         <img src="" alt="<?= translate('logo_preview', $i18n) ?>" id="form-logo">
       </label>
       <input type="file" id="logo" name="logo" accept="image/jpeg, image/png, image/gif, image/webp, image/svg+xml"
-        onchange="handleFileSelect(event)" class="hidden-input">
+        data-subscription-change="logo-file" class="hidden-input">
       <input type="hidden" id="logo-url" name="logo-url">
       <div id="logo-search-button" class="image-button medium disabled" title="<?= translate('search_logo', $i18n) ?>"
-        onClick="searchLogo()">
+        data-subscription-action="search-logo">
         <?php include "images/siteicons/svg/websearch.php"; ?>
       </div>
       <input type="hidden" id="id" name="id">
       <div id="logo-search-results" class="logo-search">
         <header>
           <?= translate('web_search', $i18n) ?>
-          <span class="fa-solid fa-xmark close-logo-search" onClick="closeLogoSearch()"></span>
+          <span class="fa-solid fa-xmark close-logo-search" data-subscription-action="close-logo-search"></span>
         </header>
         <div id="logo-search-images"></div>
       </div>
@@ -856,16 +855,16 @@ $subscriptionPagePreferences = [
             <input type="date" id="start_date" name="start_date" autocomplete="off">
           </div>
         </div>
-        <button type="button" id="autofill-next-payment-button"
+        <button type="button"
           class="button secondary-button autofill-next-payment hideOnMobile"
-          title="<?= translate('calculate_next_payment_date', $i18n) ?>" onClick="autoFillNextPaymentDate(event)">
+          title="<?= translate('calculate_next_payment_date', $i18n) ?>" data-subscription-action="autofill-next-payment">
           <i class="fa-solid fa-wand-magic-sparkles"></i>
         </button>
         <div class="split50">
           <label for="next_payment" class="split-label">
             <?= translate('next_payment', $i18n) ?>
-            <div id="autofill-next-payment-button" class="autofill-next-payment hideOnDesktop"
-              title="<?= translate('calculate_next_payment_date', $i18n) ?>" onClick="autoFillNextPaymentDate(event)">
+            <div class="autofill-next-payment hideOnDesktop"
+              title="<?= translate('calculate_next_payment_date', $i18n) ?>" data-subscription-action="autofill-next-payment">
               <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
           </label>
@@ -933,7 +932,7 @@ $subscriptionPagePreferences = [
     </div>
 
     <div class="form-group-inline grow">
-      <input type="checkbox" id="notifications" name="notifications" onchange="toggleNotificationDays()">
+      <input type="checkbox" id="notifications" name="notifications" data-subscription-change="notifications-toggle">
       <label for="notifications" class="grow"><?= translate('enable_notifications', $i18n) ?></label>
     </div>
 
@@ -1011,7 +1010,7 @@ $subscriptionPagePreferences = [
       <div class="subscription-price-rules-panel">
         <div class="subscription-price-rules-toolbar">
           <span class="subscription-price-rules-hint"><?= translate('subscription_price_rules_hint', $i18n) ?></span>
-          <button type="button" class="secondary-button thin" onClick="addSubscriptionPriceRule()">
+          <button type="button" class="secondary-button thin" data-subscription-action="add-price-rule">
             <i class="fa-solid fa-tags"></i>
             <span><?= translate('subscription_price_rule_add', $i18n) ?></span>
           </button>
@@ -1030,13 +1029,13 @@ $subscriptionPagePreferences = [
             <div class="media-layout-toggle" data-image-layout-scope="form">
               <button type="button" class="media-layout-button" data-mode="focus"
                 title="<?= translate('subscription_image_layout_focus', $i18n) ?>"
-                onClick="setSubscriptionImageLayoutMode('form', 'focus', this)">
+                data-subscription-action="set-image-layout" data-layout-scope="form" data-layout-mode="focus">
                 <i class="fa-solid fa-images"></i>
                 <span><?= translate('subscription_image_layout_focus', $i18n) ?></span>
               </button>
               <button type="button" class="media-layout-button" data-mode="grid"
                 title="<?= translate('subscription_image_layout_grid', $i18n) ?>"
-                onClick="setSubscriptionImageLayoutMode('form', 'grid', this)">
+                data-subscription-action="set-image-layout" data-layout-scope="form" data-layout-mode="grid">
                 <i class="fa-solid fa-table-cells"></i>
                 <span><?= translate('subscription_image_layout_grid', $i18n) ?></span>
               </button>
@@ -1054,7 +1053,7 @@ $subscriptionPagePreferences = [
           <input type="file" id="detail-image-upload" name="detail_images[]"
             accept="<?= htmlspecialchars(wallos_get_subscription_media_accept_attribute(), ENT_QUOTES, 'UTF-8') ?>"
             multiple
-            onchange="handleDetailImageSelect(event)" class="hidden-input"
+            data-subscription-change="detail-image-upload" class="hidden-input"
             <?= $canUploadSubscriptionImages ? '' : 'disabled' ?>>
           <input type="hidden" id="remove-uploaded-image-ids" name="remove_uploaded_image_ids" value="">
           <input type="hidden" id="detail-image-order" name="detail_image_order" value="">
@@ -1108,7 +1107,7 @@ $subscriptionPagePreferences = [
 
     <div class="form-group">
       <div class="inline grow">
-        <input type="checkbox" id="inactive" name="inactive" onchange="toggleReplacementSub()">
+        <input type="checkbox" id="inactive" name="inactive" data-subscription-change="inactive-toggle">
         <label for="inactive" class="grow"><?= translate('inactive', $i18n) ?></label>
       </div>
     </div>
@@ -1141,7 +1140,7 @@ $subscriptionPagePreferences = [
       <input type="button" value="<?= translate('delete', $i18n) ?>" class="warning-button left thin" id="deletesub"
         style="display: none">
       <input type="button" value="<?= translate('cancel', $i18n) ?>" class="secondary-button thin"
-        onClick="closeAddSubscription()">
+        data-subscription-action="close-add-subscription">
       <input type="submit" value="<?= translate('save', $i18n) ?>" class="thin" id="save-button">
     </div>
   </form>
@@ -1149,7 +1148,7 @@ $subscriptionPagePreferences = [
 <section class="subscription-modal subscription-payment-modal" id="subscription-payment-modal" data-page-ui-hide-target>
   <header>
     <h3 id="subscription-payment-modal-title"><?= translate('subscription_record_payment', $i18n) ?></h3>
-    <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionPaymentModal()"></span>
+    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-payment-modal"></span>
   </header>
   <form id="subscription-payment-form">
     <input type="hidden" id="subscription-payment-subscription-id" name="subscription_id" value="">
@@ -1202,7 +1201,7 @@ $subscriptionPagePreferences = [
     </div>
 
     <div class="buttons">
-      <button type="button" class="button secondary-button thin" onClick="closeSubscriptionPaymentModal()">
+      <button type="button" class="button secondary-button thin" data-subscription-action="close-payment-modal">
         <?= translate('cancel', $i18n) ?>
       </button>
       <button type="submit" class="button thin" id="subscription-payment-save-button">
@@ -1214,7 +1213,7 @@ $subscriptionPagePreferences = [
 <section class="subscription-modal subscription-payment-history-modal" id="subscription-payment-history-modal" data-page-ui-hide-target>
   <header>
     <h3 id="subscription-payment-history-modal-title"><?= translate('subscription_payment_history', $i18n) ?></h3>
-    <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionPaymentHistoryModal()"></span>
+    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-payment-history-modal"></span>
   </header>
   <div class="subscription-payment-history-toolbar">
     <div class="subscription-payment-history-controls">
@@ -1233,11 +1232,11 @@ $subscriptionPagePreferences = [
       </div>
     </div>
     <div class="subscription-payment-history-export-actions">
-      <button type="button" class="button secondary-button thin subscription-payment-history-toolbar-button" onClick="exportSubscriptionPaymentHistoryCurrentView('csv')">
+      <button type="button" class="button secondary-button thin subscription-payment-history-toolbar-button" data-subscription-action="export-payment-history" data-export-format="csv">
         <i class="fa-solid fa-file-csv"></i>
         <span><?= translate('export_as_csv', $i18n) ?></span>
       </button>
-      <button type="button" class="button secondary-button thin subscription-payment-history-toolbar-button" onClick="exportSubscriptionPaymentHistoryCurrentView('json')">
+      <button type="button" class="button secondary-button thin subscription-payment-history-toolbar-button" data-subscription-action="export-payment-history" data-export-format="json">
         <i class="fa-solid fa-file-code"></i>
         <span><?= translate('export_as_json', $i18n) ?></span>
       </button>
@@ -1249,7 +1248,7 @@ $subscriptionPagePreferences = [
   </div>
   <div class="subscription-payment-history-content" id="subscription-payment-history-content"></div>
   <div class="buttons">
-    <button type="button" class="button secondary-button thin" onClick="closeSubscriptionPaymentHistoryModal()">
+    <button type="button" class="button secondary-button thin" data-subscription-action="close-payment-history-modal">
       <?= translate('close', $i18n) ?>
     </button>
   </div>
@@ -1263,18 +1262,18 @@ $subscriptionPagePreferences = [
       </div>
       <div class="subscription-image-viewer-header-actions">
         <button type="button" class="secondary-button thin subscription-image-action-button" id="subscription-image-viewer-prev"
-          onClick="showPreviousSubscriptionImage()">
+          data-subscription-action="image-viewer-previous">
           <i class="fa-solid fa-chevron-left"></i>
           <span><?= translate('subscription_image_previous', $i18n) ?></span>
         </button>
         <button type="button" class="secondary-button thin subscription-image-action-button" id="subscription-image-viewer-next"
-          onClick="showNextSubscriptionImage()">
+          data-subscription-action="image-viewer-next">
           <span><?= translate('subscription_image_next', $i18n) ?></span>
           <i class="fa-solid fa-chevron-right"></i>
         </button>
       </div>
     </div>
-    <span class="fa-solid fa-xmark close-form" onClick="closeSubscriptionImageViewer()"></span>
+    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-image-viewer"></span>
   </header>
   <div class="subscription-image-viewer-content">
     <img src="" alt="<?= translate('subscription_image_viewer_title', $i18n) ?>" id="subscription-image-viewer-preview">
@@ -1290,17 +1289,17 @@ $subscriptionPagePreferences = [
   </div>
   <div class="buttons">
     <button type="button" class="secondary-button thin subscription-image-action-button"
-      onClick="closeSubscriptionImageViewer()">
+      data-subscription-action="close-image-viewer">
       <i class="fa-solid fa-xmark"></i>
       <span><?= translate('cancel', $i18n) ?></span>
     </button>
     <button type="button" class="secondary-button thin subscription-image-action-button"
-      id="subscription-image-viewer-open" onClick="openSubscriptionImageOriginal()">
+      id="subscription-image-viewer-open" data-subscription-action="open-image-original">
       <i class="fa-solid fa-up-right-from-square"></i>
       <span><?= translate('subscription_image_open_original', $i18n) ?></span>
     </button>
     <button type="button" class="thin subscription-image-action-button"
-      id="subscription-image-viewer-download" onClick="downloadSubscriptionImage()">
+      id="subscription-image-viewer-download" data-subscription-action="download-image">
       <i class="fa-solid fa-download"></i>
       <span><?= translate('subscription_image_download', $i18n) ?></span>
     </button>
