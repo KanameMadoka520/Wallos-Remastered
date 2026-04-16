@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/payment_icons.php';
 
 $currencies = array();
 $query = "SELECT * FROM currencies WHERE user_id = :userId";
@@ -1262,7 +1263,7 @@ $pageSections = [
             }
 
             foreach ($payments as $payment) {
-                $paymentIconFolder = (strpos($payment['icon'], 'images/uploads/icons/') !== false) ? "" : "images/uploads/logos/";
+                $paymentIconPath = wallos_resolve_payment_icon_path($payment['icon'] ?? '');
 
                 $inUse = in_array($payment['id'], $paymentsInUse);
                 ?>
@@ -1272,7 +1273,7 @@ $pageSections = [
                     <div class="drag-icon" title="">
                         <i class="fa-solid fa-grip-vertical"></i>
                     </div>
-                    <img src="<?= $paymentIconFolder . $payment['icon'] ?>" alt="Logo" />
+                    <img src="<?= htmlspecialchars($paymentIconPath, ENT_QUOTES, 'UTF-8') ?>" alt="Logo" />
                     <span class="payment-name" contenteditable="true"
                         title="<?= translate("rename_payment_method", $i18n) ?>"><?= $payment['name'] ?></span>
                     <?php

@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/timezone_settings.php';
 
-$databaseFile = 'db/wallos.db';
+$databaseFile = __DIR__ . '/../db/wallos.db';
 
 $db = new SQLite3($databaseFile);
 $db->busyTimeout(5000);

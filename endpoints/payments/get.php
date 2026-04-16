@@ -1,6 +1,7 @@
 <?php
 
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/payment_icons.php';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $paymentsInUseQuery = $db->prepare('SELECT id FROM payment_methods WHERE id IN (SELECT DISTINCT payment_method_id FROM subscriptions) AND user_id = :userId');
@@ -29,14 +30,14 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     }
 
     foreach ($payments as $payment) {
-        $paymentIconFolder = (strpos($payment['icon'], 'images/uploads/icons/') !== false) ? "" : "images/uploads/logos/";
+        $paymentIconPath = wallos_resolve_payment_icon_path($payment['icon'] ?? '');
         $inUse = in_array($payment['id'], $paymentsInUse);
         ?>
         <div class="payments-payment" data-enabled="<?= $payment['enabled']; ?>" data-in-use="<?= $inUse ? 'yes' : 'no' ?>"
             data-paymentid="<?= $payment['id'] ?>"
             title="<?= $inUse ? translate('cant_delete_payment_method_in_use', $i18n) : ($payment['enabled'] ? translate('disable', $i18n) : translate('enable', $i18n)) ?>"
             onClick="togglePayment(<?= $payment['id'] ?>)">
-            <img src="<?= $paymentIconFolder . $payment['icon'] ?>" alt="Logo" />
+            <img src="<?= htmlspecialchars($paymentIconPath, ENT_QUOTES, 'UTF-8') ?>" alt="Logo" />
             <span class="payment-name">
                 <?= $payment['name'] ?>
             </span>

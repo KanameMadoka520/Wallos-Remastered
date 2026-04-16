@@ -31,7 +31,7 @@ $db->exec('CREATE TABLE IF NOT EXISTS admin (
 
 $db->exec('INSERT INTO admin (id, registrations_open, require_email_verification, server_url, max_users, smtp_address, smtp_port, smtp_username, smtp_password, from_email, encryption) VALUES (1, 0, 0, "", 0, "", 587, "", "", "", "tls")');
 
-$updateQuery = "UPDATE payment_methods SET icon = 'images/uploads/icons/' || icon WHERE id < 32 AND icon NOT LIKE '%/images/uploads/icons%'";
+$updateQuery = "UPDATE payment_methods SET icon = 'images/uploads/icons/' || icon WHERE id < 32 AND icon NOT LIKE 'images/uploads/icons/%' AND icon NOT LIKE 'images/uploads/logos/%' AND icon NOT LIKE 'http://%' AND icon NOT LIKE 'https://%'";
 $db->exec($updateQuery);
 
 $db->exec('CREATE TABLE IF NOT EXISTS email_verification (

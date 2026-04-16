@@ -10,6 +10,7 @@ require_once 'includes/subscription_payment_history.php';
 require_once 'includes/subscription_price_rules.php';
 require_once 'includes/subscription_pages.php';
 require_once 'includes/page_immersive_toggle.php';
+require_once 'includes/payment_icons.php';
 
 include_once 'includes/list_subscriptions.php';
 
@@ -529,8 +530,7 @@ $subscriptionPagePreferences = [
       $next_payment_timestamp = strtotime($subscription['next_payment']);
       $formatted_date = $formatter->format($next_payment_timestamp);
       $print[$id]['next_payment'] = $formatted_date;
-      $paymentIconFolder = (strpos($payment_methods[$paymentMethodId]['icon'], 'images/uploads/icons/') !== false) ? "" : "images/uploads/logos/";
-      $print[$id]['payment_method_icon'] = $paymentIconFolder . $payment_methods[$paymentMethodId]['icon'];
+      $print[$id]['payment_method_icon'] = wallos_resolve_payment_icon_path($payment_methods[$paymentMethodId]['icon'] ?? '');
       $print[$id]['payment_method_name'] = $payment_methods[$paymentMethodId]['name'];
       $print[$id]['payment_method_id'] = $paymentMethodId;
       $print[$id]['category_id'] = $subscription['category_id'];
