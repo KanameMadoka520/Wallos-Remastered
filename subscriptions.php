@@ -283,6 +283,59 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
   }
 
+  body.dynamic-wallpaper-enabled .subscription-page-tab {
+    background: rgba(14, 20, 30, 0.82);
+    color: var(--wallos-dynamic-text-color);
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 10px 24px rgba(0, 0, 0, 0.18);
+  }
+
+  body.dynamic-wallpaper-enabled .subscription-page-tab:hover {
+    background: rgba(22, 30, 44, 0.9);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  body.dynamic-wallpaper-enabled .subscription-page-tab.is-active {
+    background: rgba(28, 36, 54, 0.94);
+    color: #ffffff;
+    border-color: rgba(var(--main-color-rgb), 0.78);
+    box-shadow:
+      0 14px 28px rgba(0, 0, 0, 0.24),
+      inset 0 0 0 1px rgba(var(--main-color-rgb), 0.22);
+  }
+
+  body.dynamic-wallpaper-enabled .subscription-page-tab .section-count-badge {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--wallos-dynamic-text-color);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  body.dynamic-wallpaper-enabled .subscription-page-tab.is-active .section-count-badge {
+    background: rgba(var(--main-color-rgb), 0.18);
+    color: #ffffff;
+    border-color: rgba(var(--main-color-rgb), 0.3);
+  }
+
+  body.dynamic-wallpaper-enabled .subscriptions-page-layout .top-actions .search>input[type="text"] {
+    background: rgba(14, 20, 30, 0.82);
+    color: var(--wallos-dynamic-text-color);
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 12px 28px rgba(0, 0, 0, 0.14);
+  }
+
+  body.dynamic-wallpaper-enabled .subscriptions-page-layout .top-actions .search>input[type="text"]::placeholder {
+    color: rgba(var(--wallos-dynamic-text-color-rgb), 0.62);
+  }
+
+  body.dynamic-wallpaper-enabled .subscriptions-page-layout .top-actions>.search>.search-icon,
+  body.dynamic-wallpaper-enabled .subscriptions-page-layout .top-actions>.search>.clear-search {
+    color: rgba(var(--main-color-rgb), 0.95);
+  }
+
   .subscription-page-manager-trigger {
     white-space: nowrap;
   }
