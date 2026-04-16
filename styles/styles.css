@@ -3083,13 +3083,19 @@ button.dark-theme-button i {
   align-items: start;
 }
 
+.subscription-pages-manager-list > * {
+  min-width: 0;
+}
+
 .subscription-pages-manager-item {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--box-border-color);
   border-radius: 16px;
   background-color: rgba(var(--main-color-rgb), 0.04);
@@ -3100,6 +3106,7 @@ button.dark-theme-button i {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .subscription-page-name-input {
@@ -3111,6 +3118,7 @@ button.dark-theme-button i {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  min-width: 0;
 }
 
 .subscription-pages-manager-item-actions .button {
