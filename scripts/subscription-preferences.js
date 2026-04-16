@@ -11,6 +11,8 @@
     payment_records: true,
   };
   let preferencesSaveTimer = null;
+  let shouldReloadAfterSave = false;
+  let reloadAfterSaveTimer = null;
   let bindMasonryImageEventsHandler = null;
   let scheduleMasonryLayoutHandler = null;
 
@@ -42,8 +44,12 @@
     };
   }
 
-  function scheduleSave() {
+  function scheduleSave(options = {}) {
     updatePreferencesCache();
+
+    if (options.reload === true) {
+      shouldReloadAfterSave = true;
+    }
 
     if (preferencesSaveTimer !== null) {
       window.clearTimeout(preferencesSaveTimer);
@@ -64,9 +70,25 @@
           image_layout_form: imageLayoutPreferences.form,
           image_layout_detail: imageLayoutPreferences.detail,
         }),
-      }).catch((error) => {
-        console.error("Failed to persist subscription page preferences.", error);
-      });
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data?.success && shouldReloadAfterSave) {
+            shouldReloadAfterSave = false;
+
+            if (reloadAfterSaveTimer !== null) {
+              window.clearTimeout(reloadAfterSaveTimer);
+            }
+
+            reloadAfterSaveTimer = window.setTimeout(() => {
+              window.location.reload();
+            }, 220);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to persist subscription page preferences.", error);
+          shouldReloadAfterSave = false;
+        });
     }, 160);
   }
 
@@ -167,7 +189,7 @@
 
   function setDisplayColumns(columns, button = null) {
     displayColumns = normalizeDisplayColumns(columns);
-    scheduleSave();
+    scheduleSave({ reload: true });
     applyDisplayColumns(displayColumns);
 
     if (button) {
@@ -196,7 +218,7 @@
     }
 
     valueVisibility[metricKey] = !valueVisibility[metricKey];
-    scheduleSave();
+    scheduleSave({ reload: true });
     applyValueVisibility();
   }
 
