@@ -1,18 +1,6 @@
 let isSortOptionsOpen = false;
 let scrollTopBeforeOpening = 0;
 const shouldScroll = window.innerWidth <= 768;
-const SUBSCRIPTION_IMAGE_VIEWER_SWIPE_THRESHOLD = 50;
-let currentSubscriptionImageViewerSrc = "";
-let currentSubscriptionImageOriginalUrl = "";
-let currentSubscriptionImageDownloadUrl = "";
-let currentSubscriptionImageViewerItems = [];
-let currentSubscriptionImageViewerIndex = -1;
-let currentSubscriptionImageOriginalRequest = null;
-let currentSubscriptionImagePreviewToken = 0;
-let subscriptionImageViewerPreviewProgressTimer = null;
-const prefetchedSubscriptionImageViewerSources = new Set();
-let subscriptionImageViewerTouchStartX = 0;
-let subscriptionImageViewerTouchStartY = 0;
 let currentPaymentHistorySubscriptionId = 0;
 let currentPaymentHistorySubscriptionName = "";
 let currentPaymentHistoryRecords = [];
@@ -28,9 +16,6 @@ let currentPaymentModalSubscription = null;
 let currentPaymentModalMode = "create";
 let subscriptionPriceRules = [];
 let subscriptionPriceRuleTempIdCounter = 0;
-let detailImageGallerySortable = null;
-let detailSubscriptionGallerySortables = [];
-let detailImageTempIdCounter = 0;
 let subscriptionMasonryLayoutFrame = null;
 let subscriptionMasonryResizeTimer = null;
 let subscriptionCardSortable = null;
@@ -53,10 +38,6 @@ function toggleNotificationDays() {
   const notifyDaysBefore = document.querySelector("#notify_days_before");
   notifyDaysBefore.disabled = !notifyCheckbox.checked;
 }
-
-let selectedDetailImageFiles = [];
-let existingUploadedImages = [];
-let removedUploadedImageIds = [];
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -584,330 +565,43 @@ function initializeSubscriptionCardSortable() {
 }
 
 function getDetailImageConfig() {
-  const form = document.querySelector("#subs-form");
-  const rawUploadLimit = form?.dataset.uploadLimit;
-  const parsedUploadLimit = rawUploadLimit === "" || rawUploadLimit === undefined
-    ? null
-    : Number(rawUploadLimit);
-
-  return {
-    canUpload: form?.dataset.canUploadDetailImage === "1",
-    compressionMode: form?.dataset.compressionMode || "disabled",
-    maxBytes: Number(form?.dataset.detailImageMaxBytes || 0),
-    maxMb: Number(form?.dataset.detailImageMaxMb || 0),
-    uploadLimit: Number.isFinite(parsedUploadLimit) ? parsedUploadLimit : null,
-    externalUrlLimit: Number(form?.dataset.externalUrlLimit || 0),
-    allowedExtensions: form?.dataset.allowedExtensions || "",
-    tooLargeMessage: form?.dataset.detailImageTooLarge || translate("unknown_error"),
-    invalidTypeMessage: form?.dataset.detailImageInvalidType || translate("unknown_error"),
-    uploadBlockedMessage: form?.dataset.detailImageUploadBlocked || translate("unknown_error"),
-    uploadLimitMessage: form?.dataset.detailImageUploadLimitMessage || translate("unknown_error"),
+  return window.WallosSubscriptionMedia?.getDetailImageConfig?.() || {
+    canUpload: false,
+    compressionMode: "disabled",
+    maxBytes: 0,
+    maxMb: 0,
+    uploadLimit: null,
+    externalUrlLimit: 0,
+    allowedExtensions: "",
+    tooLargeMessage: translate("unknown_error"),
+    invalidTypeMessage: translate("unknown_error"),
+    uploadBlockedMessage: translate("unknown_error"),
+    uploadLimitMessage: translate("unknown_error"),
   };
 }
 
-function ensureSelectedDetailImageFileToken(file) {
-  if (!file) {
-    return "";
-  }
-
-  if (!file._wallosTempId) {
-    detailImageTempIdCounter += 1;
-    file._wallosTempId = `temp-${Date.now()}-${detailImageTempIdCounter}`;
-  }
-
-  return file._wallosTempId;
-}
-
 function setDetailImageUploadProgress(percentage, label) {
-  const container = document.querySelector("#detail-image-upload-progress");
-  const fill = document.querySelector("#detail-image-upload-progress-bar-fill");
-  const value = document.querySelector("#detail-image-upload-progress-value");
-  const labelElement = document.querySelector("#detail-image-upload-progress-label");
-
-  if (!container || !fill || !value || !labelElement) {
-    return;
-  }
-
-  const safePercentage = Math.max(0, Math.min(100, Math.round(percentage)));
-  container.classList.remove("is-hidden");
-  fill.style.width = `${safePercentage}%`;
-  value.textContent = `${safePercentage}%`;
-  labelElement.textContent = label || translate("subscription_image_upload_progress_idle");
+  window.WallosSubscriptionMedia?.setUploadProgress?.(percentage, label);
 }
 
 function hideDetailImageUploadProgress() {
-  const container = document.querySelector("#detail-image-upload-progress");
-  const fill = document.querySelector("#detail-image-upload-progress-bar-fill");
-  const value = document.querySelector("#detail-image-upload-progress-value");
-  const labelElement = document.querySelector("#detail-image-upload-progress-label");
-
-  if (!container || !fill || !value || !labelElement) {
-    return;
-  }
-
-  container.classList.add("is-hidden");
-  fill.style.width = "0%";
-  value.textContent = "0%";
-  labelElement.textContent = translate("subscription_image_upload_progress_idle");
-}
-
-function setOriginalImageProgress(percentage, label) {
-  const container = document.querySelector("#subscription-image-original-progress");
-  const fill = document.querySelector("#subscription-image-original-progress-fill");
-  const value = document.querySelector("#subscription-image-original-progress-value");
-  const labelElement = document.querySelector("#subscription-image-original-progress-label");
-
-  if (!container || !fill || !value || !labelElement) {
-    return;
-  }
-
-  const safePercentage = Math.max(0, Math.min(100, Math.round(percentage)));
-  container.classList.remove("is-hidden");
-  fill.style.width = `${safePercentage}%`;
-  value.textContent = `${safePercentage}%`;
-  labelElement.textContent = label || translate("subscription_image_original_loading");
-}
-
-function hideOriginalImageProgress() {
-  const container = document.querySelector("#subscription-image-original-progress");
-  const fill = document.querySelector("#subscription-image-original-progress-fill");
-  const value = document.querySelector("#subscription-image-original-progress-value");
-  const labelElement = document.querySelector("#subscription-image-original-progress-label");
-
-  if (!container || !fill || !value || !labelElement) {
-    return;
-  }
-
-  container.classList.add("is-hidden");
-  fill.style.width = "0%";
-  value.textContent = "0%";
-  labelElement.textContent = translate("subscription_image_original_loading");
+  window.WallosSubscriptionMedia?.hideUploadProgress?.();
 }
 
 function resetDetailImageCompression() {
-  const compressCheckbox = document.querySelector("#compress_subscription_image");
-  const config = getDetailImageConfig();
-
-  if (!compressCheckbox) {
-    return;
-  }
-
-  compressCheckbox.checked = config.compressionMode !== "disabled";
-  compressCheckbox.disabled = config.compressionMode === "disabled";
-}
-
-function rebuildDetailImageInput() {
-  const detailImageInput = document.querySelector("#detail-image-upload");
-  if (!detailImageInput || typeof DataTransfer === "undefined") {
-    return;
-  }
-
-  const dataTransfer = new DataTransfer();
-  selectedDetailImageFiles.forEach((file) => {
-    dataTransfer.items.add(file);
-  });
-  detailImageInput.files = dataTransfer.files;
-}
-
-function updateDetailImageSelectionMeta() {
-  const meta = document.querySelector("#detail-image-selection-meta");
-  if (!meta) {
-    return;
-  }
-
-  const selectedCount = selectedDetailImageFiles.length;
-  const existingCount = existingUploadedImages.length;
-
-  if (selectedCount === 0 && existingCount === 0) {
-    meta.textContent = translate("subscription_image_no_selection");
-    return;
-  }
-
-  const parts = [];
-  if (existingCount > 0) {
-    parts.push(`${translate("subscription_image_selected_existing")}: ${existingCount}`);
-  }
-  if (selectedCount > 0) {
-    parts.push(`${translate("subscription_image_selected_new")}: ${selectedCount}`);
-  }
-  meta.textContent = `${parts.join(" / ")}. ${translate("subscription_image_click_to_enlarge")}`;
-}
-
-function updateDetailImageOrderField() {
-  const orderInput = document.querySelector("#detail-image-order");
-  const gallery = document.querySelector("#detail-image-gallery");
-
-  if (!orderInput || !gallery) {
-    return;
-  }
-
-  const tokens = Array.from(gallery.querySelectorAll(".subscription-detail-image-card"))
-    .map((card) => card.dataset.orderToken || "")
-    .filter((token) => token !== "");
-
-  orderInput.value = tokens.join(",");
-}
-
-function syncDetailImageStateFromGallery() {
-  const gallery = document.querySelector("#detail-image-gallery");
-  if (!gallery) {
-    return;
-  }
-
-  const orderedCards = Array.from(gallery.querySelectorAll(".subscription-detail-image-card"));
-  const existingById = new Map(existingUploadedImages.map((image) => [Number(image.id), image]));
-  const newFilesByToken = new Map(selectedDetailImageFiles.map((file) => [ensureSelectedDetailImageFileToken(file), file]));
-
-  const nextExistingImages = [];
-  const nextSelectedFiles = [];
-
-  orderedCards.forEach((card) => {
-    const orderToken = card.dataset.orderToken || "";
-    if (orderToken.startsWith("existing:")) {
-      const imageId = Number(orderToken.split(":")[1]);
-      const image = existingById.get(imageId);
-      if (image) {
-        nextExistingImages.push(image);
-      }
-    } else if (orderToken.startsWith("new:")) {
-      const token = orderToken.split(":")[1];
-      const file = newFilesByToken.get(token);
-      if (file) {
-        nextSelectedFiles.push(file);
-      }
-    }
-  });
-
-  existingUploadedImages = nextExistingImages;
-  selectedDetailImageFiles = nextSelectedFiles;
-  rebuildDetailImageInput();
-  updateDetailImageOrderField();
-}
-
-function initializeDetailImageGallerySortable() {
-  const gallery = document.querySelector("#detail-image-gallery");
-  if (!gallery || typeof Sortable === "undefined") {
-    return;
-  }
-
-  if (detailImageGallerySortable) {
-    detailImageGallerySortable.destroy();
-    detailImageGallerySortable = null;
-  }
-
-  detailImageGallerySortable = new Sortable(gallery, {
-    animation: 150,
-    draggable: ".subscription-detail-image-card",
-    onEnd: () => {
-      syncDetailImageStateFromGallery();
-      renderDetailImageGallery();
-    },
-  });
-}
-
-function normalizeDetailGalleryOrderAfterDrag(gallery) {
-  const uploadedItems = Array.from(gallery.querySelectorAll('.subscription-media-item[data-uploaded-image-id]'));
-  const externalItems = Array.from(gallery.querySelectorAll('.subscription-media-item:not([data-uploaded-image-id])'));
-  uploadedItems.forEach((item) => gallery.appendChild(item));
-  externalItems.forEach((item) => gallery.appendChild(item));
-}
-
-function persistSubscriptionImageOrder(gallery) {
-  const subscriptionId = Number(gallery?.dataset.subscriptionId || 0);
-  const imageIds = Array.from(gallery.querySelectorAll('.subscription-media-item[data-uploaded-image-id]'))
-    .map((item) => Number(item.dataset.uploadedImageId || 0))
-    .filter((imageId) => imageId > 0);
-
-  if (!subscriptionId || imageIds.length < 2) {
-    return;
-  }
-
-  fetch("endpoints/subscription/reorderimages.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({
-      subscriptionId,
-      imageIds,
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (!data.success) {
-        showErrorMessage(data.message || translate("error"));
-      }
-    })
-    .catch(() => showErrorMessage(translate("error")));
+  window.WallosSubscriptionMedia?.resetCompression?.();
 }
 
 function initializeSubscriptionMediaSortables() {
-  detailSubscriptionGallerySortables.forEach((sortableInstance) => sortableInstance.destroy());
-  detailSubscriptionGallerySortables = [];
-
-  if (typeof Sortable === "undefined") {
-    return;
-  }
-
-  document.querySelectorAll(".subscription-media-gallery[data-subscription-id]").forEach((gallery) => {
-    const uploadedItems = gallery.querySelectorAll('.subscription-media-item[data-uploaded-image-id]');
-    if (uploadedItems.length < 2) {
-      return;
-    }
-
-    const sortableInstance = new Sortable(gallery, {
-      animation: 150,
-      draggable: '.subscription-media-item[data-uploaded-image-id]',
-      onEnd: () => {
-        normalizeDetailGalleryOrderAfterDrag(gallery);
-        persistSubscriptionImageOrder(gallery);
-      },
-    });
-
-    detailSubscriptionGallerySortables.push(sortableInstance);
-  });
+  window.WallosSubscriptionMedia?.initializeSubscriptionMediaSortables?.();
 }
 
 function getUploadedImageDisplayName(image) {
-  const candidate = String(image?.original_name || image?.file_name || "").trim();
-  if (candidate !== "") {
-    return candidate;
-  }
-
-  return translate("subscription_image_source_server");
+  return String(image?.original_name || image?.file_name || "").trim() || translate("subscription_image_source_server");
 }
 
 function buildFormDetailImageViewerItems() {
-  const items = [];
-
-  existingUploadedImages.forEach((image) => {
-    const previewUrl = image?.preview_url || image?.access_url || image?.path || "";
-    const originalUrl = image?.original_url || previewUrl;
-    const downloadUrl = image?.download_url || originalUrl || previewUrl;
-    if (!previewUrl) {
-      return;
-    }
-
-    items.push({
-      src: previewUrl,
-      originalUrl,
-      downloadUrl,
-      label: getUploadedImageDisplayName(image),
-    });
-  });
-
-  selectedDetailImageFiles.forEach((file) => {
-    const objectUrl = URL.createObjectURL(file);
-    items.push({
-      src: objectUrl,
-      originalUrl: objectUrl,
-      downloadUrl: null,
-      label: file.name || translate("subscription_image_source_new"),
-    });
-  });
-
-  return items;
+  return window.WallosSubscriptionMedia?.buildFormViewerItems?.() || [];
 }
 
 function mountSubscriptionOverlayToBody(selector) {
@@ -1871,651 +1565,64 @@ function renderSubscriptionPriceRules() {
   serializeSubscriptionPriceRules();
 }
 
-function getViewerItemsFromGallery(gallery) {
-  if (!gallery) {
-    return [];
-  }
-
-  const itemButtons = Array.from(gallery.querySelectorAll("[data-viewer-src]"));
-  return itemButtons.map((button) => ({
-    src: button.dataset.viewerSrc || "",
-    originalUrl: button.dataset.viewerOriginal || button.dataset.viewerSrc || "",
-    downloadUrl: button.dataset.viewerDownload || button.dataset.viewerSrc || "",
-    label: button.dataset.viewerLabel || "",
-  })).filter((item) => item.src !== "");
-}
-
-function setSubscriptionImageViewerPreviewProgress(percentage) {
-  const progress = document.querySelector("#subscription-image-viewer-progress");
-  const fill = document.querySelector("#subscription-image-viewer-progress-fill");
-  if (!progress || !fill) {
-    return;
-  }
-
-  const normalizedValue = Math.max(0, Math.min(100, Number(percentage || 0)));
-  progress.classList.toggle("is-hidden", normalizedValue <= 0);
-  fill.style.width = `${normalizedValue}%`;
-}
-
-function hideSubscriptionImageViewerPreviewProgress() {
-  if (subscriptionImageViewerPreviewProgressTimer) {
-    clearInterval(subscriptionImageViewerPreviewProgressTimer);
-    subscriptionImageViewerPreviewProgressTimer = null;
-  }
-
-  setSubscriptionImageViewerPreviewProgress(0);
-}
-
-function startSubscriptionImageViewerPreviewProgress(loadToken) {
-  if (subscriptionImageViewerPreviewProgressTimer) {
-    clearInterval(subscriptionImageViewerPreviewProgressTimer);
-    subscriptionImageViewerPreviewProgressTimer = null;
-  }
-
-  let currentProgress = 14;
-  setSubscriptionImageViewerPreviewProgress(currentProgress);
-
-  subscriptionImageViewerPreviewProgressTimer = setInterval(() => {
-    if (loadToken !== currentSubscriptionImagePreviewToken) {
-      hideSubscriptionImageViewerPreviewProgress();
-      return;
-    }
-
-    currentProgress = Math.min(86, currentProgress + Math.max(2, (88 - currentProgress) * 0.16));
-    setSubscriptionImageViewerPreviewProgress(currentProgress);
-  }, 90);
-}
-
-function finishSubscriptionImageViewerPreviewProgress(loadToken) {
-  if (subscriptionImageViewerPreviewProgressTimer) {
-    clearInterval(subscriptionImageViewerPreviewProgressTimer);
-    subscriptionImageViewerPreviewProgressTimer = null;
-  }
-
-  setSubscriptionImageViewerPreviewProgress(100);
-  window.setTimeout(() => {
-    if (loadToken === currentSubscriptionImagePreviewToken) {
-      hideSubscriptionImageViewerPreviewProgress();
-    }
-  }, 140);
-}
-
-function prefetchSubscriptionImageViewerSource(src) {
-  const normalizedSrc = String(src || "").trim();
-  if (normalizedSrc === "" || prefetchedSubscriptionImageViewerSources.has(normalizedSrc)) {
-    return;
-  }
-
-  prefetchedSubscriptionImageViewerSources.add(normalizedSrc);
-  const image = new Image();
-  image.decoding = "async";
-  image.src = normalizedSrc;
-}
-
-function prefetchAdjacentSubscriptionImageViewerItems() {
-  if (!Array.isArray(currentSubscriptionImageViewerItems) || currentSubscriptionImageViewerIndex < 0) {
-    return;
-  }
-
-  [currentSubscriptionImageViewerIndex - 1, currentSubscriptionImageViewerIndex + 1].forEach((index) => {
-    const item = currentSubscriptionImageViewerItems[index];
-    if (item?.src) {
-      prefetchSubscriptionImageViewerSource(item.src);
-    }
-  });
-}
-
 function openSubscriptionImageViewerItems(items, startIndex = 0) {
-  if (!Array.isArray(items) || items.length === 0) {
-    return;
-  }
-
-  currentSubscriptionImageViewerItems = items;
-  currentSubscriptionImageViewerIndex = Math.max(0, Math.min(startIndex, items.length - 1));
-  renderCurrentSubscriptionImageViewerItem();
+  window.WallosSubscriptionImageViewer?.openItems?.(items, startIndex);
 }
 
 function openSubscriptionImageViewerFromElement(element) {
-  if (!element) {
-    return;
-  }
-
-  const formPreview = element.closest("#detail-image-gallery");
-  if (formPreview) {
-    const items = buildFormDetailImageViewerItems();
-    const previewButtons = Array.from(formPreview.querySelectorAll(".subscription-detail-image-preview"));
-    const index = Math.max(0, previewButtons.indexOf(element));
-    openSubscriptionImageViewerItems(items, index);
-    return;
-  }
-
-  const gallery = element.closest(".subscription-media-gallery");
-  if (gallery) {
-    const itemButtons = Array.from(gallery.querySelectorAll(".subscription-media-item"));
-    const index = Math.max(0, itemButtons.indexOf(element));
-    openSubscriptionImageViewerItems(getViewerItemsFromGallery(gallery), index);
-  }
-}
-
-function renderCurrentSubscriptionImageViewerItem() {
-  const viewer = document.querySelector("#subscription-image-viewer");
-  const viewerContent = document.querySelector("#subscription-image-viewer .subscription-image-viewer-content");
-  const preview = document.querySelector("#subscription-image-viewer-preview");
-  const openLink = document.querySelector("#subscription-image-viewer-open");
-  const downloadLink = document.querySelector("#subscription-image-viewer-download");
-  const previousButton = document.querySelector("#subscription-image-viewer-prev");
-  const nextButton = document.querySelector("#subscription-image-viewer-next");
-  const counter = document.querySelector("#subscription-image-viewer-counter");
-
-  if (!viewer || !viewerContent || !preview || currentSubscriptionImageViewerIndex < 0 || !currentSubscriptionImageViewerItems.length) {
-    return;
-  }
-
-  const item = currentSubscriptionImageViewerItems[currentSubscriptionImageViewerIndex];
-  const loadToken = ++currentSubscriptionImagePreviewToken;
-  currentSubscriptionImageViewerSrc = item.src || "";
-  currentSubscriptionImageOriginalUrl = item.originalUrl || item.src || "";
-  currentSubscriptionImageDownloadUrl = item.downloadUrl || item.src || "";
-
-  if (currentSubscriptionImageOriginalRequest) {
-    currentSubscriptionImageOriginalRequest.abort();
-    currentSubscriptionImageOriginalRequest = null;
-  }
-  hideOriginalImageProgress();
-  hideSubscriptionImageViewerPreviewProgress();
-  viewerContent.classList.toggle("is-loading", currentSubscriptionImageViewerSrc !== "");
-  preview.alt = item.label || "";
-  preview.removeAttribute("src");
-  preview.onload = null;
-  preview.onerror = null;
-  preview.alt = item.label || "";
-  viewer.classList.add("is-open");
-
-  if (openLink) {
-    openLink.disabled = currentSubscriptionImageViewerSrc === "";
-  }
-  if (downloadLink) {
-    downloadLink.disabled = currentSubscriptionImageDownloadUrl === "";
-  }
-  if (previousButton) {
-    previousButton.disabled = currentSubscriptionImageViewerIndex <= 0;
-  }
-  if (nextButton) {
-    nextButton.disabled = currentSubscriptionImageViewerIndex >= currentSubscriptionImageViewerItems.length - 1;
-  }
-  if (counter) {
-    counter.textContent = `${currentSubscriptionImageViewerIndex + 1} / ${currentSubscriptionImageViewerItems.length}`;
-  }
-
-  if (currentSubscriptionImageViewerSrc === "") {
-    viewerContent.classList.remove("is-loading");
-    return;
-  }
-
-  startSubscriptionImageViewerPreviewProgress(loadToken);
-  preview.onload = () => {
-    if (loadToken !== currentSubscriptionImagePreviewToken) {
-      return;
-    }
-
-    viewerContent.classList.remove("is-loading");
-    finishSubscriptionImageViewerPreviewProgress(loadToken);
-    prefetchAdjacentSubscriptionImageViewerItems();
-  };
-  preview.onerror = () => {
-    if (loadToken !== currentSubscriptionImagePreviewToken) {
-      return;
-    }
-
-    viewerContent.classList.remove("is-loading");
-    hideSubscriptionImageViewerPreviewProgress();
-    showErrorMessage(translate("error"));
-  };
-
-  window.requestAnimationFrame(() => {
-    if (loadToken !== currentSubscriptionImagePreviewToken) {
-      return;
-    }
-
-    preview.src = currentSubscriptionImageViewerSrc;
-  });
-}
-
-function renderDetailImageGallery() {
-  const gallery = document.querySelector("#detail-image-gallery");
-  if (!gallery) {
-    return;
-  }
-
-  gallery.innerHTML = "";
-  const totalCount = existingUploadedImages.length + selectedDetailImageFiles.length;
-  gallery.classList.toggle("is-empty", totalCount === 0);
-  gallery.classList.toggle("has-multiple", totalCount > 1);
-
-  existingUploadedImages.forEach((image) => {
-    const thumbUrl = image?.thumbnail_url || image?.preview_url || image?.access_url || image?.path || "";
-    const previewUrl = image?.preview_url || image?.access_url || thumbUrl;
-    const originalUrl = image?.original_url || previewUrl;
-    const downloadUrl = image?.download_url || originalUrl;
-    gallery.appendChild(
-      createDetailImageCard({
-        src: thumbUrl,
-        viewerSrc: previewUrl,
-        originalUrl,
-        downloadUrl,
-        badgeText: translate("subscription_image_existing_badge"),
-        fileName: getUploadedImageDisplayName(image),
-        sourceText: translate("subscription_image_source_server"),
-        extraClassName: "existing",
-        orderToken: `existing:${Number(image.id)}`,
-        onRemove: () => removeExistingUploadedImage(image.id),
-      }),
-    );
-  });
-
-  selectedDetailImageFiles.forEach((file, index) => {
-    const objectUrl = URL.createObjectURL(file);
-    gallery.appendChild(
-      createDetailImageCard({
-        src: objectUrl,
-        viewerSrc: objectUrl,
-        originalUrl: objectUrl,
-        downloadUrl: objectUrl,
-        badgeText: translate("subscription_image_new_badge"),
-        fileName: file.name,
-        sourceText: translate("subscription_image_source_new"),
-        extraClassName: "new",
-        orderToken: `new:${ensureSelectedDetailImageFileToken(file)}`,
-        onRemove: () => removeSelectedDetailImage(index),
-      }),
-    );
-  });
-
-  updateDetailImageSelectionMeta();
-  updateDetailImageOrderField();
-  applySubscriptionImageLayoutMode("form");
-  initializeDetailImageGallerySortable();
-}
-
-function createDetailImageCard({
-  src,
-  viewerSrc = "",
-  originalUrl = "",
-  downloadUrl = "",
-  badgeText,
-  fileName = "",
-  sourceText = "",
-  extraClassName = "",
-  orderToken = "",
-  onRemove,
-}) {
-  const card = document.createElement("div");
-  card.className = `subscription-detail-image-card ${extraClassName}`.trim();
-  card.dataset.orderToken = orderToken;
-
-  const previewButton = document.createElement("button");
-  previewButton.type = "button";
-  previewButton.className = "subscription-detail-image-preview";
-  previewButton.dataset.viewerSrc = viewerSrc || src;
-  previewButton.dataset.viewerOriginal = originalUrl || viewerSrc || src;
-  previewButton.dataset.viewerDownload = downloadUrl || originalUrl || viewerSrc || src;
-  previewButton.dataset.viewerLabel = fileName || sourceText || badgeText;
-  previewButton.addEventListener("click", (event) => {
-    event.preventDefault();
-    openSubscriptionImageViewerFromElement(previewButton);
-  });
-
-  const image = document.createElement("img");
-  image.src = src;
-  image.alt = fileName || sourceText || "";
-  previewButton.appendChild(image);
-
-  const badge = document.createElement("span");
-  badge.className = "subscription-detail-image-badge";
-  badge.textContent = badgeText;
-
-  const zoom = document.createElement("span");
-  zoom.className = "subscription-detail-image-zoom";
-  zoom.innerHTML = '<i class="fa-solid fa-magnifying-glass-plus"></i>';
-
-  const meta = document.createElement("div");
-  meta.className = "subscription-detail-image-card-meta";
-
-  const nameElement = document.createElement("strong");
-  nameElement.textContent = fileName || sourceText || badgeText;
-
-  const sourceElement = document.createElement("span");
-  sourceElement.textContent = sourceText || badgeText;
-
-  const removeButton = document.createElement("button");
-  removeButton.type = "button";
-  removeButton.className = "subscription-detail-image-remove";
-  removeButton.setAttribute("aria-label", translate("subscription_image_remove"));
-  removeButton.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-  removeButton.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (typeof onRemove === "function") {
-      onRemove();
-    }
-  });
-
-  card.appendChild(previewButton);
-  previewButton.appendChild(zoom);
-  card.appendChild(badge);
-  meta.appendChild(nameElement);
-  meta.appendChild(sourceElement);
-  card.appendChild(meta);
-  card.appendChild(removeButton);
-
-  return card;
+  window.WallosSubscriptionImageViewer?.openFromElement?.(element);
 }
 
 function resetDetailImageControls() {
-  const detailImageInput = document.querySelector("#detail-image-upload");
-  const detailImageUrls = document.querySelector("#detail-image-urls");
-  const removeUploadedImageIdsInput = document.querySelector("#remove-uploaded-image-ids");
-
-  if (detailImageInput) {
-    detailImageInput.value = "";
-  }
-  if (detailImageUrls) {
-    detailImageUrls.value = "";
-  }
-  if (removeUploadedImageIdsInput) {
-    removeUploadedImageIdsInput.value = "";
-  }
-
-  selectedDetailImageFiles = [];
-  existingUploadedImages = [];
-  removedUploadedImageIds = [];
-
-  resetDetailImageCompression();
-  hideDetailImageUploadProgress();
-  rebuildDetailImageInput();
-  renderDetailImageGallery();
-}
-
-function validateDetailImageFile(file) {
-  const config = getDetailImageConfig();
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
-  const fileName = String(file?.name || "").toLowerCase();
-  const hasAllowedExtension = [".jpg", ".jpeg", ".png", ".webp"].some((extension) =>
-    fileName.endsWith(extension),
-  );
-  const hasAllowedType = allowedTypes.includes(file.type);
-
-  if (!config.canUpload) {
-    showErrorMessage(config.uploadBlockedMessage);
-    return false;
-  }
-
-  if (!hasAllowedType && !hasAllowedExtension) {
-    showErrorMessage(config.invalidTypeMessage);
-    return false;
-  }
-
-  if (config.maxBytes > 0 && file.size > config.maxBytes) {
-    showErrorMessage(config.tooLargeMessage);
-    return false;
-  }
-
-  return true;
+  window.WallosSubscriptionMedia?.resetDetailImageControls?.();
 }
 
 function handleDetailImageSelect(event) {
-  const fileInput = event.target;
-  const config = getDetailImageConfig();
-
-  if (!fileInput.files || !fileInput.files.length) {
-    return;
-  }
-
-  const incomingFiles = Array.from(fileInput.files);
-  const validFiles = [];
-
-  for (const file of incomingFiles) {
-    if (!validateDetailImageFile(file)) {
-      continue;
-    }
-    validFiles.push(file);
-  }
-
-  if (!validFiles.length) {
-    fileInput.value = "";
-    return;
-  }
-
-  if (config.uploadLimit !== null && (existingUploadedImages.length + selectedDetailImageFiles.length + validFiles.length) > config.uploadLimit) {
-    showErrorMessage(config.uploadLimitMessage);
-    fileInput.value = "";
-    rebuildDetailImageInput();
-    return;
-  }
-
-  selectedDetailImageFiles = selectedDetailImageFiles.concat(validFiles);
-  fileInput.value = "";
-  rebuildDetailImageInput();
-  renderDetailImageGallery();
-}
-
-function removeSelectedDetailImage(index) {
-  selectedDetailImageFiles.splice(index, 1);
-  rebuildDetailImageInput();
-  renderDetailImageGallery();
-}
-
-function removeExistingUploadedImage(imageId) {
-  removedUploadedImageIds.push(Number(imageId));
-  existingUploadedImages = existingUploadedImages.filter((image) => Number(image.id) !== Number(imageId));
-  const removeUploadedImageIdsInput = document.querySelector("#remove-uploaded-image-ids");
-  if (removeUploadedImageIdsInput) {
-    removeUploadedImageIdsInput.value = removedUploadedImageIds.join(",");
-  }
-  renderDetailImageGallery();
+  window.WallosSubscriptionMedia?.handleDetailImageSelect?.(event);
 }
 
 function setExistingUploadedImages(images) {
-  existingUploadedImages = Array.isArray(images)
-    ? images
-      .filter((image) => image && (image.access_url || image.path))
-      .map((image) => ({ ...image, id: Number(image.id) }))
-    : [];
-  removedUploadedImageIds = [];
-  const removeUploadedImageIdsInput = document.querySelector("#remove-uploaded-image-ids");
-  if (removeUploadedImageIdsInput) {
-    removeUploadedImageIdsInput.value = "";
-  }
-  renderDetailImageGallery();
+  window.WallosSubscriptionMedia?.setExistingUploadedImages?.(images);
+}
+
+function getSelectedDetailImageFiles() {
+  return window.WallosSubscriptionMedia?.getSelectedDetailImageFiles?.() || [];
+}
+
+function getRemovedUploadedImageIds() {
+  return window.WallosSubscriptionMedia?.getRemovedUploadedImageIds?.() || [];
 }
 
 function closeSubscriptionImageViewer() {
-  const viewer = document.querySelector("#subscription-image-viewer");
-  const viewerContent = document.querySelector("#subscription-image-viewer .subscription-image-viewer-content");
-  const preview = document.querySelector("#subscription-image-viewer-preview");
-  const counter = document.querySelector("#subscription-image-viewer-counter");
-  const openLink = document.querySelector("#subscription-image-viewer-open");
-  const downloadLink = document.querySelector("#subscription-image-viewer-download");
-  const previousButton = document.querySelector("#subscription-image-viewer-prev");
-  const nextButton = document.querySelector("#subscription-image-viewer-next");
-
-  if (viewer) {
-    viewer.classList.remove("is-open");
-  }
-  if (viewerContent) {
-    viewerContent.classList.remove("is-loading");
-  }
-  if (preview) {
-    preview.onload = null;
-    preview.onerror = null;
-    preview.src = "";
-    preview.alt = "";
-  }
-  if (counter) {
-    counter.textContent = "1 / 1";
-  }
-  if (openLink) {
-    openLink.disabled = true;
-  }
-  if (downloadLink) {
-    downloadLink.disabled = true;
-  }
-  if (previousButton) {
-    previousButton.disabled = true;
-  }
-  if (nextButton) {
-    nextButton.disabled = true;
-  }
-  if (currentSubscriptionImageOriginalRequest) {
-    currentSubscriptionImageOriginalRequest.abort();
-    currentSubscriptionImageOriginalRequest = null;
-  }
-  currentSubscriptionImagePreviewToken += 1;
-  hideSubscriptionImageViewerPreviewProgress();
-  prefetchedSubscriptionImageViewerSources.clear();
-  hideOriginalImageProgress();
-  currentSubscriptionImageViewerItems = [];
-  currentSubscriptionImageViewerIndex = -1;
-  currentSubscriptionImageViewerSrc = "";
-  currentSubscriptionImageOriginalUrl = "";
-  currentSubscriptionImageDownloadUrl = "";
+  window.WallosSubscriptionImageViewer?.close?.();
 }
 
 function showPreviousSubscriptionImage() {
-  if (currentSubscriptionImageViewerIndex > 0) {
-    currentSubscriptionImageViewerIndex -= 1;
-    renderCurrentSubscriptionImageViewerItem();
-  }
+  window.WallosSubscriptionImageViewer?.showPrevious?.();
 }
 
 function showNextSubscriptionImage() {
-  if (currentSubscriptionImageViewerIndex >= 0 && currentSubscriptionImageViewerIndex < currentSubscriptionImageViewerItems.length - 1) {
-    currentSubscriptionImageViewerIndex += 1;
-    renderCurrentSubscriptionImageViewerItem();
-  }
+  window.WallosSubscriptionImageViewer?.showNext?.();
 }
 
 function openSubscriptionImageOriginal() {
-  if (!currentSubscriptionImageOriginalUrl) {
-    return;
-  }
-
-  if (currentSubscriptionImageOriginalRequest) {
-    currentSubscriptionImageOriginalRequest.abort();
-    currentSubscriptionImageOriginalRequest = null;
-  }
-
-  const request = new XMLHttpRequest();
-  currentSubscriptionImageOriginalRequest = request;
-  request.open("GET", currentSubscriptionImageOriginalUrl, true);
-  request.responseType = "blob";
-
-  setOriginalImageProgress(0, translate("subscription_image_original_loading"));
-
-  request.onprogress = (event) => {
-    if (event.lengthComputable && event.total > 0) {
-      setOriginalImageProgress((event.loaded / event.total) * 100, translate("subscription_image_original_loading"));
-    } else {
-      setOriginalImageProgress(50, translate("subscription_image_original_loading"));
-    }
-  };
-
-  request.onload = () => {
-    currentSubscriptionImageOriginalRequest = null;
-
-    if (request.status >= 200 && request.status < 300) {
-      setOriginalImageProgress(100, translate("subscription_image_original_loading"));
-      const blobUrl = URL.createObjectURL(request.response);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      setTimeout(() => {
-        URL.revokeObjectURL(blobUrl);
-      }, 60000);
-      setTimeout(() => {
-        hideOriginalImageProgress();
-      }, 300);
-      return;
-    }
-
-    hideOriginalImageProgress();
-    showErrorMessage(translate("error"));
-  };
-
-  request.onerror = () => {
-    currentSubscriptionImageOriginalRequest = null;
-    hideOriginalImageProgress();
-    showErrorMessage(translate("error"));
-  };
-
-  request.onabort = () => {
-    currentSubscriptionImageOriginalRequest = null;
-    hideOriginalImageProgress();
-  };
-
-  request.send();
+  window.WallosSubscriptionImageViewer?.openOriginal?.();
 }
 
 function downloadSubscriptionImage() {
-  if (!currentSubscriptionImageDownloadUrl) {
-    return;
-  }
-
-  const link = document.createElement("a");
-  link.href = currentSubscriptionImageDownloadUrl;
-  link.download = "";
-  link.rel = "noreferrer";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  window.WallosSubscriptionImageViewer?.download?.();
 }
 
 function handleSubscriptionImageViewerKeydown(event) {
-  const viewer = document.querySelector("#subscription-image-viewer");
-  if (!viewer || !viewer.classList.contains("is-open")) {
-    return;
-  }
-
-  if (event.key === "Escape") {
-    closeSubscriptionImageViewer();
-  } else if (event.key === "ArrowLeft") {
-    showPreviousSubscriptionImage();
-  } else if (event.key === "ArrowRight") {
-    showNextSubscriptionImage();
-  }
+  window.WallosSubscriptionImageViewer?.handleKeydown?.(event);
 }
 
 function handleSubscriptionImageViewerTouchStart(event) {
-  if (!event.touches || event.touches.length === 0) {
-    return;
-  }
-
-  subscriptionImageViewerTouchStartX = event.touches[0].clientX;
-  subscriptionImageViewerTouchStartY = event.touches[0].clientY;
+  window.WallosSubscriptionImageViewer?.handleTouchStart?.(event);
 }
 
 function handleSubscriptionImageViewerTouchEnd(event) {
-  if (!event.changedTouches || event.changedTouches.length === 0) {
-    return;
-  }
-
-  const deltaX = event.changedTouches[0].clientX - subscriptionImageViewerTouchStartX;
-  const deltaY = event.changedTouches[0].clientY - subscriptionImageViewerTouchStartY;
-
-  if (Math.abs(deltaX) < SUBSCRIPTION_IMAGE_VIEWER_SWIPE_THRESHOLD || Math.abs(deltaX) <= Math.abs(deltaY)) {
-    return;
-  }
-
-  if (deltaX > 0) {
-    showPreviousSubscriptionImage();
-  } else {
-    showNextSubscriptionImage();
-  }
+  window.WallosSubscriptionImageViewer?.handleTouchEnd?.(event);
 }
 
 function resetForm() {
@@ -2618,7 +1725,6 @@ function fillEditFormFields(subscription) {
     detailImageInput.value = "";
   }
   setSubscriptionPriceRules(subscription.price_rules || []);
-  selectedDetailImageFiles = [];
   resetDetailImageCompression();
   setExistingUploadedImages(subscription.uploaded_images || []);
   const inactive = document.querySelector("#inactive");
@@ -3394,6 +2500,13 @@ document.addEventListener('DOMContentLoaded', function () {
     bindMasonryImageEvents: bindSubscriptionMasonryImageEvents,
     scheduleMasonryLayout: scheduleSubscriptionMasonryLayout,
   });
+  window.WallosSubscriptionImageViewer?.initialize?.({
+    buildFormItems: buildFormDetailImageViewerItems,
+  });
+  window.WallosSubscriptionMedia?.initialize?.({
+    openViewerFromElement: openSubscriptionImageViewerFromElement,
+    applyImageLayoutMode: applySubscriptionImageLayoutMode,
+  });
   const subscriptionForm = document.querySelector("#subs-form");
   const submitButton = document.querySelector("#save-button");
   const endpoint = "endpoints/subscription/add.php";
@@ -3431,6 +2544,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     submitButton.disabled = true;
     const formData = new FormData(subscriptionForm);
+    const selectedDetailImageFiles = getSelectedDetailImageFiles();
+    const removedUploadedImageIds = getRemovedUploadedImageIds();
     const detailImageConfig = getDetailImageConfig();
     const compressCheckbox = document.querySelector("#compress_subscription_image");
 
