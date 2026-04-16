@@ -49,7 +49,11 @@ $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
 $result = $stmt->execute();
 
 $settings = $result->fetchArray(SQLITE3_ASSOC);
-if ($settings !== false) {
+if ($settings === false || !is_array($settings)) {
+    $settings = [];
+}
+
+if (!empty($settings)) {
     $themeMapping = array(0 => 'light', 1 => 'dark', 2 => 'automatic');
     $themeKey = isset($settings['dark_theme']) ? $settings['dark_theme'] : 2;
     $themeValue = $themeMapping[$themeKey];

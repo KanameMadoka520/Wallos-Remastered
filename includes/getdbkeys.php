@@ -1,5 +1,7 @@
 <?php
 
+    require_once __DIR__ . '/payment_icons.php';
+
     $currencies = array();
     $query = "SELECT * FROM currencies WHERE user_id = :userId";
     $stmt = $db->prepare($query);
@@ -28,6 +30,7 @@
     $result = $query->execute();
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         $payment_methodId = $row['id'];
+        $row['icon'] = wallos_normalize_payment_icon_path($row['icon'] ?? '');
         $payment_methods[$payment_methodId] = $row;
         $payment_methods[$payment_methodId]['count'] = 0;
     }
