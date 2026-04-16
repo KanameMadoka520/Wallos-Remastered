@@ -452,7 +452,7 @@ $i18n = [
     "homepage_upload_policy_title" => "订阅图片策略",
     "homepage_upload_policy_summary" => "为了防止恶意刷流量和后台硬盘被滥用，订阅详情图片会根据账户分组应用不同限制。",
     "homepage_upload_policy_admin" => "你当前是管理员账户，可以上传图片到服务器，并可按本次上传自行决定是否压缩。",
-    "homepage_upload_policy_trusted" => "你当前是受信用户，可以为每个订阅上传 1 张图片到服务器，系统会自动强制压缩以保护存储资源。",
+    "homepage_upload_policy_trusted" => "你当前是受信用户，可以为每个订阅上传 1 张图片到服务器，并可按本次上传自行决定是否压缩。",
     "homepage_upload_policy_free" => "你当前是 Free 用户，仍可为每个订阅填写最多 10 个图片外链，但上传图片到服务器会保持关闭，直到管理员为你提升权限。",
     // 设置页面
     "monthly_budget" => "每月预算",
