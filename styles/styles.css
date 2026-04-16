@@ -3077,16 +3077,16 @@ button.dark-theme-button i {
 
 .subscription-pages-manager-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
   align-items: start;
 }
 
 .subscription-pages-manager-item {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   border: 1px solid var(--box-border-color);
   border-radius: 16px;
   background-color: rgba(var(--main-color-rgb), 0.04);
@@ -3114,6 +3114,8 @@ button.dark-theme-button i {
   justify-content: center;
   min-width: 0;
   width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
 }
 
 .subscription-pages-manager-empty {
@@ -5532,7 +5534,7 @@ button.dark-theme-button i {
   color: var(--error-color);
 }
 
-.subscription-modal:not(.subscription-payment-history-modal) {
+.subscription-modal:not(.subscription-payment-history-modal):not(.subscription-pages-manager-modal) {
   max-width: 400px;
 }
 
