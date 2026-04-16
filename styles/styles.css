@@ -217,9 +217,9 @@ header .logo .logo-image svg {
 
 .wallos-page-immersive-toggle {
   position: fixed;
-  top: 18px;
-  right: 18px;
-  z-index: 11020;
+  right: 24px;
+  bottom: 24px;
+  z-index: 12040;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -298,9 +298,13 @@ body.page-ui-fading-in .progress {
 
 @media (max-width: 768px) {
   .wallos-page-immersive-toggle {
-    top: 12px;
     right: 12px;
+    bottom: 12px;
     padding-inline: 14px;
+  }
+
+  body.mobile-navigation .wallos-page-immersive-toggle {
+    bottom: 82px;
   }
 }
 

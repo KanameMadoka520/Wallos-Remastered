@@ -106,6 +106,10 @@ function initializePageImmersiveToggle() {
     return;
   }
 
+  if (button.parentElement !== document.body) {
+    document.body.appendChild(button);
+  }
+
   let hidden = false;
   const storageKey = getPageImmersiveStorageKey();
 
