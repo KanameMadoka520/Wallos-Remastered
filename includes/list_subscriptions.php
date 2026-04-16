@@ -200,25 +200,25 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                 ?>
                 <div class="mobile-actions" data-id="<?= $subscription['id'] ?>">
                     <button class="mobile-action-clone"></button>
-                    <button class="mobile-action-clone" onClick="cloneSubscription(event, <?= $subscription['id'] ?>)">
+                    <button class="mobile-action-clone" data-subscription-action="clone-subscription" data-subscription-id="<?= (int) $subscription['id'] ?>">
                         <?php include $imagePath . "images/siteicons/svg/mobile-menu/clone.php"; ?>
                         Clone
                     </button>
-                    <button class="mobile-action-delete" onClick="deleteSubscription(event, <?= $subscription['id'] ?>)">
+                    <button class="mobile-action-delete" data-subscription-action="delete-subscription" data-subscription-id="<?= (int) $subscription['id'] ?>">
                         <?php include $imagePath . "images/siteicons/svg/mobile-menu/delete.php"; ?>
                         Delete
                     </button>
                     <?php
                     if ($subscription['auto_renew'] != 1) {
                         ?>
-                        <button class="mobile-action-renew" onClick="renewSubscription(event, <?= $subscription['id'] ?>)">
+                        <button class="mobile-action-renew" data-subscription-action="renew-subscription" data-subscription-id="<?= (int) $subscription['id'] ?>">
                             <?php include $imagePath . "images/siteicons/svg/mobile-menu/renew.php"; ?>
                             Renew
                         </button>
                         <?php
                     }
                     ?>
-                    <button class="mobile-action-edit" onClick="openEditSubscription(event, <?= $subscription['id'] ?>)">
+                    <button class="mobile-action-edit" data-subscription-action="open-edit-subscription" data-subscription-id="<?= (int) $subscription['id'] ?>">
                         <?php include $imagePath . "images/siteicons/svg/mobile-menu/edit.php"; ?>
                         Edit
                     </button>
@@ -244,15 +244,14 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
 
             ?>
 
-            <div class="subscription<?= $subscriptionExtraClasses ?>"
-                onClick="toggleOpenSubscription(<?= $subscription['id'] ?>)" data-id="<?= $subscription['id'] ?>"
+            <div class="subscription<?= $subscriptionExtraClasses ?>" data-subscription-action="toggle-open-subscription"
+                data-subscription-id="<?= (int) $subscription['id'] ?>" data-id="<?= $subscription['id'] ?>"
                 data-name="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>">
                 <div class="subscription-main">
                     <button type="button" class="subscription-drag-handle"
                         title="<?= translate('subscription_reorder_handle_title', $i18n) ?>"
                         aria-label="<?= translate('subscription_reorder_handle_title', $i18n) ?>"
-                        onMouseDown="event.stopPropagation()" onTouchStart="event.stopPropagation()"
-                        onClick="event.stopPropagation()">
+                        data-subscription-action="prevent-subscription-toggle">
                         <i class="fa-solid fa-grip-vertical"></i>
                     </button>
                     <span class="logo <?= !$hasLogo ? 'hideOnMobile' : '' ?>">
@@ -314,30 +313,30 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                     }
                     ?>
                     <button type="button" class="actions-expand <?= $desktopMenuButtonClass ?>"
-                        onClick="expandActions(event, <?= $subscription['id'] ?>)">
+                        data-subscription-action="expand-subscription-actions" data-subscription-id="<?= (int) $subscription['id'] ?>">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <ul class="actions">
-                        <li class="edit" title="<?= translate('edit_subscription', $i18n) ?>"
-                            onClick="openEditSubscription(event, <?= $subscription['id'] ?>)">
+                        <li class="edit" title="<?= translate('edit_subscription', $i18n) ?>" data-subscription-action="open-edit-subscription"
+                            data-subscription-id="<?= (int) $subscription['id'] ?>">
                             <?php include $imagePath . "images/siteicons/svg/edit.php"; ?>
                             <?= translate('edit_subscription', $i18n) ?>
                         </li>
-                        <li class="delete" title="<?= translate('delete', $i18n) ?>"
-                            onClick="deleteSubscription(event, <?= $subscription['id'] ?>)">
+                        <li class="delete" title="<?= translate('delete', $i18n) ?>" data-subscription-action="delete-subscription"
+                            data-subscription-id="<?= (int) $subscription['id'] ?>">
                             <?php include $imagePath . "images/siteicons/svg/delete.php"; ?>
                             <?= translate('delete', $i18n) ?>
                         </li>
-                        <li class="clone" title="<?= translate('clone', $i18n) ?>"
-                            onClick="cloneSubscription(event, <?= $subscription['id'] ?>)">
+                        <li class="clone" title="<?= translate('clone', $i18n) ?>" data-subscription-action="clone-subscription"
+                            data-subscription-id="<?= (int) $subscription['id'] ?>">
                             <?php include $imagePath . "images/siteicons/svg/clone.php"; ?>
                             <?= translate('clone', $i18n) ?>
                         </li>
                         <?php
                         if ($subscription['auto_renew'] != 1) {
                             ?>
-                            <li class="renew" title="<?= translate('renew', $i18n) ?>"
-                                onClick="renewSubscription(event, <?= $subscription['id'] ?>)">
+                            <li class="renew" title="<?= translate('renew', $i18n) ?>" data-subscription-action="renew-subscription"
+                                data-subscription-id="<?= (int) $subscription['id'] ?>">
                                 <?php include $imagePath . "images/siteicons/svg/renew.php"; ?>
                                 <?= translate('renew', $i18n) ?>
                             </li>
@@ -429,13 +428,13 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                                 <div class="media-layout-toggle" data-image-layout-scope="detail">
                                     <button type="button" class="media-layout-button" data-mode="focus"
                                         title="<?= translate('subscription_image_layout_focus', $i18n) ?>"
-                                        onClick="setSubscriptionImageLayoutMode('detail', 'focus', this); event.stopPropagation();">
+                                        data-subscription-action="set-image-layout" data-layout-scope="detail" data-layout-mode="focus">
                                         <i class="fa-solid fa-images"></i>
                                         <span><?= translate('subscription_image_layout_focus', $i18n) ?></span>
                                     </button>
                                     <button type="button" class="media-layout-button" data-mode="grid"
                                         title="<?= translate('subscription_image_layout_grid', $i18n) ?>"
-                                        onClick="setSubscriptionImageLayoutMode('detail', 'grid', this); event.stopPropagation();">
+                                        data-subscription-action="set-image-layout" data-layout-scope="detail" data-layout-mode="grid">
                                         <i class="fa-solid fa-table-cells"></i>
                                         <span><?= translate('subscription_image_layout_grid', $i18n) ?></span>
                                     </button>
@@ -465,7 +464,7 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                                     data-viewer-original="<?= htmlspecialchars($imageOriginalUrl !== '' ? $imageOriginalUrl : $imagePreviewUrl, ENT_QUOTES, 'UTF-8') ?>"
                                     data-viewer-download="<?= htmlspecialchars($imageDownloadUrl !== '' ? $imageDownloadUrl : ($imageOriginalUrl !== '' ? $imageOriginalUrl : $imagePreviewUrl), ENT_QUOTES, 'UTF-8') ?>"
                                     data-viewer-label="<?= htmlspecialchars($uploadedImageName, ENT_QUOTES, 'UTF-8') ?>"
-                                    onClick="event.stopPropagation(); openSubscriptionImageViewerFromElement(this)">
+                                    data-subscription-action="open-subscription-image-viewer">
                                     <img src="<?= htmlspecialchars($imageThumbUrl !== '' ? $imageThumbUrl : $imagePreviewUrl, ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($uploadedImageName, ENT_QUOTES, 'UTF-8') ?>"
                                         loading="lazy" decoding="async" />
@@ -483,7 +482,7 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                                     data-viewer-original="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
                                     data-viewer-download="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
                                     data-viewer-label="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>"
-                                    onClick="event.stopPropagation(); openSubscriptionImageViewerFromElement(this)">
+                                    data-subscription-action="open-subscription-image-viewer">
                                     <img src="<?= htmlspecialchars($detailImageUrl, ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>"
                                         loading="lazy" decoding="async" referrerpolicy="no-referrer" />
@@ -510,12 +509,12 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                         </span>
                         <div class="subscription-payment-record-actions">
                         <button type="button" class="button secondary-button thin subscription-payment-record-button"
-                            onClick="openSubscriptionPaymentHistoryModal(event, <?= (int) $subscription['id'] ?>)">
+                            data-subscription-action="open-payment-history" data-subscription-id="<?= (int) $subscription['id'] ?>">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                             <span><?= translate('subscription_view_payment_history', $i18n) ?></span>
                         </button>
                         <button type="button" class="button secondary-button thin subscription-payment-record-button"
-                            onClick="openSubscriptionPaymentModal(event, <?= (int) $subscription['id'] ?>)">
+                            data-subscription-action="open-payment-modal" data-subscription-id="<?= (int) $subscription['id'] ?>">
                             <i class="fa-solid fa-plus"></i>
                             <span><?= translate('subscription_record_payment', $i18n) ?></span>
                         </button>

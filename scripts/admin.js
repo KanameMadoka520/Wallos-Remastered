@@ -1,13 +1,5 @@
 function makeFetchCall(url, data, button) {
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify(data),
-  })
-    .then(response => response.json())
+  return window.WallosApi.postJson(url, data)
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -17,7 +9,7 @@ function makeFetchCall(url, data, button) {
       button.disabled = false;
     })
     .catch((error) => {
-      showErrorMessage(error);
+      showErrorMessage(window.WallosApi.getErrorMessage(error, translate("error")));
       button.disabled = false;
     });
 
@@ -66,15 +58,7 @@ function saveSmtpSettingsButton() {
     fromemail: fromEmail
   };
 
-  fetch('endpoints/admin/savesmtpsettings.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify(data),
-  })
-    .then(response => response.json())
+  window.WallosApi.postJson('endpoints/admin/savesmtpsettings.php', data)
     .then(data => {
       if (data.success) {
         const emailVerificationCheckbox = document.getElementById('requireEmail');
@@ -86,7 +70,7 @@ function saveSmtpSettingsButton() {
       button.disabled = false;
     })
     .catch((error) => {
-      showErrorMessage(error);
+      showErrorMessage(window.WallosApi.getErrorMessage(error, translate("error")));
       button.disabled = false;
     });
 

@@ -30,6 +30,7 @@ $dynamicWallpaperJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/
 $pageTransitionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/page-transitions.js');
 $i18nJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/' . $lang . '.js');
 $i18nGetLangJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/getlang.js');
+$apiJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/api.js');
 
 if ($userCount == 0) {
   $db->close();
@@ -259,6 +260,7 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   ?>
   <script type="text/javascript" src="scripts/i18n/<?= $lang ?>.js?<?= $i18nJsVersion ?>"></script>
   <script type="text/javascript" src="scripts/i18n/getlang.js?<?= $i18nGetLangJsVersion ?>"></script>
+  <script type="text/javascript" src="scripts/api.js?<?= $apiJsVersion ?>"></script>
   <script>
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       if (!sessionStorage.getItem('sw_prefetched')) {
