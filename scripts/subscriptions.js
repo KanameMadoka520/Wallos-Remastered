@@ -108,6 +108,9 @@ function getSubscriptionPageStrings() {
     empty: window.subscriptionPageStrings?.empty || "No custom pages yet. Create one above.",
     namePlaceholder: window.subscriptionPageStrings?.namePlaceholder || "New page name",
     deleteConfirm: window.subscriptionPageStrings?.deleteConfirm || "Delete this page now? Subscriptions inside it will move to Unassigned.",
+    saveAction: window.subscriptionPageStrings?.saveAction || "Save Name",
+    deleteAction: window.subscriptionPageStrings?.deleteAction || "Delete Page",
+    manageHint: window.subscriptionPageStrings?.manageHint || "After editing a page name, click \"Save Name\". Deleting a page only moves subscriptions back to \"Unassigned\".",
   };
 }
 
@@ -255,11 +258,11 @@ function renderSubscriptionPagesManagerList() {
       <div class="subscription-pages-manager-item-actions">
         <button type="button" class="button secondary-button thin" data-subscription-action="save-page">
           <i class="fa-solid fa-floppy-disk"></i>
-          <span>${escapeHtml(translate("save"))}</span>
+          <span>${escapeHtml(strings.saveAction)}</span>
         </button>
         <button type="button" class="button secondary-button thin danger" data-subscription-action="delete-page">
           <i class="fa-solid fa-trash-can"></i>
-          <span>${escapeHtml(translate("delete"))}</span>
+          <span>${escapeHtml(strings.deleteAction)}</span>
         </button>
       </div>
     </div>
