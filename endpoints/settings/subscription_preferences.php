@@ -1,37 +1,7 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_preferences.php';
 require_once '../../includes/validate_endpoint.php';
-
-function wallos_normalize_subscription_display_columns($value)
-{
-    $columns = (int) $value;
-    return in_array($columns, [1, 2, 3], true) ? $columns : 1;
-}
-
-function wallos_normalize_subscription_image_layout($value)
-{
-    $mode = trim((string) $value);
-    return in_array($mode, ['focus', 'grid'], true) ? $mode : 'focus';
-}
-
-function wallos_normalize_subscription_value_visibility($value)
-{
-    $decoded = is_array($value) ? $value : [];
-
-    $legacyMetricsVisible = !(
-        array_key_exists('invested', $decoded)
-        && $decoded['invested'] === false
-        && array_key_exists('remaining', $decoded)
-        && $decoded['remaining'] === false
-        && array_key_exists('used', $decoded)
-        && $decoded['used'] === false
-    );
-
-    return [
-        'metrics' => array_key_exists('metrics', $decoded) ? (bool) $decoded['metrics'] : $legacyMetricsVisible,
-        'payment_records' => array_key_exists('payment_records', $decoded) ? (bool) $decoded['payment_records'] : true,
-    ];
-}
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -43,10 +13,10 @@ if (!is_array($data)) {
     ]));
 }
 
-$displayColumns = wallos_normalize_subscription_display_columns($data['display_columns'] ?? 1);
-$valueVisibility = wallos_normalize_subscription_value_visibility($data['value_visibility'] ?? []);
-$imageLayoutForm = wallos_normalize_subscription_image_layout($data['image_layout_form'] ?? 'focus');
-$imageLayoutDetail = wallos_normalize_subscription_image_layout($data['image_layout_detail'] ?? 'focus');
+$displayColumns = wallos_normalize_subscription_display_columns_setting($data['display_columns'] ?? 1);
+$valueVisibility = wallos_normalize_subscription_value_visibility_setting($data['value_visibility'] ?? []);
+$imageLayoutForm = wallos_normalize_subscription_image_layout_setting($data['image_layout_form'] ?? 'focus');
+$imageLayoutDetail = wallos_normalize_subscription_image_layout_setting($data['image_layout_detail'] ?? 'focus');
 
 $stmt = $db->prepare('
     UPDATE settings

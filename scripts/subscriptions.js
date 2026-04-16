@@ -2,7 +2,6 @@ let isSortOptionsOpen = false;
 let scrollTopBeforeOpening = 0;
 const shouldScroll = window.innerWidth <= 768;
 const SUBSCRIPTION_IMAGE_VIEWER_SWIPE_THRESHOLD = 50;
-const SUBSCRIPTION_PAGES_ENDPOINT = "endpoints/subscriptionpages.php";
 let currentSubscriptionImageViewerSrc = "";
 let currentSubscriptionImageOriginalUrl = "";
 let currentSubscriptionImageDownloadUrl = "";
@@ -31,29 +30,11 @@ let subscriptionPriceRules = [];
 let subscriptionPriceRuleTempIdCounter = 0;
 let detailImageGallerySortable = null;
 let detailSubscriptionGallerySortables = [];
-let subscriptionPagesManagerSortable = null;
 let detailImageTempIdCounter = 0;
-const SUBSCRIPTION_PREFERENCES_ENDPOINT = "endpoints/settings/subscription_preferences.php";
 let subscriptionMasonryLayoutFrame = null;
 let subscriptionMasonryResizeTimer = null;
 let subscriptionCardSortable = null;
 let isSubscriptionSortDragging = false;
-let subscriptionDisplayColumns = 1;
-let subscriptionImageLayoutPreferences = {
-  form: "focus",
-  detail: "focus",
-};
-let subscriptionPreferencesSaveTimer = null;
-let subscriptionValueVisibility = {
-  metrics: true,
-  payment_records: true,
-};
-let currentSubscriptionPageFilter = "all";
-let subscriptionPages = [];
-let subscriptionPageCounts = {
-  all: 0,
-  unassigned: 0,
-};
 
 function toggleOpenSubscription(subId) {
   const subscriptionElement = document.querySelector('.subscription[data-id="' + subId + '"]');
@@ -99,7 +80,7 @@ function normalizeSubscriptionRequestError(error, fallbackMessage = null) {
 }
 
 function getSubscriptionPageStrings() {
-  return {
+  return window.WallosSubscriptionPages?.getStrings?.() || {
     pagesTitle: window.subscriptionPageStrings?.pagesTitle || "Subscription Pages",
     manage: window.subscriptionPageStrings?.manage || "Manage Pages",
     all: window.subscriptionPageStrings?.all || "All",
@@ -117,444 +98,97 @@ function getSubscriptionPageStrings() {
 }
 
 function normalizeSubscriptionPageFilter(value) {
-  const rawValue = String(value ?? "").trim().toLowerCase();
-  if (rawValue === "" || rawValue === "all") {
-    return "all";
-  }
-
-  if (rawValue === "unassigned" || rawValue === "0") {
-    return "unassigned";
-  }
-
-  const pageId = Number(rawValue);
-  if (Number.isInteger(pageId) && pageId > 0) {
-    return String(pageId);
-  }
-
-  return "all";
+  return window.WallosSubscriptionPages?.normalizeFilter?.(value) || "all";
 }
 
 function getDefaultSubscriptionPageSelection() {
-  return /^\d+$/.test(currentSubscriptionPageFilter) ? currentSubscriptionPageFilter : "";
+  return window.WallosSubscriptionPages?.getDefaultSelection?.() || "";
 }
 
 function getCurrentSubscriptionPageFilter() {
-  return normalizeSubscriptionPageFilter(currentSubscriptionPageFilter);
+  return window.WallosSubscriptionPages?.getCurrentFilter?.() || "all";
 }
 
 function updateSubscriptionPageFilterUrl() {
-  if (!window.history?.replaceState) {
-    return;
-  }
-
-  const url = new URL(window.location.href);
-  const filterValue = getCurrentSubscriptionPageFilter();
-  if (filterValue === "all") {
-    url.searchParams.delete("subscription_page");
-  } else {
-    url.searchParams.set("subscription_page", filterValue);
-  }
-
-  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
-}
-
-function setSubscriptionPageFilterValue(filterValue, options = {}) {
-  currentSubscriptionPageFilter = normalizeSubscriptionPageFilter(filterValue);
-  renderSubscriptionPageTabs();
-
-  if (options.updateUrl !== false) {
-    updateSubscriptionPageFilterUrl();
-  }
-
-  if (options.fetch !== false) {
-    fetchSubscriptions(null, null, "subscription-page").catch(() => showErrorMessage(translate("error")));
-  }
-}
-
-function selectSubscriptionPageFilter(filterValue) {
-  setSubscriptionPageFilterValue(filterValue);
-}
-
-function renderSubscriptionPageTabs() {
-  const tabsContainer = document.getElementById("subscription-page-tabs");
-  if (!tabsContainer) {
-    return;
-  }
-
-  const strings = getSubscriptionPageStrings();
-  const activeFilter = getCurrentSubscriptionPageFilter();
-  const tabItems = [
-    {
-      filter: "all",
-      label: strings.all,
-      count: Number(subscriptionPageCounts.all || 0),
-    },
-    ...subscriptionPages.map((page) => ({
-      filter: String(page.id),
-      label: page.name || strings.fieldLabel,
-      count: Number(page.subscription_count || 0),
-    })),
-    {
-      filter: "unassigned",
-      label: strings.unassigned,
-      count: Number(subscriptionPageCounts.unassigned || 0),
-    },
-  ];
-
-  tabsContainer.innerHTML = tabItems.map((item) => `
-    <button type="button" class="subscription-page-tab${activeFilter === item.filter ? " is-active" : ""}"
-      data-page-filter="${escapeHtml(item.filter)}"
-      aria-pressed="${activeFilter === item.filter ? "true" : "false"}"
-      data-subscription-action="select-page-filter"
-      data-filter="${escapeHtml(item.filter)}">
-      <span>${escapeHtml(item.label)}</span>
-      <span class="section-count-badge">${Number(item.count || 0)}</span>
-    </button>
-  `).join("");
-}
-
-function renderSubscriptionPageSelectOptions(selectedValue = null) {
-  const select = document.getElementById("subscription_page_id");
-  if (!select) {
-    return;
-  }
-
-  const strings = getSubscriptionPageStrings();
-  const preservedValue = selectedValue !== null
-    ? String(selectedValue)
-    : (select.value || getDefaultSubscriptionPageSelection());
-
-  const optionsHtml = [
-    `<option value="">${escapeHtml(strings.unassigned)}</option>`,
-    ...subscriptionPages.map((page) => `<option value="${Number(page.id)}">${escapeHtml(page.name || strings.fieldLabel)}</option>`),
-  ];
-
-  select.innerHTML = optionsHtml.join("");
-  if (subscriptionPages.some((page) => String(page.id) === preservedValue)) {
-    select.value = preservedValue;
-  } else {
-    select.value = "";
-  }
-}
-
-function renderSubscriptionPagesManagerList() {
-  const list = document.getElementById("subscription-pages-manager-list");
-  if (!list) {
-    return;
-  }
-
-  const strings = getSubscriptionPageStrings();
-  if (subscriptionPagesManagerSortable) {
-    subscriptionPagesManagerSortable.destroy();
-    subscriptionPagesManagerSortable = null;
-  }
-
-  if (!subscriptionPages.length) {
-    list.innerHTML = `<div class="subscription-pages-manager-empty">${escapeHtml(strings.empty)}</div>`;
-    return;
-  }
-
-  list.innerHTML = subscriptionPages.map((page) => `
-    <div class="subscription-pages-manager-item" data-page-id="${Number(page.id)}">
-      <div class="subscription-pages-manager-item-main">
-        <button type="button" class="subscription-page-drag-handle" title="${escapeHtml(strings.dragHandleTitle)}" aria-label="${escapeHtml(strings.dragHandleTitle)}">
-          <i class="fa-solid fa-grip-vertical"></i>
-        </button>
-        <input type="text" class="subscription-page-name-input"
-          value="${escapeHtml(page.name || "")}"
-          maxlength="40">
-        <span class="section-count-badge">${Number(page.subscription_count || 0)}</span>
-      </div>
-      <div class="subscription-pages-manager-item-actions">
-        <button type="button" class="button secondary-button thin" data-subscription-action="save-page">
-          <i class="fa-solid fa-floppy-disk"></i>
-          <span>${escapeHtml(strings.saveAction)}</span>
-        </button>
-        <button type="button" class="button secondary-button thin danger" data-subscription-action="delete-page">
-          <i class="fa-solid fa-trash-can"></i>
-          <span>${escapeHtml(strings.deleteAction)}</span>
-        </button>
-      </div>
-    </div>
-  `).join("");
-
-  initializeSubscriptionPagesManagerSortable();
-}
-
-function persistSubscriptionPageOrder(pageIds) {
-  return window.WallosHttp.postJson(SUBSCRIPTION_PAGES_ENDPOINT, {
-    action: "reorder",
-    page_ids: pageIds,
-  }, {
-    fallbackErrorMessage: translate("unknown_error"),
-  })
-    .then((data) => {
-      if (!data || typeof data !== "object") {
-        throw new Error(translate("unknown_error"));
-      }
-
-      if (!data.success) {
-        throw new Error(data.message || translate("error"));
-      }
-
-      applySubscriptionPagesPayload(data, {
-        selectedValue: document.querySelector("#subscription_page_id")?.value || getDefaultSubscriptionPageSelection(),
-      });
-      return data;
-    });
-}
-
-function initializeSubscriptionPagesManagerSortable() {
-  const list = document.getElementById("subscription-pages-manager-list");
-  if (!list || typeof Sortable === "undefined") {
-    return;
-  }
-
-  const items = Array.from(list.querySelectorAll(".subscription-pages-manager-item"));
-  if (items.length <= 1) {
-    return;
-  }
-
-  subscriptionPagesManagerSortable = new Sortable(list, {
-    animation: 180,
-    handle: ".subscription-page-drag-handle",
-    draggable: ".subscription-pages-manager-item",
-    ghostClass: "subscription-pages-manager-item-ghost",
-    chosenClass: "subscription-pages-manager-item-chosen",
-    dragClass: "subscription-pages-manager-item-dragging",
-    onEnd() {
-      const orderedPageIds = Array.from(list.querySelectorAll(".subscription-pages-manager-item"))
-        .map((item) => Number(item.dataset.pageId || 0))
-        .filter((pageId) => pageId > 0);
-
-      persistSubscriptionPageOrder(orderedPageIds)
-        .catch((error) => {
-          showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
-          renderSubscriptionPagesManagerList();
-        });
-    },
+  return window.WallosSubscriptionPages?.setFilterValue?.(getCurrentSubscriptionPageFilter(), {
+    fetch: false,
+    updateUrl: true,
   });
 }
 
+function setSubscriptionPageFilterValue(filterValue, options = {}) {
+  return window.WallosSubscriptionPages?.setFilterValue?.(filterValue, options);
+}
+
+function selectSubscriptionPageFilter(filterValue) {
+  return window.WallosSubscriptionPages?.selectFilter?.(filterValue);
+}
+
+function renderSubscriptionPageTabs() {
+  window.WallosSubscriptionPages?.renderTabs?.();
+}
+
+function renderSubscriptionPageSelectOptions(selectedValue = null) {
+  window.WallosSubscriptionPages?.renderSelectOptions?.(selectedValue);
+}
+
+function renderSubscriptionPagesManagerList() {
+  window.WallosSubscriptionPages?.renderManagerList?.();
+}
+
 function applySubscriptionPagesPayload(payload, options = {}) {
-  subscriptionPages = Array.isArray(payload?.pages)
-    ? payload.pages.map((page) => ({
-      id: Number(page.id || 0),
-      name: String(page.name || ""),
-      sort_order: Number(page.sort_order || 0),
-      subscription_count: Number(page.subscription_count || 0),
-    }))
-    : [];
-
-  subscriptionPageCounts = {
-    all: Number(payload?.counts?.all || 0),
-    unassigned: Number(payload?.counts?.unassigned || 0),
-  };
-
-  if (/^\d+$/.test(currentSubscriptionPageFilter) && !subscriptionPages.some((page) => String(page.id) === currentSubscriptionPageFilter)) {
-    currentSubscriptionPageFilter = "all";
-    updateSubscriptionPageFilterUrl();
-  }
-
-  renderSubscriptionPageTabs();
-  renderSubscriptionPagesManagerList();
-  renderSubscriptionPageSelectOptions(options.selectedValue ?? null);
+  return window.WallosSubscriptionPages?.applyPayload?.(payload, options);
 }
 
 function refreshSubscriptionPages(options = {}) {
-  return window.WallosHttp.getJson(SUBSCRIPTION_PAGES_ENDPOINT, {
-    includeCsrf: false,
-    fallbackErrorMessage: translate("unknown_error"),
-  })
-    .then((data) => {
-      if (!data || typeof data !== "object") {
-        throw new Error(translate("unknown_error"));
-      }
-
-      if (!data.success) {
-        throw new Error(data.message || translate("error"));
-      }
-
-      applySubscriptionPagesPayload(data, options);
-      return data;
-    })
-    .catch((error) => {
-      if (!options.silent) {
-        showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
-      }
-      throw error;
-    });
-}
-
-function submitSubscriptionPageAction(payload, options = {}) {
-  return window.WallosHttp.postJson(SUBSCRIPTION_PAGES_ENDPOINT, payload, {
-    fallbackErrorMessage: translate("unknown_error"),
-  })
-    .then((data) => {
-      if (!data || typeof data !== "object") {
-        throw new Error(translate("unknown_error"));
-      }
-
-      if (!data.success) {
-        throw new Error(data.message || translate("error"));
-      }
-
-      applySubscriptionPagesPayload(data, options);
-      showSuccessMessage(data.message || translate("success"));
-      return data;
-    })
-    .catch((error) => {
-      showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
-      throw error;
-    });
+  return window.WallosSubscriptionPages?.refresh?.(options);
 }
 
 function openSubscriptionPagesManager(event) {
-  if (event) {
-    event.stopPropagation();
-    event.preventDefault();
-  }
-
-  const modal = document.getElementById("subscription-pages-manager-modal");
-  if (!modal) {
-    return;
-  }
-
-  modal.classList.add("is-open");
-  document.body.classList.add("no-scroll");
-  renderSubscriptionPagesManagerList();
+  window.WallosSubscriptionPages?.openManager?.(event);
 }
 
 function closeSubscriptionPagesManager() {
-  const modal = document.getElementById("subscription-pages-manager-modal");
-  if (!modal) {
-    return;
-  }
-
-  if (subscriptionPagesManagerSortable) {
-    subscriptionPagesManagerSortable.destroy();
-    subscriptionPagesManagerSortable = null;
-  }
-
-  modal.classList.remove("is-open");
-  if (!document.querySelector(".subscription-form.is-open, .subscription-modal.is-open, .subscription-image-viewer.is-open")) {
-    document.body.classList.remove("no-scroll");
-  }
+  window.WallosSubscriptionPages?.closeManager?.();
 }
 
 function createSubscriptionPage() {
-  const input = document.getElementById("subscription-page-create-name");
-  if (!input) {
-    return;
-  }
-
-  const name = input.value.trim();
-  submitSubscriptionPageAction({ action: "create", name }, { selectedValue: getDefaultSubscriptionPageSelection() })
-    .then(() => {
-      input.value = "";
-    })
-    .catch(() => {});
+  window.WallosSubscriptionPages?.createPage?.();
 }
 
 function renameSubscriptionPage(pageId, button = null) {
-  const pageRow = document.querySelector(`.subscription-pages-manager-item[data-page-id="${pageId}"]`);
-  const input = pageRow?.querySelector(".subscription-page-name-input");
-  if (!input || pageId <= 0) {
-    return;
-  }
-
-  if (button) {
-    button.disabled = true;
-  }
-
-  submitSubscriptionPageAction({ action: "update", page_id: pageId, name: input.value }, { selectedValue: getDefaultSubscriptionPageSelection() })
-    .finally(() => {
-      if (button) {
-        button.disabled = false;
-      }
-    });
+  window.WallosSubscriptionPages?.renamePage?.(pageId, button);
 }
 
 function deleteSubscriptionPage(pageId) {
-  if (pageId <= 0) {
-    return;
-  }
-
-  if (!confirm(getSubscriptionPageStrings().deleteConfirm)) {
-    return;
-  }
-
-  submitSubscriptionPageAction({ action: "delete", page_id: pageId }, { selectedValue: getDefaultSubscriptionPageSelection() })
-    .then(() => {
-      if (String(pageId) === currentSubscriptionPageFilter) {
-        currentSubscriptionPageFilter = "unassigned";
-        updateSubscriptionPageFilterUrl();
-      }
-      return fetchSubscriptions(null, null, "subscription-page-delete");
-    })
-    .catch(() => {});
+  window.WallosSubscriptionPages?.deletePage?.(pageId);
 }
 
 function normalizeSubscriptionDisplayColumnsPreference(value) {
-  const columns = Number(value);
-  return columns === 2 || columns === 3 ? columns : 1;
+  return window.WallosSubscriptionPreferences?.normalizeDisplayColumns?.(value) || 1;
 }
 
 function normalizeSubscriptionImageLayoutPreference(value) {
-  return value === "grid" ? "grid" : "focus";
+  return window.WallosSubscriptionPreferences?.normalizeImageLayout?.(value) || "focus";
 }
 
 function normalizeSubscriptionValueVisibilityPreference(value) {
-  const visibility = value && typeof value === "object" ? value : {};
-  return {
-    metrics: visibility.metrics !== false,
-    payment_records: visibility.payment_records !== false,
+  return window.WallosSubscriptionPreferences?.normalizeValueVisibility?.(value) || {
+    metrics: true,
+    payment_records: true,
   };
 }
 
 function updateSubscriptionPagePreferencesCache() {
-  window.subscriptionPagePreferences = {
-    displayColumns: subscriptionDisplayColumns,
-    valueVisibility: { ...subscriptionValueVisibility },
-    imageLayout: {
-      form: subscriptionImageLayoutPreferences.form,
-      detail: subscriptionImageLayoutPreferences.detail,
-    },
-  };
+  window.WallosSubscriptionPreferences?.updatePreferencesCache?.();
 }
 
 function scheduleSubscriptionPagePreferencesSave() {
-  updateSubscriptionPagePreferencesCache();
-
-  if (subscriptionPreferencesSaveTimer !== null) {
-    window.clearTimeout(subscriptionPreferencesSaveTimer);
-  }
-
-  subscriptionPreferencesSaveTimer = window.setTimeout(() => {
-    subscriptionPreferencesSaveTimer = null;
-
-    fetch(SUBSCRIPTION_PREFERENCES_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({
-        display_columns: subscriptionDisplayColumns,
-        value_visibility: subscriptionValueVisibility,
-        image_layout_form: subscriptionImageLayoutPreferences.form,
-        image_layout_detail: subscriptionImageLayoutPreferences.detail,
-      }),
-    }).catch((error) => {
-      console.error("Failed to persist subscription page preferences.", error);
-    });
-  }, 160);
+  window.WallosSubscriptionPreferences?.scheduleSave?.();
 }
 
 function loadSubscriptionValueVisibility() {
-  subscriptionValueVisibility = normalizeSubscriptionValueVisibilityPreference(
-    window.subscriptionPagePreferences?.valueVisibility
-  );
+  window.WallosSubscriptionPreferences?.loadValueVisibility?.();
 }
 
 function persistSubscriptionValueVisibility() {
@@ -562,29 +196,11 @@ function persistSubscriptionValueVisibility() {
 }
 
 function applySubscriptionValueVisibility() {
-  const container = document.getElementById("subscriptions");
-  if (container) {
-    container.classList.toggle("hide-cost-value-metrics", !subscriptionValueVisibility.metrics);
-    container.classList.toggle("hide-payment-records", !subscriptionValueVisibility.payment_records);
-  }
-
-  document.querySelectorAll("[data-subscription-value-toggle]").forEach((button) => {
-    const metricKey = button.getAttribute("data-subscription-value-toggle");
-    const visible = !!subscriptionValueVisibility[metricKey];
-    button.classList.toggle("is-active", visible);
-    button.setAttribute("aria-pressed", visible ? "true" : "false");
-  });
-
+  window.WallosSubscriptionPreferences?.applyValueVisibility?.();
 }
 
 function toggleSubscriptionValueMetric(metricKey) {
-  if (!(metricKey in subscriptionValueVisibility)) {
-    return;
-  }
-
-  subscriptionValueVisibility[metricKey] = !subscriptionValueVisibility[metricKey];
-  persistSubscriptionValueVisibility();
-  applySubscriptionValueVisibility();
+  window.WallosSubscriptionPreferences?.toggleValueMetric?.(metricKey);
 }
 
 function createSubscriptionPriceRuleTempId() {
@@ -609,7 +225,7 @@ function normalizeSubscriptionPriceRule(rule = {}, index = 0) {
 }
 
 function getSubscriptionImageLayoutMode(scope) {
-  return normalizeSubscriptionImageLayoutPreference(subscriptionImageLayoutPreferences[scope]);
+  return window.WallosSubscriptionPreferences?.getImageLayoutMode?.(scope) || "focus";
 }
 
 function getSubscriptionImageGalleryTargets(scope) {
@@ -625,43 +241,23 @@ function getSubscriptionImageGalleryTargets(scope) {
 }
 
 function updateSubscriptionImageLayoutButtons(scope, mode) {
-  document.querySelectorAll(`.media-layout-toggle[data-image-layout-scope="${scope}"] .media-layout-button`).forEach((button) => {
-    const isActive = button.dataset.mode === mode;
-    button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", isActive ? "true" : "false");
-  });
+  return window.WallosSubscriptionPreferences?.applyImageLayoutMode?.(scope, mode);
 }
 
 function applySubscriptionImageLayoutMode(scope, mode = null) {
-  const resolvedMode = mode || getSubscriptionImageLayoutMode(scope);
-  getSubscriptionImageGalleryTargets(scope).forEach((gallery) => {
-    gallery.classList.remove("layout-focus", "layout-grid");
-    gallery.classList.add(`layout-${resolvedMode}`);
-  });
-  updateSubscriptionImageLayoutButtons(scope, resolvedMode);
+  return window.WallosSubscriptionPreferences?.applyImageLayoutMode?.(scope, mode);
 }
 
 function setSubscriptionImageLayoutMode(scope, mode, button = null) {
-  const resolvedMode = mode === "grid" ? "grid" : "focus";
-  if (scope in subscriptionImageLayoutPreferences) {
-    subscriptionImageLayoutPreferences[scope] = resolvedMode;
-    scheduleSubscriptionPagePreferencesSave();
-  }
-
-  applySubscriptionImageLayoutMode(scope, resolvedMode);
-
-  if (button) {
-    button.blur();
-  }
+  return window.WallosSubscriptionPreferences?.setImageLayoutMode?.(scope, mode, button);
 }
 
 function applyAllSubscriptionImageLayoutModes() {
-  applySubscriptionImageLayoutMode("form");
-  applySubscriptionImageLayoutMode("detail");
+  window.WallosSubscriptionPreferences?.applyAllImageLayoutModes?.();
 }
 
 function getSubscriptionDisplayColumns() {
-  return normalizeSubscriptionDisplayColumnsPreference(subscriptionDisplayColumns);
+  return window.WallosSubscriptionPreferences?.getDisplayColumns?.() || 1;
 }
 
 function getSubscriptionOccurrenceIndexForDueDate(subscription, dueDate) {
@@ -768,42 +364,15 @@ function applyPaymentRulePreviewForDueDate(dueDate) {
 }
 
 function updateSubscriptionDisplayColumnButtons(columns) {
-  document.querySelectorAll(".subscription-column-toggle .media-layout-button").forEach((button) => {
-    const isActive = Number(button.dataset.subscriptionColumns) === columns;
-    button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", isActive ? "true" : "false");
-  });
+  return window.WallosSubscriptionPreferences?.applyDisplayColumns?.(columns);
 }
 
 function applySubscriptionDisplayColumns(columns = null) {
-  const container = document.querySelector("#subscriptions");
-  const resolvedColumns = Number(columns) === 2 || Number(columns) === 3 ? Number(columns) : getSubscriptionDisplayColumns();
-
-  if (!container) {
-    updateSubscriptionDisplayColumnButtons(resolvedColumns);
-    return;
-  }
-
-  container.classList.add("subscription-columns");
-  container.classList.toggle("subscription-columns-1", resolvedColumns === 1);
-  container.classList.toggle("subscription-columns-2", resolvedColumns === 2);
-  container.classList.toggle("subscription-columns-3", resolvedColumns === 3);
-  container.classList.toggle("subscription-columns-multi", resolvedColumns > 1);
-  updateSubscriptionDisplayColumnButtons(resolvedColumns);
-  bindSubscriptionMasonryImageEvents();
-  scheduleSubscriptionMasonryLayout();
+  return window.WallosSubscriptionPreferences?.applyDisplayColumns?.(columns);
 }
 
 function setSubscriptionDisplayColumns(columns, button = null) {
-  const resolvedColumns = Number(columns) === 2 || Number(columns) === 3 ? Number(columns) : 1;
-  subscriptionDisplayColumns = resolvedColumns;
-  scheduleSubscriptionPagePreferencesSave();
-
-  applySubscriptionDisplayColumns(resolvedColumns);
-
-  if (button) {
-    button.blur();
-  }
+  return window.WallosSubscriptionPreferences?.setDisplayColumns?.(columns, button);
 }
 
 function bindSubscriptionMasonryImageEvents() {
@@ -3816,16 +3385,15 @@ function submitFormData(formData, submitButton, endpoint) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  subscriptionDisplayColumns = normalizeSubscriptionDisplayColumnsPreference(
-    window.subscriptionPagePreferences?.displayColumns
-  );
-  currentSubscriptionPageFilter = normalizeSubscriptionPageFilter(
-    window.subscriptionPageState?.currentFilter
-  );
-  subscriptionImageLayoutPreferences = {
-    form: normalizeSubscriptionImageLayoutPreference(window.subscriptionPagePreferences?.imageLayout?.form),
-    detail: normalizeSubscriptionImageLayoutPreference(window.subscriptionPagePreferences?.imageLayout?.detail),
-  };
+  window.WallosSubscriptionPages?.initialize?.({
+    state: window.subscriptionPageState || {},
+    fetchSubscriptions,
+  });
+  window.WallosSubscriptionPreferences?.initialize?.({
+    preferences: window.subscriptionPagePreferences || {},
+    bindMasonryImageEvents: bindSubscriptionMasonryImageEvents,
+    scheduleMasonryLayout: scheduleSubscriptionMasonryLayout,
+  });
   const subscriptionForm = document.querySelector("#subs-form");
   const submitButton = document.querySelector("#save-button");
   const endpoint = "endpoints/subscription/add.php";
@@ -3841,9 +3409,6 @@ document.addEventListener('DOMContentLoaded', function () {
   mountSubscriptionOverlayToBody("#subscription-payment-modal");
   mountSubscriptionOverlayToBody("#subscription-payment-history-modal");
   mountSubscriptionOverlayToBody("#subscription-image-viewer");
-  applySubscriptionPagesPayload(window.subscriptionPageState || {}, {
-    selectedValue: getDefaultSubscriptionPageSelection(),
-  });
   renderSubscriptionPriceRules();
 
   if (subscriptionPaymentDueDateInput) {

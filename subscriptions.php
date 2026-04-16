@@ -9,6 +9,7 @@ require_once 'includes/subscription_payment_records.php';
 require_once 'includes/subscription_payment_history.php';
 require_once 'includes/subscription_price_rules.php';
 require_once 'includes/subscription_pages.php';
+require_once 'includes/subscription_preferences.php';
 require_once 'includes/page_immersive_toggle.php';
 require_once 'includes/payment_icons.php';
 
@@ -204,24 +205,17 @@ $paymentRecordsMap = wallos_get_subscription_payment_records_map($db, $userId, 6
 $paymentRecordCountMap = wallos_get_subscription_payment_record_count_map($db, $userId);
 $paymentTotalMap = wallos_get_subscription_payment_total_map($db, $userId);
 $priceRulesMap = wallos_get_subscription_price_rules_map($db, $userId, true);
+$subscriptionPagesJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-pages.js');
+$subscriptionPreferencesJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-preferences.js');
 $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscriptions.js');
-$subscriptionDisplayColumns = (int) ($settings['subscriptionDisplayColumns'] ?? 1);
+$subscriptionPagePreferences = wallos_get_subscription_page_preferences_payload($settings);
+$subscriptionDisplayColumns = (int) ($subscriptionPagePreferences['displayColumns'] ?? 1);
 if (!in_array($subscriptionDisplayColumns, [1, 2, 3], true)) {
   $subscriptionDisplayColumns = 1;
 }
-$subscriptionValueVisibility = $settings['subscriptionValueVisibility'] ?? [
+$subscriptionValueVisibility = $subscriptionPagePreferences['valueVisibility'] ?? [
   'metrics' => true,
   'payment_records' => true,
-];
-$subscriptionImageLayoutForm = $settings['subscriptionImageLayoutForm'] ?? 'focus';
-$subscriptionImageLayoutDetail = $settings['subscriptionImageLayoutDetail'] ?? 'focus';
-$subscriptionPagePreferences = [
-  'displayColumns' => $subscriptionDisplayColumns,
-  'valueVisibility' => $subscriptionValueVisibility,
-  'imageLayout' => [
-    'form' => $subscriptionImageLayoutForm,
-    'detail' => $subscriptionImageLayoutDetail,
-  ],
 ];
 $subscriptionPageSaveActionLabel = $lang === 'zh_cn'
   ? '保存名称'
@@ -1390,6 +1384,8 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
   ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>
 <script src="scripts/libs/sortable.min.js"></script>
+<script src="scripts/subscription-pages.js?<?= $subscriptionPagesJsVersion ?>"></script>
+<script src="scripts/subscription-preferences.js?<?= $subscriptionPreferencesJsVersion ?>"></script>
 <script src="scripts/subscriptions.js?<?= $subscriptionsJsVersion ?>"></script>
 <?php
 if (isset($_GET['add'])) {
