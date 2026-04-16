@@ -6,12 +6,6 @@ require_once '../libs/csrf.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $userId <= 0) {
-    subscription_pages_json_response(false, translate('session_expired', $i18n));
-}
-
-$hideDisabled = isset($settings['hideDisabledSubscriptions']) && $settings['hideDisabledSubscriptions'] === 'true';
-
 function subscription_pages_json_response($success, $message, array $extra = [])
 {
     echo json_encode(array_merge([
@@ -25,6 +19,22 @@ function subscription_pages_get_payload($db, $userId, $hideDisabled)
 {
     return wallos_get_subscription_pages_payload($db, $userId, $hideDisabled);
 }
+
+function subscription_pages_execute_or_throw($statement, $errorMessage)
+{
+    $result = $statement->execute();
+    if ($result === false) {
+        throw new RuntimeException($errorMessage);
+    }
+
+    return $result;
+}
+
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $userId <= 0) {
+    subscription_pages_json_response(false, translate('session_expired', $i18n));
+}
+
+$hideDisabled = isset($settings['hideDisabledSubscriptions']) && $settings['hideDisabledSubscriptions'] === 'true';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     subscription_pages_json_response(
@@ -62,7 +72,7 @@ try {
         $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
         $stmt->bindValue(':name', $pageName, SQLITE3_TEXT);
         $stmt->bindValue(':sort_order', $sortOrder, SQLITE3_INTEGER);
-        $stmt->execute();
+        subscription_pages_execute_or_throw($stmt, translate('error', $i18n));
 
         subscription_pages_json_response(
             true,
@@ -86,7 +96,11 @@ try {
         $stmt->bindValue(':name', $pageName, SQLITE3_TEXT);
         $stmt->bindValue(':id', $pageId, SQLITE3_INTEGER);
         $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-        $stmt->execute();
+        subscription_pages_execute_or_throw($stmt, translate('error', $i18n));
+
+        if ($db->changes() < 1) {
+            throw new RuntimeException(wallos_translate_with_fallback('subscription_page_invalid', 'The selected page does not exist.', $i18n));
+        }
 
         subscription_pages_json_response(
             true,
@@ -101,7 +115,9 @@ try {
             throw new RuntimeException(wallos_translate_with_fallback('subscription_page_invalid', 'The selected page does not exist.', $i18n));
         }
 
-        $db->exec('BEGIN IMMEDIATE');
+        if ($db->exec('BEGIN IMMEDIATE') === false) {
+            throw new RuntimeException(translate('error', $i18n));
+        }
 
         $resetStmt = $db->prepare('
             UPDATE subscriptions
@@ -110,14 +126,20 @@ try {
         ');
         $resetStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
         $resetStmt->bindValue(':page_id', $pageId, SQLITE3_INTEGER);
-        $resetStmt->execute();
+        subscription_pages_execute_or_throw($resetStmt, translate('error', $i18n));
 
         $deleteStmt = $db->prepare('DELETE FROM subscription_pages WHERE id = :id AND user_id = :user_id');
         $deleteStmt->bindValue(':id', $pageId, SQLITE3_INTEGER);
         $deleteStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-        $deleteStmt->execute();
+        subscription_pages_execute_or_throw($deleteStmt, translate('error', $i18n));
 
-        $db->exec('COMMIT');
+        if ($db->changes() < 1) {
+            throw new RuntimeException(wallos_translate_with_fallback('subscription_page_invalid', 'The selected page does not exist.', $i18n));
+        }
+
+        if ($db->exec('COMMIT') === false) {
+            throw new RuntimeException(translate('error', $i18n));
+        }
 
         subscription_pages_json_response(
             true,
@@ -128,9 +150,7 @@ try {
 
     throw new RuntimeException(translate('error', $i18n));
 } catch (Throwable $throwable) {
-    if ($db->lastErrorCode() !== 0) {
-        @ $db->exec('ROLLBACK');
-    }
+    @ $db->exec('ROLLBACK');
 
     subscription_pages_json_response(false, $throwable->getMessage());
 }

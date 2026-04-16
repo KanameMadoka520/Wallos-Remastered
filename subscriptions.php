@@ -189,7 +189,11 @@ if ($sortOrder == "payment_method_id") {
   });
 }
 
-$headerClass = ((int) ($subscriptionPageCounts['all'] ?? count($subscriptions))) > 0 ? "main-actions" : "main-actions hidden";
+$headerClass = (
+  (int) ($subscriptionPageCounts['all'] ?? count($subscriptions))) > 0
+  || !empty($subscriptionPages)
+    ? "main-actions"
+    : "main-actions hidden";
 $effectiveUserGroup = wallos_get_effective_user_group($userData['user_group'] ?? WALLOS_USER_GROUP_FREE, $isAdmin);
 $canUploadSubscriptionImages = wallos_can_upload_subscription_images($isAdmin, $userData['user_group'] ?? WALLOS_USER_GROUP_FREE);
 $subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
