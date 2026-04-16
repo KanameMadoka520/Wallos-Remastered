@@ -6170,7 +6170,8 @@ input[type="radio"]:checked+label::after {
 }
 
 .metric-explanation-modal {
-  max-width: 820px;
+  width: min(75vw, 1280px);
+  max-width: min(75vw, 1280px);
 }
 
 .metric-explanation-content {
@@ -6240,6 +6241,7 @@ input[type="radio"]:checked+label::after {
 
 .metric-explanation-group-items {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
 }
 
@@ -6264,10 +6266,14 @@ input[type="radio"]:checked+label::after {
 
 .metric-explanation-item-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
+  flex-direction: column;
+  gap: 6px;
   color: rgba(var(--text-color-rgb), 0.74);
   font-size: 13px;
+}
+
+.metric-explanation-item-meta span {
+  line-height: 1.45;
 }
 
 .metric-explanation-empty {
@@ -6277,7 +6283,25 @@ input[type="radio"]:checked+label::after {
   color: rgba(var(--text-color-rgb), 0.72);
 }
 
+.metric-explanation-modal header {
+  padding-right: 68px;
+}
+
+.metric-explanation-modal .close-form {
+  top: 18px;
+  right: 18px;
+}
+
 @media (max-width: 768px) {
+  .metric-explanation-modal {
+    width: min(92vw, 1100px);
+    max-width: min(92vw, 1100px);
+  }
+
+  .metric-explanation-group-items {
+    grid-template-columns: 1fr;
+  }
+
   .budget-visualizer-header {
     flex-direction: column;
   }
