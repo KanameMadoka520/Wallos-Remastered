@@ -9,6 +9,9 @@ let currentSubscriptionImageDownloadUrl = "";
 let currentSubscriptionImageViewerItems = [];
 let currentSubscriptionImageViewerIndex = -1;
 let currentSubscriptionImageOriginalRequest = null;
+let currentSubscriptionImagePreviewToken = 0;
+let subscriptionImageViewerPreviewProgressTimer = null;
+const prefetchedSubscriptionImageViewerSources = new Set();
 let subscriptionImageViewerTouchStartX = 0;
 let subscriptionImageViewerTouchStartY = 0;
 let currentPaymentHistorySubscriptionId = 0;
@@ -2227,6 +2230,86 @@ function getViewerItemsFromGallery(gallery) {
   })).filter((item) => item.src !== "");
 }
 
+function setSubscriptionImageViewerPreviewProgress(percentage) {
+  const progress = document.querySelector("#subscription-image-viewer-progress");
+  const fill = document.querySelector("#subscription-image-viewer-progress-fill");
+  if (!progress || !fill) {
+    return;
+  }
+
+  const normalizedValue = Math.max(0, Math.min(100, Number(percentage || 0)));
+  progress.classList.toggle("is-hidden", normalizedValue <= 0);
+  fill.style.width = `${normalizedValue}%`;
+}
+
+function hideSubscriptionImageViewerPreviewProgress() {
+  if (subscriptionImageViewerPreviewProgressTimer) {
+    clearInterval(subscriptionImageViewerPreviewProgressTimer);
+    subscriptionImageViewerPreviewProgressTimer = null;
+  }
+
+  setSubscriptionImageViewerPreviewProgress(0);
+}
+
+function startSubscriptionImageViewerPreviewProgress(loadToken) {
+  if (subscriptionImageViewerPreviewProgressTimer) {
+    clearInterval(subscriptionImageViewerPreviewProgressTimer);
+    subscriptionImageViewerPreviewProgressTimer = null;
+  }
+
+  let currentProgress = 14;
+  setSubscriptionImageViewerPreviewProgress(currentProgress);
+
+  subscriptionImageViewerPreviewProgressTimer = setInterval(() => {
+    if (loadToken !== currentSubscriptionImagePreviewToken) {
+      hideSubscriptionImageViewerPreviewProgress();
+      return;
+    }
+
+    currentProgress = Math.min(86, currentProgress + Math.max(2, (88 - currentProgress) * 0.16));
+    setSubscriptionImageViewerPreviewProgress(currentProgress);
+  }, 90);
+}
+
+function finishSubscriptionImageViewerPreviewProgress(loadToken) {
+  if (subscriptionImageViewerPreviewProgressTimer) {
+    clearInterval(subscriptionImageViewerPreviewProgressTimer);
+    subscriptionImageViewerPreviewProgressTimer = null;
+  }
+
+  setSubscriptionImageViewerPreviewProgress(100);
+  window.setTimeout(() => {
+    if (loadToken === currentSubscriptionImagePreviewToken) {
+      hideSubscriptionImageViewerPreviewProgress();
+    }
+  }, 140);
+}
+
+function prefetchSubscriptionImageViewerSource(src) {
+  const normalizedSrc = String(src || "").trim();
+  if (normalizedSrc === "" || prefetchedSubscriptionImageViewerSources.has(normalizedSrc)) {
+    return;
+  }
+
+  prefetchedSubscriptionImageViewerSources.add(normalizedSrc);
+  const image = new Image();
+  image.decoding = "async";
+  image.src = normalizedSrc;
+}
+
+function prefetchAdjacentSubscriptionImageViewerItems() {
+  if (!Array.isArray(currentSubscriptionImageViewerItems) || currentSubscriptionImageViewerIndex < 0) {
+    return;
+  }
+
+  [currentSubscriptionImageViewerIndex - 1, currentSubscriptionImageViewerIndex + 1].forEach((index) => {
+    const item = currentSubscriptionImageViewerItems[index];
+    if (item?.src) {
+      prefetchSubscriptionImageViewerSource(item.src);
+    }
+  });
+}
+
 function openSubscriptionImageViewerItems(items, startIndex = 0) {
   if (!Array.isArray(items) || items.length === 0) {
     return;
@@ -2261,6 +2344,7 @@ function openSubscriptionImageViewerFromElement(element) {
 
 function renderCurrentSubscriptionImageViewerItem() {
   const viewer = document.querySelector("#subscription-image-viewer");
+  const viewerContent = document.querySelector("#subscription-image-viewer .subscription-image-viewer-content");
   const preview = document.querySelector("#subscription-image-viewer-preview");
   const openLink = document.querySelector("#subscription-image-viewer-open");
   const downloadLink = document.querySelector("#subscription-image-viewer-download");
@@ -2268,11 +2352,12 @@ function renderCurrentSubscriptionImageViewerItem() {
   const nextButton = document.querySelector("#subscription-image-viewer-next");
   const counter = document.querySelector("#subscription-image-viewer-counter");
 
-  if (!viewer || !preview || currentSubscriptionImageViewerIndex < 0 || !currentSubscriptionImageViewerItems.length) {
+  if (!viewer || !viewerContent || !preview || currentSubscriptionImageViewerIndex < 0 || !currentSubscriptionImageViewerItems.length) {
     return;
   }
 
   const item = currentSubscriptionImageViewerItems[currentSubscriptionImageViewerIndex];
+  const loadToken = ++currentSubscriptionImagePreviewToken;
   currentSubscriptionImageViewerSrc = item.src || "";
   currentSubscriptionImageOriginalUrl = item.originalUrl || item.src || "";
   currentSubscriptionImageDownloadUrl = item.downloadUrl || item.src || "";
@@ -2282,7 +2367,12 @@ function renderCurrentSubscriptionImageViewerItem() {
     currentSubscriptionImageOriginalRequest = null;
   }
   hideOriginalImageProgress();
-  preview.src = currentSubscriptionImageViewerSrc;
+  hideSubscriptionImageViewerPreviewProgress();
+  viewerContent.classList.toggle("is-loading", currentSubscriptionImageViewerSrc !== "");
+  preview.alt = item.label || "";
+  preview.removeAttribute("src");
+  preview.onload = null;
+  preview.onerror = null;
   preview.alt = item.label || "";
   viewer.classList.add("is-open");
 
@@ -2301,6 +2391,39 @@ function renderCurrentSubscriptionImageViewerItem() {
   if (counter) {
     counter.textContent = `${currentSubscriptionImageViewerIndex + 1} / ${currentSubscriptionImageViewerItems.length}`;
   }
+
+  if (currentSubscriptionImageViewerSrc === "") {
+    viewerContent.classList.remove("is-loading");
+    return;
+  }
+
+  startSubscriptionImageViewerPreviewProgress(loadToken);
+  preview.onload = () => {
+    if (loadToken !== currentSubscriptionImagePreviewToken) {
+      return;
+    }
+
+    viewerContent.classList.remove("is-loading");
+    finishSubscriptionImageViewerPreviewProgress(loadToken);
+    prefetchAdjacentSubscriptionImageViewerItems();
+  };
+  preview.onerror = () => {
+    if (loadToken !== currentSubscriptionImagePreviewToken) {
+      return;
+    }
+
+    viewerContent.classList.remove("is-loading");
+    hideSubscriptionImageViewerPreviewProgress();
+    showErrorMessage(translate("error"));
+  };
+
+  window.requestAnimationFrame(() => {
+    if (loadToken !== currentSubscriptionImagePreviewToken) {
+      return;
+    }
+
+    preview.src = currentSubscriptionImageViewerSrc;
+  });
 }
 
 function renderDetailImageGallery() {
@@ -2553,6 +2676,7 @@ function setExistingUploadedImages(images) {
 
 function closeSubscriptionImageViewer() {
   const viewer = document.querySelector("#subscription-image-viewer");
+  const viewerContent = document.querySelector("#subscription-image-viewer .subscription-image-viewer-content");
   const preview = document.querySelector("#subscription-image-viewer-preview");
   const counter = document.querySelector("#subscription-image-viewer-counter");
   const openLink = document.querySelector("#subscription-image-viewer-open");
@@ -2563,7 +2687,12 @@ function closeSubscriptionImageViewer() {
   if (viewer) {
     viewer.classList.remove("is-open");
   }
+  if (viewerContent) {
+    viewerContent.classList.remove("is-loading");
+  }
   if (preview) {
+    preview.onload = null;
+    preview.onerror = null;
     preview.src = "";
     preview.alt = "";
   }
@@ -2586,6 +2715,9 @@ function closeSubscriptionImageViewer() {
     currentSubscriptionImageOriginalRequest.abort();
     currentSubscriptionImageOriginalRequest = null;
   }
+  currentSubscriptionImagePreviewToken += 1;
+  hideSubscriptionImageViewerPreviewProgress();
+  prefetchedSubscriptionImageViewerSources.clear();
   hideOriginalImageProgress();
   currentSubscriptionImageViewerItems = [];
   currentSubscriptionImageViewerIndex = -1;

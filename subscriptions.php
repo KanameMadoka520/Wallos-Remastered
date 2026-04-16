@@ -1275,6 +1275,9 @@ $subscriptionPagePreferences = [
   </header>
   <div class="subscription-image-viewer-content">
     <img src="" alt="<?= translate('subscription_image_viewer_title', $i18n) ?>" id="subscription-image-viewer-preview">
+    <div class="subscription-image-viewer-progress is-hidden" id="subscription-image-viewer-progress" aria-hidden="true">
+      <span id="subscription-image-viewer-progress-fill"></span>
+    </div>
     <div class="subscription-image-original-progress is-hidden" id="subscription-image-original-progress">
       <div class="subscription-image-original-progress-label" id="subscription-image-original-progress-label">
         <?= translate('subscription_image_original_loading', $i18n) ?>
