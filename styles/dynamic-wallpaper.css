@@ -398,6 +398,7 @@ body.dynamic-wallpaper-enabled > .page-edition-footer .contain {
 body.dynamic-wallpaper-enabled > .page-edition-footer {
     background: transparent;
     border-top-color: transparent;
+    padding-top: 0;
 }
 
 body.dynamic-wallpaper-enabled > .page-edition-footer .contain {
