@@ -109,6 +109,16 @@ try {
         );
     }
 
+    if ($action === 'reorder') {
+        wallos_reorder_subscription_pages($db, $userId, $data['page_ids'] ?? [], $i18n);
+
+        subscription_pages_json_response(
+            true,
+            wallos_translate_with_fallback('subscription_page_updated', 'Subscription page updated.', $i18n),
+            subscription_pages_get_payload($db, $userId, $hideDisabled)
+        );
+    }
+
     if ($action === 'delete') {
         $pageId = (int) ($data['page_id'] ?? 0);
         if ($pageId <= 0 || !wallos_subscription_page_exists($db, $userId, $pageId)) {

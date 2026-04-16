@@ -3103,7 +3103,7 @@ button.dark-theme-button i {
 
 .subscription-pages-manager-item-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   min-width: 0;
@@ -3119,6 +3119,32 @@ button.dark-theme-button i {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   min-width: 0;
+}
+
+.subscription-page-drag-handle {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--box-border-color);
+  border-radius: 12px;
+  background: rgba(var(--main-color-rgb), 0.06);
+  color: inherit;
+  cursor: grab;
+  flex: 0 0 38px;
+}
+
+.subscription-page-drag-handle:active {
+  cursor: grabbing;
+}
+
+.subscription-pages-manager-item-ghost {
+  opacity: 0.5;
+}
+
+.subscription-pages-manager-item-chosen {
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
 }
 
 .subscription-pages-manager-item-actions .button {
@@ -3571,7 +3597,6 @@ button.dark-theme-button i {
     grid-template-columns: 1fr;
   }
 
-  .subscription-pages-manager-item-main,
   .subscription-pages-manager-item-actions {
     grid-template-columns: 1fr;
   }

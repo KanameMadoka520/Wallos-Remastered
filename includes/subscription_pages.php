@@ -151,6 +151,66 @@ function wallos_get_subscription_pages($db, $userId)
     return $pages;
 }
 
+function wallos_validate_subscription_page_reorder_ids($db, $userId, $pageIds, $i18n)
+{
+    if (!is_array($pageIds)) {
+        throw new RuntimeException(wallos_translate_with_fallback('subscription_page_invalid', 'The selected page does not exist.', $i18n));
+    }
+
+    $normalizedIds = [];
+    foreach ($pageIds as $pageId) {
+        $pageId = (int) $pageId;
+        if ($pageId > 0 && !in_array($pageId, $normalizedIds, true)) {
+            $normalizedIds[] = $pageId;
+        }
+    }
+
+    $existingIds = array_map(static function ($page) {
+        return (int) ($page['id'] ?? 0);
+    }, wallos_get_subscription_pages($db, $userId));
+
+    sort($normalizedIds);
+    sort($existingIds);
+
+    if ($normalizedIds !== $existingIds) {
+        throw new RuntimeException(wallos_translate_with_fallback('subscription_page_invalid', 'The selected page does not exist.', $i18n));
+    }
+
+    return array_values(array_map('intval', $pageIds));
+}
+
+function wallos_reorder_subscription_pages($db, $userId, $pageIds, $i18n)
+{
+    $orderedIds = wallos_validate_subscription_page_reorder_ids($db, $userId, $pageIds, $i18n);
+    if (count($orderedIds) <= 1) {
+        return;
+    }
+
+    if ($db->exec('BEGIN IMMEDIATE') === false) {
+        throw new RuntimeException(translate('error', $i18n));
+    }
+
+    $stmt = $db->prepare('
+        UPDATE subscription_pages
+        SET sort_order = :sort_order, updated_at = CURRENT_TIMESTAMP
+        WHERE id = :id AND user_id = :user_id
+    ');
+
+    foreach ($orderedIds as $index => $pageId) {
+        $stmt->bindValue(':sort_order', $index + 1, SQLITE3_INTEGER);
+        $stmt->bindValue(':id', (int) $pageId, SQLITE3_INTEGER);
+        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+        $result = $stmt->execute();
+        if ($result === false) {
+            throw new RuntimeException(translate('error', $i18n));
+        }
+    }
+
+    if ($db->exec('COMMIT') === false) {
+        throw new RuntimeException(translate('error', $i18n));
+    }
+}
+
 function wallos_get_subscription_pages_payload($db, $userId, $hideDisabled = false)
 {
     $pages = wallos_get_subscription_pages($db, $userId);

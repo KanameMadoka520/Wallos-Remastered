@@ -229,6 +229,9 @@ $subscriptionPageSaveActionLabel = $lang === 'zh_cn'
 $subscriptionPageDeleteActionLabel = $lang === 'zh_cn'
   ? '删除分页'
   : ($lang === 'zh_tw' ? '刪除分頁' : 'Delete Page');
+$subscriptionPageDragHandleLabel = $lang === 'zh_cn'
+  ? '拖动排序分页'
+  : ($lang === 'zh_tw' ? '拖曳排序分頁' : 'Drag to reorder pages');
 $subscriptionPageManageHint = $lang === 'zh_cn'
   ? '修改分页名称后，请点击“保存名称”。删除分页不会删除订阅，只会把该分页下的订阅移回“未分页”。'
   : ($lang === 'zh_tw'
@@ -291,15 +294,13 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
   }
 
   .subscription-pages-manager-modal {
-    max-width: 860px;
-    width: min(860px, 92vw);
+    max-width: 1240px;
+    width: min(75vw, 1240px);
   }
 
-  .subscription-pages-manager-toolbar,
   .subscription-pages-manager-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: grid;
+    gap: 14px;
   }
 
   .subscription-pages-manager-create {
@@ -314,20 +315,23 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 
   .subscription-pages-manager-item {
     display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 8px;
     border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
     border-radius: 18px;
-    padding: 14px 16px;
+    padding: 10px 12px;
     background: var(--card-background-secondary, rgba(255, 255, 255, 0.92));
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .subscription-pages-manager-item-main {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 10px;
-    flex: 1;
     min-width: 0;
   }
 
@@ -337,9 +341,36 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
   }
 
   .subscription-pages-manager-item-actions {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+    min-width: 0;
+  }
+
+  .subscription-page-drag-handle {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: 12px;
+    background: rgba(var(--main-color-rgb), 0.06);
+    color: inherit;
+    cursor: grab;
+    flex: 0 0 38px;
+  }
+
+  .subscription-page-drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .subscription-pages-manager-item-ghost {
+    opacity: .5;
+  }
+
+  .subscription-pages-manager-item-chosen {
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
   }
 
   .subscription-pages-manager-empty {
@@ -360,15 +391,23 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       align-self: flex-start;
     }
 
-    .subscription-pages-manager-item,
     .subscription-pages-manager-create {
       flex-direction: column;
       align-items: stretch;
     }
 
+    .subscription-pages-manager-modal {
+      width: 92%;
+      max-width: 92%;
+    }
+
+    .subscription-pages-manager-list {
+      grid-template-columns: 1fr;
+    }
+
+    .subscription-pages-manager-item-main,
     .subscription-pages-manager-item-actions {
-      justify-content: flex-end;
-      flex-wrap: wrap;
+      grid-template-columns: 1fr;
     }
   }
 
@@ -473,16 +512,6 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
           <span><?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?></span>
           <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['all'] ?? count($subscriptions)) ?></span>
         </button>
-        <?php
-        $unassignedFilterValue = WALLOS_SUBSCRIPTION_PAGE_FILTER_UNASSIGNED;
-        $unassignedPageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $unassignedFilterValue;
-        ?>
-        <button type="button" class="subscription-page-tab<?= $unassignedPageActive ? ' is-active' : '' ?>"
-          data-page-filter="<?= $unassignedFilterValue ?>" aria-pressed="<?= $unassignedPageActive ? 'true' : 'false' ?>"
-          data-subscription-action="select-page-filter" data-filter="<?= htmlspecialchars($unassignedFilterValue, ENT_QUOTES, 'UTF-8') ?>">
-          <span><?= wallos_translate_with_fallback('subscription_page_unassigned', 'Unassigned', $i18n) ?></span>
-          <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['unassigned'] ?? 0) ?></span>
-        </button>
         <?php foreach ($subscriptionPages as $subscriptionPage): ?>
           <?php
           $pageFilterValue = (string) (int) $subscriptionPage['id'];
@@ -496,6 +525,16 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
             <span class="section-count-badge"><?= (int) ($subscriptionPage['subscription_count'] ?? 0) ?></span>
           </button>
         <?php endforeach; ?>
+        <?php
+        $unassignedFilterValue = WALLOS_SUBSCRIPTION_PAGE_FILTER_UNASSIGNED;
+        $unassignedPageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $unassignedFilterValue;
+        ?>
+        <button type="button" class="subscription-page-tab<?= $unassignedPageActive ? ' is-active' : '' ?>"
+          data-page-filter="<?= $unassignedFilterValue ?>" aria-pressed="<?= $unassignedPageActive ? 'true' : 'false' ?>"
+          data-subscription-action="select-page-filter" data-filter="<?= htmlspecialchars($unassignedFilterValue, ENT_QUOTES, 'UTF-8') ?>">
+          <span><?= wallos_translate_with_fallback('subscription_page_unassigned', 'Unassigned', $i18n) ?></span>
+          <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['unassigned'] ?? 0) ?></span>
+        </button>
       </div>
       <button type="button" class="button secondary-button tiny subscription-page-manager-trigger"
         data-subscription-action="open-pages-manager">
@@ -740,6 +779,11 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       <?php foreach ($subscriptionPages as $subscriptionPage): ?>
         <div class="subscription-pages-manager-item" data-page-id="<?= (int) $subscriptionPage['id'] ?>">
           <div class="subscription-pages-manager-item-main">
+            <button type="button" class="subscription-page-drag-handle"
+              title="<?= htmlspecialchars($subscriptionPageDragHandleLabel, ENT_QUOTES, 'UTF-8') ?>"
+              aria-label="<?= htmlspecialchars($subscriptionPageDragHandleLabel, ENT_QUOTES, 'UTF-8') ?>">
+              <i class="fa-solid fa-grip-vertical"></i>
+            </button>
             <input type="text" class="subscription-page-name-input"
               value="<?= htmlspecialchars($subscriptionPage['name'], ENT_QUOTES, 'UTF-8') ?>"
               maxlength="<?= (int) WALLOS_SUBSCRIPTION_PAGE_NAME_MAX_LENGTH ?>">
@@ -1342,6 +1386,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     'saveAction' => $subscriptionPageSaveActionLabel,
     'deleteAction' => $subscriptionPageDeleteActionLabel,
     'manageHint' => $subscriptionPageManageHint,
+    'dragHandleTitle' => $subscriptionPageDragHandleLabel,
   ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>
 <script src="scripts/libs/sortable.min.js"></script>
