@@ -1546,7 +1546,7 @@ $pageSections = [
                     <input type="button" value="<?= translate('reset_custom_colors', $i18n) ?>"
                         onClick="resetCustomColors()" class="secondary-button thin mobile-grow" id="reset-colors">
                     <input type="button" value="<?= translate('save_custom_colors', $i18n) ?>"
-                        onClick="saveCustomColors()" class="buton thin mobile-grow" id="save-colors">
+                        onClick="saveCustomColors()" class="button thin mobile-grow" id="save-colors">
                 </div>
                 <div class="settings-notes">
                     <p>
@@ -1567,7 +1567,7 @@ $pageSections = [
                         </div>
                         <div class="form-group-inline">
                             <input type="button" value="<?= translate('save_custom_css', $i18n) ?>"
-                                onClick="saveCustomCss()" class="buton thin mobile-grow" id="save-css">
+                                onClick="saveCustomCss()" class="button thin mobile-grow" id="save-css">
                         </div>
                     </div>
                 </div>

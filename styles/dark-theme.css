@@ -19,6 +19,19 @@
     --input-disabled-border-color-rgb: 102, 102, 102;
     --box-shadow: 0 2px 5px rgba(120, 120, 120, 0.1);
     --negative-box-shadow: 0 -2px 5px rgba(120, 120, 120, 0.1);
+    --feedback-surface-rgb: 34, 34, 34;
+    --feedback-surface-alpha-start: 0.98;
+    --feedback-surface-alpha-end: 0.94;
+    --feedback-border-rgb: 85, 85, 85;
+    --feedback-border-alpha: 0.9;
+    --feedback-title-color-rgb: 187, 187, 187;
+    --feedback-body-color-rgb: 153, 153, 153;
+    --feedback-close-color-rgb: 238, 238, 238;
+    --feedback-shadow: 0 12px 30px rgba(0, 0, 0, 0.36);
+    --overlay-backdrop-rgb: 0, 0, 0;
+    --overlay-backdrop-alpha: 0.42;
+    --code-chip-background-rgb: 255, 255, 255;
+    --code-chip-background-alpha: 0.08;
  }
 
 body {

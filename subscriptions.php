@@ -273,10 +273,14 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     gap: 12px;
     padding: 14px 18px;
     border-radius: 16px;
-    border: 1px solid rgba(var(--main-color-rgb), 0.16);
-    background: rgba(18, 24, 33, 0.92);
-    color: #fff;
-    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(var(--feedback-border-rgb), var(--feedback-border-alpha));
+    background: linear-gradient(135deg,
+      rgba(var(--feedback-surface-rgb), var(--feedback-surface-alpha-start)),
+      rgba(var(--feedback-surface-rgb), var(--feedback-surface-alpha-end)));
+    color: rgba(var(--feedback-title-color-rgb), 0.96);
+    box-shadow: var(--feedback-shadow);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     font-weight: 600;
     white-space: nowrap;
   }
@@ -285,7 +289,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.18);
+    border: 2px solid rgba(var(--feedback-title-color-rgb), 0.18);
     border-top-color: rgba(var(--main-color-rgb), 0.96);
     animation: subscription-page-loading-spin 0.72s linear infinite;
     flex: 0 0 auto;
@@ -295,14 +299,6 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     to {
       transform: rotate(360deg);
     }
-  }
-
-  body.dynamic-wallpaper-enabled .subscription-page-loading-card {
-    background: rgba(10, 15, 24, 0.92);
-    border-color: rgba(255, 255, 255, 0.18);
-    box-shadow:
-      0 20px 40px rgba(0, 0, 0, 0.24),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   @media (max-width: 768px) {
@@ -343,9 +339,9 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
   }
 
   .subscription-page-tab {
-    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
-    background: var(--card-background-secondary, rgba(255, 255, 255, 0.92));
-    color: inherit;
+    border: 1px solid var(--box-border-color);
+    background: rgba(var(--main-color-rgb), 0.04);
+    color: var(--text-color);
     border-radius: 999px;
     min-height: 38px;
     padding: 0 14px;
@@ -361,7 +357,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
   }
 
   .subscription-page-tab.is-active {
-    border-color: var(--theme-color, #7c5cff);
+    border-color: var(--main-color);
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
   }
 
@@ -376,13 +372,13 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 
   body.dynamic-wallpaper-enabled .subscriptions-page-layout .subscription-page-tab:hover {
     background: rgba(22, 30, 44, 0.9) !important;
-    color: #ffffff !important;
+    color: var(--wallos-dynamic-text-color) !important;
     border-color: rgba(255, 255, 255, 0.3) !important;
   }
 
   body.dynamic-wallpaper-enabled .subscriptions-page-layout .subscription-page-tab.is-active {
     background: rgba(28, 36, 54, 0.94) !important;
-    color: #ffffff !important;
+    color: var(--wallos-dynamic-text-color) !important;
     border-color: rgba(var(--main-color-rgb), 0.78) !important;
     box-shadow:
       0 14px 28px rgba(0, 0, 0, 0.24),
@@ -397,7 +393,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 
   body.dynamic-wallpaper-enabled .subscriptions-page-layout .subscription-page-tab.is-active .section-count-badge {
     background: rgba(var(--main-color-rgb), 0.18) !important;
-    color: #ffffff !important;
+    color: var(--wallos-dynamic-text-color) !important;
     border-color: rgba(var(--main-color-rgb), 0.3);
   }
 
@@ -447,10 +443,10 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     display: flex;
     flex-direction: column;
     gap: 8px;
-    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border: 1px solid var(--box-border-color);
     border-radius: 18px;
     padding: 10px 12px;
-    background: var(--card-background-secondary, rgba(255, 255, 255, 0.92));
+    background: rgba(var(--main-color-rgb), 0.03);
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -483,7 +479,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border: 1px solid var(--box-border-color);
     border-radius: 12px;
     background: rgba(var(--main-color-rgb), 0.06);
     color: inherit;
@@ -504,11 +500,13 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
   }
 
   .subscription-pages-manager-empty {
-    border: 1px dashed var(--border-color, rgba(0, 0, 0, 0.14));
+    border: 1px dashed var(--box-border-color);
     border-radius: 18px;
     padding: 20px 18px;
     text-align: center;
     opacity: .78;
+    color: rgba(var(--text-color-rgb), 0.72);
+    background: rgba(var(--main-color-rgb), 0.03);
   }
 
   @media (max-width: 900px) {
