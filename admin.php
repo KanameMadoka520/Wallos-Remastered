@@ -178,6 +178,8 @@ $backupProgressLabels = wallos_get_backup_progress_labels($lang);
 $adminBackupsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-backups.js');
 $adminAccessLogsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-access-logs.js');
 $adminRateLimitJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-rate-limit.js');
+$adminUsersJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-users.js');
+$adminRegistrationJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-registration.js');
 require_once 'includes/page_navigation.php';
 
 $pageSections = [
@@ -1387,6 +1389,8 @@ $pageSections = [
 <script src="scripts/admin-backups.js?<?= $adminBackupsJsVersion ?>"></script>
 <script src="scripts/admin-access-logs.js?<?= $adminAccessLogsJsVersion ?>"></script>
 <script src="scripts/admin-rate-limit.js?<?= $adminRateLimitJsVersion ?>"></script>
+<script src="scripts/admin-users.js?<?= $adminUsersJsVersion ?>"></script>
+<script src="scripts/admin-registration.js?<?= $adminRegistrationJsVersion ?>"></script>
 <script src="scripts/admin.js?<?= $version ?>"></script>
 
 <?php
