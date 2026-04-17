@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallos 排队提示预览</title>
+  <style>
+    :root {
+      --main-color-rgb: 109, 74, 255;
+      --main-color: rgb(var(--main-color-rgb));
+      --success-color-rgb: 24, 136, 35;
+      --success-color: rgb(var(--success-color-rgb));
+      --text-color-rgb: 244, 246, 255;
+      --text-color: rgb(var(--text-color-rgb));
+      --surface-rgb: 18, 20, 32;
+      --surface-soft-rgb: 31, 35, 56;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text-color);
+      background:
+        radial-gradient(circle at top left, rgba(var(--main-color-rgb), 0.26), transparent 26%),
+        radial-gradient(circle at right 20%, rgba(125, 211, 252, 0.14), transparent 24%),
+        linear-gradient(135deg, #0c1020 0%, #141b31 52%, #0b0f1d 100%);
+      overflow: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    body::before {
+      top: -12vmax;
+      left: -10vmax;
+      width: 28vmax;
+      height: 28vmax;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(var(--main-color-rgb), 0.28), transparent 68%);
+      filter: blur(24px);
+    }
+
+    body::after {
+      right: -8vmax;
+      bottom: -10vmax;
+      width: 30vmax;
+      height: 30vmax;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(var(--success-color-rgb), 0.12), transparent 72%);
+      filter: blur(30px);
+    }
+
+    .stage {
+      position: relative;
+      min-height: 100vh;
+      padding: 40px 24px 160px;
+    }
+
+    .panel {
+      width: min(960px, 100%);
+      margin: 0 auto;
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(var(--surface-rgb), 0.88), rgba(var(--surface-soft-rgb), 0.78));
+      box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(var(--main-color-rgb), 0.14);
+      border: 1px solid rgba(var(--main-color-rgb), 0.3);
+      color: rgba(var(--text-color-rgb), 0.92);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 20px 0 10px;
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+    }
+
+    .description {
+      margin: 0;
+      max-width: 720px;
+      color: rgba(var(--text-color-rgb), 0.72);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      color: white;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(0, 0, 0, 0.24);
+    }
+
+    button:active {
+      transform: translateY(0);
+      opacity: 0.94;
+    }
+
+    .primary {
+      background: linear-gradient(135deg, rgba(var(--main-color-rgb), 0.92), rgba(144, 111, 255, 0.92));
+    }
+
+    .secondary {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.08));
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .success {
+      background: linear-gradient(135deg, rgba(var(--success-color-rgb), 0.92), rgba(56, 181, 84, 0.86));
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 30px;
+    }
+
+    .note-card {
+      padding: 18px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(var(--text-color-rgb), 0.78);
+      line-height: 1.7;
+    }
+
+    .note-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: white;
+      font-size: 14px;
+    }
+
+    .request-queue-notice {
+      position: fixed;
+      right: 30px;
+      bottom: 36px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      width: min(380px, calc(100vw - 32px));
+      max-width: min(380px, calc(100vw - 32px));
+      padding: 18px 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(var(--main-color-rgb), 0.26);
+      background:
+        linear-gradient(135deg,
+          rgba(21, 24, 38, 0.98),
+          rgba(31, 35, 56, 0.92));
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transform: translateX(calc(100% + 30px));
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: transform 0.28s ease, opacity 0.28s ease, visibility 0.28s ease, border-color 0.28s ease;
+      z-index: 30;
+    }
+
+    .request-queue-notice.active {
+      transform: translateX(0);
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .request-queue-notice.is-success {
+      border-color: rgba(var(--success-color-rgb), 0.36);
+    }
+
+    .request-queue-notice__badge {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      min-width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(var(--main-color-rgb), 0.12);
+      color: var(--main-color);
+      box-shadow: inset 0 0 0 1px rgba(var(--main-color-rgb), 0.14);
+    }
+
+    .request-queue-notice__spinner,
+    .request-queue-notice__check {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+    }
+
+    .request-queue-notice__spinner {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(var(--main-color-rgb), 0.18);
+      border-top-color: var(--main-color);
+      animation: requestQueueSpin 0.95s linear infinite;
+    }
+
+    .request-queue-notice__check {
+      display: none;
+      width: 18px;
+      height: 18px;
+      align-items: center;
+      justify-content: center;
+      color: var(--success-color);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .request-queue-notice.is-success .request-queue-notice__badge {
+      background: rgba(var(--success-color-rgb), 0.14);
+      color: var(--success-color);
+      box-shadow: inset 0 0 0 1px rgba(var(--success-color-rgb), 0.16);
+    }
+
+    .request-queue-notice.is-success .request-queue-notice__spinner {
+      display: none;
+    }
+
+    .request-queue-notice.is-success .request-queue-notice__check {
+      display: inline-flex;
+    }
+
+    .request-queue-notice__message {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .request-queue-notice__title,
+    .request-queue-notice__body {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .request-queue-notice__title {
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      line-height: 1.35;
+    }
+
+    .request-queue-notice__body {
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(var(--text-color-rgb), 0.74);
+    }
+
+    @keyframes requestQueueSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .stage {
+        padding: 24px 16px 150px;
+      }
+
+      .panel {
+        padding: 22px 18px;
+        border-radius: 24px;
+      }
+
+      .controls {
+        gap: 10px;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .request-queue-notice {
+        right: 12px;
+        left: 12px;
+        bottom: 16px;
+        width: auto;
+        max-width: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="panel">
+      <div class="eyebrow">Wallos Remastered / Queue Notice Preview</div>
+      <h1>后端排队提示样式预览</h1>
+      <p class="description">
+        这是我刚才做进项目里的那套提示风格的独立 HTML 预览版。你可以点击下面按钮，看看
+        “后台操作排队处理中” 和 “处理完成” 的实际视觉效果、进场方式和信息层级。
+      </p>
+
+      <div class="controls">
+        <button class="primary" id="showPendingButton">显示排队中</button>
+        <button class="success" id="showSuccessButton">显示处理完成</button>
+        <button class="secondary" id="simulateButton">模拟 3 个请求排队</button>
+        <button class="secondary" id="hideButton">隐藏提示</button>
+      </div>
+
+      <div class="notes">
+        <div class="note-card">
+          <strong>排队态</strong>
+          右下角滑入，旋转指示器持续转动，用来说明写库请求还在等待或处理中。
+        </div>
+        <div class="note-card">
+          <strong>完成态</strong>
+          所有排队请求完成后，提示切换成绿色完成状态，再短暂停留后自动消失。
+        </div>
+        <div class="note-card">
+          <strong>真实项目里</strong>
+          目前默认监听非 GET 的写操作请求，超过约 650ms 才出现，不会对瞬时请求乱闪。
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="request-queue-notice" id="requestQueueNotice" role="status" aria-live="polite">
+    <div class="request-queue-notice__badge" aria-hidden="true">
+      <span class="request-queue-notice__spinner"></span>
+      <span class="request-queue-notice__check">✓</span>
+    </div>
+    <div class="request-queue-notice__message">
+      <span class="request-queue-notice__title">后台操作排队处理中</span>
+      <span class="request-queue-notice__body">服务器写入较忙，当前请求正在排队处理，请稍候。</span>
+    </div>
+  </div>
+
+  <script>
+    const notice = document.getElementById("requestQueueNotice");
+    const titleNode = notice.querySelector(".request-queue-notice__title");
+    const bodyNode = notice.querySelector(".request-queue-notice__body");
+    let hideTimer = null;
+
+    function clearHideTimer() {
+      if (hideTimer) {
+        window.clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+    }
+
+    function showPending(count) {
+      clearHideTimer();
+      notice.classList.add("active", "is-pending");
+      notice.classList.remove("is-success");
+      titleNode.textContent = "后台操作排队处理中";
+      bodyNode.textContent = count > 1
+        ? `当前仍有 ${count} 个写入请求等待完成。`
+        : "服务器写入较忙，当前请求正在排队处理，请稍候。";
+    }
+
+    function showSuccess() {
+      clearHideTimer();
+      notice.classList.add("active", "is-success");
+      notice.classList.remove("is-pending");
+      titleNode.textContent = "处理完成";
+      bodyNode.textContent = "排队中的后台写入已经处理完成。";
+      hideTimer = window.setTimeout(hideNotice, 1500);
+    }
+
+    function hideNotice() {
+      clearHideTimer();
+      notice.classList.remove("active", "is-pending", "is-success");
+    }
+
+    function simulateQueue() {
+      showPending(3);
+      window.setTimeout(() => showPending(2), 900);
+      window.setTimeout(() => showPending(1), 1700);
+      window.setTimeout(showSuccess, 2600);
+    }
+
+    document.getElementById("showPendingButton").addEventListener("click", () => showPending(1));
+    document.getElementById("showSuccessButton").addEventListener("click", showSuccess);
+    document.getElementById("simulateButton").addEventListener("click", simulateQueue);
+    document.getElementById("hideButton").addEventListener("click", hideNotice);
+
+    window.setTimeout(() => showPending(1), 380);
+  </script>
+</body>
+</html>
