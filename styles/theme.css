@@ -31,6 +31,19 @@
     --input-disabled-border-color: #F5F5F5;
     --input-disabled-border-color-rgb: 245, 245, 245;
     --negative-box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    --feedback-surface-rgb: 255, 255, 255;
+    --feedback-surface-alpha-start: 0.98;
+    --feedback-surface-alpha-end: 0.92;
+    --feedback-border-rgb: 238, 238, 238;
+    --feedback-border-alpha: 0.92;
+    --feedback-title-color-rgb: 51, 51, 51;
+    --feedback-body-color-rgb: 102, 102, 102;
+    --feedback-close-color-rgb: 102, 102, 102;
+    --feedback-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+    --overlay-backdrop-rgb: 32, 32, 32;
+    --overlay-backdrop-alpha: 0.22;
+    --code-chip-background-rgb: 32, 32, 32;
+    --code-chip-background-alpha: 0.08;
 }
 
 svg .main-color {
@@ -42,5 +55,5 @@ svg .accent-color {
 }
 
 svg .text-color {
-    fill: #202020;
+    fill: var(--text-color);
 }

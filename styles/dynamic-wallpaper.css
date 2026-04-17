@@ -3,6 +3,19 @@ body.dynamic-wallpaper-enabled {
     position: relative;
     --wallos-dynamic-text-color: #f3f6fb;
     --wallos-dynamic-text-color-rgb: 243, 246, 251;
+    --feedback-surface-rgb: 16, 22, 30;
+    --feedback-surface-alpha-start: 0.92;
+    --feedback-surface-alpha-end: 0.82;
+    --feedback-border-rgb: 255, 255, 255;
+    --feedback-border-alpha: 0.24;
+    --feedback-title-color-rgb: var(--wallos-dynamic-text-color-rgb);
+    --feedback-body-color-rgb: var(--wallos-dynamic-text-color-rgb);
+    --feedback-close-color-rgb: var(--wallos-dynamic-text-color-rgb);
+    --feedback-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+    --overlay-backdrop-rgb: 10, 12, 20;
+    --overlay-backdrop-alpha: 0.52;
+    --code-chip-background-rgb: 255, 255, 255;
+    --code-chip-background-alpha: 0.08;
 }
 
 body.dynamic-wallpaper-enabled .wallos-decorative-background {
@@ -41,6 +54,17 @@ body.dynamic-wallpaper-enabled > .mobile-nav {
 body.dynamic-wallpaper-enabled > .toast {
     position: fixed;
     z-index: 2000;
+}
+
+body.dynamic-wallpaper-enabled > .request-queue-notice {
+    position: fixed;
+    z-index: 2000;
+}
+
+body.dark.dynamic-wallpaper-enabled {
+    --feedback-surface-rgb: 14, 18, 24;
+    --feedback-surface-alpha-start: 0.94;
+    --feedback-surface-alpha-end: 0.88;
 }
 
 body.dynamic-wallpaper-enabled .dropdown-content {
