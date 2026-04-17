@@ -235,7 +235,9 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                         <div class="totp-popup" id="totp-popup">
                             <header>
                                 <h3><?= translate('enable_two_factor_authentication', $i18n) ?></h3>
-                                <span class="fa-solid fa-xmark close-form" onclick="closeTotpPopup()"></span>
+                                <button type="button" class="close-form" onclick="closeTotpPopup()" aria-label="<?= translate('close', $i18n) ?>">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
                             </header>
                             <div class="totp-popup-content">
                                 <div class="totp-setup" id="totp-setup">
@@ -280,7 +282,9 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                         <div class="totp-popup" id="totp-disable-popup">
                             <header>
                                 <h3><?= translate('disable_two_factor_authentication', $i18n) ?></h3>
-                                <span class="fa-solid fa-xmark close-form" onclick="closeTotpDisablePopup()"></span>
+                                <button type="button" class="close-form" onclick="closeTotpDisablePopup()" aria-label="<?= translate('close', $i18n) ?>">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
                             </header>
                             <div class="totp-popup-content">
                                 <div class="form-group-inline">

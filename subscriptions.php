@@ -748,7 +748,9 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       <?= translate('subscription_recycle_bin', $i18n) ?>
       <span class="section-count-badge"><?= count($trashedSubscriptions) ?></span>
     </h3>
-    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-recycle-bin"></span>
+    <button type="button" class="close-form" data-subscription-action="close-recycle-bin" aria-label="<?= translate('close', $i18n) ?>">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   </header>
   <div class="subscription-recycle-bin-modal-body">
     <?php if (!empty($trashedSubscriptions)): ?>
@@ -797,7 +799,9 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 <section class="subscription-modal subscription-pages-manager-modal" id="subscription-pages-manager-modal" data-page-ui-hide-target>
   <header>
     <h3><?= wallos_translate_with_fallback('subscription_pages', 'Subscription Pages', $i18n) ?></h3>
-    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-pages-manager"></span>
+    <button type="button" class="close-form" data-subscription-action="close-pages-manager" aria-label="<?= translate('close', $i18n) ?>">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   </header>
   <div class="subscription-pages-manager-toolbar">
     <div class="subscription-pages-manager-create">
@@ -862,7 +866,9 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 <section class="subscription-form" id="subscription-form" data-page-ui-hide-target>
   <header>
     <h3 id="form-title"><?= translate('add_subscription', $i18n) ?></h3>
-    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-add-subscription"></span>
+    <button type="button" class="close-form" data-subscription-action="close-add-subscription" aria-label="<?= translate('close', $i18n) ?>">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   </header>
   <form action="endpoints/subscription/add.php" method="post" id="subs-form" enctype="multipart/form-data"
     data-effective-user-group="<?= $effectiveUserGroup ?>"
@@ -1255,7 +1261,9 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 <section class="subscription-modal subscription-payment-modal" id="subscription-payment-modal" data-page-ui-hide-target>
   <header>
     <h3 id="subscription-payment-modal-title"><?= translate('subscription_record_payment', $i18n) ?></h3>
-    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-payment-modal"></span>
+    <button type="button" class="close-form" data-subscription-action="close-payment-modal" aria-label="<?= translate('close', $i18n) ?>">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   </header>
   <form id="subscription-payment-form">
     <input type="hidden" id="subscription-payment-subscription-id" name="subscription_id" value="">
@@ -1320,7 +1328,9 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 <section class="subscription-modal subscription-payment-history-modal" id="subscription-payment-history-modal" data-page-ui-hide-target>
   <header>
     <h3 id="subscription-payment-history-modal-title"><?= translate('subscription_payment_history', $i18n) ?></h3>
-    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-payment-history-modal"></span>
+    <button type="button" class="close-form" data-subscription-action="close-payment-history-modal" aria-label="<?= translate('close', $i18n) ?>">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   </header>
   <div class="subscription-payment-history-toolbar">
     <div class="subscription-payment-history-controls">
@@ -1380,7 +1390,9 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
         </button>
       </div>
     </div>
-    <span class="fa-solid fa-xmark close-form" data-subscription-action="close-image-viewer"></span>
+    <button type="button" class="close-form" data-subscription-action="close-image-viewer" aria-label="<?= translate('close', $i18n) ?>">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   </header>
   <div class="subscription-image-viewer-content">
     <img src="" alt="<?= translate('subscription_image_viewer_title', $i18n) ?>" id="subscription-image-viewer-preview">
