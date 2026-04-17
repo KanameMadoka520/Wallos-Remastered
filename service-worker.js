@@ -1,6 +1,6 @@
-const STATIC_CACHE = 'static-cache-v1';
-const PAGES_CACHE = 'pages-cache-v1';
-const LOGOS_CACHE = 'logos-cache-v1';
+const STATIC_CACHE = 'static-cache-v2';
+const PAGES_CACHE = 'pages-cache-v2';
+const LOGOS_CACHE = 'logos-cache-v2';
 
 const staticAssets = [
     'manifest.json',
@@ -21,8 +21,15 @@ const staticAssets = [
     'webfonts/fa-regular-400.woff2',
     'webfonts/fa-regular-400.ttf',
     'scripts/common.js',
+    'scripts/api.js',
     'scripts/dashboard.js',
     'scripts/subscriptions.js',
+    'scripts/subscription-pages.js',
+    'scripts/subscription-preferences.js',
+    'scripts/subscription-media.js',
+    'scripts/subscription-image-viewer.js',
+    'scripts/subscription-price-rules.js',
+    'scripts/subscription-payments.js',
     'scripts/stats.js',
     'scripts/settings.js',
     'scripts/theme.js',
@@ -30,7 +37,16 @@ const staticAssets = [
     'scripts/registration.js',
     'scripts/login.js',
     'scripts/admin.js',
+    'scripts/admin-backups.js',
+    'scripts/admin-access-logs.js',
+    'scripts/admin-rate-limit.js',
+    'scripts/admin-users.js',
+    'scripts/admin-registration.js',
     'scripts/calendar.js',
+    'scripts/page-transitions.js',
+    'scripts/decorative-background.js',
+    'scripts/dynamic-wallpaper.js',
+    'scripts/metric-explanations.js',
     'scripts/i18n/cs.js',
     'scripts/i18n/da.js',
     'scripts/i18n/de.js',
