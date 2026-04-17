@@ -3718,9 +3718,16 @@ button.dark-theme-button i {
   background-color: rgba(var(--main-color-rgb), 0.06);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
   font-size: 16px;
+  line-height: 1;
   cursor: pointer;
   color: rgba(var(--text-color-rgb), 0.72);
   transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .close-form:hover {
@@ -3734,6 +3741,14 @@ button.dark-theme-button i {
 .rtl .close-form {
   right: auto;
   left: 14px;
+}
+
+.close-form > i {
+  display: block;
+  font-size: 14px;
+  line-height: 1;
+  margin: 0;
+  pointer-events: none;
 }
 
 .sort-container {
