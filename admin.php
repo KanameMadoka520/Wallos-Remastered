@@ -175,6 +175,9 @@ $latestBackup = $recentBackups[0] ?? null;
 $rateLimitPresets = wallos_get_rate_limit_presets($db);
 $rateLimitPresetsJson = json_encode($rateLimitPresets, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $backupProgressLabels = wallos_get_backup_progress_labels($lang);
+$adminBackupsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-backups.js');
+$adminAccessLogsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-access-logs.js');
+$adminRateLimitJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-rate-limit.js');
 require_once 'includes/page_navigation.php';
 
 $pageSections = [
@@ -915,15 +918,15 @@ $pageSections = [
                 ?>
             </select>
         </div>
-        <div class="buttons">
-            <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('apply_preset', $i18n) ?>"
-                onClick="applyRateLimitPresetButton()" />
-            <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('save_preset', $i18n) ?>"
-                onClick="saveRateLimitPresetButton()" />
-            <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('add_preset', $i18n) ?>"
-                onClick="addRateLimitPresetButton()" />
-            <input type="button" class="warning-button thin mobile-grow" value="<?= translate('delete_preset', $i18n) ?>"
-                onClick="deleteRateLimitPresetButton()" />
+            <div class="buttons">
+                <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('apply_preset', $i18n) ?>"
+                    onClick="window.WallosAdminRateLimit?.applyRateLimitPresetButton?.()" />
+                <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('save_preset', $i18n) ?>"
+                    onClick="window.WallosAdminRateLimit?.saveRateLimitPresetButton?.()" />
+                <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('add_preset', $i18n) ?>"
+                    onClick="window.WallosAdminRateLimit?.addRateLimitPresetButton?.()" />
+                <input type="button" class="warning-button thin mobile-grow" value="<?= translate('delete_preset', $i18n) ?>"
+                    onClick="window.WallosAdminRateLimit?.deleteRateLimitPresetButton?.()" />
         </div>
         <div class="form-group-inline">
             <input type="checkbox" id="advancedRateLimitEnabled" <?= !empty($settings['advanced_rate_limit_enabled']) ? 'checked' : '' ?> />
@@ -998,7 +1001,7 @@ $pageSections = [
         
         <div class="buttons">
             <input type="submit" class="thin mobile-grow" value="<?= translate('save', $i18n) ?>"
-                id="saveSecuritySettingsButton" onClick="saveSecuritySettingsButton()" />
+                id="saveSecuritySettingsButton" onClick="window.WallosAdminRateLimit?.saveSecuritySettingsButton?.()" />
         </div>
         
         <div class="settings-notes">
@@ -1035,7 +1038,7 @@ $pageSections = [
         </div>
         <div class="buttons">
             <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('open_security_anomaly_browser', $i18n) ?>"
-                onClick="openSecurityAnomaliesModal()" />
+                onClick="window.WallosAdminAccessLogs?.openSecurityAnomaliesModal?.()" />
         </div>
     </div>
 </section>
@@ -1134,7 +1137,7 @@ $pageSections = [
             </div>
             <div class="buttons">
                 <input type="button" class="button thin mobile-grow" value="<?= translate('access_logs_open_modal', $i18n) ?>"
-                    onClick="openAccessLogsModal()" />
+                    onClick="window.WallosAdminAccessLogs?.openAccessLogsModal?.()" />
             </div>
         </div>
     </section>
@@ -1268,16 +1271,16 @@ $pageSections = [
             </div>
             <div class="buttons backup-action-row">
                 <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('save', $i18n) ?>"
-                    id="saveBackupSettingsButton" onClick="saveBackupSettingsButton()" />
+                    id="saveBackupSettingsButton" onClick="window.WallosAdminBackups?.saveBackupSettingsButton?.()" />
                 <input type="button" class="button thin mobile-grow" value="<?= translate('backup', $i18n) ?>" id="backupDB"
-                    onClick="backupDB()" />
+                    onClick="window.WallosAdminBackups?.backupDB?.()" />
                 <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('cleanup_old_backups', $i18n) ?>"
                     id="cleanupOldBackupsButton"
                     data-confirm-message="<?= htmlspecialchars(translate('cleanup_old_backups_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>"
-                    onClick="cleanupOldBackupsButton(this)" />
+                    onClick="window.WallosAdminBackups?.cleanupOldBackupsButton?.(this)" />
                 <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('restore', $i18n) ?>"
-                    id="restoreDB" onClick="openRestoreDBFileSelect()" />
-                <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="restoreDB()"
+                    id="restoreDB" onClick="window.WallosAdminBackups?.openRestoreDBFileSelect?.()" />
+                <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="window.WallosAdminBackups?.restoreDB?.()"
                     accept=".zip">
             </div>
             <div class="backup-progress-card is-hidden is-pending" id="backupProgressCard"
@@ -1325,14 +1328,14 @@ $pageSections = [
                                     <span><?= translate('download_backup', $i18n) ?></span>
                                 </a>
                                 <button type="button" class="secondary-button thin backup-verify-button"
-                                    onClick="verifyBackup('<?= htmlspecialchars($backup['name'], ENT_QUOTES, 'UTF-8') ?>', this)">
+                                    onClick="window.WallosAdminBackups?.verifyBackup?.('<?= htmlspecialchars($backup['name'], ENT_QUOTES, 'UTF-8') ?>', this)">
                                     <i class="fa-solid fa-shield-halved"></i>
                                     <span><?= translate('verify_backup', $i18n) ?></span>
                                 </button>
                                 <button type="button" class="thin backup-restore-button"
                                     data-confirm-message="<?= htmlspecialchars(translate('restore_selected_backup_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>"
                                     data-confirm-second-message="<?= htmlspecialchars(translate('restore_selected_backup_confirm_second', $i18n), ENT_QUOTES, 'UTF-8') ?>"
-                                    onClick="restoreBackup('<?= htmlspecialchars($backup['name'], ENT_QUOTES, 'UTF-8') ?>', this)">
+                                    onClick="window.WallosAdminBackups?.restoreBackup?.('<?= htmlspecialchars($backup['name'], ENT_QUOTES, 'UTF-8') ?>', this)">
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                     <span><?= translate('restore_selected_backup', $i18n) ?></span>
                                 </button>
@@ -1381,6 +1384,9 @@ $pageSections = [
         </div>
     </div>
 </section>
+<script src="scripts/admin-backups.js?<?= $adminBackupsJsVersion ?>"></script>
+<script src="scripts/admin-access-logs.js?<?= $adminAccessLogsJsVersion ?>"></script>
+<script src="scripts/admin-rate-limit.js?<?= $adminRateLimitJsVersion ?>"></script>
 <script src="scripts/admin.js?<?= $version ?>"></script>
 
 <?php
