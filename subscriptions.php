@@ -245,23 +245,26 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
   }
 
   .subscription-page-loading-overlay {
-    position: absolute;
-    inset: 0;
+    position: fixed;
+    top: max(18px, env(safe-area-inset-top));
+    left: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px;
-    border-radius: 20px;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    transform: translateX(-50%) translateY(-8px);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.18s ease, visibility 0.18s ease;
-    z-index: 25;
+    transition: opacity 0.18s ease, visibility 0.18s ease, transform 0.18s ease;
+    z-index: 12020;
   }
 
   .subscription-page-loading-overlay.is-visible {
     opacity: 1;
     visibility: visible;
+    transform: translateX(-50%) translateY(0);
   }
 
   .subscription-page-loading-card {
@@ -275,6 +278,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     color: #fff;
     box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18);
     font-weight: 600;
+    white-space: nowrap;
   }
 
   .subscription-page-loading-spinner {
@@ -299,6 +303,20 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     box-shadow:
       0 20px 40px rgba(0, 0, 0, 0.24),
       inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  @media (max-width: 768px) {
+    .subscription-page-loading-overlay {
+      top: max(12px, env(safe-area-inset-top));
+      max-width: calc(100vw - 20px);
+    }
+
+    .subscription-page-loading-card {
+      width: 100%;
+      justify-content: center;
+      padding: 12px 16px;
+      border-radius: 14px;
+    }
   }
 
   .subscription-page-toolbar {
