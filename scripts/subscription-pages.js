@@ -489,6 +489,11 @@
       fetchSubscriptionsHandler = options.fetchSubscriptions;
     }
 
+    const overlay = document.getElementById("subscription-page-loading-overlay");
+    if (overlay && overlay.parentElement !== document.body && document.body) {
+      document.body.appendChild(overlay);
+    }
+
     currentFilter = normalizeFilter(options.state?.currentFilter ?? window.subscriptionPageState?.currentFilter ?? "all");
     applyPayload(options.state ?? window.subscriptionPageState ?? {}, {
       selectedValue: options.selectedValue ?? getDefaultSelection(),
