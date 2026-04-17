@@ -24,6 +24,7 @@
   };
   let managerSortable = null;
   let fetchSubscriptionsHandler = null;
+  let loadingRequestCount = 0;
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -93,6 +94,21 @@
     }
 
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  function setPageLoadingState(loading) {
+    const overlay = document.getElementById("subscription-page-loading-overlay");
+    const tabsContainer = document.getElementById("subscription-page-tabs");
+    if (!overlay) {
+      return;
+    }
+
+    overlay.classList.toggle("is-visible", loading);
+    overlay.setAttribute("aria-hidden", loading ? "false" : "true");
+
+    if (tabsContainer) {
+      tabsContainer.setAttribute("aria-busy", loading ? "true" : "false");
+    }
   }
 
   function renderTabs() {
@@ -363,9 +379,19 @@
     }
 
     if (options.fetch !== false) {
-      return runFetchSubscriptions("subscription-page").catch(() => {
-        showErrorMessage(translate("error"));
-      });
+      loadingRequestCount += 1;
+      setPageLoadingState(true);
+
+      return runFetchSubscriptions("subscription-page")
+        .catch(() => {
+          showErrorMessage(translate("error"));
+        })
+        .finally(() => {
+          loadingRequestCount = Math.max(0, loadingRequestCount - 1);
+          if (loadingRequestCount === 0) {
+            setPageLoadingState(false);
+          }
+        });
     }
 
     return Promise.resolve(null);

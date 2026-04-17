@@ -240,6 +240,75 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     content: '<?= translate('upload_logo', $i18n) ?>';
   }
 
+  .subscriptions-page-layout {
+    position: relative;
+  }
+
+  .subscription-page-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.56);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, visibility 0.18s ease;
+    z-index: 25;
+  }
+
+  .subscription-page-loading-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .subscription-page-loading-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(var(--main-color-rgb), 0.16);
+    background: rgba(18, 24, 33, 0.92);
+    color: #fff;
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18);
+    font-weight: 600;
+  }
+
+  .subscription-page-loading-spinner {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    border-top-color: rgba(var(--main-color-rgb), 0.96);
+    animation: subscription-page-loading-spin 0.72s linear infinite;
+    flex: 0 0 auto;
+  }
+
+  @keyframes subscription-page-loading-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  body.dynamic-wallpaper-enabled .subscription-page-loading-overlay {
+    background: rgba(6, 10, 18, 0.48);
+  }
+
+  body.dynamic-wallpaper-enabled .subscription-page-loading-card {
+    background: rgba(10, 15, 24, 0.92);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
   .subscription-page-toolbar {
     display: flex;
     align-items: center;
@@ -602,6 +671,12 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       </div>
     </div>
   </header>
+  <div class="subscription-page-loading-overlay" id="subscription-page-loading-overlay" aria-hidden="true">
+    <div class="subscription-page-loading-card">
+      <span class="subscription-page-loading-spinner" aria-hidden="true"></span>
+      <span>正在切换分页...</span>
+    </div>
+  </div>
   <div class="subscriptions subscription-columns subscription-columns-<?= $subscriptionDisplayColumns ?><?= $subscriptionDisplayColumns > 1 ? ' subscription-columns-multi' : '' ?><?= empty($subscriptionValueVisibility['metrics']) ? ' hide-cost-value-metrics' : '' ?><?= empty($subscriptionValueVisibility['payment_records']) ? ' hide-payment-records' : '' ?>" id="subscriptions">
     <?php
     $formatter = new IntlDateFormatter(
