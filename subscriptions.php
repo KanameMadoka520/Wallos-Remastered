@@ -252,9 +252,6 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     justify-content: center;
     padding: 24px;
     border-radius: 20px;
-    background: rgba(255, 255, 255, 0.56);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -265,7 +262,6 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
   .subscription-page-loading-overlay.is-visible {
     opacity: 1;
     visibility: visible;
-    pointer-events: auto;
   }
 
   .subscription-page-loading-card {
@@ -295,10 +291,6 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     to {
       transform: rotate(360deg);
     }
-  }
-
-  body.dynamic-wallpaper-enabled .subscription-page-loading-overlay {
-    background: rgba(6, 10, 18, 0.48);
   }
 
   body.dynamic-wallpaper-enabled .subscription-page-loading-card {
