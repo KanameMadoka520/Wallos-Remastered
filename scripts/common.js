@@ -5,6 +5,245 @@ const toastState = {
   error: { hideTimer: null, progressTimer: null },
   success: { hideTimer: null, progressTimer: null },
 };
+const requestQueueNoticeState = {
+  nextRequestId: 0,
+  pendingCount: 0,
+  hideTimer: null,
+};
+const REQUEST_QUEUE_NOTICE_DELAY = 650;
+const REQUEST_QUEUE_SUCCESS_HIDE_DELAY = 1400;
+const REQUEST_QUEUE_TRACKED_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function getPreferredUiLanguage() {
+  const languageCookie = getCookie("language");
+  if (languageCookie) {
+    return String(languageCookie).toLowerCase();
+  }
+
+  return String(navigator.language || "").toLowerCase();
+}
+
+function translateWithFallback(key, fallback, localizedFallbacks = null) {
+  if (typeof translate === "function") {
+    try {
+      const translated = translate(key);
+      if (translated && translated !== "[Translation Missing]") {
+        return translated;
+      }
+    } catch (error) {
+      // Fall back to the provided copy below.
+    }
+  }
+
+  if (localizedFallbacks && typeof localizedFallbacks === "object") {
+    const uiLanguage = getPreferredUiLanguage();
+    if (uiLanguage.startsWith("zh_tw") || uiLanguage.startsWith("zh-hk")) {
+      return localizedFallbacks.zh_tw || localizedFallbacks.zh_cn || localizedFallbacks.en || fallback;
+    }
+
+    if (uiLanguage.startsWith("zh")) {
+      return localizedFallbacks.zh_cn || localizedFallbacks.zh_tw || localizedFallbacks.en || fallback;
+    }
+
+    return localizedFallbacks.en || fallback;
+  }
+
+  return fallback;
+}
+
+function getRequestQueueNoticeMessages(status, pendingCount = 0) {
+  if (status === "success") {
+    return {
+      title: translateWithFallback("request_queue_success_title", "处理完成", {
+        en: "Processing complete",
+        zh_cn: "处理完成",
+        zh_tw: "處理完成",
+      }),
+      body: translateWithFallback("request_queue_success_body", "排队中的后台写入已经处理完成。", {
+        en: "Queued backend writes have finished.",
+        zh_cn: "排队中的后台写入已经处理完成。",
+        zh_tw: "排隊中的後台寫入已處理完成。",
+      }),
+    };
+  }
+
+  const multipleFallback = `当前仍有 ${pendingCount} 个写入请求等待完成。`;
+  const body = pendingCount > 1
+    ? translateWithFallback("request_queue_pending_body_multiple", multipleFallback, {
+      en: `%1$d write requests are still waiting to finish.`,
+      zh_cn: "当前仍有 %1$d 个写入请求等待完成。",
+      zh_tw: "目前仍有 %1$d 個寫入請求等待完成。",
+    }).replace("%1$d", String(pendingCount))
+    : translateWithFallback("request_queue_pending_body", "后台写入较忙，正在排队处理，请稍候。", {
+      en: "The server is busy writing data. Your request is queued and will finish shortly.",
+      zh_cn: "服务器写入较忙，当前请求正在排队处理，请稍候。",
+      zh_tw: "伺服器寫入較忙，目前請求正在排隊處理，請稍候。",
+    });
+
+  return {
+    title: translateWithFallback("request_queue_pending_title", "后台操作排队处理中", {
+      en: "Backend queue in progress",
+      zh_cn: "后台操作排队处理中",
+      zh_tw: "後台操作排隊處理中",
+    }),
+    body,
+  };
+}
+
+function getRequestQueueNoticeElement() {
+  if (!document.body) {
+    return null;
+  }
+
+  let notice = document.getElementById("requestQueueNotice");
+  if (notice) {
+    return notice;
+  }
+
+  notice = document.createElement("div");
+  notice.id = "requestQueueNotice";
+  notice.className = "request-queue-notice";
+  notice.setAttribute("role", "status");
+  notice.setAttribute("aria-live", "polite");
+  notice.innerHTML = `
+    <div class="request-queue-notice__badge" aria-hidden="true">
+      <span class="request-queue-notice__spinner"></span>
+      <i class="fa-solid fa-check request-queue-notice__check"></i>
+    </div>
+    <div class="request-queue-notice__message">
+      <span class="request-queue-notice__title"></span>
+      <span class="request-queue-notice__body"></span>
+    </div>
+  `;
+
+  document.body.appendChild(notice);
+  return notice;
+}
+
+function clearRequestQueueNoticeHideTimer() {
+  if (requestQueueNoticeState.hideTimer) {
+    window.clearTimeout(requestQueueNoticeState.hideTimer);
+    requestQueueNoticeState.hideTimer = null;
+  }
+}
+
+function hideRequestQueueNotice() {
+  const notice = document.getElementById("requestQueueNotice");
+  clearRequestQueueNoticeHideTimer();
+
+  if (!notice) {
+    return;
+  }
+
+  notice.classList.remove("active", "is-pending", "is-success");
+}
+
+function renderRequestQueueNotice(status, pendingCount = 0) {
+  const notice = getRequestQueueNoticeElement();
+  if (!notice) {
+    return;
+  }
+
+  const titleNode = notice.querySelector(".request-queue-notice__title");
+  const bodyNode = notice.querySelector(".request-queue-notice__body");
+  const copy = getRequestQueueNoticeMessages(status, pendingCount);
+
+  if (!titleNode || !bodyNode) {
+    return;
+  }
+
+  clearRequestQueueNoticeHideTimer();
+  titleNode.textContent = copy.title;
+  bodyNode.textContent = copy.body;
+  notice.classList.add("active");
+  notice.classList.toggle("is-pending", status === "pending");
+  notice.classList.toggle("is-success", status === "success");
+}
+
+function shouldTrackRequestQueueNotice(method, options = {}) {
+  if (options.queueNotice === false) {
+    return false;
+  }
+
+  if (options.queueNotice === true) {
+    return true;
+  }
+
+  return REQUEST_QUEUE_TRACKED_METHODS.has(String(method || "GET").toUpperCase());
+}
+
+function startRequestQueueTracking(method, options = {}) {
+  if (!shouldTrackRequestQueueNotice(method, options)) {
+    return null;
+  }
+
+  const delay = Number.isFinite(Number(options.queueNoticeDelay))
+    ? Math.max(0, Number(options.queueNoticeDelay))
+    : REQUEST_QUEUE_NOTICE_DELAY;
+  const tracker = {
+    id: ++requestQueueNoticeState.nextRequestId,
+    visible: false,
+    settled: false,
+    timerId: null,
+  };
+
+  tracker.timerId = window.setTimeout(() => {
+    if (tracker.settled) {
+      return;
+    }
+
+    tracker.visible = true;
+    requestQueueNoticeState.pendingCount += 1;
+    renderRequestQueueNotice("pending", requestQueueNoticeState.pendingCount);
+  }, delay);
+
+  return tracker;
+}
+
+function finalizeRequestQueueTracking(tracker, succeeded) {
+  if (!tracker || tracker.settled) {
+    return;
+  }
+
+  tracker.settled = true;
+  if (tracker.timerId) {
+    window.clearTimeout(tracker.timerId);
+    tracker.timerId = null;
+  }
+
+  if (!tracker.visible) {
+    return;
+  }
+
+  requestQueueNoticeState.pendingCount = Math.max(0, requestQueueNoticeState.pendingCount - 1);
+
+  if (requestQueueNoticeState.pendingCount > 0) {
+    renderRequestQueueNotice("pending", requestQueueNoticeState.pendingCount);
+    return;
+  }
+
+  if (!succeeded) {
+    hideRequestQueueNotice();
+    return;
+  }
+
+  renderRequestQueueNotice("success", 0);
+  requestQueueNoticeState.hideTimer = window.setTimeout(() => {
+    hideRequestQueueNotice();
+  }, REQUEST_QUEUE_SUCCESS_HIDE_DELAY);
+}
+
+function didWallosRequestSucceed(response, data) {
+  if (!response || !response.ok) {
+    return false;
+  }
+
+  if (data && typeof data === "object" && Object.prototype.hasOwnProperty.call(data, "success")) {
+    return Boolean(data.success);
+  }
+
+  return true;
+}
 
 function toggleDropdown() {
   const dropdown = document.querySelector('.dropdown');
@@ -197,50 +436,60 @@ async function wallosRequest(url, options = {}) {
     fallbackErrorMessage = null,
     allowEmptyJsonResponse = false,
   } = options;
+  const normalizedMethod = String(method || "GET").toUpperCase();
+  const requestQueueTracker = startRequestQueueTracking(normalizedMethod, options);
 
-  const response = await fetch(url, {
-    method,
-    headers: buildWallosRequestHeaders({
-      headers,
-      contentType,
-      includeCsrf,
-    }),
-    body,
-    credentials,
-  });
+  try {
+    const response = await fetch(url, {
+      method: normalizedMethod,
+      headers: buildWallosRequestHeaders({
+        headers,
+        contentType,
+        includeCsrf,
+      }),
+      body,
+      credentials,
+    });
 
-  let data = null;
+    let data = null;
 
-  if (responseType === "json") {
-    const rawBody = await response.text();
-    if (rawBody.trim() === "") {
-      if (allowEmptyJsonResponse) {
-        data = null;
+    if (responseType === "json") {
+      const rawBody = await response.text();
+      if (rawBody.trim() === "") {
+        if (allowEmptyJsonResponse) {
+          data = null;
+        } else {
+          throw new Error(fallbackErrorMessage || translate("unknown_error"));
+        }
       } else {
-        throw new Error(fallbackErrorMessage || translate("unknown_error"));
+        try {
+          data = JSON.parse(rawBody);
+        } catch (error) {
+          throw new Error(fallbackErrorMessage || translate("unknown_error"));
+        }
       }
-    } else {
-      try {
-        data = JSON.parse(rawBody);
-      } catch (error) {
-        throw new Error(fallbackErrorMessage || translate("unknown_error"));
-      }
+    } else if (responseType === "text") {
+      data = await response.text();
+    } else if (responseType === "blob") {
+      data = await response.blob();
     }
-  } else if (responseType === "text") {
-    data = await response.text();
-  } else if (responseType === "blob") {
-    data = await response.blob();
-  }
 
-  if (requireOk && !response.ok) {
-    throw new Error(
-      data?.message
-      || fallbackErrorMessage
-      || translate("network_response_error")
-    );
-  }
+    const requestSucceeded = didWallosRequestSucceed(response, data);
+    finalizeRequestQueueTracking(requestQueueTracker, requestSucceeded);
 
-  return { response, data };
+    if (requireOk && !response.ok) {
+      throw new Error(
+        data?.message
+        || fallbackErrorMessage
+        || translate("network_response_error")
+      );
+    }
+
+    return { response, data };
+  } catch (error) {
+    finalizeRequestQueueTracking(requestQueueTracker, false);
+    throw error;
+  }
 }
 
 async function wallosRequestJson(url, options = {}) {
