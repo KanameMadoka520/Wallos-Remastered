@@ -1,4 +1,4 @@
-<div class="toast" id="errorToast">
+<div class="toast public-toast public-toast-error" id="errorToast" role="alert" aria-live="assertive">
   <div class="toast-content">
     <i class="fas fa-solid fa-x toast-icon error"></i>
     <div class="message">
@@ -10,7 +10,7 @@
   <div class="progress error"></div>
 </div>
 
-<div class="toast" id="successToast">
+<div class="toast public-toast public-toast-success" id="successToast" role="status" aria-live="polite">
   <div class="toast-content">
     <i class="fas fa-solid fa-check toast-icon success"></i>
     <div class="message">

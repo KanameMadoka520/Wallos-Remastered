@@ -64,9 +64,9 @@ body.decorative-background-disabled .wallos-decorative-background {
 
 .wallos-bg-noise {
     background-image:
-        radial-gradient(circle at 20% 24%, rgba(201, 74, 42, 0.08) 0 1px, transparent 1px),
-        radial-gradient(circle at 72% 58%, rgba(0, 123, 255, 0.05) 0 1.2px, transparent 1.2px),
-        radial-gradient(circle at 32% 82%, rgba(26, 26, 26, 0.05) 0 0.9px, transparent 0.9px);
+        radial-gradient(circle at 20% 24%, rgba(var(--error-color-rgb), 0.08) 0 1px, transparent 1px),
+        radial-gradient(circle at 72% 58%, rgba(var(--accent-color-rgb), 0.05) 0 1.2px, transparent 1.2px),
+        radial-gradient(circle at 32% 82%, rgba(var(--text-color-rgb), 0.05) 0 0.9px, transparent 0.9px);
     background-size: 120px 120px, 160px 160px, 110px 110px;
     opacity: 0.22;
     z-index: 1;
@@ -153,14 +153,14 @@ body.decorative-background-disabled .wallos-decorative-background {
     left: 26%;
     width: 180px;
     height: 180px;
-    border-color: rgba(201, 74, 42, 0.14);
+    border-color: rgba(var(--error-color-rgb), 0.14);
     animation-duration: 30s;
 }
 
 .wallos-bg-plate {
     border: 1px solid rgba(var(--text-color-rgb), 0.05);
     background: linear-gradient(135deg, rgba(var(--box-background-color-rgb), 0.14), rgba(var(--main-color-rgb), 0.03));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 0 rgba(var(--text-color-inverted-rgb), 0.14);
     z-index: 4;
 }
 
@@ -189,7 +189,7 @@ body.decorative-background-disabled .wallos-decorative-background {
     height: 86px;
     border-radius: 20px;
     transform: rotate(-18deg);
-    background: linear-gradient(135deg, rgba(201, 74, 42, 0.06), rgba(var(--box-background-color-rgb), 0.10));
+    background: linear-gradient(135deg, rgba(var(--error-color-rgb), 0.06), rgba(var(--box-background-color-rgb), 0.10));
 }
 
 .wallos-bg-scene {
@@ -244,17 +244,17 @@ body.decorative-background-disabled .wallos-decorative-background {
 }
 
 .wallos-bg-path-primary {
-    stroke: rgba(26, 26, 26, 0.10);
+    stroke: rgba(var(--text-color-rgb), 0.10);
     stroke-width: 1.1;
 }
 
 .wallos-bg-path-secondary {
-    stroke: rgba(201, 74, 42, 0.14);
+    stroke: rgba(var(--error-color-rgb), 0.14);
     stroke-width: 0.95;
 }
 
 .wallos-bg-anchor-dot {
-    fill: rgba(201, 74, 42, 0.18);
+    fill: rgba(var(--error-color-rgb), 0.18);
 }
 
 .wallos-bg-orbit-scene-core {
@@ -268,15 +268,15 @@ body.decorative-background-disabled .wallos-decorative-background {
 }
 
 .wallos-bg-orbit-track-a {
-    stroke: rgba(26, 26, 26, 0.12);
+    stroke: rgba(var(--text-color-rgb), 0.12);
 }
 
 .wallos-bg-orbit-track-b {
-    stroke: rgba(201, 74, 42, 0.12);
+    stroke: rgba(var(--error-color-rgb), 0.12);
 }
 
 .wallos-bg-orbit-track-c {
-    stroke: rgba(0, 123, 255, 0.10);
+    stroke: rgba(var(--accent-color-rgb), 0.10);
 }
 
 .wallos-bg-orbit-star-halo {
@@ -284,7 +284,7 @@ body.decorative-background-disabled .wallos-decorative-background {
 }
 
 .wallos-bg-orbit-star-core {
-    fill: rgba(255, 255, 255, 0.96);
+    fill: rgba(var(--text-color-inverted-rgb), 0.96);
 }
 
 .wallos-bg-orbit-planet {
@@ -304,26 +304,26 @@ body.decorative-background-disabled .wallos-decorative-background {
 }
 
 .wallos-bg-orbit-body {
-    fill: rgba(250, 249, 246, 0.96);
+    fill: rgba(var(--box-background-color-rgb), 0.96);
 }
 
 .wallos-bg-orbit-body-a {
-    stroke: rgba(26, 26, 26, 0.14);
+    stroke: rgba(var(--text-color-rgb), 0.14);
     stroke-width: 0.8;
 }
 
 .wallos-bg-orbit-body-b {
-    stroke: rgba(201, 74, 42, 0.16);
+    stroke: rgba(var(--error-color-rgb), 0.16);
     stroke-width: 0.8;
 }
 
 .wallos-bg-orbit-body-c {
-    stroke: rgba(0, 123, 255, 0.14);
+    stroke: rgba(var(--accent-color-rgb), 0.14);
     stroke-width: 0.8;
 }
 
 .wallos-bg-orbit-moon {
-    fill: rgba(255, 255, 255, 0.75);
+    fill: rgba(var(--text-color-inverted-rgb), 0.75);
 }
 
 .wallos-bg-blackhole-scene {
@@ -337,12 +337,12 @@ body.decorative-background-disabled .wallos-decorative-background {
 }
 
 .wallos-bg-blackhole-disk-outer {
-    stroke: rgba(201, 74, 42, 0.12);
+    stroke: rgba(var(--error-color-rgb), 0.12);
     stroke-width: 1.2;
 }
 
 .wallos-bg-blackhole-disk-inner {
-    stroke: rgba(26, 26, 26, 0.10);
+    stroke: rgba(var(--text-color-rgb), 0.10);
     stroke-width: 1;
 }
 
@@ -353,26 +353,26 @@ body.decorative-background-disabled .wallos-decorative-background {
 }
 
 .wallos-bg-blackhole-spiral-a {
-    stroke: rgba(201, 74, 42, 0.14);
+    stroke: rgba(var(--error-color-rgb), 0.14);
     stroke-width: 1.1;
     transform-origin: 180px 180px;
     animation: wallosBgSpiralRotate 18s linear infinite;
 }
 
 .wallos-bg-blackhole-spiral-b {
-    stroke: rgba(26, 26, 26, 0.12);
+    stroke: rgba(var(--text-color-rgb), 0.12);
     stroke-width: 0.9;
     transform-origin: 180px 180px;
     animation: wallosBgSpiralRotateReverse 26s linear infinite;
 }
 
 .wallos-bg-blackhole-core {
-    fill: rgba(8, 8, 12, 0.98);
+    fill: rgba(var(--overlay-backdrop-rgb), 0.98);
 }
 
 .wallos-bg-blackhole-ring {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.10);
+    stroke: rgba(var(--text-color-inverted-rgb), 0.10);
     stroke-width: 1.1;
 }
 
@@ -400,7 +400,7 @@ body.decorative-background-disabled .wallos-decorative-background {
     border-radius: 18px;
     border: 1px solid rgba(var(--text-color-rgb), 0.04);
     background: linear-gradient(135deg, rgba(var(--box-background-color-rgb), 0.08), rgba(var(--main-color-rgb), 0.02));
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 4px 14px rgba(var(--overlay-backdrop-rgb), 0.02);
     font-size: clamp(13px, 1.4vw, 20px);
     font-weight: 600;
     letter-spacing: 0.08em;

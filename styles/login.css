@@ -166,17 +166,18 @@ svg .text-color {
 .public-auth-inline-actions {
     display: flex;
     align-items: stretch;
+    flex-wrap: wrap;
     gap: 10px;
     margin: 16px 0 8px;
     width: 100%;
     max-width: 100%;
     justify-content: flex-start;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .public-page-language-switcher-inline {
-    width: 188px;
-    max-width: 188px;
+    width: auto;
+    max-width: min(100%, 280px);
     min-width: 0;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -184,8 +185,8 @@ svg .text-color {
     column-gap: 6px;
     padding: 8px 9px;
     justify-content: start;
-    flex: 0 0 188px;
-    overflow: hidden;
+    flex: 1 1 220px;
+    overflow: visible;
 }
 
 .public-page-language-switcher-inline select {
@@ -213,7 +214,7 @@ a.button.public-auth-inline-action-button {
     width: fit-content;
     min-width: 92px;
     padding: 0 14px;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     max-width: 100%;
     white-space: nowrap;
 }
@@ -441,7 +442,7 @@ label {
 .public-page-feedback-button {
     width: 100%;
     justify-content: center;
-    margin-top: 14px;
+    margin-top: auto;
 }
 
 .login-page .public-auth-shell {
@@ -498,10 +499,6 @@ label {
 }
 
 .public-auth-form {
-    display: block;
-}
-
-.registration-page .public-auth-form {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
@@ -741,7 +738,7 @@ input[type="checkbox"]:checked::before {
     align-items: center;
     gap: 14px;
     margin: 4px 0 18px;
-    color: var(--public-text-faint);
+    color: var(--public-text-soft);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.18em;
@@ -810,19 +807,21 @@ input[type="checkbox"]:checked::before {
 
 .toast {
     position: fixed;
-    right: 18px;
-    bottom: 18px;
+    right: max(18px, env(safe-area-inset-right));
+    bottom: calc(18px + env(safe-area-inset-bottom));
     width: min(420px, calc(100vw - 24px));
     border-radius: 18px;
-    border: 1px solid rgba(var(--public-accent-rgb), 0.18);
-    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(var(--feedback-border-rgb), var(--feedback-border-alpha));
+    background: rgba(var(--feedback-surface-rgb), var(--feedback-surface-alpha-start));
     padding: 18px 48px 18px 18px;
-    box-shadow: 0 22px 54px rgba(46, 27, 89, 0.14);
+    box-shadow: var(--feedback-shadow);
     overflow: hidden;
     transform: translateX(calc(100% + 24px));
     transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
     box-sizing: border-box;
     z-index: 12010;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 }
 
 .toast.active {
@@ -862,12 +861,12 @@ input[type="checkbox"]:checked::before {
 .toast-content .message .text {
     font-size: 14px;
     font-weight: 500;
-    color: #59506d;
+    color: rgba(var(--feedback-body-color-rgb), 0.88);
 }
 
 .toast-content .message .text.text-1 {
     font-weight: 700;
-    color: #2d2340;
+    color: rgba(var(--feedback-title-color-rgb), 0.96);
 }
 
 .toast .close {
@@ -876,6 +875,7 @@ input[type="checkbox"]:checked::before {
     right: 14px;
     padding: 6px;
     cursor: pointer;
+    color: rgba(var(--feedback-close-color-rgb), 0.84);
     opacity: 0.74;
 }
 
@@ -928,6 +928,17 @@ input[type="checkbox"]:checked::before {
     }
 }
 
+@media (max-width: 1040px) {
+    .public-auth-inline-actions {
+        margin-top: 14px;
+    }
+
+    .public-page-language-switcher-inline {
+        flex-basis: min(100%, 220px);
+        max-width: 100%;
+    }
+}
+
 @media (max-width: 768px) {
     .content {
         padding: 14px 10px 22px;
@@ -972,6 +983,8 @@ input[type="checkbox"]:checked::before {
     a.button.public-auth-inline-action-button {
         width: 100%;
         justify-self: stretch;
+        white-space: normal;
+        line-height: 1.35;
     }
 
     .public-auth-aside-inner,
@@ -1026,9 +1039,9 @@ input[type="checkbox"]:checked::before {
     }
 
     .toast {
-        left: 12px;
-        right: 12px;
+        left: max(12px, env(safe-area-inset-left));
+        right: max(12px, env(safe-area-inset-right));
         width: auto;
-        bottom: 12px;
+        bottom: calc(12px + env(safe-area-inset-bottom));
     }
 }

@@ -382,7 +382,7 @@ wallos_log_request($db, 0, '');
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
     <meta name="apple-mobile-web-app-title" content="Wallos">
     <title>Wallos - Subscription Tracker</title>
@@ -523,52 +523,54 @@ wallos_log_request($db, 0, '');
                                     <input type="submit" value="<?= translate('login', $i18n) ?>">
                                 </div>
                             <?php } ?>
-                            <div class="public-auth-inline-actions">
-                                <div class="public-page-language-switcher public-page-language-switcher-inline">
-                                    <span class="public-page-language-icon" aria-hidden="true">
-                                        <i class="fa-solid fa-earth-asia"></i>
-                                    </span>
-                                    <label for="public-page-language-login"><?= translate('language', $i18n) ?>:</label>
-                                    <select id="public-page-language-login">
-                                        <?php
-                                        foreach ($languages as $code => $languageOption) {
-                                            $selected = ($code === $lang) ? 'selected' : '';
-                                            ?>
-                                            <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
+                            <div class="public-auth-form-footer">
+                                <div class="public-auth-inline-actions">
+                                    <div class="public-page-language-switcher public-page-language-switcher-inline">
+                                        <span class="public-page-language-icon" aria-hidden="true">
+                                            <i class="fa-solid fa-earth-asia"></i>
+                                        </span>
+                                        <label for="public-page-language-login"><?= translate('language', $i18n) ?>:</label>
+                                        <select id="public-page-language-login">
                                             <?php
-                                        }
-                                        ?>
-                                    </select>
+                                            foreach ($languages as $code => $languageOption) {
+                                                $selected = ($code === $lang) ? 'selected' : '';
+                                                ?>
+                                                <option value="<?= $code ?>" <?= $selected ?>><?= $languageOption['name'] ?></option>
+                                                <?php
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    <?php if ($registrations) { ?>
+                                        <a class="button secondary-button public-auth-inline-action-button" href="registration.php"><?= translate('register', $i18n) ?></a>
+                                    <?php } ?>
                                 </div>
-                                <?php if ($registrations) { ?>
-                                    <a class="button secondary-button public-auth-inline-action-button" href="registration.php"><?= translate('register', $i18n) ?></a>
-                                <?php } ?>
-                            </div>
-                            <?php
-                            if ($oidcEnabled) {
-                                if (!$password_login_disabled) {
+                                <?php
+                                if ($oidcEnabled) {
+                                    if (!$password_login_disabled) {
+                                        ?>
+                                        <span class="or-separator"><?= translate('or', $i18n) ?></span>
+                                        <?php
+                                    }
                                     ?>
-                                    <span class="or-separator"><?= translate('or', $i18n) ?></span>
+                                    <div class="form-group">
+                                        <a class="button secondary-button" href="<?= htmlspecialchars($oidc_auth_url) ?>">
+                                            <?= translate('login_with', $i18n) ?> <?= htmlspecialchars($oidc_name) ?>
+                                        </a>
+                                    </div>
                                     <?php
                                 }
                                 ?>
-                                <div class="form-group">
-                                    <a class="button secondary-button" href="<?= htmlspecialchars($oidc_auth_url) ?>">
-                                        <?= translate('login_with', $i18n) ?> <?= htmlspecialchars($oidc_name) ?>
-                                    </a>
-                                </div>
                                 <?php
-                            }
-                            ?>
-                            <?php
-                            if ($resetPasswordEnabled) {
+                                if ($resetPasswordEnabled) {
+                                    ?>
+                                    <div class="login-form-link">
+                                        <a href="passwordreset.php"><?= translate('forgot_password', $i18n) ?></a>
+                                    </div>
+                                    <?php
+                                }
                                 ?>
-                                <div class="login-form-link">
-                                    <a href="passwordreset.php"><?= translate('forgot_password', $i18n) ?></a>
-                                </div>
-                                <?php
-                            }
-                            ?>
+                            </div>
                         </form>
                     </div>
                 </div>
