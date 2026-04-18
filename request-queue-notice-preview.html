@@ -178,8 +178,8 @@
 
     .request-queue-notice {
       position: fixed;
-      right: 30px;
-      bottom: 36px;
+      right: max(30px, env(safe-area-inset-right));
+      bottom: calc(36px + env(safe-area-inset-bottom));
       display: flex;
       align-items: flex-start;
       gap: 14px;
@@ -319,9 +319,9 @@
       }
 
       .request-queue-notice {
-        right: 12px;
-        left: 12px;
-        bottom: 16px;
+        right: max(12px, env(safe-area-inset-right));
+        left: max(12px, env(safe-area-inset-left));
+        bottom: calc(16px + env(safe-area-inset-bottom));
         width: auto;
         max-width: none;
       }

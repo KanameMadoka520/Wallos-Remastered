@@ -1,12 +1,15 @@
-const STATIC_CACHE = 'static-cache-v4';
-const PAGES_CACHE = 'pages-cache-v4';
-const LOGOS_CACHE = 'logos-cache-v4';
+const STATIC_CACHE = 'static-cache-v5';
+const PAGES_CACHE = 'pages-cache-v5';
+const LOGOS_CACHE = 'logos-cache-v5';
 
 const staticAssets = [
     'manifest.json',
     'styles/styles.css',
     'styles/dark-theme.css',
     'styles/login.css',
+    'styles/login-dark-theme.css',
+    'styles/decorative-background.css',
+    'styles/public-entry-transition.css',
     'styles/font-awesome.min.css',
     'styles/brands.css',
     'styles/barlow.css',

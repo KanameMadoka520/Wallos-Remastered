@@ -48,14 +48,14 @@ input:-webkit-autofill:focus {
 }
 
 .toast {
-    background: rgba(28, 21, 43, 0.94);
-    border-color: rgba(var(--public-accent-rgb), 0.2);
+    background: rgba(var(--feedback-surface-rgb), var(--feedback-surface-alpha-start));
+    border-color: rgba(var(--feedback-border-rgb), var(--feedback-border-alpha));
 }
 
 .toast-content .message .text {
-    color: rgba(240, 232, 255, 0.74);
+    color: rgba(var(--feedback-body-color-rgb), 0.88);
 }
 
 .toast-content .message .text.text-1 {
-    color: #f3ecff;
+    color: rgba(var(--feedback-title-color-rgb), 0.96);
 }

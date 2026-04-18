@@ -279,7 +279,7 @@ wallos_log_request($db, 0, '');
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
     <meta name="apple-mobile-web-app-title" content="Wallos">
     <title>Wallos - Subscription Tracker</title>
