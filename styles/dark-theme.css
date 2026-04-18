@@ -52,44 +52,44 @@ svg .text-color {
 }
 
 .dropbtn {
-    color: #E0E0E0;
+    color: var(--text-color);
 }
 
 .dropdown-content a {
-    color: #E0E0E0;
+    color: var(--text-color);
 }
 
 .dropdown-content a:hover {
-    background-color: #333333;
+    background-color: rgba(var(--text-color-rgb), 0.08);
 }
 
 .filtermenu-content .filter-item:hover,
 .filtermenu-content .filter-title:hover {
-    background-color: #333333;
+    background-color: rgba(var(--text-color-rgb), 0.08);
 }
 
 .subscription-form h3,
 .subscription-modal h3 {
-    color: #FFF;
+    color: var(--text-color-inverted);
 }
 
 .subscription.inactive {
-    background-color: #222;
-    color: rgba(200, 200, 200, 0.6);
-    box-shadow: 0 2px 5px rgba(50, 50, 50, 0.1);
+    background-color: var(--box-background-color);
+    color: rgba(var(--text-color-rgb), 0.6);
+    box-shadow: 0 2px 5px rgba(var(--text-color-rgb), 0.1);
 }
 
 .subscription-main .actions {
-    color: #E0E0E0
+    color: var(--text-color)
 }
 
 .subscription-main .actions>li {
-    border-bottom: 1px solid #555;
-    border-color: #666;
+    border-bottom: 1px solid var(--input-border-color);
+    border-color: var(--input-border-color);
 }
 
 .subscription-main .actions>li:hover {
-    background-color: #333;
+    background-color: rgba(var(--text-color-rgb), 0.08);
 }
 
 .subscription-main .actions>li:last-of-type {
@@ -97,11 +97,11 @@ svg .text-color {
 }
 
 .subscription-container {
-    background-color: #222;
+    background-color: var(--box-background-color);
   }
 
 .close-form {
-    color: #EEE;
+    color: rgba(var(--feedback-close-color-rgb), 0.92);
 }
 
 input[type="text"]::placeholder,
@@ -111,61 +111,61 @@ input[type="date"]::placeholder,
 input[type="number"]::placeholder,
 textarea::placeholder,
 select::placeholder {
-    color: #BBB;
+    color: rgba(var(--text-color-rgb), 0.72);
 }
 
 button.secondary-button,
 button.button.secondary-button,
 input[type="button"].secondary-button {
-    background-color: #222;
+    background-color: var(--box-background-color);
 }
 
 button.button.secondary-button:hover,
 button.secondary-button:hover,
 input[type="button"].secondary-button:hover {
-    background-color: #111;
+    background-color: rgba(var(--main-color-rgb), 0.14);
 }
 
 input[type="color"] {
-    background-color: #F2F2F2;
+    background-color: var(--input-background-color);
 }
 
 .avatar-select .avatar-list .remove-avatar {
-    background-color: #222;
+    background-color: var(--box-background-color);
 }
 
 .avatar-select .avatar-list>img,
 .avatar-select .avatar-list .avatar-container>img {
-    border: 1px solid #999;
+    border: 1px solid rgba(var(--text-color-rgb), 0.45);
 }
 
 .avatar-select .avatar-list>img:hover,
 .avatar-select .avatar-list .avatar-container>img:hover {
-    border: 1px solid #EEE;
+    border: 1px solid rgba(var(--text-color-rgb), 0.92);
 }
 
 .avatar-select .avatar-list .remove-avatar:hover {
-    background-color: #666;
+    background-color: var(--input-border-color);
 }
 
 .account-notification-section-header:hover {
-    background-color: #444;
+    background-color: rgba(var(--text-color-rgb), 0.12);
 }
 
 .toast {
-    box-shadow: 0 6px 20px -5px rgba(255, 255, 255, 0.1);
+    box-shadow: var(--feedback-shadow);
 }
 
 .toast .close-error {
-    color: #EEE;
+    color: rgba(var(--feedback-close-color-rgb), 0.92);
 }
 
 .toast-content .message .text.text-1 {
-    color: #BBB;
+    color: rgba(var(--feedback-title-color-rgb), 0.96);
 }
 
 .toast-content .message .text {
-    color: #999;
+    color: rgba(var(--feedback-body-color-rgb), 0.88);
 }
 
 .logo-preview:after {
@@ -173,52 +173,52 @@ input[type="color"] {
 }
 
 .sort-options>ul>li {
-    border-bottom: 1px solid #555;
-    color: #DDD;
+    border-bottom: 1px solid var(--input-border-color);
+    color: rgba(var(--text-color-rgb), 0.9);
 }
 
 .sort-options>ul>li:hover {
-    background-color: #444;
+    background-color: rgba(var(--text-color-rgb), 0.12);
 }
 
 .payment-name {
-    color: #FFF;
+    color: var(--text-color-inverted);
 }
 
 .payments-list .payments-payment .delete-payment-method {
-    color: #FFF;
+    color: var(--text-color-inverted);
 }
 
 .calendar .calendar-body .calendar-cell .calendar-cell-header {
-    background-color: #111;
+    background-color: rgba(var(--overlay-backdrop-rgb), 0.78);
 }
 
 .calendar .calendar-body .calendar-cell {
-    border-right: 1px solid #111;
+    border-right: 1px solid rgba(var(--overlay-backdrop-rgb), 0.78);
 }
 
 button.dark-theme-button {
-    color: #E0E0E0;
+    color: var(--text-color);
 }
 
 button.dark-theme-button:hover {
-    background-color: #111;
+    background-color: rgba(var(--main-color-rgb), 0.14);
 }
 
 .account-notifications-section {
-    border: 1px solid #666;
+    border: 1px solid var(--input-border-color);
 }
 
 input[type="checkbox"]+label::before,
 input[type="radio"]+label::before {
-    background: #555;
-    border: 1px solid #666;
+    background: var(--input-background-color);
+    border: 1px solid var(--input-border-color);
 }
 
 input[type="checkbox"]:disabled+label::before,
 input[type="radio"]:disabled+label::before {
-    background-color: #333;
-    border-color: #222;
+    background-color: rgba(var(--box-border-color-rgb), 0.88);
+    border-color: var(--box-background-color);
     cursor: not-allowed;
 }
 
@@ -227,22 +227,22 @@ input {
 }
 
 .update-banner {
-    color: #FFF;
+    color: var(--text-color-inverted);
 }
 
 .update-banner>span>a {
-    color: #FFF;
+    color: var(--text-color-inverted);
 }
 
 .totp-qrcode-container {
     padding: 14px;
-    border: 1px solid #DDD;
+    border: 1px solid rgba(var(--text-color-rgb), 0.72);
     border-radius: 8px;
 }
 
 .totp-backup-codes {
-    background-color: #111;
-    border: 2px dashed #444;
+    background-color: rgba(var(--overlay-backdrop-rgb), 0.78);
+    border: 2px dashed rgba(var(--text-color-rgb), 0.14);
 }
 
 .mobile-nav-image {
@@ -251,10 +251,10 @@ input {
 
 @media (max-width: 768px) {
     .mobile-nav>a {
-        color: #909090;
+        color: rgba(var(--text-color-rgb), 0.58);
     }
 
     .mobile-nav>a.active {
-        color: #f0f0F0;
+        color: rgba(var(--text-color-rgb), 0.96);
     }
 }

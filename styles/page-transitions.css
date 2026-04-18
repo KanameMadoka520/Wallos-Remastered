@@ -29,22 +29,22 @@
 
 .wallos-page-transition-backdrop {
     background:
-        radial-gradient(circle at 50% 50%, rgba(var(--main-color-rgb), 0.32), rgba(3, 6, 12, 0.96) 62%),
-        linear-gradient(135deg, rgba(7, 11, 20, 0.98), rgba(18, 24, 38, 0.96));
+        radial-gradient(circle at 50% 50%, rgba(var(--main-color-rgb), 0.32), rgba(var(--overlay-backdrop-rgb), 0.96) 62%),
+        linear-gradient(135deg, rgba(var(--background-color-rgb), 0.98), rgba(var(--box-background-color-rgb), 0.96));
 }
 
 .wallos-page-transition-grid {
     background-image:
-        linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+        linear-gradient(rgba(var(--text-color-rgb), 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(var(--text-color-rgb), 0.045) 1px, transparent 1px);
     background-size: 40px 40px;
     opacity: 0.38;
     transform: scale(1.08);
 }
 
 .wallos-page-transition-panel {
-    background: linear-gradient(135deg, rgba(var(--main-color-rgb), 0.16), rgba(6, 8, 14, 0.98));
-    box-shadow: 0 0 48px rgba(0, 0, 0, 0.28);
+    background: linear-gradient(135deg, rgba(var(--main-color-rgb), 0.16), rgba(var(--overlay-backdrop-rgb), 0.82));
+    box-shadow: 0 0 48px rgba(var(--overlay-backdrop-rgb), 0.28);
 }
 
 .wallos-page-transition-panel-left,
@@ -84,7 +84,7 @@
 .wallos-page-transition-beam {
     left: -30vw;
     width: 22vw;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--main-color-rgb), 0.44), rgba(var(--text-color-inverted-rgb), 0.55), transparent);
     mix-blend-mode: screen;
     opacity: 0;
     transform: skewX(-24deg) scaleX(0.9);
@@ -103,7 +103,7 @@
 .wallos-page-transition-rings span {
     position: absolute;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(var(--text-color-rgb), 0.2);
     opacity: 0.6;
 }
 
@@ -131,7 +131,7 @@
     display: grid;
     gap: 12px;
     text-align: center;
-    color: #f7fbff;
+    color: var(--text-color);
 }
 
 .wallos-page-transition-kicker {
@@ -139,7 +139,7 @@
     font-size: 12px;
     letter-spacing: 0.32em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.68);
+    color: rgba(var(--text-color-rgb), 0.68);
 }
 
 .wallos-page-transition-title {
@@ -157,20 +157,20 @@
 
 .wallos-page-transition-subtitle {
     font-size: 15px;
-    color: rgba(255, 255, 255, 0.82);
+    color: rgba(var(--text-color-rgb), 0.82);
 }
 
 .wallos-page-transition-status {
     font-size: 13px;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(var(--text-color-rgb), 0.7);
 }
 
 .wallos-page-transition-accent {
     font-size: 12px;
     letter-spacing: 0.12em;
-    color: rgba(255, 255, 255, 0.52);
+    color: rgba(var(--text-color-rgb), 0.52);
 }
 
 .wallos-page-transition-progress {
@@ -178,7 +178,7 @@
     height: 3px;
     overflow: hidden;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(var(--text-color-rgb), 0.12);
 }
 
 .wallos-page-transition-progress span {
@@ -186,7 +186,7 @@
     width: 42%;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.2));
+    background: linear-gradient(90deg, rgba(var(--main-color-rgb), 0.2), rgba(var(--text-color-inverted-rgb), 0.96), rgba(var(--main-color-rgb), 0.2));
     transform: translateX(-120%);
 }
 
@@ -374,8 +374,8 @@ html.wallos-page-transition-revealed .wallos-page-transition-rings span {
 
 body.dynamic-wallpaper-enabled .wallos-page-transition-backdrop {
     background:
-        radial-gradient(circle at 50% 50%, rgba(var(--main-color-rgb), 0.28), rgba(2, 4, 10, 0.94) 58%),
-        linear-gradient(135deg, rgba(3, 5, 12, 0.94), rgba(13, 18, 30, 0.92));
+        radial-gradient(circle at 50% 50%, rgba(var(--main-color-rgb), 0.28), rgba(var(--overlay-backdrop-rgb), 0.94) 58%),
+        linear-gradient(135deg, rgba(var(--overlay-backdrop-rgb), 0.94), rgba(var(--feedback-surface-rgb), 0.92));
 }
 
 body.dynamic-wallpaper-enabled .wallos-page-transition-grid {
