@@ -4,6 +4,7 @@ function setBodyThemeClass(themeName) {
     .filter(cls => cls && cls !== 'dark' && cls !== 'light');
 
   document.body.className = [...existingClasses, themeName].join(' ');
+  window.WallosThemeColor?.update?.();
 }
 
 function hexToRgbString(hex) {
@@ -25,6 +26,7 @@ function applyDecorativeBackgroundState(enabled) {
   if (window.WallosDecorativeBackground && typeof window.WallosDecorativeBackground.refresh === 'function') {
     window.WallosDecorativeBackground.refresh();
   }
+  window.WallosThemeColor?.update?.();
 }
 
 function applyDynamicWallpaperState(enabled) {
@@ -34,6 +36,7 @@ function applyDynamicWallpaperState(enabled) {
     window.WallosDynamicWallpaper.setEnabled(enabled);
   }
   updateDynamicWallpaperControls();
+  window.WallosThemeColor?.update?.();
 }
 
 function applyDynamicWallpaperBlurState(enabled) {
@@ -42,6 +45,7 @@ function applyDynamicWallpaperBlurState(enabled) {
   if (window.WallosDynamicWallpaper && typeof window.WallosDynamicWallpaper.setBlur === 'function') {
     window.WallosDynamicWallpaper.setBlur(enabled);
   }
+  window.WallosThemeColor?.update?.();
 }
 
 function updateDynamicWallpaperControls() {
@@ -142,6 +146,7 @@ function switchTheme() {
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
+        window.WallosThemeColor?.update?.();
       } else {
         showErrorMessage(data.message);
       }
@@ -203,6 +208,7 @@ function setDarkTheme(theme) {
           document.cookie = `inUseTheme=${prefersDarkMode ? 'dark' : 'light'}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=Lax`;
         }
 
+        window.WallosThemeColor?.update?.();
         showSuccessMessage(data.message);
       } else {
         showErrorMessage(data.message);
@@ -264,6 +270,7 @@ function setTheme(themeColor) {
     .then(response => response.json())
     .then(data => {
       if (data.success) {
+        window.WallosThemeColor?.update?.();
         showSuccessMessage(data.message);
       } else {
         showErrorMessage(data.message);
@@ -308,6 +315,7 @@ function resetCustomColors() {
         document.getElementById("accentColor").value = "#FFFFFF";
         document.getElementById("hoverColor").value = "#FFFFFF";
         document.getElementById("textColor").value = "#202020";
+        window.WallosThemeColor?.update?.();
       } else {
         showErrorMessage(data.message || translate("failed_reset_colors"));
       }
@@ -348,6 +356,7 @@ function saveCustomColors() {
         document.documentElement.style.setProperty('--hover-color', hoverColor);
         document.documentElement.style.setProperty('--wallos-dynamic-text-color', textColor);
         document.documentElement.style.setProperty('--wallos-dynamic-text-color-rgb', hexToRgbString(textColor));
+        window.WallosThemeColor?.update?.();
       } else {
         showErrorMessage(data.message);
       }
