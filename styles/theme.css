@@ -44,6 +44,12 @@
     --overlay-backdrop-alpha: 0.22;
     --code-chip-background-rgb: 32, 32, 32;
     --code-chip-background-alpha: 0.08;
+    --page-transition-main-rgb: var(--main-color-rgb);
+    --page-transition-backdrop-rgb: var(--overlay-backdrop-rgb);
+    --page-transition-surface-rgb: var(--box-background-color-rgb);
+    --page-transition-copy-rgb: var(--text-color-rgb);
+    --page-transition-highlight-rgb: var(--text-color-inverted-rgb);
+    --page-transition-shadow-rgb: var(--overlay-backdrop-rgb);
 }
 
 svg .main-color {
