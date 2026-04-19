@@ -590,16 +590,4 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
         <?php
     }
 }
-
-$query = "SELECT main_currency FROM user WHERE id = :userId";
-$stmt = $db->prepare($query);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $stmt->execute();
-$row = $result->fetchArray(SQLITE3_ASSOC);
-if ($row !== false) {
-    $mainCurrencyId = $row['main_currency'];
-} else {
-    $mainCurrencyId = $currencies[1]['id'];
-}
-
 ?>

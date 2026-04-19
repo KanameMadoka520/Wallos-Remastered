@@ -2065,6 +2065,10 @@ function fetchSubscriptions(id, event, initiator) {
   const subscriptionsContainer = document.querySelector("#subscriptions");
   let getSubscriptions = "endpoints/subscriptions/get.php";
 
+  const handleSubscriptionReloadRequired = () => {
+    window.location.reload();
+  };
+
   if (subscriptionCardSortable) {
     subscriptionCardSortable.destroy();
     subscriptionCardSortable = null;
@@ -2136,6 +2140,11 @@ function fetchSubscriptions(id, event, initiator) {
       }
     })
     .catch(error => {
+      if (Number(error?.status || error?.response?.status || 0) === 401) {
+        handleSubscriptionReloadRequired();
+        return;
+      }
+
       console.error(translate('error_reloading_subscription'), error);
       throw error;
     });

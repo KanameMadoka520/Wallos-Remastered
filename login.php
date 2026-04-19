@@ -53,6 +53,7 @@ if ($userCount == 0) {
 
 $secondsInMonth = 30 * 24 * 60 * 60;
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.gc_maxlifetime', (string) $secondsInMonth);
     session_set_cookie_params([
         'lifetime' => $secondsInMonth,             
         'httponly' => true,          
