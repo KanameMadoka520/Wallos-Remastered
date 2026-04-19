@@ -11,6 +11,7 @@ require_once 'includes/login_rate_limit.php';
 require_once 'includes/decorative_background.php';
 require_once 'includes/theme_resolver.php';
 require_once 'includes/theme_cookie_sync.php';
+require_once 'includes/theme_color.php';
 require_once 'includes/public_page_branding.php';
 require_once 'includes/public_entry_animation.php';
 
@@ -137,6 +138,7 @@ if (isset($_SESSION['token'])) {
 $theme = wallos_resolve_public_theme_cookie();
 $updateThemeSettings = wallos_public_theme_requires_live_update();
 $colorTheme = wallos_resolve_public_color_theme_cookie();
+$metaThemeColor = wallos_resolve_theme_color_value($theme, $colorTheme, false);
 $publicPageBranding = wallos_get_public_page_branding($db);
 
 $decorativeBackgroundEnabled = wallos_is_public_decorative_background_enabled();
@@ -383,7 +385,7 @@ wallos_log_request($db, 0, '');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
+    <meta name="theme-color" content="<?= htmlspecialchars($metaThemeColor, ENT_QUOTES, 'UTF-8') ?>" id="theme-color" />
     <meta name="apple-mobile-web-app-title" content="Wallos">
     <title>Wallos - Subscription Tracker</title>
     <link rel="icon" type="image/png" href="images/icon/favicon.ico" sizes="16x16">

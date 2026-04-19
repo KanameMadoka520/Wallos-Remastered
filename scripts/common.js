@@ -245,6 +245,45 @@ function didWallosRequestSucceed(response, data) {
   return true;
 }
 
+function rgbStringToHex(rgbString) {
+  const matches = String(rgbString || "").match(/\d+/g);
+  if (!matches || matches.length < 3) {
+    return "";
+  }
+
+  const [r, g, b] = matches.slice(0, 3).map((value) => {
+    const normalized = Math.max(0, Math.min(255, Number.parseInt(value, 10) || 0));
+    return normalized.toString(16).padStart(2, "0");
+  });
+
+  return `#${r}${g}${b}`.toUpperCase();
+}
+
+function updateThemeColorMetaTag() {
+  const themeColorMetaTag = document.querySelector('meta[name="theme-color"]');
+  if (!themeColorMetaTag || !document.documentElement || !document.body) {
+    return;
+  }
+
+  const computed = window.getComputedStyle(document.documentElement);
+  let rgbSource = "";
+
+  if (document.body.classList.contains("dynamic-wallpaper-enabled")) {
+    rgbSource = computed.getPropertyValue("--feedback-surface-rgb");
+  } else if (document.body.classList.contains("dark")) {
+    rgbSource = computed.getPropertyValue("--header-background-color-rgb")
+      || computed.getPropertyValue("--box-background-color-rgb");
+  } else {
+    rgbSource = computed.getPropertyValue("--main-color-rgb")
+      || computed.getPropertyValue("--header-background-color-rgb");
+  }
+
+  const resolvedColor = rgbStringToHex(rgbSource);
+  if (resolvedColor) {
+    themeColorMetaTag.setAttribute("content", resolvedColor);
+  }
+}
+
 function toggleDropdown() {
   const dropdown = document.querySelector('.dropdown');
   dropdown.classList.toggle('is-open');
@@ -561,6 +600,10 @@ window.WallosHttp = {
   normalizeError: normalizeWallosRequestError,
 };
 
+window.WallosThemeColor = {
+  update: updateThemeColorMetaTag,
+};
+
 function closeToast(type) {
   const toast = document.querySelector(type === "error" ? ".toast#errorToast" : ".toast#successToast");
   const progress = document.querySelector(type === "error" ? ".progress.error" : ".progress.success");
@@ -706,9 +749,9 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.className = [...existingClasses, themePreference].join(' ');
 
     document.cookie = `inUseTheme=${themePreference}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=Lax`;
-    const themeColorMetaTag = document.querySelector('meta[name="theme-color"]');
-    themeColorMetaTag.setAttribute('content', themePreference === 'dark' ? '#222222' : '#FFFFFF');
   }
+
+  updateThemeColorMetaTag();
 
   document.addEventListener('mousedown', function (event) {
     const dropdown = document.querySelector('.dropdown');

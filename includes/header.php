@@ -15,6 +15,7 @@ require_once 'getsettings.php';
 require_once 'decorative_background.php';
 require_once 'dynamic_wallpaper.php';
 require_once 'page_transitions.php';
+require_once 'theme_color.php';
 
 require_once 'version.php';
 
@@ -102,6 +103,12 @@ $dynamicWallpaperBlurEnabled = !isset($settings['dynamic_wallpaper_blur']) || (i
 $dynamicWallpaperBlurClass = $dynamicWallpaperBlurEnabled ? "dynamic-wallpaper-blur-enabled" : "dynamic-wallpaper-blur-disabled";
 $pageTransitionEnabled = !empty($settings['pageTransitionEnabled']);
 $pageTransitionStyle = $settings['pageTransitionStyle'] ?? 'shutter';
+$metaThemeColor = wallos_resolve_theme_color_value(
+  $theme,
+  $colorTheme,
+  $dynamicWallpaperEnabled,
+  $settings['customColors'] ?? []
+);
 setcookie('decorativeBackground', $decorativeBackgroundEnabled ? '1' : '0', [
   'expires' => $cookieExpire,
   'path' => '/',
@@ -131,7 +138,7 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Wallos - Subscription Tracker</title>
   <meta name="apple-mobile-web-app-title" content="Wallos">
-  <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
+  <meta name="theme-color" content="<?= htmlspecialchars($metaThemeColor, ENT_QUOTES, 'UTF-8') ?>" id="theme-color" />
   <meta name="referrer" content="no-referrer">
   <script>
     (function () {
