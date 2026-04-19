@@ -33,6 +33,7 @@ function wallos_media_start_session()
 {
     if (session_status() === PHP_SESSION_NONE) {
         $secondsInMonth = 30 * 24 * 60 * 60;
+        ini_set('session.gc_maxlifetime', (string) $secondsInMonth);
         session_set_cookie_params([
             'lifetime' => $secondsInMonth,
             'httponly' => true,

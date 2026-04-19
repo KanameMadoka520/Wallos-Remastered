@@ -34,6 +34,13 @@ $formatter = new IntlDateFormatter(
   'MMM d, yyyy'
 );
 
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $userId <= 0) {
+  http_response_code(401);
+  echo translate('session_expired', $i18n);
+  $db->close();
+  exit;
+}
+
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   $mainCurrencyId = 0;
   $mainCurrencyStmt = $db->prepare('SELECT main_currency FROM user WHERE id = :userId');

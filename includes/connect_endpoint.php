@@ -23,6 +23,7 @@ require_once 'security_rate_limits.php';
 
 $secondsInMonth = 30 * 24 * 60 * 60;
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.gc_maxlifetime', (string) $secondsInMonth);
     session_set_cookie_params([
         'lifetime' => $secondsInMonth,             
         'httponly' => true,          
@@ -31,10 +32,86 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+function wallos_clear_endpoint_login_cookie()
+{
+    setcookie('wallos_login', '', time() - 3600, '/');
+    setcookie('wallos_login', '', time() - 3600);
+}
+
+function wallos_try_restore_endpoint_session_from_cookie($db)
+{
+    if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true && !empty($_SESSION['userId'])) {
+        return (int) $_SESSION['userId'];
+    }
+
+    $cookieValue = $_COOKIE['wallos_login'] ?? '';
+    if ($cookieValue === '') {
+        return 0;
+    }
+
+    $cookieParts = explode('|', $cookieValue, 3);
+    if (count($cookieParts) !== 3) {
+        wallos_clear_endpoint_login_cookie();
+        return 0;
+    }
+
+    [$username, $token, $mainCurrency] = $cookieParts;
+    $username = trim((string) $username);
+    $token = trim((string) $token);
+
+    if ($username === '' || $token === '') {
+        wallos_clear_endpoint_login_cookie();
+        return 0;
+    }
+
+    $userStmt = $db->prepare('SELECT * FROM user WHERE username = :username LIMIT 1');
+    $userStmt->bindValue(':username', $username, SQLITE3_TEXT);
+    $userResult = $userStmt->execute();
+    $userRow = $userResult ? $userResult->fetchArray(SQLITE3_ASSOC) : false;
+    if ($userRow === false || empty($userRow['id'])) {
+        wallos_clear_endpoint_login_cookie();
+        return 0;
+    }
+
+    $userId = (int) $userRow['id'];
+
+    $adminResult = $db->query('SELECT login_disabled FROM admin');
+    $adminRow = $adminResult ? $adminResult->fetchArray(SQLITE3_ASSOC) : false;
+    $loginDisabled = !empty($adminRow['login_disabled']);
+
+    if ($loginDisabled) {
+        $tokenStmt = $db->prepare('SELECT 1 FROM login_tokens WHERE user_id = :userId LIMIT 1');
+        $tokenStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+    } else {
+        $tokenStmt = $db->prepare('SELECT 1 FROM login_tokens WHERE user_id = :userId AND token = :token LIMIT 1');
+        $tokenStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+        $tokenStmt->bindValue(':token', $token, SQLITE3_TEXT);
+    }
+
+    $tokenResult = $tokenStmt->execute();
+    $tokenRow = $tokenResult ? $tokenResult->fetchArray(SQLITE3_ASSOC) : false;
+    if ($tokenRow === false) {
+        wallos_clear_endpoint_login_cookie();
+        return 0;
+    }
+
+    $_SESSION['username'] = $username;
+    $_SESSION['token'] = $token;
+    $_SESSION['loggedin'] = true;
+    $_SESSION['main_currency'] = $userRow['main_currency'] ?? $mainCurrency;
+    $_SESSION['userId'] = $userId;
+
+    return $userId;
+}
+
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $userId = $_SESSION['userId'];
 } else {
     $userId = 0;
+}
+
+if ($userId <= 0) {
+    $userId = wallos_try_restore_endpoint_session_from_cookie($db);
 }
 
 if ($userId > 0) {
@@ -49,16 +126,14 @@ if ($userId > 0) {
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_destroy();
         }
-        setcookie('wallos_login', '', time() - 3600, '/');
-        setcookie('wallos_login', '', time() - 3600);
+        wallos_clear_endpoint_login_cookie();
         $userId = 0;
     } elseif (wallos_is_user_trashed($userRow['account_status'] ?? WALLOS_USER_STATUS_ACTIVE)) {
         $_SESSION = [];
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_destroy();
         }
-        setcookie('wallos_login', '', time() - 3600, '/');
-        setcookie('wallos_login', '', time() - 3600);
+        wallos_clear_endpoint_login_cookie();
 
         echo json_encode([
             'success' => false,
