@@ -16,6 +16,12 @@ body.dynamic-wallpaper-enabled {
     --overlay-backdrop-alpha: 0.52;
     --code-chip-background-rgb: 255, 255, 255;
     --code-chip-background-alpha: 0.08;
+    --page-transition-main-rgb: var(--main-color-rgb);
+    --page-transition-backdrop-rgb: var(--overlay-backdrop-rgb);
+    --page-transition-surface-rgb: var(--feedback-surface-rgb);
+    --page-transition-copy-rgb: var(--wallos-dynamic-text-color-rgb);
+    --page-transition-highlight-rgb: var(--wallos-dynamic-text-color-rgb);
+    --page-transition-shadow-rgb: var(--overlay-backdrop-rgb);
 }
 
 body.dynamic-wallpaper-enabled .wallos-decorative-background {
