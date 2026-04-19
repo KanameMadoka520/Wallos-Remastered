@@ -1,6 +1,6 @@
-const STATIC_CACHE = 'static-cache-v9';
-const PAGES_CACHE = 'pages-cache-v9';
-const LOGOS_CACHE = 'logos-cache-v9';
+const STATIC_CACHE = 'static-cache-v10';
+const PAGES_CACHE = 'pages-cache-v10';
+const LOGOS_CACHE = 'logos-cache-v10';
 
 const staticAssets = [
     'manifest.json',
