@@ -1,9 +1,20 @@
-﻿:root {
+:root {
     --wallos-page-transition-duration-in: 520ms;
     --wallos-page-transition-duration-out: 920ms;
     --wallos-page-transition-ease-in: cubic-bezier(0.19, 1, 0.22, 1);
     --wallos-page-transition-ease-out: cubic-bezier(0.77, 0, 0.18, 1);
     --wallos-page-transition-ease-float: cubic-bezier(0.23, 1, 0.32, 1);
+    --wallos-page-transition-ba-fixed-main-rgb: 0, 162, 255;
+    --wallos-page-transition-ba-fixed-accent-rgb: 112, 182, 255;
+    --wallos-page-transition-ba-fixed-surface-rgb: 244, 251, 255;
+    --wallos-page-transition-ba-fixed-surface-alt-rgb: 225, 242, 255;
+    --wallos-page-transition-ba-fixed-panel-rgb: 214, 236, 255;
+    --wallos-page-transition-ba-fixed-panel-alt-rgb: 219, 240, 255;
+    --wallos-page-transition-ba-fixed-edge-rgb: 103, 181, 255;
+    --wallos-page-transition-ba-fixed-text-rgb: 39, 114, 184;
+    --wallos-page-transition-ba-fixed-text-strong-rgb: 17, 133, 218;
+    --wallos-page-transition-ba-fixed-shadow-rgb: 28, 82, 140;
+    --wallos-page-transition-ba-fixed-glow-rgb: 83, 166, 235;
 }
 
 .wallos-page-transition {
@@ -384,25 +395,25 @@ body.dynamic-wallpaper-enabled .wallos-page-transition-grid {
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-backdrop {
     background:
-        radial-gradient(circle at 24% 34%, rgba(79, 198, 255, 0.18), transparent 32%),
-        radial-gradient(circle at 76% 28%, rgba(112, 182, 255, 0.22), transparent 34%),
-        linear-gradient(135deg, rgba(244, 251, 255, 0.98), rgba(225, 242, 255, 0.96));
+        radial-gradient(circle at 24% 34%, rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.18), transparent 32%),
+        radial-gradient(circle at 76% 28%, rgba(var(--wallos-page-transition-ba-fixed-accent-rgb), 0.22), transparent 34%),
+        linear-gradient(135deg, rgba(var(--wallos-page-transition-ba-fixed-surface-rgb), 0.98), rgba(var(--wallos-page-transition-ba-fixed-surface-alt-rgb), 0.96));
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-grid {
     opacity: 0.52;
     background-image:
-        linear-gradient(rgba(84, 173, 255, 0.12) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(84, 173, 255, 0.12) 1px, transparent 1px),
-        linear-gradient(180deg, transparent 0, transparent 11px, rgba(255, 255, 255, 0.55) 12px);
+        linear-gradient(rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.12) 1px, transparent 1px),
+        linear-gradient(180deg, transparent 0, transparent 11px, rgba(var(--text-color-inverted-rgb), 0.55) 12px);
     background-size: 34px 34px, 34px 34px, 100% 24px;
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-panel {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(214, 236, 255, 0.92));
+    background: linear-gradient(135deg, rgba(var(--text-color-inverted-rgb), 0.96), rgba(var(--wallos-page-transition-ba-fixed-panel-rgb), 0.92));
     box-shadow:
-        0 24px 48px rgba(28, 82, 140, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+        0 24px 48px rgba(var(--wallos-page-transition-ba-fixed-shadow-rgb), 0.16),
+        inset 0 1px 0 rgba(var(--text-color-inverted-rgb), 0.72);
 }
 
 html[data-page-transition-style^="bluearchive"] .wallos-page-transition-panel-left,
@@ -437,78 +448,78 @@ html[data-page-transition-style^="bluearchive"] .wallos-page-transition-beam {
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-beam {
-    background: linear-gradient(90deg, transparent, rgba(0, 162, 255, 0.88), rgba(255, 255, 255, 0.94), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.88), rgba(var(--text-color-inverted-rgb), 0.94), transparent);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-panel {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(219, 240, 255, 0.8));
-    border: 1px solid rgba(111, 189, 255, 0.32);
-    box-shadow: 0 20px 44px rgba(28, 82, 140, 0.12);
+    background: linear-gradient(135deg, rgba(var(--text-color-inverted-rgb), 0.94), rgba(var(--wallos-page-transition-ba-fixed-panel-alt-rgb), 0.8));
+    border: 1px solid rgba(var(--wallos-page-transition-ba-fixed-edge-rgb), 0.32);
+    box-shadow: 0 20px 44px rgba(var(--wallos-page-transition-ba-fixed-shadow-rgb), 0.12);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-header-bar,
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-footer-bar {
-    background: linear-gradient(90deg, rgba(0, 165, 255, 0), rgba(0, 165, 255, 0.44), rgba(255, 255, 255, 0.92), rgba(0, 165, 255, 0));
+    background: linear-gradient(90deg, rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0), rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.44), rgba(var(--text-color-inverted-rgb), 0.92), rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0));
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-gridline {
-    background: linear-gradient(180deg, rgba(0, 162, 255, 0), rgba(0, 162, 255, 0.46), rgba(0, 162, 255, 0));
+    background: linear-gradient(180deg, rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0), rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.46), rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0));
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-corner {
-    border-color: rgba(102, 186, 255, 0.48);
+    border-color: rgba(var(--wallos-page-transition-ba-fixed-edge-rgb), 0.48);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-corner-top-left {
-    color: rgba(102, 186, 255, 0.44);
+    color: rgba(var(--wallos-page-transition-ba-fixed-edge-rgb), 0.44);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-corner-top-right {
-    color: rgba(102, 186, 255, 0.34);
+    color: rgba(var(--wallos-page-transition-ba-fixed-edge-rgb), 0.34);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-corner-bottom-left {
-    color: rgba(102, 186, 255, 0.28);
+    color: rgba(var(--wallos-page-transition-ba-fixed-edge-rgb), 0.28);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-corner-bottom-right {
-    color: rgba(102, 186, 255, 0.5);
+    color: rgba(var(--wallos-page-transition-ba-fixed-edge-rgb), 0.5);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-triangles span {
-    background: rgba(89, 183, 255, 0.34);
-    filter: drop-shadow(0 4px 10px rgba(83, 166, 235, 0.22));
+    background: rgba(var(--wallos-page-transition-ba-fixed-accent-rgb), 0.34);
+    filter: drop-shadow(0 4px 10px rgba(var(--wallos-page-transition-ba-fixed-glow-rgb), 0.22));
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-datapanel span {
-    background: linear-gradient(90deg, rgba(52, 158, 235, 0.12), rgba(72, 179, 255, 0.62), rgba(255, 255, 255, 0.9));
+    background: linear-gradient(90deg, rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.12), rgba(var(--wallos-page-transition-ba-fixed-accent-rgb), 0.62), rgba(var(--text-color-inverted-rgb), 0.9));
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-hud-card {
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(103, 181, 255, 0.28);
-    color: #2772b8;
-    box-shadow: 0 10px 24px rgba(34, 91, 150, 0.08);
+    background: rgba(var(--text-color-inverted-rgb), 0.72);
+    border: 1px solid rgba(var(--wallos-page-transition-ba-fixed-edge-rgb), 0.28);
+    color: rgb(var(--wallos-page-transition-ba-fixed-text-rgb));
+    box-shadow: 0 10px 24px rgba(var(--wallos-page-transition-ba-fixed-shadow-rgb), 0.08);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-label {
-    color: rgba(39, 114, 184, 0.76);
+    color: rgba(var(--wallos-page-transition-ba-fixed-text-rgb), 0.76);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-hud-card strong {
-    color: #2182d5;
+    color: rgb(var(--wallos-page-transition-ba-fixed-text-strong-rgb));
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-crosshair {
-    border: 1px solid rgba(90, 176, 255, 0.28);
+    border: 1px solid rgba(var(--wallos-page-transition-ba-fixed-edge-rgb), 0.28);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-crosshair span {
-    background: rgba(63, 159, 243, 0.42);
+    background: rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.42);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-ba-crosshair span:nth-child(3) {
-    border: 1px dashed rgba(77, 171, 255, 0.34);
+    border: 1px dashed rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.34);
 }
 
 html[data-page-transition-style^="bluearchive"] .wallos-page-transition-rings {
@@ -795,11 +806,11 @@ html[data-page-transition-style^="bluearchive"] .wallos-page-transition-center {
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-center {
-    color: #1f6eb5;
+    color: rgb(var(--wallos-page-transition-ba-fixed-text-rgb));
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-kicker {
-    color: rgba(45, 121, 192, 0.74);
+    color: rgba(var(--wallos-page-transition-ba-fixed-text-rgb), 0.74);
 }
 
 html[data-page-transition-style^="bluearchive"] .wallos-page-transition-title {
@@ -808,21 +819,21 @@ html[data-page-transition-style^="bluearchive"] .wallos-page-transition-title {
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-title {
-    color: #1185da;
+    color: rgb(var(--wallos-page-transition-ba-fixed-text-strong-rgb));
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-subtitle,
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-status,
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-accent {
-    color: rgba(38, 104, 165, 0.8);
+    color: rgba(var(--wallos-page-transition-ba-fixed-text-rgb), 0.8);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-progress {
-    background: rgba(42, 129, 204, 0.16);
+    background: rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.16);
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-progress span {
-    background: linear-gradient(90deg, rgba(0, 162, 255, 0.08), rgba(0, 162, 255, 0.94), rgba(255, 255, 255, 0.96), rgba(0, 162, 255, 0.08));
+    background: linear-gradient(90deg, rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.08), rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.94), rgba(var(--text-color-inverted-rgb), 0.96), rgba(var(--wallos-page-transition-ba-fixed-main-rgb), 0.08));
 }
 
 html[data-page-transition-style^="bluearchive"] .wallos-page-transition-loading .wallos-page-transition-panel-left,
