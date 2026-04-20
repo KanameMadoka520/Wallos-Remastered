@@ -1,4 +1,4 @@
-# Requirements: Wallos-Remastered
+﻿# Requirements: Wallos-Remastered
 
 **Defined:** 2026-04-20
 **Core Value:** 在不破坏现有视觉效果和复杂功能链路的前提下，持续提供稳定、可控、适合长期自托管运营的订阅管理体验。
@@ -27,18 +27,18 @@
 
 ### Frontend Request Convergence
 
-- [ ] **FRON-01**: 管理员、设置、日历等高频页面的关键请求路径使用共享 `WallosApi` / `WallosHttp` 请求层，而不是继续保留零散 `fetch` 与本地错误处理。
-- [ ] **FRON-02**: 剩余高频前端模块在请求失败、会话失效和通用错误反馈上遵循同一处理入口，避免重复实现。
+- [x] **FRON-01**: 管理员、设置、日历等高频页面的关键请求路径使用共享 `WallosApi` / `WallosHttp` 请求层，而不是继续保留零散 `fetch` 与本地错误处理。
+- [x] **FRON-02**: 剩余高频前端模块在请求失败、会话失效和通用错误反馈上遵循同一处理入口，避免重复实现。
 
 ### Subscription Modularity
 
-- [ ] **SUBM-01**: 订阅页前端逻辑按数据加载、状态管理、渲染和交互边界进行模块拆分，降低当前脚本复杂度。
-- [ ] **SUBM-02**: 订阅页的关键流程（筛选、排序、分页、支付记录、图片相关）在模块化后保持现有行为与视觉效果。
+- [x] **SUBM-01**: 订阅页前端逻辑按数据加载、状态管理、渲染和交互边界进行模块拆分，降低当前脚本复杂度。
+- [x] **SUBM-02**: 订阅页的关键流程（筛选、排序、分页、支付记录、图片相关）在模块化后保持现有行为与视觉效果。
 
 ### Contracts And Docs
 
-- [ ] **DOCS-01**: 主题、请求失败契约和共享请求层的使用规则形成明确文档，便于未来改动复用。
-- [ ] **DOCS-02**: README / CONTRIBUTING / 规划文档能明确指出哪些层必须复用、哪些做法属于退化风险。
+- [x] **DOCS-01**: 主题、请求失败契约和共享请求层的使用规则形成明确文档，便于未来改动复用。
+- [x] **DOCS-02**: README / CONTRIBUTING / 规划文档能明确指出哪些层必须复用、哪些做法属于退化风险。
 
 ## Out of Scope
 
@@ -62,12 +62,12 @@
 | OBS-01 | Phase 3 | Complete |
 | OBS-02 | Phase 3 | Complete |
 | OBS-03 | Phase 3 | Complete |
-| FRON-01 | Phase 4 | Pending |
-| FRON-02 | Phase 4 | Pending |
-| SUBM-01 | Phase 5 | Pending |
-| SUBM-02 | Phase 5 | Pending |
-| DOCS-01 | Phase 6 | Pending |
-| DOCS-02 | Phase 6 | Pending |
+| FRON-01 | Phase 4 | Complete |
+| FRON-02 | Phase 4 | Complete |
+| SUBM-01 | Phase 5 | Complete |
+| SUBM-02 | Phase 5 | Complete |
+| DOCS-01 | Phase 6 | Complete |
+| DOCS-02 | Phase 6 | Complete |
 
 **Coverage:**
 - v1.0 validated requirements: 9 total
@@ -77,4 +77,5 @@
 
 ---
 *Requirements defined: 2026-04-20*
-*Last updated: 2026-04-20 after milestone v1.1 initialization*
+*Last updated: 2026-04-21 after Phase 6 execution*
+

@@ -56,3 +56,24 @@ curl http://127.0.0.1:18282/health.php
 - 暴露私有图片或备份为公开直链
 - 提供明文密码查看能力
 - 改完代码却不更新文档
+
+## 共享请求层与回归约定
+
+从 `v1.0` 和 `v1.1` 开始，本仓库已经逐步收敛出一套共享请求层与稳定性基线。继续贡献时，请默认遵守：
+
+- 高频页面的 JSON / Form 请求优先使用 `WallosApi` 或 `WallosHttp`
+- 不要为高频页面继续新增 raw `fetch().then(response => response.json())` 的重复链条
+- 会话失效、通用错误、成功反馈优先复用共享请求层与 `common.js`
+- 只有少数特殊流可以保留原始实现，例如：
+  - 下载/导出
+  - 纯文本 cronjob 输出
+  - 纯二进制媒体流
+- 如果你改动了高风险链路，请至少跑一次：
+
+```bash
+docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-url=http://127.0.0.1
+```
+
+详细说明请继续阅读：
+
+- `docs/共享请求层与稳定性契约.md`
