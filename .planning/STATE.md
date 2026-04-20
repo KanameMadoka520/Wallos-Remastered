@@ -3,16 +3,16 @@
 ## Current Position
 
 Phase: 5 - 订阅页模块化重构
-Plan: 3 plans created
-Status: Ready to execute
-Last activity: 2026-04-21 - Phase 5 planned
+Plan: 3 plans completed
+Status: Phase 5 complete
+Last activity: 2026-04-21 - Phase 5 executed and verified
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-04-20)
 
 **Core value:** 在不破坏现有视觉效果和复杂功能链路的前提下，持续提供稳定、可控、适合长期自托管运营的订阅管理体验。
-**Current focus:** Phase 5 - 订阅页模块化重构
+**Current focus:** Phase 6 - 契约文档化与残余收敛
 
 ## Accumulated Context
 
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 
 ## Next Up
 
-- 执行 `05-01-PLAN.md`，继续去掉 subscriptions.js 中与现有模块重复的逻辑
-- 再执行 `05-02-PLAN.md` / `05-03-PLAN.md`，把布局/排序边界拆出并回归验证
-- 继续保持现有 regression runner 绿色
+- 进入 Phase 6，把主题/API/请求层共享规则文档化
+- 收敛剩余低风险 raw fetch 与共享契约说明
+- 继续保持现有 regression runner 绿色，作为 v1.1 收尾基线
 
 ---
-*Last updated: 2026-04-21 after Phase 5 planning*
+*Last updated: 2026-04-21 after Phase 5 execution*
