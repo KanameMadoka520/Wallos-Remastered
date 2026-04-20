@@ -2140,7 +2140,7 @@ function fetchSubscriptions(id, event, initiator) {
       }
     })
     .catch(error => {
-      if (Number(error?.status || error?.response?.status || 0) === 401) {
+      if (window.WallosApi?.isSessionFailureError?.(error) || Number(error?.status || error?.response?.status || 0) === 401) {
         handleSubscriptionReloadRequired();
         return;
       }

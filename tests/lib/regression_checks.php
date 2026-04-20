@@ -62,20 +62,52 @@ function wallos_regression_run_auth_suite(array $config, array $suiteDefinition)
     $results = array();
 
     $guestClient = wallos_regression_create_http_client($config);
-    $guestResponse = wallos_regression_http_request(
+    $guestSubscriptionsResponse = wallos_regression_http_request(
         $guestClient,
         'GET',
         wallos_regression_build_url($config, 'endpoints/subscriptions/get.php?subscription_page=all')
     );
-
-    $guestClean = (int) $guestResponse['status'] === 401
-        && trim((string) $guestResponse['body']) !== ''
-        && !wallos_regression_body_has_php_warning($guestResponse['body']);
+    $guestSubscriptionsJson = wallos_regression_http_decode_json($guestSubscriptionsResponse);
+    $guestSubscriptionsClean = wallos_regression_json_session_expired_contract_is_valid($guestSubscriptionsResponse, $guestSubscriptionsJson);
     $results[] = wallos_regression_make_result(
-        $guestClean ? 'PASS' : 'FAIL',
+        $guestSubscriptionsClean ? 'PASS' : 'FAIL',
         'auth',
         'subscriptions-unauth-401',
-        wallos_regression_build_http_detail($guestResponse, 'Expected clean unauthenticated 401 contract without warnings')
+        $guestSubscriptionsClean
+            ? 'Unauthenticated subscriptions/get.php returned the standardized JSON 401 contract.'
+            : wallos_regression_build_json_failure_detail($guestSubscriptionsResponse, $guestSubscriptionsJson, 'Expected standardized session-expired JSON contract.')
+    );
+
+    $guestSubscriptionPagesResponse = wallos_regression_http_request(
+        $guestClient,
+        'GET',
+        wallos_regression_build_url($config, 'endpoints/subscriptionpages.php')
+    );
+    $guestSubscriptionPagesJson = wallos_regression_http_decode_json($guestSubscriptionPagesResponse);
+    $guestSubscriptionPagesClean = wallos_regression_json_session_expired_contract_is_valid($guestSubscriptionPagesResponse, $guestSubscriptionPagesJson);
+    $results[] = wallos_regression_make_result(
+        $guestSubscriptionPagesClean ? 'PASS' : 'FAIL',
+        'auth',
+        'subscription-pages-unauth-401',
+        $guestSubscriptionPagesClean
+            ? 'Unauthenticated subscriptionpages.php returned the standardized JSON 401 contract.'
+            : wallos_regression_build_json_failure_detail($guestSubscriptionPagesResponse, $guestSubscriptionPagesJson, 'Expected standardized session-expired JSON contract.')
+    );
+
+    $guestPaymentsResponse = wallos_regression_http_request(
+        $guestClient,
+        'GET',
+        wallos_regression_build_url($config, 'endpoints/payments/get.php')
+    );
+    $guestPaymentsJson = wallos_regression_http_decode_json($guestPaymentsResponse);
+    $guestPaymentsClean = wallos_regression_json_session_expired_contract_is_valid($guestPaymentsResponse, $guestPaymentsJson);
+    $results[] = wallos_regression_make_result(
+        $guestPaymentsClean ? 'PASS' : 'FAIL',
+        'auth',
+        'payments-unauth-401',
+        $guestPaymentsClean
+            ? 'Unauthenticated payments/get.php returned the standardized JSON 401 contract.'
+            : wallos_regression_build_json_failure_detail($guestPaymentsResponse, $guestPaymentsJson, 'Expected standardized session-expired JSON contract.')
     );
 
     $authState = wallos_regression_acquire_authenticated_client($config);
@@ -244,4 +276,17 @@ function wallos_regression_body_has_php_warning($body)
     }
 
     return false;
+}
+
+function wallos_regression_json_session_expired_contract_is_valid(array $response, array $decodedJson)
+{
+    if ((int) $response['status'] !== 401 || !$decodedJson['ok'] || !is_array($decodedJson['data'])) {
+        return false;
+    }
+
+    $payload = $decodedJson['data'];
+    return isset($payload['success'], $payload['code'], $payload['message'])
+        && $payload['success'] === false
+        && $payload['code'] === 'session_expired'
+        && !empty($payload['session_expired']);
 }

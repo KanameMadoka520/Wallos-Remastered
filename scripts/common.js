@@ -451,6 +451,21 @@ function buildWallosRequestHeaders(options = {}) {
 }
 
 function normalizeWallosRequestError(error, fallbackMessage = null) {
+  if (error && typeof error === "object") {
+    if (typeof error.message === "string" && error.message.trim() !== "") {
+      return error.message.trim();
+    }
+
+    if (error.data && typeof error.data === "object") {
+      if (typeof error.data.message === "string" && error.data.message.trim() !== "") {
+        return error.data.message.trim();
+      }
+      if (typeof error.data.error === "string" && error.data.error.trim() !== "") {
+        return error.data.error.trim();
+      }
+    }
+  }
+
   if (error instanceof Error && String(error.message || "").trim() !== "") {
     return error.message.trim();
   }
@@ -460,6 +475,120 @@ function normalizeWallosRequestError(error, fallbackMessage = null) {
   }
 
   return fallbackMessage || translate("unknown_error");
+}
+
+function extractWallosResponseMessage(data, fallbackMessage = null) {
+  if (typeof data === "string" && data.trim() !== "") {
+    return data.trim();
+  }
+
+  if (data && typeof data === "object") {
+    if (typeof data.message === "string" && data.message.trim() !== "") {
+      return data.message.trim();
+    }
+
+    if (typeof data.error === "string" && data.error.trim() !== "") {
+      return data.error.trim();
+    }
+  }
+
+  return fallbackMessage || translate("unknown_error");
+}
+
+function tryParseWallosJsonPayload(rawBody) {
+  const normalizedBody = String(rawBody || "").trim();
+  if (normalizedBody === "" || (normalizedBody[0] !== "{" && normalizedBody[0] !== "[")) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(normalizedBody);
+  } catch (error) {
+    return null;
+  }
+}
+
+function isWallosSessionFailurePayload(data) {
+  return Boolean(
+    data
+    && typeof data === "object"
+    && (
+      data.session_expired === true
+      || data.code === "session_expired"
+      || data.error === "session_expired"
+      || data.requires_relogin === true
+    )
+  );
+}
+
+function isWallosAccountTrashedPayload(data) {
+  return Boolean(
+    data
+    && typeof data === "object"
+    && (
+      data.account_trashed === true
+      || data.code === "account_trashed"
+      || data.error === "account_trashed"
+    )
+  );
+}
+
+function createWallosRequestError(message, context = {}) {
+  const error = new Error(String(message || translate("unknown_error")));
+  error.response = context.response || null;
+  error.status = Number(context.status || context.response?.status || 0);
+  error.data = context.data ?? null;
+  error.rawBody = context.rawBody || "";
+  error.code = context.code || (context.data && typeof context.data === "object"
+    ? String(context.data.code || context.data.error || "")
+    : "");
+  error.sessionExpired = isWallosSessionFailurePayload(context.data);
+  error.accountTrashed = isWallosAccountTrashedPayload(context.data);
+  error.rateLimit = Boolean(context.data && typeof context.data === "object" && context.data.rate_limit === true);
+  return error;
+}
+
+let wallosSessionFailureDispatched = false;
+
+function isWallosSessionFailureError(error) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  if (error.sessionExpired === true) {
+    return true;
+  }
+
+  return isWallosSessionFailurePayload(error.data);
+}
+
+function dispatchWallosSessionFailure(error) {
+  if (!isWallosSessionFailureError(error) || wallosSessionFailureDispatched) {
+    return;
+  }
+
+  wallosSessionFailureDispatched = true;
+  window.dispatchEvent(new CustomEvent("wallos:session-expired", {
+    detail: error,
+  }));
+
+  window.setTimeout(() => {
+    wallosSessionFailureDispatched = false;
+  }, 1200);
+}
+
+function handleWallosSessionFailure(error, callback = null) {
+  if (!isWallosSessionFailureError(error)) {
+    return false;
+  }
+
+  if (typeof callback === "function") {
+    callback(error);
+    return true;
+  }
+
+  dispatchWallosSessionFailure(error);
+  return true;
 }
 
 async function wallosRequest(url, options = {}) {
@@ -491,24 +620,42 @@ async function wallosRequest(url, options = {}) {
     });
 
     let data = null;
+    let rawBody = "";
 
     if (responseType === "json") {
-      const rawBody = await response.text();
+      rawBody = await response.text();
       if (rawBody.trim() === "") {
         if (allowEmptyJsonResponse) {
           data = null;
         } else {
-          throw new Error(fallbackErrorMessage || translate("unknown_error"));
+          throw createWallosRequestError(
+            fallbackErrorMessage || translate("unknown_error"),
+            {
+              response,
+              status: response.status,
+              data: null,
+              rawBody,
+            }
+          );
         }
       } else {
         try {
           data = JSON.parse(rawBody);
         } catch (error) {
-          throw new Error(fallbackErrorMessage || translate("unknown_error"));
+          throw createWallosRequestError(
+            fallbackErrorMessage || translate("unknown_error"),
+            {
+              response,
+              status: response.status,
+              data: null,
+              rawBody,
+            }
+          );
         }
       }
     } else if (responseType === "text") {
-      data = await response.text();
+      rawBody = await response.text();
+      data = rawBody;
     } else if (responseType === "blob") {
       data = await response.blob();
     }
@@ -517,11 +664,21 @@ async function wallosRequest(url, options = {}) {
     finalizeRequestQueueTracking(requestQueueTracker, requestSucceeded);
 
     if (requireOk && !response.ok) {
-      throw new Error(
-        data?.message
-        || fallbackErrorMessage
-        || translate("network_response_error")
+      const errorData = responseType === "text" ? (tryParseWallosJsonPayload(rawBody) || data) : data;
+      const requestError = createWallosRequestError(
+        extractWallosResponseMessage(
+          errorData,
+          fallbackErrorMessage || translate("network_response_error")
+        ),
+        {
+          response,
+          status: response.status,
+          data: errorData,
+          rawBody,
+        }
       );
+      dispatchWallosSessionFailure(requestError);
+      throw requestError;
     }
 
     return { response, data };
@@ -598,11 +755,25 @@ window.WallosHttp = {
   postForm: wallosPostForm,
   handleJsonResult: wallosHandleJsonResult,
   normalizeError: normalizeWallosRequestError,
+  isSessionFailurePayload: isWallosSessionFailurePayload,
+  isSessionFailureError: isWallosSessionFailureError,
+  handleSessionFailure: handleWallosSessionFailure,
 };
 
 window.WallosThemeColor = {
   update: updateThemeColorMetaTag,
 };
+
+window.addEventListener("wallos:session-expired", () => {
+  const pathname = String(window.location.pathname || "").toLowerCase();
+  if (pathname.endsWith("/login.php") || pathname.endsWith("/registration.php")) {
+    return;
+  }
+
+  window.setTimeout(() => {
+    window.location.reload();
+  }, 60);
+});
 
 function closeToast(type) {
   const toast = document.querySelector(type === "error" ? ".toast#errorToast" : ".toast#successToast");

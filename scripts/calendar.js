@@ -75,14 +75,9 @@ function openSubscriptionModal(subscriptionId) {
 
     modalContent.innerHTML = '';
 
-    fetch('endpoints/subscription/getcalendar.php', {
-        method: 'POST',
-        body: JSON.stringify({id: subscriptionId}),
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    window.WallosApi.postJson('endpoints/subscription/getcalendar.php', { id: subscriptionId }, {
+        fallbackErrorMessage: translate('error')
       })
-      .then(response => response.json())
       .then(data => {
         if (data.success && data.data) {
           const subscription = data.data;
@@ -112,7 +107,14 @@ function openSubscriptionModal(subscriptionId) {
           console.error(data.message);
         }
       })
-      .catch(error => console.error('Error:', error));
+      .catch(error => {
+        if (window.WallosApi?.isSessionFailureError?.(error)) {
+          window.location.reload();
+          return;
+        }
+
+        console.error('Error:', error);
+      });
 }
 
 function decodeHtmlEntities(str) {
@@ -122,15 +124,9 @@ function decodeHtmlEntities(str) {
 }
 
 function exportCalendar(subscriptionId) {
-  fetch('endpoints/subscription/exportcalendar.php', {
-    method: 'POST',
-    body: JSON.stringify({id: subscriptionId}),
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    }
+  window.WallosApi.postJson('endpoints/subscription/exportcalendar.php', { id: subscriptionId }, {
+    fallbackErrorMessage: translate("error"),
   })
-  .then(response => response.json())
   .then(data => {
     if (data.success && data.ics) {
       const blob = new Blob([data.ics], {type: 'text/calendar'});
@@ -146,7 +142,14 @@ function exportCalendar(subscriptionId) {
       showErrorMessage(data.message);
     }
   })
-  .catch(error => console.error('Error:', error));
+  .catch(error => {
+    if (window.WallosApi?.isSessionFailureError?.(error)) {
+      window.location.reload();
+      return;
+    }
+
+    console.error('Error:', error);
+  });
 }
 
 function showExportPopup() {
