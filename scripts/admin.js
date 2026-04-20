@@ -15,6 +15,17 @@ function makeFetchCall(url, data, button) {
 
 }
 
+function getAdminRequestErrorMessage(error) {
+  return window.WallosApi.getErrorMessage(error, translate("error"));
+}
+
+function adminPostJson(url, data, options = {}) {
+  return window.WallosApi.postJson(url, data, {
+    fallbackErrorMessage: translate("error"),
+    ...options,
+  });
+}
+
 function testSmtpSettingsButton() {
   const button = document.getElementById("testSmtpSettingsButton");
   button.disabled = true;
@@ -132,26 +143,18 @@ function saveSecuritySettingsButton() {
     image_download_mb_per_hour: document.getElementById('image_download_mb_per_hour').value,
   };
 
-  fetch('endpoints/admin/savesecuritysettings.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify(data)
-  })
-    .then(response => response.json())
+  adminPostJson('endpoints/admin/savesecuritysettings.php', data)
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
-        button.disabled = false;
       } else {
         showErrorMessage(data.message);
-        button.disabled = false;
       }
     })
     .catch(error => {
-      showErrorMessage(error);
+      showErrorMessage(getAdminRequestErrorMessage(error));
+    })
+    .finally(() => {
       button.disabled = false;
     });
 }
@@ -264,19 +267,11 @@ function addRateLimitPresetButton() {
     return;
   }
 
-  fetch('endpoints/admin/ratelimitpresets.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({
+  adminPostJson('endpoints/admin/ratelimitpresets.php', {
       action: 'create',
       name: normalizedName,
       config: getCurrentRateLimitConfig(),
-    }),
-  })
-    .then(response => response.json())
+    })
     .then((data) => {
       if (!data.success) {
         throw new Error(data.message || translate('error'));
@@ -285,7 +280,7 @@ function addRateLimitPresetButton() {
       showSuccessMessage(data.message);
       window.location.reload();
     })
-    .catch((error) => showErrorMessage(error.message || translate('error')));
+    .catch((error) => showErrorMessage(getAdminRequestErrorMessage(error)));
 }
 
 function saveRateLimitPresetButton() {
@@ -296,19 +291,11 @@ function saveRateLimitPresetButton() {
     return;
   }
 
-  fetch('endpoints/admin/ratelimitpresets.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({
+  adminPostJson('endpoints/admin/ratelimitpresets.php', {
       action: 'update',
       preset_id: preset.id,
       config: getCurrentRateLimitConfig(),
-    }),
-  })
-    .then(response => response.json())
+    })
     .then((data) => {
       if (!data.success) {
         throw new Error(data.message || translate('error'));
@@ -317,7 +304,7 @@ function saveRateLimitPresetButton() {
       showSuccessMessage(data.message);
       window.location.reload();
     })
-    .catch((error) => showErrorMessage(error.message || translate('error')));
+    .catch((error) => showErrorMessage(getAdminRequestErrorMessage(error)));
 }
 
 function deleteRateLimitPresetButton() {
@@ -394,15 +381,7 @@ function saveSubscriptionImageSettingsButton() {
     subscription_image_max_size_mb: document.getElementById('subscriptionImageMaxSizeMb').value,
   };
 
-  fetch('endpoints/admin/saveimagesettings.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify(data),
-  })
-    .then(response => response.json())
+  adminPostJson('endpoints/admin/saveimagesettings.php', data)
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -410,7 +389,7 @@ function saveSubscriptionImageSettingsButton() {
         showErrorMessage(data.message || translate('error'));
       }
     })
-    .catch(() => showErrorMessage(translate('error')))
+    .catch((error) => showErrorMessage(getAdminRequestErrorMessage(error)))
     .finally(() => {
       button.disabled = false;
     });
@@ -444,14 +423,7 @@ function deleteUnusedLogos() {
   const button = document.getElementById('deleteUnusedLogos');
   button.disabled = true;
 
-  fetch('endpoints/admin/deleteunusedlogos.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    }
-  })
-    .then(response => response.json())
+  adminPostJson('endpoints/admin/deleteunusedlogos.php', {})
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -463,7 +435,9 @@ function deleteUnusedLogos() {
       }
     })
     .catch(error => {
-      showErrorMessage(error);
+      showErrorMessage(getAdminRequestErrorMessage(error));
+    })
+    .finally(() => {
       button.disabled = false;
     });
 }
@@ -476,15 +450,7 @@ function toggleUpdateNotification() {
     notificationEnabled: notificationEnabled
   };
 
-  fetch('endpoints/admin/updatenotification.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify(data)
-  })
-    .then(response => response.json())
+  adminPostJson('endpoints/admin/updatenotification.php', data)
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -495,7 +461,7 @@ function toggleUpdateNotification() {
         showErrorMessage(data.message);
       }
     })
-    .catch(error => showErrorMessage('Error:', error));
+    .catch(error => showErrorMessage(getAdminRequestErrorMessage(error)));
 
 }
 
@@ -527,15 +493,7 @@ function toggleOidcEnabled() {
     oidcEnabled: oidcEnabled
   };
 
-  fetch('endpoints/admin/enableoidc.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify(data)
-  })
-    .then(response => response.json())
+  adminPostJson('endpoints/admin/enableoidc.php', data)
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -545,7 +503,7 @@ function toggleOidcEnabled() {
       toggle.disabled = false;
     })
     .catch(error => {
-      showErrorMessage('Error:', error);
+      showErrorMessage(getAdminRequestErrorMessage(error));
       toggle.disabled = false;
     });
 
@@ -586,15 +544,7 @@ function saveOidcSettingsButton() {
   };
 
 
-  fetch('endpoints/admin/saveoidcsettings.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify(data)
-  })
-    .then(response => response.json())
+  adminPostJson('endpoints/admin/saveoidcsettings.php', data)
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -604,7 +554,7 @@ function saveOidcSettingsButton() {
       button.disabled = false;
     })
     .catch(error => {
-      showErrorMessage('Error:', error);
+      showErrorMessage(getAdminRequestErrorMessage(error));
       button.disabled = false;
     });
 }
