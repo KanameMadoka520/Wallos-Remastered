@@ -211,6 +211,7 @@ $subscriptionMediaJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/su
 $subscriptionImageViewerJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-image-viewer.js');
 $subscriptionPriceRulesJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-price-rules.js');
 $subscriptionLayoutJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-layout.js');
+$subscriptionInteractionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-interactions.js');
 $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscriptions.js');
 $subscriptionPagePreferences = wallos_get_subscription_page_preferences_payload($settings);
 $subscriptionDisplayColumns = (int) ($subscriptionPagePreferences['displayColumns'] ?? 1);
@@ -1543,6 +1544,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 <script src="scripts/subscription-image-viewer.js?<?= $subscriptionImageViewerJsVersion ?>"></script>
 <script src="scripts/subscription-price-rules.js?<?= $subscriptionPriceRulesJsVersion ?>"></script>
 <script src="scripts/subscription-layout.js?<?= $subscriptionLayoutJsVersion ?>"></script>
+<script src="scripts/subscription-interactions.js?<?= $subscriptionInteractionsJsVersion ?>"></script>
 <script src="scripts/subscriptions.js?<?= $subscriptionsJsVersion ?>"></script>
 <?php
 if (isset($_GET['add'])) {
