@@ -46,26 +46,42 @@ function saveBudget() {
     });
 }
 
+function getSettingsRequestErrorMessage(error, fallbackMessage = null) {
+  return window.WallosApi?.getErrorMessage?.(error, fallbackMessage || translate("unknown_error"))
+    || fallbackMessage
+    || translate("unknown_error");
+}
+
+function settingsPostForm(url, payload = {}, options = {}) {
+  return window.WallosApi.postForm(url, payload, {
+    fallbackErrorMessage: options.fallbackErrorMessage || translate("unknown_error"),
+    ...options,
+  });
+}
+
+function settingsPostJson(url, payload = {}, options = {}) {
+  return window.WallosApi.postJson(url, payload, {
+    fallbackErrorMessage: options.fallbackErrorMessage || translate("unknown_error"),
+    ...options,
+  });
+}
+
+function settingsGetJson(url, options = {}) {
+  return window.WallosApi.getJson(url, {
+    includeCsrf: false,
+    fallbackErrorMessage: options.fallbackErrorMessage || translate("unknown_error"),
+    ...options,
+  });
+}
+
 
 function addMemberButton(memberId) {
   const addButton = document.getElementById("addMember");
   addButton.disabled = true;
 
-  fetch("endpoints/household/household.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: new URLSearchParams({action: "add"}),
+  settingsPostForm("endpoints/household/household.php", { action: "add" }, {
+    fallbackErrorMessage: translate("failed_add_member"),
   })
-    .then(response => {
-      if (!response.ok) {
-        showErrorMessage(translate("failed_add_member"));
-        throw new Error(translate("network_response_error"));
-      }
-      return response.json();
-    })
     .then(responseData => {
       if (responseData.success) {
         const newMemberId = responseData.householdId;
@@ -113,7 +129,7 @@ function addMemberButton(memberId) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate("failed_add_member"));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("failed_add_member")));
     })
     .finally(() => {
       addButton.disabled = false;
@@ -121,22 +137,11 @@ function addMemberButton(memberId) {
 }
 
 function removeMember(memberId) {
-  fetch("endpoints/household/household.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: new URLSearchParams({
+  settingsPostForm("endpoints/household/household.php", {
       action: "delete",
       memberId: memberId,
-    }),
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(translate("network_response_error"));
-      }
-      return response.json();
+    }, {
+      fallbackErrorMessage: translate("failed_remove_member"),
     })
     .then(responseData => {
       if (responseData.success) {
@@ -149,7 +154,7 @@ function removeMember(memberId) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate("failed_remove_member"));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("failed_remove_member")));
     });
 }
 
@@ -167,25 +172,13 @@ function editMember(memberId) {
   const memberName = memberNameElement.value;
   const memberEmail = memberEmailElement ? memberEmailElement.value : "";
 
-  fetch("endpoints/household/household.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: new URLSearchParams({
+  settingsPostForm("endpoints/household/household.php", {
       action: "edit",
       memberId: memberId,
       name: memberName,
       email: memberEmail,
-    }),
-  })
-    .then(response => {
-      if (!response.ok) {
-        showErrorMessage(translate("failed_save_member"));
-        throw new Error(translate("network_response_error"));
-      }
-      return response.json();
+    }, {
+      fallbackErrorMessage: translate("failed_save_member"),
     })
     .then(responseData => {
       if (responseData.success) {
@@ -196,7 +189,7 @@ function editMember(memberId) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate("failed_save_member"));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("failed_save_member")));
     })
     .finally(() => {
       saveButton.classList.remove("disabled");
@@ -209,21 +202,9 @@ function addCategoryButton(categoryId) {
   const addButton = document.getElementById("addCategory");
   addButton.disabled = true;
 
-  fetch('endpoints/categories/category.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: new URLSearchParams({action: 'add'}),
+  settingsPostForm('endpoints/categories/category.php', { action: 'add' }, {
+    fallbackErrorMessage: translate('failed_add_category'),
   })
-    .then(response => {
-      if (!response.ok) {
-        showErrorMessage(translate('failed_add_category'));
-        throw new Error(translate('network_response_error'));
-      }
-      return response.json();
-    })
     .then(responseData => {
       if (responseData.success) {
         const newCategoryId = responseData.categoryId;
@@ -271,7 +252,7 @@ function addCategoryButton(categoryId) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate('failed_add_category'));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate('failed_add_category')));
     })
     .finally(() => {
       addButton.disabled = false;
@@ -280,22 +261,11 @@ function addCategoryButton(categoryId) {
 
 
 function removeCategory(categoryId) {
-  fetch('endpoints/categories/category.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: new URLSearchParams({
+  settingsPostForm('endpoints/categories/category.php', {
       action: 'delete',
       categoryId: categoryId,
-    }),
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(translate('network_response_error'));
-      }
-      return response.json();
+    }, {
+      fallbackErrorMessage: translate('failed_remove_category'),
     })
     .then(responseData => {
       if (responseData.success) {
@@ -308,7 +278,7 @@ function removeCategory(categoryId) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate('failed_remove_category'));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate('failed_remove_category')));
     });
 }
 
@@ -324,27 +294,12 @@ function editCategory(categoryId) {
 
   const categoryName = inputElement.value;
 
-  fetch('endpoints/categories/category.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: new URLSearchParams({
+  settingsPostForm('endpoints/categories/category.php', {
       action: 'edit',
       categoryId: categoryId,
       name: categoryName,
-    }),
-  })
-    .then(response => {
-      saveButton.classList.remove("disabled");
-      saveButton.disabled = false;
-
-      if (!response.ok) {
-        showErrorMessage(translate('failed_save_category'));
-        throw new Error(translate('network_response_error'));
-      }
-      return response.json();
+    }, {
+      fallbackErrorMessage: translate('failed_save_category'),
     })
     .then(responseData => {
       if (responseData.success) {
@@ -355,7 +310,9 @@ function editCategory(categoryId) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate('failed_save_category'));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate('failed_save_category')));
+    })
+    .finally(() => {
       saveButton.classList.remove("disabled");
       saveButton.disabled = false;
     });
@@ -366,20 +323,9 @@ function addCurrencyButton(currencyId) {
   const addButton = document.getElementById("addCurrency");
   addButton.disabled = true;
 
-  fetch('endpoints/currency/currency.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: new URLSearchParams({action: 'add'}),
+  settingsPostForm('endpoints/currency/currency.php', { action: 'add' }, {
+    fallbackErrorMessage: translate('failed_add_currency'),
   })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(translate('network_response_error'));
-      }
-      return response.json();
-    })
     .then(responseData => {
       if (responseData.success) {
         const newCurrencyId = responseData.currencyId;
@@ -439,7 +385,7 @@ function addCurrencyButton(currencyId) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate('failed_add_currency'));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate('failed_add_currency')));
     })
     .finally(() => {
       addButton.disabled = false;
@@ -447,22 +393,11 @@ function addCurrencyButton(currencyId) {
 }
 
 function removeCurrency(currencyId) {
-  fetch('endpoints/currency/currency.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: new URLSearchParams({
+  settingsPostForm('endpoints/currency/currency.php', {
       action: 'delete',
       currencyId: currencyId,
-    }),
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(translate('network_response_error'));
-      }
-      return response.json();
+    }, {
+      fallbackErrorMessage: translate('failed_remove_currency'),
     })
     .then(data => {
       if (data.success) {
@@ -475,7 +410,7 @@ function removeCurrency(currencyId) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(error.message || translate('failed_remove_currency'));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate('failed_remove_currency')));
     });
 }
 
@@ -494,30 +429,16 @@ function editCurrency(currencyId) {
   const currencySymbol = inputSymbolElement.value;
   const currencyCode = inputCodeElement.value;
 
-  fetch('endpoints/currency/currency.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: new URLSearchParams({
+  settingsPostForm('endpoints/currency/currency.php', {
       action: 'edit',
       currencyId: currencyId,
       name: currencyName,
       symbol: currencySymbol,
       code: currencyCode,
-    }),
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(translate('network_response_error'));
-      }
-      return response.json();
+    }, {
+      fallbackErrorMessage: translate('failed_save_currency'),
     })
     .then(data => {
-      saveButton.classList.remove("disabled");
-      saveButton.disabled = false;
-
       if (data.success) {
         showSuccessMessage(data.message);
       } else {
@@ -526,7 +447,9 @@ function editCurrency(currencyId) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(error.message || translate('failed_save_currency'));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate('failed_save_currency')));
+    })
+    .finally(() => {
       saveButton.classList.remove("disabled");
       saveButton.disabled = false;
     });
@@ -542,22 +465,11 @@ function togglePayment(paymentId) {
   const newEnabledState = element.dataset.enabled === "1" ? "0" : "1";
   const paymentMethodName = element.querySelector(".payment-name").innerText;
 
-  fetch("endpoints/payments/toggle.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: new URLSearchParams({
+  settingsPostForm("endpoints/payments/toggle.php", {
       paymentId: paymentId,
       enabled: newEnabledState,
-    }),
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(translate("network_response_error"));
-      }
-      return response.json();
+    }, {
+      fallbackErrorMessage: translate("failed_save_payment_method"),
     })
     .then(data => {
       if (data.success) {
@@ -569,7 +481,7 @@ function togglePayment(paymentId) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(error.message || translate("failed_save_payment_method"));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("failed_save_payment_method")));
     });
 }
 
@@ -610,19 +522,9 @@ function renamePayment(paymentId, newName) {
   formData.append("paymentId", paymentId);
   formData.append("name", name);
 
-  fetch("endpoints/payments/rename.php", {
-    method: "POST",
-    headers: {
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: formData,
+  settingsPostForm("endpoints/payments/rename.php", formData, {
+    fallbackErrorMessage: translate("failed_save_payment_method"),
   })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(translate("network_response_error"));
-      }
-      return response.json();
-    })
     .then(data => {
       if (data.success) {
         showSuccessMessage(`${newName} ${data.message}`);
@@ -632,7 +534,7 @@ function renamePayment(paymentId, newName) {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate("unknown_error"));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("failed_save_payment_method")));
     });
 }
 
@@ -686,8 +588,9 @@ function searchPaymentIcon() {
     const iconSearchPopup = document.querySelector("#icon-search-results");
     iconSearchPopup.classList.add("is-open");
     const imageSearchUrl = `endpoints/payments/search.php?search=${searchTerm}`;
-    fetch(imageSearchUrl)
-      .then(response => response.json())
+    settingsGetJson(imageSearchUrl, {
+      fallbackErrorMessage: translate('error_fetching_image_results'),
+    })
       .then(data => {
         if (data.imageUrls) {
           displayImageResults(data.imageUrls);
@@ -696,7 +599,7 @@ function searchPaymentIcon() {
         }
       })
       .catch(error => {
-        console.error(translate('error_fetching_image_results'), error);
+        console.error(getSettingsRequestErrorMessage(error, translate('error_fetching_image_results')), error);
       });
   } else {
     nameInput.focus();
@@ -774,14 +677,9 @@ function addPaymentMethod() {
   const formData = new FormData(paymentMethodForm);
   formData.append("action", "add");
 
-  fetch(addPaymentMethodEndpoint, {
-    method: "POST",
-    headers: {
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: formData,
+  settingsPostForm(addPaymentMethodEndpoint, formData, {
+    fallbackErrorMessage: translate("failed_add_payment_method"),
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -794,7 +692,7 @@ function addPaymentMethod() {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate("unknown_error"));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("failed_add_payment_method")));
     })
     .finally(() => {
       submitButton.disabled = false;
@@ -803,15 +701,9 @@ function addPaymentMethod() {
 
 
 function deletePaymentMethod(paymentId) {
-  fetch(`endpoints/payments/delete.php?id=${paymentId}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-       "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({ id: paymentId }),
+  settingsPostJson(`endpoints/payments/delete.php?id=${paymentId}`, { id: paymentId }, {
+    fallbackErrorMessage: translate("failed_remove_payment_method"),
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -825,6 +717,7 @@ function deletePaymentMethod(paymentId) {
     })
     .catch((error) => {
       console.error('Error:', error);
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("failed_remove_payment_method")));
     });
 }
 
@@ -838,14 +731,9 @@ function savePaymentMethodsSorting() {
   paymentMethodIds.forEach(id => formData.append("paymentMethodIds[]", id));
   formData.append("action", "sort");
 
-  fetch("endpoints/payments/sort.php", {
-    method: "POST",
-    headers: {
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: formData,
+  settingsPostForm("endpoints/payments/sort.php", formData, {
+    fallbackErrorMessage: translate("failed_sort_payment_methods"),
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -855,7 +743,7 @@ function savePaymentMethodsSorting() {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate("unknown_error"));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("failed_sort_payment_methods")));
     });
 }
 
@@ -905,15 +793,9 @@ function resetLocalizedDefaults(scope) {
 
   button.disabled = true;
 
-  fetch("endpoints/settings/reset_localized_defaults.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({ scope }),
+  settingsPostJson("endpoints/settings/reset_localized_defaults.php", { scope }, {
+    fallbackErrorMessage: translate("unknown_error"),
   })
-    .then((response) => response.json())
     .then((data) => {
       if (data.success) {
         applyLocalizedResetItems(scope, data.items || []);
@@ -925,7 +807,7 @@ function resetLocalizedDefaults(scope) {
     })
     .catch((error) => {
       console.error(error);
-      showErrorMessage(translate("unknown_error"));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("unknown_error")));
     })
     .finally(() => {
       toggleLocalizedResetButton(scope);
@@ -973,31 +855,20 @@ function addFixerKeyButton() {
   const provider = document.querySelector("#fixerProvider").value;
   const convertCurrencyCheckbox = document.querySelector("#convertcurrency");
 
-  fetch("endpoints/currency/fixer_api_key.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: new URLSearchParams({
+  settingsPostForm("endpoints/currency/fixer_api_key.php", {
       api_key: apiKey,
       provider: provider,
-    }),
-  })
-    .then(response => response.json())
+    }, {
+      fallbackErrorMessage: translate("unknown_error"),
+    })
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
         addButton.disabled = false;
         convertCurrencyCheckbox.disabled = false;
 
-        fetch("endpoints/currency/update_exchange.php", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            'X-CSRF-Token': window.csrfToken,
-          },
-          body: new URLSearchParams({force: "true"}),
+        settingsPostForm("endpoints/currency/update_exchange.php", { force: "true" }, {
+          fallbackErrorMessage: translate("unknown_error"),
         }).catch(console.error);
       } else {
         showErrorMessage(data.message);
@@ -1006,28 +877,27 @@ function addFixerKeyButton() {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate("unknown_error"));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("unknown_error")));
+    })
+    .finally(() => {
       addButton.disabled = false;
     });
 }
 
 
 function storeSettingsOnDB(endpoint, value) {
-  fetch('endpoints/settings/' + endpoint + '.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ "value": value })
+  settingsPostJson('endpoints/settings/' + endpoint + '.php', { value: value }, {
+    fallbackErrorMessage: translate("unknown_error"),
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
       } else {
         showErrorMessage(data.message);
       }
+    })
+    .catch(error => {
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("unknown_error")));
     });
 }
 
@@ -1095,12 +965,9 @@ function saveCategorySorting() {
   categoryIds.forEach(categoryId => formData.append("categoryIds[]", categoryId));
   formData.append("action", "sort");
 
-  fetch("endpoints/categories/category.php", {
-    method: "POST",
-    headers: {"X-CSRF-Token": window.csrfToken},
-    body: formData,
+  settingsPostForm("endpoints/categories/category.php", formData, {
+    fallbackErrorMessage: translate("unknown_error"),
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -1110,7 +977,7 @@ function saveCategorySorting() {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate("unknown_error"));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("unknown_error")));
     });
 }
 
@@ -1134,15 +1001,9 @@ function fetch_ai_models() {
   const ollama_host = document.querySelector("#ai_ollama_host").value.trim();
   const modelSelect = document.querySelector("#ai_model");
 
-  fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ type, api_key, ollama_host })
+  settingsPostJson(endpoint, { type, api_key, ollama_host }, {
+    fallbackErrorMessage: translate('unknown_error'),
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         modelSelect.innerHTML = '';
@@ -1157,7 +1018,7 @@ function fetch_ai_models() {
       }
     })
     .catch(error => {
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate('unknown_error')));
     });
 }
 
@@ -1223,15 +1084,16 @@ function saveAiSettingsButton() {
   const aiModel = document.querySelector("#ai_model").value;
   const aiRunSchedule = document.querySelector("#ai_run_schedule").value;
 
-  fetch('endpoints/ai/save_settings.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ ai_enabled: aiEnabled, ai_type: aiType, api_key: aiApiKey, ollama_host: aiOllamaHost, model: aiModel, ai_run_schedule: aiRunSchedule })
+  settingsPostJson('endpoints/ai/save_settings.php', {
+    ai_enabled: aiEnabled,
+    ai_type: aiType,
+    api_key: aiApiKey,
+    ollama_host: aiOllamaHost,
+    model: aiModel,
+    ai_run_schedule: aiRunSchedule,
+  }, {
+    fallbackErrorMessage: translate('unknown_error'),
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -1246,7 +1108,7 @@ function saveAiSettingsButton() {
       }
     })
     .catch(error => {
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate('unknown_error')));
     });
 }
 
@@ -1258,14 +1120,9 @@ function runAiRecommendations() {
   button.classList.add("hidden");
   spinner.classList.remove("hidden");
 
-  fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    }
+  settingsPostJson(endpoint, {}, {
+    fallbackErrorMessage: translate('unknown_error'),
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -1274,7 +1131,7 @@ function runAiRecommendations() {
       }
     })
     .catch(error => {
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate('unknown_error')));
     })
     .finally(() => {
       button.classList.remove("hidden");
