@@ -12,6 +12,7 @@ function wallos_regression_build_suite_catalog()
                 'registration-theme-color' => 'registration.php responds and exposes meta[name="theme-color"]',
                 'service-worker-registration' => 'scripts/all.js still registers service-worker.js',
                 'service-worker-cache-contract' => 'service-worker.js still declares cache version constants',
+                'service-worker-dynamic-cache-guard' => 'service-worker.js does not fuzzy-cache endpoints or query-string variants',
             ),
         ),
         'auth' => array(

@@ -54,6 +54,19 @@ function wallos_regression_run_public_suite(array $config, array $suiteDefinitio
             : 'service-worker.js not found'
     );
 
+    $hasEndpointGuard = strpos($serviceWorkerContents, "const isEndpointRequest = isSameOrigin && url.pathname.includes('/endpoints/');") !== false
+        && strpos($serviceWorkerContents, 'if (isEndpointRequest) {') !== false
+        && strpos($serviceWorkerContents, 'event.respondWith(fetch(request));') !== false;
+    $hasNoIgnoreSearchFallback = strpos($serviceWorkerContents, 'ignoreSearch: true') === false;
+    $results[] = wallos_regression_make_result(
+        ($hasEndpointGuard && $hasNoIgnoreSearchFallback) ? 'PASS' : 'FAIL',
+        'public',
+        'service-worker-dynamic-cache-guard',
+        file_exists($serviceWorkerPath)
+            ? 'Expected service-worker.js to keep endpoints network-only and avoid ignoreSearch cache fallbacks for dynamic pages.'
+            : 'service-worker.js not found'
+    );
+
     return $results;
 }
 

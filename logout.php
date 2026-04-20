@@ -50,7 +50,13 @@ if ($logoutOIDC && !empty($logoutUrl)) {
 <script>
   async function clearAndRedirect() {
     if ('caches' in window) {
-      await caches.delete('pages-cache-v1');
+      const keys = await caches.keys();
+      const wallosCachePrefixes = ['pages-cache-v', 'static-cache-v', 'logos-cache-v'];
+      await Promise.all(
+        keys
+          .filter((key) => wallosCachePrefixes.some((prefix) => key.startsWith(prefix)))
+          .map((key) => caches.delete(key))
+      );
     }
     sessionStorage.removeItem('sw_prefetched');
     window.location.href = '.';

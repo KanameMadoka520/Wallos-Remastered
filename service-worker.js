@@ -1,6 +1,6 @@
-const STATIC_CACHE = 'static-cache-v15';
-const PAGES_CACHE = 'pages-cache-v15';
-const LOGOS_CACHE = 'logos-cache-v15';
+const STATIC_CACHE = 'static-cache-v16';
+const PAGES_CACHE = 'pages-cache-v16';
+const LOGOS_CACHE = 'logos-cache-v16';
 
 const staticAssets = [
     'manifest.json',
@@ -218,6 +218,9 @@ self.addEventListener('message', function (event) {
 self.addEventListener('fetch', function (event) {
     const request = event.request;
     const url = new URL(request.url);
+    const isSameOrigin = url.origin === self.location.origin;
+    const isEndpointRequest = isSameOrigin && url.pathname.includes('/endpoints/');
+    const isDocumentRequest = request.mode === 'navigate' || request.destination === 'document';
 
     // Never intercept non-GET requests (POST, etc.)
     if (request.method !== 'GET') return;
@@ -245,19 +248,32 @@ self.addEventListener('fetch', function (event) {
         return;
     }
 
-    // PHP pages and everything else: network-first, cache as fallback
-    // Also update the pages cache on every successful load
+    // API / endpoint requests should stay network-only so query-string variants do not bleed into cache.
+    if (isEndpointRequest) {
+        event.respondWith(fetch(request));
+        return;
+    }
+
+    // HTML document navigations: network-first, cache exact URL only.
+    if (isDocumentRequest) {
+        event.respondWith(
+            fetch(request).then(response => {
+                if (response.ok && !response.redirected) {
+                    const responseClone = response.clone();
+                    caches.open(PAGES_CACHE).then(cache => {
+                        cache.put(request, responseClone);
+                    });
+                }
+                return response;
+            }).catch(() => {
+                return caches.match(request);
+            })
+        );
+        return;
+    }
+
+    // Everything else stays network-first without fuzzy query-string fallbacks.
     event.respondWith(
-        fetch(request).then(response => {
-            if (response.ok && !response.redirected) {
-                const responseClone = response.clone(); // clone before any async operation
-                caches.open(PAGES_CACHE).then(cache => {
-                    cache.put(request, responseClone);
-                });
-            }
-            return response;
-        }).catch(() => {
-            return caches.match(request, { ignoreSearch: true });
-        })
+        fetch(request).catch(() => caches.match(request))
     );
 });
