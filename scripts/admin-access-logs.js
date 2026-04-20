@@ -86,7 +86,7 @@
     body.className = 'access-log-modal-body';
     const filterGrid = document.createElement('div');
     filterGrid.className = 'access-log-filter-grid';
-    const typeField = document.createElement('div'); typeField.className = 'form-group'; typeField.innerHTML = `<label for="securityAnomalyType">${ui.dataset.typeLabel}</label><select id="securityAnomalyType"><option value="">ALL</option><option value="rate_limit">rate_limit</option></select>`;
+    const typeField = document.createElement('div'); typeField.className = 'form-group'; typeField.innerHTML = `<label for="securityAnomalyType">${ui.dataset.typeLabel}</label><select id="securityAnomalyType"><option value="">ALL</option><option value="rate_limit">rate_limit</option><option value="client_runtime">client_runtime</option><option value="request_failure">request_failure</option></select>`;
     const keywordField = document.createElement('div'); keywordField.className = 'form-group'; keywordField.innerHTML = `<label for="securityAnomalyKeyword">${ui.dataset.keywordLabel}</label><input type="text" id="securityAnomalyKeyword" autocomplete="off" placeholder="${ui.dataset.keywordPlaceholder || ''}" />`;
     const startField = document.createElement('div'); startField.className = 'form-group'; startField.innerHTML = `<label for="securityAnomalyStart">${ui.dataset.startLabel}</label><input type="datetime-local" id="securityAnomalyStart" />`;
     const endField = document.createElement('div'); endField.className = 'form-group'; endField.innerHTML = `<label for="securityAnomalyEnd">${ui.dataset.endLabel}</label><input type="datetime-local" id="securityAnomalyEnd" />`;

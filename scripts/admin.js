@@ -609,3 +609,54 @@ function saveOidcSettingsButton() {
     });
 }
 
+function initializeAdminServiceWorkerStatus() {
+  const ui = document.getElementById("admin-service-worker-ui");
+  const registrationNode = document.getElementById("admin-sw-registration-state");
+  const controllerNode = document.getElementById("admin-sw-controller-state");
+
+  if (!ui || !registrationNode || !controllerNode) {
+    return;
+  }
+
+  if (!("serviceWorker" in navigator)) {
+    registrationNode.textContent = ui.dataset.notSupported || "Not supported";
+    controllerNode.textContent = ui.dataset.notSupported || "Not supported";
+    return;
+  }
+
+  const controller = navigator.serviceWorker.controller;
+  controllerNode.textContent = controller
+    ? (ui.dataset.controlled || "Controlled")
+    : (ui.dataset.uncontrolled || "Uncontrolled");
+
+  navigator.serviceWorker.getRegistration()
+    .then((registration) => {
+      if (!registration) {
+        registrationNode.textContent = ui.dataset.noRegistration || "No registration";
+        return;
+      }
+
+      if (registration.waiting) {
+        registrationNode.textContent = ui.dataset.waiting || "Waiting";
+        return;
+      }
+
+      if (registration.installing) {
+        registrationNode.textContent = ui.dataset.installing || "Installing";
+        return;
+      }
+
+      if (registration.active) {
+        registrationNode.textContent = ui.dataset.active || "Active";
+        return;
+      }
+
+      registrationNode.textContent = ui.dataset.noRegistration || "No registration";
+    })
+    .catch(() => {
+      registrationNode.textContent = ui.dataset.noRegistration || "No registration";
+    });
+}
+
+document.addEventListener("DOMContentLoaded", initializeAdminServiceWorkerStatus);
+

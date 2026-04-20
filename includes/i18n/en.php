@@ -824,6 +824,18 @@ $i18n = [
     "rate_limit_preset_created" => "Rate limit preset created successfully.",
     "rate_limit_preset_saved" => "Rate limit preset saved successfully.",
     "rate_limit_preset_deleted" => "Rate limit preset deleted successfully.",
+    "recent_client_runtime_errors" => "Recent Client Runtime Errors",
+    "recent_request_failures" => "Recent Request Failures",
+    "service_worker_versions" => "Service Worker Cache Versions",
+    "service_worker_registration_state" => "Service Worker Registration",
+    "service_worker_controller_state" => "Service Worker Controller",
+    "service_worker_not_supported" => "Not supported",
+    "service_worker_no_registration" => "No registration",
+    "service_worker_active" => "Active",
+    "service_worker_waiting" => "Waiting",
+    "service_worker_installing" => "Installing",
+    "service_worker_controlled" => "Controlled",
+    "service_worker_uncontrolled" => "Uncontrolled",
 ];
 
 
