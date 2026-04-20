@@ -14,10 +14,6 @@ let currentPaymentHistoryRangeMonths = 12;
 let reopenPaymentHistoryAfterPaymentModalClose = false;
 let currentPaymentModalSubscription = null;
 let currentPaymentModalMode = "create";
-let subscriptionMasonryLayoutFrame = null;
-let subscriptionMasonryResizeTimer = null;
-let subscriptionCardSortable = null;
-let isSubscriptionSortDragging = false;
 
 function toggleOpenSubscription(subId) {
   const subscriptionElement = document.querySelector('.subscription[data-id="' + subId + '"]');
@@ -267,60 +263,15 @@ function bindSubscriptionMasonryImageEvents() {
 }
 
 function applySubscriptionMasonryLayout() {
-  const container = document.querySelector("#subscriptions");
-  if (!container || !container.classList.contains("subscription-columns") || isSubscriptionSortDragging) {
-    return;
-  }
-
-  const computedStyles = window.getComputedStyle(container);
-  const rowHeight = parseFloat(computedStyles.gridAutoRows);
-  const rowGap = parseFloat(computedStyles.rowGap);
-
-  if (!Number.isFinite(rowHeight) || rowHeight <= 0) {
-    return;
-  }
-
-  Array.from(container.children).forEach((item) => {
-    if (!(item instanceof HTMLElement)) {
-      return;
-    }
-
-    if (window.getComputedStyle(item).display === "none") {
-      item.style.gridRowEnd = "";
-      return;
-    }
-
-    item.style.gridRowEnd = "span 1";
-    const itemHeight = item.getBoundingClientRect().height;
-    const span = Math.max(1, Math.ceil((itemHeight + rowGap) / (rowHeight + rowGap)));
-    item.style.gridRowEnd = `span ${span}`;
-  });
+  return window.WallosSubscriptionLayout?.applySubscriptionMasonryLayout?.();
 }
 
 function scheduleSubscriptionMasonryLayout() {
-  if (isSubscriptionSortDragging) {
-    return;
-  }
-
-  if (subscriptionMasonryLayoutFrame !== null) {
-    window.cancelAnimationFrame(subscriptionMasonryLayoutFrame);
-  }
-
-  subscriptionMasonryLayoutFrame = window.requestAnimationFrame(() => {
-    subscriptionMasonryLayoutFrame = null;
-    applySubscriptionMasonryLayout();
-  });
+  return window.WallosSubscriptionLayout?.scheduleSubscriptionMasonryLayout?.();
 }
 
 function handleSubscriptionMasonryResize() {
-  if (subscriptionMasonryResizeTimer !== null) {
-    window.clearTimeout(subscriptionMasonryResizeTimer);
-  }
-
-  subscriptionMasonryResizeTimer = window.setTimeout(() => {
-    subscriptionMasonryResizeTimer = null;
-    scheduleSubscriptionMasonryLayout();
-  }, 80);
+  return window.WallosSubscriptionLayout?.handleSubscriptionMasonryResize?.();
 }
 
 function getCurrentSubscriptionSortOrder() {
@@ -346,22 +297,7 @@ function canReorderSubscriptions() {
 }
 
 function updateSubscriptionReorderState() {
-  const container = document.querySelector("#subscriptions");
-  const enabled = !!container && canReorderSubscriptions();
-
-  if (container) {
-    container.classList.toggle("subscription-reorder-enabled", enabled);
-  }
-
-  document.querySelectorAll(".subscription-drag-handle").forEach((handle) => {
-    handle.disabled = !enabled;
-    handle.setAttribute("title", translate(enabled ? "subscription_reorder_handle_title" : "subscription_reorder_unavailable"));
-    handle.setAttribute("aria-label", translate(enabled ? "subscription_reorder_handle_title" : "subscription_reorder_unavailable"));
-  });
-
-  if (subscriptionCardSortable) {
-    subscriptionCardSortable.option("disabled", !enabled);
-  }
+  return window.WallosSubscriptionLayout?.updateSubscriptionReorderState?.();
 }
 
 function setSubscriptionSortCookie(sortOption) {
@@ -407,17 +343,9 @@ function persistSubscriptionOrder() {
     return;
   }
 
-  fetch("endpoints/subscription/reordersubscriptions.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({
+  window.WallosHttp.postJson("endpoints/subscription/reordersubscriptions.php", {
       subscriptionIds,
-    }),
-  })
-    .then((response) => response.json())
+    })
     .then((data) => {
       if (!data.success) {
         showErrorMessage(data.message || translate("error"));
@@ -430,36 +358,7 @@ function persistSubscriptionOrder() {
 }
 
 function initializeSubscriptionCardSortable() {
-  const container = document.querySelector("#subscriptions");
-
-  if (subscriptionCardSortable) {
-    subscriptionCardSortable.destroy();
-    subscriptionCardSortable = null;
-  }
-
-  if (!container || typeof Sortable === "undefined") {
-    updateSubscriptionReorderState();
-    return;
-  }
-
-  subscriptionCardSortable = new Sortable(container, {
-    animation: 160,
-    draggable: ".subscription-container[data-id]",
-    handle: ".subscription-drag-handle",
-    disabled: !canReorderSubscriptions(),
-    onStart: () => {
-      isSubscriptionSortDragging = true;
-      container.classList.add("is-sorting");
-    },
-    onEnd: () => {
-      isSubscriptionSortDragging = false;
-      container.classList.remove("is-sorting");
-      persistSubscriptionOrder();
-      scheduleSubscriptionMasonryLayout();
-    },
-  });
-
-  updateSubscriptionReorderState();
+  return window.WallosSubscriptionLayout?.initializeSubscriptionCardSortable?.();
 }
 
 function getDetailImageConfig() {
@@ -1999,6 +1898,11 @@ document.addEventListener('DOMContentLoaded', function () {
   window.WallosSubscriptionMedia?.initialize?.({
     openViewerFromElement: openSubscriptionImageViewerFromElement,
     applyImageLayoutMode: applySubscriptionImageLayoutMode,
+  });
+  window.WallosSubscriptionLayout?.initialize?.({
+    canReorder: canReorderSubscriptions,
+    persistOrder: persistSubscriptionOrder,
+    persistManualPreference: persistManualSubscriptionSortPreference,
   });
   window.WallosSubscriptionPayments?.initialize?.({
     refreshSubscriptionsPreservingState,
