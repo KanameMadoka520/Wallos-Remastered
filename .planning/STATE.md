@@ -2,10 +2,10 @@
 
 ## Current Position
 
-Phase: 1 - 自动化回归检查基线
-Plan: 2 plans completed
-Status: Phase 1 complete
-Last activity: 2026-04-20 - Phase 1 executed and verified
+Phase: 2 - 会话与 401 统一层
+Plan: Context captured
+Status: Ready for planning
+Last activity: 2026-04-20 - Phase 2 context gathered
 
 ## Project Reference
 
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 
 ## Next Up
 
-- 进入 Phase 2，收敛页面请求、endpoint 与媒体访问的会话恢复逻辑
-- 统一 401 / `session_expired` 的返回约定与前端处理入口
-- 继续复用本阶段建立的 regression runner 作为后续回归安全网
+- 基于 `02-CONTEXT.md` 为 Phase 2 拆出共享会话 helper 与统一 401 契约的执行计划
+- 明确优先迁移的高风险链路：页面检查、endpoint 检查、媒体访问与前端请求层
+- 继续复用 Phase 1 的 regression runner 作为本阶段回归安全网
 
 ---
-*Last updated: 2026-04-20 after Phase 1 execution*
+*Last updated: 2026-04-20 after Phase 2 context gathering*
