@@ -2,10 +2,10 @@
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: -
-Status: Milestone initialized
-Last activity: 2026-04-20 - Milestone v1.1 started
+Phase: 4 - 请求层统一收敛
+Plan: 3 plans created
+Status: Ready to execute
+Last activity: 2026-04-20 - Phase 4 planned
 
 ## Project Reference
 
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 
 ## Next Up
 
-- 为 Phase 4 生成上下文与执行计划
-- 优先收敛管理员/设置/日历的剩余请求层重复逻辑
+- 执行 `04-01-PLAN.md`，优先收敛管理员页高频请求
+- 再执行 `04-02-PLAN.md` / `04-03-PLAN.md`，收敛 settings/calendar 剩余高频请求并回归验证
 - 继续用现有 regression runner 作为新里程碑的安全网
 
 ---
-*Last updated: 2026-04-20 after milestone v1.1 initialization*
+*Last updated: 2026-04-20 after Phase 4 planning*
