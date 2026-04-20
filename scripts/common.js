@@ -13,6 +13,9 @@ const requestQueueNoticeState = {
 const REQUEST_QUEUE_NOTICE_DELAY = 650;
 const REQUEST_QUEUE_SUCCESS_HIDE_DELAY = 1400;
 const REQUEST_QUEUE_TRACKED_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const CLIENT_ANOMALY_ENDPOINT = "endpoints/client/loganomaly.php";
+const CLIENT_ANOMALY_DEDUPE_WINDOW_MS = 30000;
+const recentClientAnomalyFingerprints = new Map();
 
 function getPreferredUiLanguage() {
   const languageCookie = getCookie("language");
@@ -591,6 +594,90 @@ function handleWallosSessionFailure(error, callback = null) {
   return true;
 }
 
+function pruneRecentClientAnomalyFingerprints() {
+  const now = Date.now();
+  for (const [fingerprint, timestamp] of recentClientAnomalyFingerprints.entries()) {
+    if ((now - timestamp) > CLIENT_ANOMALY_DEDUPE_WINDOW_MS) {
+      recentClientAnomalyFingerprints.delete(fingerprint);
+    }
+  }
+}
+
+function canLogClientAnomaly(payload) {
+  const message = String(payload?.message || "").trim();
+  if (!window.csrfToken || message === "") {
+    return false;
+  }
+
+  const pathname = String(window.location.pathname || "").toLowerCase();
+  if (pathname.endsWith("/login.php") || pathname.endsWith("/registration.php")) {
+    return false;
+  }
+
+  const fingerprint = `${payload.anomaly_type}|${payload.anomaly_code}|${message}`;
+  pruneRecentClientAnomalyFingerprints();
+  if (recentClientAnomalyFingerprints.has(fingerprint)) {
+    return false;
+  }
+
+  recentClientAnomalyFingerprints.set(fingerprint, Date.now());
+  return true;
+}
+
+function reportClientAnomaly(payload) {
+  if (!canLogClientAnomaly(payload)) {
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("csrf_token", window.csrfToken);
+  formData.append("anomaly_type", String(payload.anomaly_type || ""));
+  formData.append("anomaly_code", String(payload.anomaly_code || ""));
+  formData.append("message", String(payload.message || ""));
+  formData.append("details_json", JSON.stringify(payload.details || {}));
+
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon(CLIENT_ANOMALY_ENDPOINT, formData);
+    return;
+  }
+
+  fetch(CLIENT_ANOMALY_ENDPOINT, {
+    method: "POST",
+    body: formData,
+    credentials: "same-origin",
+    keepalive: true,
+  }).catch(() => {
+    // Ignore client anomaly logging failures.
+  });
+}
+
+function maybeLogWallosRequestFailure(url, method, error) {
+  if (!error || typeof error !== "object") {
+    return;
+  }
+
+  if (error.sessionExpired || error.rateLimit || error.accountTrashed) {
+    return;
+  }
+
+  const normalizedUrl = String(url || "");
+  if (normalizedUrl.includes(CLIENT_ANOMALY_ENDPOINT)) {
+    return;
+  }
+
+  reportClientAnomaly({
+    anomaly_type: "request_failure",
+    anomaly_code: error.code || `http_${Number(error.status || 0) || 0}`,
+    message: error.message || translate("unknown_error"),
+    details: {
+      url: normalizedUrl,
+      method: String(method || "GET").toUpperCase(),
+      status: Number(error.status || 0),
+      rawBody: String(error.rawBody || "").slice(0, 1500),
+    },
+  });
+}
+
 async function wallosRequest(url, options = {}) {
   const {
     method = "GET",
@@ -628,7 +715,7 @@ async function wallosRequest(url, options = {}) {
         if (allowEmptyJsonResponse) {
           data = null;
         } else {
-          throw createWallosRequestError(
+          const requestError = createWallosRequestError(
             fallbackErrorMessage || translate("unknown_error"),
             {
               response,
@@ -637,12 +724,14 @@ async function wallosRequest(url, options = {}) {
               rawBody,
             }
           );
+          maybeLogWallosRequestFailure(url, normalizedMethod, requestError);
+          throw requestError;
         }
       } else {
         try {
           data = JSON.parse(rawBody);
         } catch (error) {
-          throw createWallosRequestError(
+          const requestError = createWallosRequestError(
             fallbackErrorMessage || translate("unknown_error"),
             {
               response,
@@ -651,6 +740,8 @@ async function wallosRequest(url, options = {}) {
               rawBody,
             }
           );
+          maybeLogWallosRequestFailure(url, normalizedMethod, requestError);
+          throw requestError;
         }
       }
     } else if (responseType === "text") {
@@ -678,6 +769,7 @@ async function wallosRequest(url, options = {}) {
         }
       );
       dispatchWallosSessionFailure(requestError);
+      maybeLogWallosRequestFailure(url, normalizedMethod, requestError);
       throw requestError;
     }
 
@@ -770,9 +862,49 @@ window.addEventListener("wallos:session-expired", () => {
     return;
   }
 
+  showErrorMessage(translate("session_expired"));
   window.setTimeout(() => {
     window.location.reload();
-  }, 60);
+  }, 180);
+});
+
+window.addEventListener("error", (event) => {
+  const message = String(event.message || "").trim();
+  if (message === "") {
+    return;
+  }
+
+  reportClientAnomaly({
+    anomaly_type: "client_runtime",
+    anomaly_code: "window_error",
+    message,
+    details: {
+      filename: String(event.filename || ""),
+      lineno: Number(event.lineno || 0),
+      colno: Number(event.colno || 0),
+      stack: String(event.error?.stack || "").slice(0, 4000),
+    },
+  });
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  const reason = event.reason;
+  const message = reason instanceof Error
+    ? String(reason.message || "").trim()
+    : String(reason || "").trim();
+
+  if (message === "") {
+    return;
+  }
+
+  reportClientAnomaly({
+    anomaly_type: "client_runtime",
+    anomaly_code: "unhandled_rejection",
+    message,
+    details: {
+      stack: String(reason?.stack || "").slice(0, 4000),
+    },
+  });
 });
 
 function closeToast(type) {
