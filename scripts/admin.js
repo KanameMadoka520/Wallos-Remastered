@@ -26,6 +26,13 @@ function adminPostJson(url, data, options = {}) {
   });
 }
 
+function adminGetText(url, options = {}) {
+  return window.WallosApi.getText(url, {
+    fallbackErrorMessage: translate("error"),
+    ...options,
+  });
+}
+
 function testSmtpSettingsButton() {
   const button = document.getElementById("testSmtpSettingsButton");
   button.disabled = true;
@@ -455,7 +462,9 @@ function toggleUpdateNotification() {
       if (data.success) {
         showSuccessMessage(data.message);
         if (notificationEnabled === 1) {
-          fetch('endpoints/cronjobs/checkforupdates.php');
+          adminGetText('endpoints/cronjobs/checkforupdates.php').catch(() => {
+            // Keep this trigger fire-and-forget.
+          });
         }
       } else {
         showErrorMessage(data.message);
@@ -469,17 +478,14 @@ function executeCronJob(job) {
   const url = `endpoints/cronjobs/${job}.php`;
   const resultTextArea = document.getElementById('cronjobResult');
 
-  fetch(url)
-    .then(response => {
-      return response.text();
-    })
+  adminGetText(url)
     .then(data => {
       const formattedData = data.replace(/<br\s*\/?>/gi, '\n');
       resultTextArea.value = formattedData;
     })
     .catch(error => {
       console.error('Fetch error:', error);
-      showErrorMessage('Error:', error);
+      showErrorMessage(getAdminRequestErrorMessage(error));
     });
 }
 

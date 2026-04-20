@@ -1,9 +1,9 @@
-﻿# Requirements: Wallos-Remastered
+# Requirements: Wallos-Remastered
 
-**Defined:** 2026-04-20
+**Defined:** 2026-04-21
 **Core Value:** 在不破坏现有视觉效果和复杂功能链路的前提下，持续提供稳定、可控、适合长期自托管运营的订阅管理体验。
 
-## v1.0 Validated Requirements
+## Validated Requirements
 
 ### Regression Safety
 
@@ -23,8 +23,6 @@
 - [x] **OBS-02**: 用户在遇到慢请求、会话失效或关键接口失败时，能看到明确且可关闭的反馈，而不是笼统的“未知错误”。
 - [x] **OBS-03**: 维护者可以快速确认当前静态资源/Service Worker 版本状态，以便判断缓存是否影响问题复现。
 
-## v1.1 Requirements
-
 ### Frontend Request Convergence
 
 - [x] **FRON-01**: 管理员、设置、日历等高频页面的关键请求路径使用共享 `WallosApi` / `WallosHttp` 请求层，而不是继续保留零散 `fetch` 与本地错误处理。
@@ -40,14 +38,25 @@
 - [x] **DOCS-01**: 主题、请求失败契约和共享请求层的使用规则形成明确文档，便于未来改动复用。
 - [x] **DOCS-02**: README / CONTRIBUTING / 规划文档能明确指出哪些层必须复用、哪些做法属于退化风险。
 
+## v1.2 Requirements
+
+### Special Flow Convergence
+
+- [x] **SPCL-01**: 剩余低频但仍常维护的特殊请求流，在不破坏文本/下载/特殊返回语义的前提下进一步收敛。
+- [x] **SPCL-02**: 这些特殊请求流在错误处理与会话处理上尽量复用共享层，而不是完全游离于体系之外。
+
+### Subscription Second Pass
+
+- [ ] **SUB2-01**: 订阅页第二轮模块化继续减少主文件重复实现，优先处理搜索/过滤/动作分发等剩余复杂区。
+- [ ] **SUB2-02**: 第二轮订阅页减耦后，现有用户可见行为和视觉效果继续保持稳定。
+
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
 | 数据库迁移 | 当前优先级仍是结构收敛与回归风险控制，不是重做数据层 |
-| 大型新业务功能 | 本里程碑先处理复杂区减耦，不继续扩张业务面 |
-| 主题风格大改版 | 保持当前视觉资产稳定，仅做结构与契约收敛 |
-| 外部网关与 VPS 侧大改 | 属于独立运维专题，不纳入本次代码里程碑 |
+| 大型新业务功能 | 本里程碑继续聚焦收敛与减耦 |
+| 大规模视觉改版 | 保持当前视觉资产稳定 |
 
 ## Traceability
 
@@ -68,14 +77,17 @@
 | SUBM-02 | Phase 5 | Complete |
 | DOCS-01 | Phase 6 | Complete |
 | DOCS-02 | Phase 6 | Complete |
+| SPCL-01 | Phase 7 | Complete |
+| SPCL-02 | Phase 7 | Complete |
+| SUB2-01 | Phase 8 | Pending |
+| SUB2-02 | Phase 8 | Pending |
 
 **Coverage:**
-- v1.0 validated requirements: 9 total
-- v1.1 active requirements: 6 total
-- Mapped to phases: 15
-- Unmapped: 0
+- validated requirements: 15 total
+- v1.2 active requirements: 4 total
+- mapped to phases: 19
+- unmapped: 0
 
 ---
-*Requirements defined: 2026-04-20*
-*Last updated: 2026-04-21 after Phase 6 execution*
-
+*Requirements defined: 2026-04-21*
+*Last updated: 2026-04-21 after Phase 7 execution*
