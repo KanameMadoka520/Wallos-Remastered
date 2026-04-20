@@ -28,10 +28,12 @@ Wallos-Remastered 是一个基于 Wallos 深度改造的多用户订阅与预算
 - [x] 维护者可以运行一个本地回归入口，统一检查 `health.php`、公开页契约、订阅分页关键 endpoint 与旧 PHP 回归测试。（Phase 1）
 - [x] 回归入口会输出结构化 PASS / FAIL / SKIP 摘要，并在失败时返回非零退出码。（Phase 1）
 - [x] 回归入口支持通过参数或环境变量注入基础地址、cookie 和登录凭据，而不需要修改源码。（Phase 1）
+- [x] 受保护的页面请求、异步 endpoint 与媒体访问已经共享认证恢复核心，而不再各自维护一套近似逻辑。（Phase 2）
+- [x] 高风险受保护 endpoint 已经统一到机器可读的 `session_expired` 失败契约，减少了纯文本与 JSON 混用。（Phase 2）
+- [x] 前端请求层已经能统一识别会话失效，并把高风险模块的原始 401 解析收敛到公共入口。（Phase 2）
 
 ### Active
 
-- [ ] 统一页面请求、异步 endpoint 与媒体访问的会话恢复和 401 约定
 - [ ] 为稳定性排查补齐最近异常与缓存/请求状态的可观测信息
 
 ### Out of Scope
@@ -64,6 +66,7 @@ Wallos-Remastered 是一个基于 Wallos 深度改造的多用户订阅与预算
 | 继续保留 SQLite 与现有部署结构 | 迁库收益暂时低于成本与风险 | Good |
 | 采用 brownfield 规划初始化 `.planning` | 仓库此前没有 GSD 规划目录，需要先补项目治理骨架 | Good |
 | Phase 1 采用 CLI-first 回归基线，而不是直接引入浏览器 E2E | 以最低维护成本先覆盖最容易翻车的公开页和分页契约 | Good |
+| Phase 2 先统一高风险链路和请求层，再考虑全量 endpoint 契约收敛 | 兼容优先，避免一次性大改造成大面积回归 | Good |
 
 ## Evolution
 
@@ -83,4 +86,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 after Phase 1 execution*
+*Last updated: 2026-04-20 after Phase 2 execution*
