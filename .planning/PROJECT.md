@@ -31,10 +31,12 @@ Wallos-Remastered 是一个基于 Wallos 深度改造的多用户订阅与预算
 - [x] 受保护的页面请求、异步 endpoint 与媒体访问已经共享认证恢复核心，而不再各自维护一套近似逻辑。（Phase 2）
 - [x] 高风险受保护 endpoint 已经统一到机器可读的 `session_expired` 失败契约，减少了纯文本与 JSON 混用。（Phase 2）
 - [x] 前端请求层已经能统一识别会话失效，并把高风险模块的原始 401 解析收敛到公共入口。（Phase 2）
+- [x] 维护者已经可以在管理员页查看最近前端运行时异常、请求失败和 Service Worker 缓存/注册状态。（Phase 3）
+- [x] 前端共享层已经能上报低噪声的运行时异常和请求失败，并在关键失败场景给出更明确反馈。（Phase 3）
 
 ### Active
 
-- [ ] 为稳定性排查补齐最近异常与缓存/请求状态的可观测信息
+- [ ] None currently - milestone complete, ready for the next milestone
 
 ### Out of Scope
 
@@ -67,6 +69,7 @@ Wallos-Remastered 是一个基于 Wallos 深度改造的多用户订阅与预算
 | 采用 brownfield 规划初始化 `.planning` | 仓库此前没有 GSD 规划目录，需要先补项目治理骨架 | Good |
 | Phase 1 采用 CLI-first 回归基线，而不是直接引入浏览器 E2E | 以最低维护成本先覆盖最容易翻车的公开页和分页契约 | Good |
 | Phase 2 先统一高风险链路和请求层，再考虑全量 endpoint 契约收敛 | 兼容优先，避免一次性大改造成大面积回归 | Good |
+| Phase 3 复用现有 security anomalies 和管理员页，而不是新建监控后台 | 低风险、低耦合，符合本里程碑“稳定性工程”的边界 | Good |
 
 ## Evolution
 
@@ -86,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 after Phase 2 execution*
+*Last updated: 2026-04-20 after Phase 3 execution*

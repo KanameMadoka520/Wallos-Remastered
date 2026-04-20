@@ -11,7 +11,7 @@
 |-------|--------|------|------|--------------|
 | 1 | Complete | 自动化回归检查基线 | 建立可本地运行的最小回归脚本与执行约定 | SAFE-01, SAFE-02, SAFE-03 |
 | 2 | Complete | 会话与 401 统一层 | 统一受保护请求的登录恢复、401 契约与前端处理入口 | SESS-01, SESS-02, SESS-03 |
-| 3 | Pending | 可观测性与调试反馈 | 提升异常可见性、用户反馈清晰度与缓存状态可观测性 | OBS-01, OBS-02, OBS-03 |
+| 3 | Complete | 可观测性与调试反馈 | 提升异常可见性、用户反馈清晰度与缓存状态可观测性 | OBS-01, OBS-02, OBS-03 |
 
 ## Phase Details
 
@@ -42,7 +42,8 @@
 ### Phase 3: 可观测性与调试反馈
 
 **Goal:** 让维护者更快定位异常，让用户在失败场景下获得明确反馈，并降低缓存问题的排障成本。  
-**Requirements:** OBS-01, OBS-02, OBS-03
+**Requirements:** OBS-01, OBS-02, OBS-03  
+**Status:** Complete (2026-04-20)
 
 **Success criteria:**
 1. 近期稳定性异常或关键失败事件有统一查看入口或统一数据来源。
@@ -64,10 +65,10 @@
 
 ## Next Command
 
-`$gsd-discuss-phase 3`
+`$gsd-new-milestone`
 
 Also available:
-- `$gsd-plan-phase 3`
+- 评估新里程碑目标并继续演进
 
 ---
-*Roadmap last updated: 2026-04-20 after Phase 2 execution*
+*Roadmap last updated: 2026-04-20 after Phase 3 execution*
