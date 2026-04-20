@@ -2,10 +2,10 @@
 
 ## Current Position
 
-Phase: 2 - 会话与 401 统一层
-Plan: 3 plans completed
-Status: Phase 2 complete
-Last activity: 2026-04-20 - Phase 2 executed and verified
+Phase: 3 - 可观测性与调试反馈
+Plan: 3 plans created
+Status: Ready to execute
+Last activity: 2026-04-20 - Phase 3 planned
 
 ## Project Reference
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 
 ## Next Up
 
-- 进入 Phase 3，补齐最近异常、静态资源/Service Worker 状态与更明确的失败反馈
-- 扩展当前 regression runner 去覆盖新的可观测性 contract
-- 在不破坏现有主题和页面效果的前提下，把调试可见性补到管理员/维护者可用
+- 执行 `03-01-PLAN.md`，先建立轻量异常上报与 Service Worker 版本解析基础
+- 再执行 `03-02-PLAN.md` / `03-03-PLAN.md`，把管理员可见性和前端异常反馈补齐
+- 保持当前 regression runner 继续为稳定性阶段兜底
 
 ---
-*Last updated: 2026-04-20 after Phase 2 execution*
+*Last updated: 2026-04-20 after Phase 3 planning*
