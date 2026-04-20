@@ -99,6 +99,7 @@ function wallos_rate_limit_is_exempt_backend_path($path)
         '/endpoints/admin/backupstatus.php',
         '/endpoints/admin/accesslogs.php',
         '/endpoints/admin/securityanomalies.php',
+        '/endpoints/client/loganomaly.php',
     ];
 
     foreach ($exemptPaths as $exemptPath) {

@@ -11,6 +11,7 @@ function wallos_request_logging_skip_paths()
         '/endpoints/admin/securityanomalies.php',
         '/endpoints/admin/clearsecurityanomalies.php',
         '/endpoints/admin/backupstatus.php',
+        '/endpoints/client/loganomaly.php',
     ];
 }
 
