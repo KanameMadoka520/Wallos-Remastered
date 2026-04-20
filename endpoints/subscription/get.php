@@ -6,7 +6,9 @@ require_once '../../includes/subscription_payment_records.php';
 require_once '../../includes/subscription_payment_history.php';
 require_once '../../includes/subscription_price_rules.php';
 
-if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
+wallos_endpoint_require_authenticated($i18n);
+
+if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true && $userId > 0) {
     if (isset($_GET['id']) && $_GET['id'] != "") {
         $subscriptionId = intval($_GET['id']);
         $query = "SELECT * FROM subscriptions WHERE id = :subscriptionId AND user_id = :userId AND lifecycle_status = :lifecycle_status";
@@ -77,5 +79,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         echo translate('error', $i18n);
     }
 }
+
+wallos_auth_emit_async_error($i18n, 'error', 400, [], 'error');
 $db->close();
 ?>

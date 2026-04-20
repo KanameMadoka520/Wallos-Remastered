@@ -2,6 +2,7 @@
 require_once '../../includes/user_status.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/security_rate_limits.php';
+require_once '../../includes/auth_session.php';
 require_once '../../includes/i18n/languages.php';
 
 function wallos_media_deny($statusCode = 403)
@@ -29,77 +30,6 @@ function wallos_media_deny_rate_limit(array $violation)
     exit;
 }
 
-function wallos_media_start_session()
-{
-    if (session_status() === PHP_SESSION_NONE) {
-        $secondsInMonth = 30 * 24 * 60 * 60;
-        ini_set('session.gc_maxlifetime', (string) $secondsInMonth);
-        session_set_cookie_params([
-            'lifetime' => $secondsInMonth,
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
-        session_start();
-    }
-}
-
-function wallos_media_get_authenticated_user($db)
-{
-    wallos_media_start_session();
-
-    $userId = (int) ($_SESSION['userId'] ?? 0);
-    if ($userId > 0) {
-        $stmt = $db->prepare('SELECT * FROM user WHERE id = :id LIMIT 1');
-        $stmt->bindValue(':id', $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
-        $user = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
-        if ($user !== false && !wallos_is_user_trashed($user['account_status'] ?? WALLOS_USER_STATUS_ACTIVE)) {
-            return $user;
-        }
-    }
-
-    $cookieValue = $_COOKIE['wallos_login'] ?? '';
-    if ($cookieValue === '') {
-        return null;
-    }
-
-    $parts = explode('|', $cookieValue, 3);
-    if (count($parts) < 2) {
-        return null;
-    }
-
-    $username = trim((string) $parts[0]);
-    $token = trim((string) $parts[1]);
-    if ($username === '' || $token === '') {
-        return null;
-    }
-
-    $stmt = $db->prepare('SELECT * FROM user WHERE username = :username LIMIT 1');
-    $stmt->bindValue(':username', $username, SQLITE3_TEXT);
-    $result = $stmt->execute();
-    $user = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
-    if ($user === false || wallos_is_user_trashed($user['account_status'] ?? WALLOS_USER_STATUS_ACTIVE)) {
-        return null;
-    }
-
-    $tokenStmt = $db->prepare('SELECT 1 FROM login_tokens WHERE user_id = :user_id AND token = :token LIMIT 1');
-    $tokenStmt->bindValue(':user_id', (int) $user['id'], SQLITE3_INTEGER);
-    $tokenStmt->bindValue(':token', $token, SQLITE3_TEXT);
-    $tokenResult = $tokenStmt->execute();
-    $tokenRow = $tokenResult ? $tokenResult->fetchArray(SQLITE3_NUM) : false;
-    if ($tokenRow === false) {
-        return null;
-    }
-
-    $_SESSION['username'] = $user['username'];
-    $_SESSION['token'] = $token;
-    $_SESSION['loggedin'] = true;
-    $_SESSION['main_currency'] = $user['main_currency'] ?? 1;
-    $_SESSION['userId'] = $user['id'];
-
-    return $user;
-}
-
 $imageId = (int) ($_GET['id'] ?? 0);
 if ($imageId <= 0) {
     wallos_media_deny(404);
@@ -111,7 +41,8 @@ $db->exec('PRAGMA journal_mode = WAL');
 $db->exec('PRAGMA synchronous = NORMAL');
 $db->exec('PRAGMA foreign_keys = ON');
 
-$currentUser = wallos_media_get_authenticated_user($db);
+$wallosAuthState = wallos_auth_resolve_authenticated_user($db);
+$currentUser = !empty($wallosAuthState['authenticated']) ? ($wallosAuthState['user'] ?? null) : null;
 if ($currentUser === null) {
     wallos_media_deny(403);
 }

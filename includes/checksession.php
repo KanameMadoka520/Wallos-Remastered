@@ -2,31 +2,17 @@
 require_once __DIR__ . '/user_status.php';
 require_once __DIR__ . '/request_logs.php';
 require_once __DIR__ . '/timezone_settings.php';
+require_once __DIR__ . '/auth_session.php';
 
 function wallos_logout_trashed_session_and_redirect(array $userData)
 {
-    $_SESSION = [];
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        session_destroy();
-    }
-    setcookie('wallos_login', '', time() - 3600, '/');
-    setcookie('wallos_login', '', time() - 3600);
-
+    wallos_auth_reset_login_state();
     header('Location: login.php?' . wallos_prepare_trashed_login_redirect_query($userData));
     exit();
 }
 
 // Handle OIDC first
-$secondsInMonth = 30 * 24 * 60 * 60;
-if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.gc_maxlifetime', (string) $secondsInMonth);
-    session_set_cookie_params([
-        'lifetime' => $secondsInMonth,             
-        'httponly' => true,          
-        'samesite' => 'Lax'          
-    ]);
-    session_start();
-}
+wallos_auth_start_session();
 
 if (isset($_GET['code']) && isset($_GET['state'])) {
     // This request is coming from the OIDC login flow
@@ -36,107 +22,28 @@ if (isset($_GET['code']) && isset($_GET['state'])) {
     require_once 'includes/oidc/handle_oidc_callback.php';
 
 } else {
-    if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
-        $username = $_SESSION['username'];
-        $main_currency = $_SESSION['main_currency'];
-        $sql = "SELECT * FROM user WHERE username = :username";
-        $stmt = $db->prepare($sql);
-        $stmt->bindValue(':username', $username, SQLITE3_TEXT);
-        $result = $stmt->execute();
-        $userData = $result->fetchArray(SQLITE3_ASSOC);
-        $userId = $userData['id'];
-
-        if ($userData === false) {
-            header('Location: logout.php');
-            exit();
-        } else {
-            $_SESSION['userId'] = $userData['id'];
+    $wallosAuthState = wallos_auth_resolve_authenticated_user($db);
+    if (!$wallosAuthState['authenticated']) {
+        if ($wallosAuthState['code'] === 'account_trashed' && !empty($wallosAuthState['user'])) {
+            wallos_logout_trashed_session_and_redirect($wallosAuthState['user']);
         }
 
-        if (wallos_is_user_trashed($userData['account_status'] ?? WALLOS_USER_STATUS_ACTIVE)) {
-            wallos_logout_trashed_session_and_redirect($userData);
-        }
-
-        wallos_apply_php_timezone(wallos_fetch_user_timezone($db, $userData['id']));
-
-        if ($userData['avatar'] == "") {
-            $userData['avatar'] = "0";
-        }
-        wallos_log_request($db, $userData['id'], $userData['username'] ?? '');
-    } else {
-
-        if (isset($_COOKIE['wallos_login'])) {
-            $cookie = explode('|', $_COOKIE['wallos_login'], 3);
-            $username = $cookie[0];
-            $token = $cookie[1];
-            $main_currency = $cookie[2];
-
-            $sql = "SELECT * FROM user WHERE username = :username";
-            $stmt = $db->prepare($sql);
-            $stmt->bindValue(':username', $username, SQLITE3_TEXT);
-            $result = $stmt->execute();
-
-            if ($result) {
-                $userData = $result->fetchArray(SQLITE3_ASSOC);
-                if (!isset($userData['id'])) {
-                    $db->close();
-                    header("Location: logout.php");
-                    exit();
-                }
-
-                if (wallos_is_user_trashed($userData['account_status'] ?? WALLOS_USER_STATUS_ACTIVE)) {
-                    wallos_logout_trashed_session_and_redirect($userData);
-                }
-
-                wallos_apply_php_timezone(wallos_fetch_user_timezone($db, $userData['id']));
-
-                if ($userData['avatar'] == "") {
-                    $userData['avatar'] = "0";
-                }
-                $userId = $userData['id'];
-                $main_currency = $userData['main_currency'];
-
-                $adminQuery = "SELECT login_disabled FROM admin";
-                $adminResult = $db->query($adminQuery);
-                $adminRow = $adminResult->fetchArray(SQLITE3_ASSOC);
-                if ($adminRow['login_disabled'] == 1) {
-                    $sql = "SELECT * FROM login_tokens WHERE user_id = :userId";
-                    $stmt = $db->prepare($sql);
-                    $stmt->bindParam(':userId', $userId, SQLITE3_TEXT);
-                } else {
-                    $sql = "SELECT * FROM login_tokens WHERE user_id = :userId AND token = :token";
-                    $stmt = $db->prepare($sql);
-                    $stmt->bindParam(':userId', $userId, SQLITE3_TEXT);
-                    $stmt->bindParam(':token', $token, SQLITE3_TEXT);
-                }
-                $result = $stmt->execute();
-                $row = $result->fetchArray(SQLITE3_ASSOC);
-
-                if ($row != false) {
-                    $_SESSION['username'] = $username;
-                    $_SESSION['token'] = $token;
-                    $_SESSION['loggedin'] = true;
-                    $_SESSION['main_currency'] = $main_currency;
-                    $_SESSION['userId'] = $userId;
-                    wallos_log_request($db, $userData['id'], $userData['username'] ?? '');
-                } else {
-                    $db->close();
-                    header("Location: logout.php");
-                    exit();
-                }
-            } else {
-                $db->close();
-                header("Location: logout.php");
-                exit();
-            }
-
-
-        } else {
-            $db->close();
-            header("Location: login.php");
-            exit();
-        }
+        $db->close();
+        header("Location: login.php");
+        exit();
     }
+
+    $userData = $wallosAuthState['user'];
+    $userId = (int) ($userData['id'] ?? 0);
+    $username = (string) ($userData['username'] ?? '');
+    $main_currency = $userData['main_currency'] ?? ($_SESSION['main_currency'] ?? null);
+
+    wallos_apply_php_timezone(wallos_fetch_user_timezone($db, $userId));
+
+    if (($userData['avatar'] ?? '') == "") {
+        $userData['avatar'] = "0";
+    }
+    wallos_log_request($db, $userData['id'], $userData['username'] ?? '');
 }
 
 

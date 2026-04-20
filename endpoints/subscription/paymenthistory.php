@@ -6,13 +6,7 @@ require_once '../../includes/subscription_price_rules.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/markdown.php';
 
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    echo json_encode([
-        'success' => false,
-        'message' => translate('session_expired', $i18n),
-    ]);
-    exit;
-}
+wallos_endpoint_require_authenticated($i18n);
 
 $subscriptionId = (int) ($_GET['id'] ?? 0);
 if ($subscriptionId <= 0) {

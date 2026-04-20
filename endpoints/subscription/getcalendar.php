@@ -4,12 +4,7 @@ require_once '../../includes/getdbkeys.php';
 require_once '../../includes/markdown.php';
 require_once '../../includes/subscription_trash.php';
 
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    die(json_encode([
-        "success" => false,
-        "message" => translate('session_expired', $i18n)
-    ]));
-}
+wallos_endpoint_require_authenticated($i18n);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $postData = file_get_contents("php://input");
