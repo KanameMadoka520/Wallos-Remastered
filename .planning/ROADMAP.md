@@ -7,18 +7,19 @@
 
 ## Phase Overview
 
-| Phase | Name | Goal | Requirements |
-|-------|------|------|--------------|
-| 1 | 自动化回归检查基线 | 建立可本地运行的最小回归脚本与执行约定 | SAFE-01, SAFE-02, SAFE-03 |
-| 2 | 会话与 401 统一层 | 统一受保护请求的登录恢复、401 契约与前端处理入口 | SESS-01, SESS-02, SESS-03 |
-| 3 | 可观测性与调试反馈 | 提升异常可见性、用户反馈清晰度与缓存状态可观测性 | OBS-01, OBS-02, OBS-03 |
+| Phase | Status | Name | Goal | Requirements |
+|-------|--------|------|------|--------------|
+| 1 | Complete | 自动化回归检查基线 | 建立可本地运行的最小回归脚本与执行约定 | SAFE-01, SAFE-02, SAFE-03 |
+| 2 | Pending | 会话与 401 统一层 | 统一受保护请求的登录恢复、401 契约与前端处理入口 | SESS-01, SESS-02, SESS-03 |
+| 3 | Pending | 可观测性与调试反馈 | 提升异常可见性、用户反馈清晰度与缓存状态可观测性 | OBS-01, OBS-02, OBS-03 |
 
 ## Phase Details
 
 ### Phase 1: 自动化回归检查基线
 
 **Goal:** 把当前最容易回归的健康检查、公开页、主题输出、关键 endpoint 和订阅分页链路收拢进一个统一的本地检查入口。  
-**Requirements:** SAFE-01, SAFE-02, SAFE-03
+**Requirements:** SAFE-01, SAFE-02, SAFE-03  
+**Status:** Complete (2026-04-20)
 
 **Success criteria:**
 1. 维护者可以用单个命令运行最小回归检查。
@@ -62,10 +63,10 @@
 
 ## Next Command
 
-`$gsd-discuss-phase 1`
+`$gsd-discuss-phase 2`
 
 Also available:
-- `$gsd-plan-phase 1`
+- `$gsd-plan-phase 2`
 
 ---
-*Roadmap created: 2026-04-20*
+*Roadmap last updated: 2026-04-20 after Phase 1 execution*

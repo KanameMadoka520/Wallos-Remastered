@@ -7,9 +7,9 @@
 
 ### Regression Safety
 
-- [ ] **SAFE-01**: 维护者可以运行一个本地回归检查入口，至少覆盖 `health.php`、登录页、注册页、关键 `theme-color` 输出、订阅分页切换链路与关键 endpoint 返回格式。
-- [ ] **SAFE-02**: 回归检查在任一项失败时会返回非零退出码，并输出明确的通过/失败摘要，便于在本地或容器内快速判断是否回归。
-- [ ] **SAFE-03**: 回归检查支持使用可配置的基础地址、认证信息或 cookie，不需要每次手改脚本源码。
+- [x] **SAFE-01**: 维护者可以运行一个本地回归检查入口，至少覆盖 `health.php`、登录页、注册页、关键 `theme-color` 输出、订阅分页切换链路与关键 endpoint 返回格式。
+- [x] **SAFE-02**: 回归检查在任一项失败时会返回非零退出码，并输出明确的通过/失败摘要，便于在本地或容器内快速判断是否回归。
+- [x] **SAFE-03**: 回归检查支持使用可配置的基础地址、认证信息或 cookie，不需要每次手改脚本源码。
 
 ### Session Consistency
 
@@ -52,9 +52,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SAFE-01 | Phase 1 | Pending |
-| SAFE-02 | Phase 1 | Pending |
-| SAFE-03 | Phase 1 | Pending |
+| SAFE-01 | Phase 1 | Complete |
+| SAFE-02 | Phase 1 | Complete |
+| SAFE-03 | Phase 1 | Complete |
 | SESS-01 | Phase 2 | Pending |
 | SESS-02 | Phase 2 | Pending |
 | SESS-03 | Phase 2 | Pending |
@@ -69,4 +69,5 @@
 
 ---
 *Requirements defined: 2026-04-20*
-*Last updated: 2026-04-20 after initial definition*
+*Last updated: 2026-04-20 after Phase 1 execution*
+

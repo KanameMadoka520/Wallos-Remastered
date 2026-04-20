@@ -25,10 +25,12 @@ Wallos-Remastered 是一个基于 Wallos 深度改造的多用户订阅与预算
 - [x] 管理员可以执行邀请码管理、用户封禁/回收、备份与恢复、访问日志与速率限制配置。
 - [x] 系统已经支持多主题、动态壁纸、页面切换动画、公开页多语言与主题色同步。
 - [x] 项目已经存在若干本地 PHP 回归测试，覆盖预算、支付账本与订阅偏好的一部分核心逻辑。
+- [x] 维护者可以运行一个本地回归入口，统一检查 `health.php`、公开页契约、订阅分页关键 endpoint 与旧 PHP 回归测试。（Phase 1）
+- [x] 回归入口会输出结构化 PASS / FAIL / SKIP 摘要，并在失败时返回非零退出码。（Phase 1）
+- [x] 回归入口支持通过参数或环境变量注入基础地址、cookie 和登录凭据，而不需要修改源码。（Phase 1）
 
 ### Active
 
-- [ ] 建立一套可本地运行的最小自动化回归检查
 - [ ] 统一页面请求、异步 endpoint 与媒体访问的会话恢复和 401 约定
 - [ ] 为稳定性排查补齐最近异常与缓存/请求状态的可观测信息
 
@@ -44,7 +46,7 @@ Wallos-Remastered 是一个基于 Wallos 深度改造的多用户订阅与预算
 - 这是一个长期持续演进的 brownfield 代码库，已经积累了订阅管理、支付账本、图片媒体、管理员后台、备份闭环、动态主题和页面过场等大量功能。
 - 当前运行栈以 PHP + SQLite + Docker 为主，项目要求保持现有部署方式可用，默认端口为 18282。
 - 近期已经暴露出“复杂度增长导致局部改动带坏其他链路”的风险，包括订阅页久置后分页异常、endpoint 返回格式不一致、不同主题下局部 UI 适配和缓存状态差异等问题。
-- 代码库已有一些零散的逻辑测试，但还没有覆盖 health、公开页、关键 endpoint、service worker 与订阅分页切换链路的统一回归脚本。
+- 代码库已有一些零散的逻辑测试，但在 Phase 1 完成前，还没有覆盖 health、公开页、关键 endpoint、service worker 与订阅分页切换链路的统一回归脚本。
 
 ## Constraints
 
@@ -57,10 +59,11 @@ Wallos-Remastered 是一个基于 Wallos 深度改造的多用户订阅与预算
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| 首个可追踪里程碑定为 `v1.0 稳定性工程` | 当前最紧迫的问题是回归风险，不是功能缺口 | Pending |
-| 本轮先做稳定性基线，再继续大规模功能开发 | 先降低复杂度与排查成本，后续迭代速度会更稳 | Pending |
+| 首个可追踪里程碑定为 `v1.0 稳定性工程` | 当前最紧迫的问题是回归风险，不是功能缺口 | Good |
+| 本轮先做稳定性基线，再继续大规模功能开发 | 先降低复杂度与排查成本，后续迭代速度会更稳 | Good |
 | 继续保留 SQLite 与现有部署结构 | 迁库收益暂时低于成本与风险 | Good |
 | 采用 brownfield 规划初始化 `.planning` | 仓库此前没有 GSD 规划目录，需要先补项目治理骨架 | Good |
+| Phase 1 采用 CLI-first 回归基线，而不是直接引入浏览器 E2E | 以最低维护成本先覆盖最容易翻车的公开页和分页契约 | Good |
 
 ## Evolution
 
@@ -80,4 +83,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 after milestone v1.0 initialization*
+*Last updated: 2026-04-20 after Phase 1 execution*
