@@ -31,7 +31,7 @@ function subscription_pages_execute_or_throw($statement, $errorMessage)
 }
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $userId <= 0) {
-    subscription_pages_json_response(false, translate('session_expired', $i18n));
+    wallos_endpoint_require_authenticated($i18n);
 }
 
 $hideDisabled = isset($settings['hideDisabledSubscriptions']) && $settings['hideDisabledSubscriptions'] === 'true';

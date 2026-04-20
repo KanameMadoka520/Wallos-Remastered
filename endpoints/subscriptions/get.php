@@ -34,12 +34,7 @@ $formatter = new IntlDateFormatter(
   'MMM d, yyyy'
 );
 
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $userId <= 0) {
-  http_response_code(401);
-  echo translate('session_expired', $i18n);
-  $db->close();
-  exit;
-}
+wallos_endpoint_require_authenticated($i18n);
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   $mainCurrencyId = 0;

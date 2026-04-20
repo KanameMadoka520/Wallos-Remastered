@@ -3,7 +3,7 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/payment_icons.php';
 
-if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
+if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true && $userId > 0) {
     $paymentsInUseQuery = $db->prepare('SELECT id FROM payment_methods WHERE id IN (SELECT DISTINCT payment_method_id FROM subscriptions) AND user_id = :userId');
     $paymentsInUseQuery->bindParam(':userId', $userId, SQLITE3_INTEGER);
     $result = $paymentsInUseQuery->execute();
@@ -55,9 +55,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         <?php
     }
 } else {
-    http_response_code(401);
-    echo json_encode(array("message" => translate('error', $i18n)));
-    exit();
+    wallos_endpoint_require_authenticated($i18n);
 }
 
 ?>
