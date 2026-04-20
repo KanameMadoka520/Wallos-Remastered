@@ -2,7 +2,14 @@
 
 ## Active
 
-- None
+### v1.2 残余特殊流收口与订阅页第二轮减耦
+
+- **Status:** In Progress
+- **Started:** 2026-04-21
+- **Goal:** 继续收掉残余特殊请求流，并对订阅页剩余复杂区做第二轮低风险减耦。
+- **Phases:** 2
+- **Requirements:** 4
+- **Progress:** Phase 7 / 8 completed
 
 ## Completed
 
@@ -27,4 +34,4 @@
 - **Progress:** Phase 3 / 3 completed
 
 ---
-*Last updated: 2026-04-21 after milestone v1.1 completion*
+*Last updated: 2026-04-21 after milestone v1.2 initialization*

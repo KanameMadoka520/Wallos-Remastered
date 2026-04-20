@@ -1367,8 +1367,10 @@ function searchLogo() {
     const logoSearchPopup = document.querySelector("#logo-search-results");
     logoSearchPopup.classList.add("is-open");
     const imageSearchUrl = `endpoints/logos/search.php?search=${searchTerm}`;
-    fetch(imageSearchUrl)
-      .then(response => response.json())
+    window.WallosApi.getJson(imageSearchUrl, {
+      includeCsrf: false,
+      fallbackErrorMessage: translate("unknown_error"),
+    })
       .then(data => {
         if (data.results) {
           displayImageResults(data.results);
@@ -1377,7 +1379,7 @@ function searchLogo() {
         }
       })
       .catch(error => {
-        console.error(translate('error_fetching_image_results'), error);
+        console.error(normalizeSubscriptionRequestError(error, translate('error_fetching_image_results')), error);
       });
   } else {
     nameInput.focus();
