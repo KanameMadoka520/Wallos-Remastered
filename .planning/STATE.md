@@ -2,10 +2,10 @@
 
 ## Current Position
 
-Phase: 4 - 请求层统一收敛
-Plan: 3 plans completed
-Status: Phase 4 complete
-Last activity: 2026-04-21 - Phase 4 executed and verified
+Phase: 5 - 订阅页模块化重构
+Plan: 3 plans created
+Status: Ready to execute
+Last activity: 2026-04-21 - Phase 5 planned
 
 ## Project Reference
 
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 
 ## Next Up
 
-- 进入 Phase 5，按数据/状态/渲染/交互边界拆分订阅页前端
-- 保持现有 regression runner 继续作为 request/session 基线安全网
-- 避免在模块化重构时破坏现有视觉与行为
+- 执行 `05-01-PLAN.md`，继续去掉 subscriptions.js 中与现有模块重复的逻辑
+- 再执行 `05-02-PLAN.md` / `05-03-PLAN.md`，把布局/排序边界拆出并回归验证
+- 继续保持现有 regression runner 绿色
 
 ---
-*Last updated: 2026-04-21 after Phase 4 execution*
+*Last updated: 2026-04-21 after Phase 5 planning*
