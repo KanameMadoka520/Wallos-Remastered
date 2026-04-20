@@ -3,9 +3,9 @@
 ## Current Position
 
 Phase: 1 - 自动化回归检查基线
-Plan: Context captured
-Status: Ready for planning
-Last activity: 2026-04-20 - Phase 1 context gathered
+Plan: 2 plans created
+Status: Ready to execute
+Last activity: 2026-04-20 - Phase 1 planned
 
 ## Project Reference
 
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 
 ## Next Up
 
-- 基于 `01-CONTEXT.md` 制定 Phase 1 计划
-- 明确最小回归清单并落成可运行脚本
-- 为后续 Phase 2 的会话/401 收敛保留统一 smoke 基线
+- 执行 `01-01-PLAN.md`，先建立统一回归 harness 与结构化摘要
+- 再执行 `01-02-PLAN.md`，补齐 public/auth smoke 与旧测试整合
+- 完成后以同一入口为后续 Phase 2 / Phase 3 提供稳定回归基线
 
 ---
-*Last updated: 2026-04-20 after Phase 1 context gathering*
+*Last updated: 2026-04-20 after Phase 1 planning*
