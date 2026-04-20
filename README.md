@@ -321,6 +321,28 @@ OK
 - 贡献指南：`CONTRIBUTING.md`
 - 变更记录：`CHANGELOG.md`
 - 安全策略：`SECURITY.md`
+- 共享契约文档：`docs/共享请求层与稳定性契约.md`
+
+## 共享请求层与稳定性约定
+
+为避免后续继续开发时再次出现“同类请求每个页面各写一套”的退化，本仓库现在默认遵循以下约定：
+
+- 高频页面请求优先复用 `WallosApi` / `WallosHttp`
+- 原始 `fetch` 只建议保留给少量特殊流：
+  - 文本型 cron 输出
+  - 下载/导出
+  - 纯二进制媒体流
+- 会话失效与通用错误反馈应优先复用共享请求层和 `common.js`
+- 修改高风险链路后，建议至少运行一次：
+
+```bash
+docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-url=http://127.0.0.1
+```
+
+如果你准备继续维护本仓库，请优先阅读：
+
+- `CONTRIBUTING.md`
+- `docs/共享请求层与稳定性契约.md`
 
 ## 许可证
 
