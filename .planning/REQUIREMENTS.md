@@ -3,7 +3,7 @@
 **Defined:** 2026-04-20
 **Core Value:** 在不破坏现有视觉效果和复杂功能链路的前提下，持续提供稳定、可控、适合长期自托管运营的订阅管理体验。
 
-## v1 Requirements
+## v1.0 Validated Requirements
 
 ### Regression Safety
 
@@ -23,29 +23,30 @@
 - [x] **OBS-02**: 用户在遇到慢请求、会话失效或关键接口失败时，能看到明确且可关闭的反馈，而不是笼统的“未知错误”。
 - [x] **OBS-03**: 维护者可以快速确认当前静态资源/Service Worker 版本状态，以便判断缓存是否影响问题复现。
 
-## v2 Requirements
+## v1.1 Requirements
 
-### Architecture
+### Frontend Request Convergence
 
-- **ARCH-01**: 订阅页前端进一步模块化，拆分数据层、状态层、渲染层与交互层。
-- **ARCH-02**: 主题系统建立明确 token 规范与开发文档，持续消除硬编码颜色。
+- [ ] **FRON-01**: 管理员、设置、日历等高频页面的关键请求路径使用共享 `WallosApi` / `WallosHttp` 请求层，而不是继续保留零散 `fetch` 与本地错误处理。
+- [ ] **FRON-02**: 剩余高频前端模块在请求失败、会话失效和通用错误反馈上遵循同一处理入口，避免重复实现。
 
-### Performance
+### Subscription Modularity
 
-- **PERF-01**: 对高频筛选、支付记录与日志查询进行索引与分页专项优化。
-- **PERF-02**: 对媒体处理与动态背景进行更系统的性能压测和降载策略补强。
+- [ ] **SUBM-01**: 订阅页前端逻辑按数据加载、状态管理、渲染和交互边界进行模块拆分，降低当前脚本复杂度。
+- [ ] **SUBM-02**: 订阅页的关键流程（筛选、排序、分页、支付记录、图片相关）在模块化后保持现有行为与视觉效果。
 
-### Operations
+### Contracts And Docs
 
-- **OPS-01**: 外层 Nginx/FRP/Fail2ban 防刷配置形成与应用内限制相互配合的正式运维方案。
+- [ ] **DOCS-01**: 主题、请求失败契约和共享请求层的使用规则形成明确文档，便于未来改动复用。
+- [ ] **DOCS-02**: README / CONTRIBUTING / 规划文档能明确指出哪些层必须复用、哪些做法属于退化风险。
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| 数据库迁移 | 当前优先级是降低回归风险，不是重做数据层 |
-| 新的大型订阅业务能力 | 本里程碑先稳住现有复杂区，避免继续堆功能 |
-| 主题风格大改版 | 保持当前视觉资产稳定，仅做稳定性相关修正 |
+| 数据库迁移 | 当前优先级仍是结构收敛与回归风险控制，不是重做数据层 |
+| 大型新业务功能 | 本里程碑先处理复杂区减耦，不继续扩张业务面 |
+| 主题风格大改版 | 保持当前视觉资产稳定，仅做结构与契约收敛 |
 | 外部网关与 VPS 侧大改 | 属于独立运维专题，不纳入本次代码里程碑 |
 
 ## Traceability
@@ -61,13 +62,19 @@
 | OBS-01 | Phase 3 | Complete |
 | OBS-02 | Phase 3 | Complete |
 | OBS-03 | Phase 3 | Complete |
+| FRON-01 | Phase 4 | Pending |
+| FRON-02 | Phase 4 | Pending |
+| SUBM-01 | Phase 5 | Pending |
+| SUBM-02 | Phase 5 | Pending |
+| DOCS-01 | Phase 6 | Pending |
+| DOCS-02 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 9 total
-- Mapped to phases: 9
+- v1.0 validated requirements: 9 total
+- v1.1 active requirements: 6 total
+- Mapped to phases: 15
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-20*
-*Last updated: 2026-04-20 after Phase 3 execution*
-
+*Last updated: 2026-04-20 after milestone v1.1 initialization*
