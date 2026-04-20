@@ -513,33 +513,7 @@ function mountSubscriptionOverlayToBody(selector) {
 }
 
 function resetSubscriptionPaymentForm() {
-  const form = document.querySelector("#subscription-payment-form");
-  if (!form) {
-    return;
-  }
-
-  form.reset();
-  const subscriptionIdInput = document.querySelector("#subscription-payment-subscription-id");
-  const recordIdInput = document.querySelector("#subscription-payment-record-id");
-  if (subscriptionIdInput) {
-    subscriptionIdInput.value = "";
-  }
-  if (recordIdInput) {
-    recordIdInput.value = "";
-  }
-
-  const dueDateInput = document.querySelector("#subscription-payment-due-date");
-  const paidAtInput = document.querySelector("#subscription-payment-paid-at");
-  const today = new Date().toISOString().split('T')[0];
-  if (dueDateInput) {
-    dueDateInput.value = today;
-  }
-  if (paidAtInput) {
-    paidAtInput.value = today;
-  }
-
-  currentPaymentModalSubscription = null;
-  currentPaymentModalMode = "create";
+  return window.WallosSubscriptionPayments?.resetSubscriptionPaymentForm?.();
 }
 
 function getOpenSubscriptionIds() {
@@ -615,140 +589,19 @@ function closeSubscriptionPaymentModal(options = {}) {
 }
 
 function fillSubscriptionPaymentForm(subscription) {
-  const title = document.querySelector("#subscription-payment-modal-title");
-  const subscriptionIdInput = document.querySelector("#subscription-payment-subscription-id");
-  const dueDateInput = document.querySelector("#subscription-payment-due-date");
-  const paidAtInput = document.querySelector("#subscription-payment-paid-at");
-  const amountInput = document.querySelector("#subscription-payment-amount");
-  const currencyInput = document.querySelector("#subscription-payment-currency");
-  const paymentMethodInput = document.querySelector("#subscription-payment-method");
-
-  currentPaymentModalSubscription = subscription;
-  currentPaymentModalMode = "create";
-
-  if (title) {
-    title.textContent = `${translate('subscription_record_payment')}: ${subscription.name || ''}`;
-  }
-  if (subscriptionIdInput) {
-    subscriptionIdInput.value = subscription.id || "";
-  }
-  if (dueDateInput) {
-    dueDateInput.value = subscription.next_payment || new Date().toISOString().split('T')[0];
-  }
-  if (paidAtInput) {
-    paidAtInput.value = new Date().toISOString().split('T')[0];
-  }
-  if (currencyInput) {
-    currencyInput.value = String(subscription.currency_id || "");
-  }
-  if (paymentMethodInput) {
-    paymentMethodInput.value = String(subscription.payment_method_id || "");
-  }
-  if (dueDateInput) {
-    applyPaymentRulePreviewForDueDate(dueDateInput.value || "");
-  } else if (amountInput) {
-    amountInput.value = subscription.price || "";
-  }
+  return window.WallosSubscriptionPayments?.fillSubscriptionPaymentForm?.(subscription);
 }
 
 function fillSubscriptionPaymentFormFromRecord(subscriptionId, subscriptionName, record) {
-  const title = document.querySelector("#subscription-payment-modal-title");
-  const subscriptionIdInput = document.querySelector("#subscription-payment-subscription-id");
-  const recordIdInput = document.querySelector("#subscription-payment-record-id");
-  const dueDateInput = document.querySelector("#subscription-payment-due-date");
-  const paidAtInput = document.querySelector("#subscription-payment-paid-at");
-  const amountInput = document.querySelector("#subscription-payment-amount");
-  const currencyInput = document.querySelector("#subscription-payment-currency");
-  const paymentMethodInput = document.querySelector("#subscription-payment-method");
-  const noteInput = document.querySelector("#subscription-payment-note");
-
-  currentPaymentModalMode = "edit";
-
-  if (title) {
-    title.textContent = `${translate('subscription_edit_payment')}: ${subscriptionName || ''}`;
-  }
-  if (subscriptionIdInput) {
-    subscriptionIdInput.value = subscriptionId || "";
-  }
-  if (recordIdInput) {
-    recordIdInput.value = record.id || "";
-  }
-  if (dueDateInput) {
-    dueDateInput.value = record.due_date || "";
-  }
-  if (paidAtInput) {
-    paidAtInput.value = record.paid_at || "";
-  }
-  if (amountInput) {
-    amountInput.value = record.amount_original || "";
-  }
-  if (currencyInput) {
-    currencyInput.value = String(record.currency_id || "");
-  }
-  if (paymentMethodInput) {
-    paymentMethodInput.value = String(record.payment_method_id || "");
-  }
-  if (noteInput) {
-    noteInput.value = record.note || "";
-  }
+  return window.WallosSubscriptionPayments?.fillSubscriptionPaymentFormFromRecord?.(subscriptionId, subscriptionName, record);
 }
 
 function openSubscriptionPaymentModal(event, id) {
-  if (event) {
-    event.stopPropagation();
-    event.preventDefault();
-  }
-
-  const modal = document.getElementById("subscription-payment-modal");
-  const historyModal = document.getElementById("subscription-payment-history-modal");
-  if (!modal) {
-    return;
-  }
-
-  resetSubscriptionPaymentForm();
-  document.body.classList.add('no-scroll');
-  reopenPaymentHistoryAfterPaymentModalClose = !!(historyModal && historyModal.classList.contains("is-open"));
-  if (historyModal && historyModal.classList.contains("is-open")) {
-    historyModal.classList.remove("is-open");
-  }
-
-  window.WallosHttp.getJson(`endpoints/subscription/get.php?id=${id}`, {
-    includeCsrf: false,
-    requireOk: true,
-    fallbackErrorMessage: translate('failed_to_load_subscription'),
-  })
-    .then((subscription) => {
-      fillSubscriptionPaymentForm(subscription);
-      modal.classList.add("is-open");
-    })
-    .catch((error) => {
-      document.body.classList.remove('no-scroll');
-      showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
-    });
+  return window.WallosSubscriptionPayments?.openSubscriptionPaymentModal?.(event, id);
 }
 
 function closeSubscriptionPaymentHistoryModal() {
-  const modal = document.getElementById("subscription-payment-history-modal");
-  if (!modal) {
-    return;
-  }
-
-  modal.classList.remove("is-open");
-  const paymentModal = document.getElementById("subscription-payment-modal");
-  if (!paymentModal || !paymentModal.classList.contains("is-open")) {
-    document.body.classList.remove('no-scroll');
-  }
-  currentPaymentHistorySubscriptionId = 0;
-  currentPaymentHistorySubscriptionName = "";
-  currentPaymentHistoryRecords = [];
-  currentPaymentHistorySummary = {};
-  currentPaymentHistoryCashflow = [];
-  currentPaymentHistoryForecast = [];
-  currentPaymentHistoryAvailableYears = [];
-  currentPaymentHistoryTab = "records";
-  currentPaymentHistoryYear = new Date().getFullYear();
-  currentPaymentHistoryRangeMonths = 12;
-  reopenPaymentHistoryAfterPaymentModalClose = false;
+  return window.WallosSubscriptionPayments?.closeSubscriptionPaymentHistoryModal?.();
 }
 
 function openSubscriptionRecycleBinModal(event = null) {
@@ -777,12 +630,8 @@ function closeSubscriptionRecycleBinModal() {
 }
 
 function formatSubscriptionPaymentHistoryAmount(value, currencyCode) {
-  const numericValue = Number(value || 0);
-  if (currencyCode) {
-    return new Intl.NumberFormat(navigator.language, { style: 'currency', currency: currencyCode }).format(numericValue);
-  }
-
-  return new Intl.NumberFormat(navigator.language).format(numericValue);
+  return window.WallosSubscriptionPayments?.formatSubscriptionPaymentHistoryAmount?.(value, currencyCode)
+    || new Intl.NumberFormat(navigator.language).format(Number(value || 0));
 }
 
 function sanitizeSubscriptionPaymentHistoryFilenamePart(value) {
@@ -901,24 +750,7 @@ function getSubscriptionPaymentHistoryExportPayload() {
 }
 
 function exportSubscriptionPaymentHistoryCurrentView(format) {
-  const payload = getSubscriptionPaymentHistoryExportPayload();
-  if (!payload.rows.length) {
-    showErrorMessage(translate("subscription_payment_export_empty"));
-    return;
-  }
-
-  const exportedAt = new Date().toISOString().replace(/[:.]/g, "-");
-  if (format === "json") {
-    const jsonContent = JSON.stringify({
-      exported_at: new Date().toISOString(),
-      ...payload.json,
-    }, null, 2);
-    downloadSubscriptionPaymentHistoryTextFile(jsonContent, `${payload.filenameBase}-${exportedAt}.json`, "application/json;charset=utf-8");
-    return;
-  }
-
-  const csvContent = buildSubscriptionPaymentHistoryCsv(payload.rows);
-  downloadSubscriptionPaymentHistoryTextFile(csvContent, `${payload.filenameBase}-${exportedAt}.csv`, "text/csv;charset=utf-8");
+  return window.WallosSubscriptionPayments?.exportSubscriptionPaymentHistoryCurrentView?.(format);
 }
 
 function getSubscriptionPaymentHistorySummaryHtml() {
@@ -1174,142 +1006,23 @@ function renderSubscriptionPaymentHistoryActiveTabHtml() {
 }
 
 function setSubscriptionPaymentHistoryTab(tab) {
-  currentPaymentHistoryTab = tab;
-  renderSubscriptionPaymentHistoryModal();
+  return window.WallosSubscriptionPayments?.setSubscriptionPaymentHistoryTab?.(tab);
 }
 
 function renderSubscriptionPaymentHistoryModal() {
-  const content = document.getElementById("subscription-payment-history-content");
-  const title = document.getElementById("subscription-payment-history-modal-title");
-  const addButton = document.getElementById("subscription-payment-history-add-button");
-  if (!content || !title || !addButton) {
-    return;
-  }
-
-  title.textContent = `${translate('subscription_payment_history')}: ${currentPaymentHistorySubscriptionName || ''}`;
-  addButton.onclick = (event) => openSubscriptionPaymentModal(event, currentPaymentHistorySubscriptionId);
-  content.innerHTML = `
-    ${getSubscriptionPaymentHistorySummaryHtml()}
-    ${getSubscriptionPaymentHistoryTabsHtml()}
-    <div class="subscription-payment-history-tabpanel">
-      ${renderSubscriptionPaymentHistoryActiveTabHtml()}
-    </div>
-  `;
-  syncSubscriptionPaymentHistoryControls();
+  return window.WallosSubscriptionPayments?.renderSubscriptionPaymentHistoryModal?.();
 }
 
 function openSubscriptionPaymentHistoryModal(event, id, options = {}) {
-  if (event) {
-    event.stopPropagation();
-    event.preventDefault();
-  }
-
-  const modal = document.getElementById("subscription-payment-history-modal");
-  if (!modal) {
-    return;
-  }
-
-  document.body.classList.add('no-scroll');
-  if (!options.preserveTab || currentPaymentHistorySubscriptionId !== Number(id || 0)) {
-    currentPaymentHistoryTab = "records";
-  }
-  if (!options.preserveFilters || currentPaymentHistorySubscriptionId !== Number(id || 0)) {
-    currentPaymentHistoryYear = new Date().getFullYear();
-    currentPaymentHistoryRangeMonths = 12;
-  }
-
-  const params = new URLSearchParams({
-    id: String(id),
-    year: String(currentPaymentHistoryYear),
-    range: String(currentPaymentHistoryRangeMonths),
-  });
-
-  window.WallosHttp.getJson(`endpoints/subscription/paymenthistory.php?${params.toString()}`, {
-    includeCsrf: false,
-    requireOk: true,
-    fallbackErrorMessage: translate('failed_to_load_subscription'),
-  })
-    .then((data) => {
-      if (!data.success) {
-        throw new Error(data.message || translate('error'));
-      }
-      currentPaymentHistorySubscriptionId = Number(data.subscription?.id || 0);
-      currentPaymentHistorySubscriptionName = data.subscription?.name || '';
-      currentPaymentHistoryAvailableYears = Array.isArray(data.filters?.available_years) ? data.filters.available_years.map((year) => Number(year)) : [new Date().getFullYear()];
-      currentPaymentHistoryYear = Number(data.filters?.selected_year || currentPaymentHistoryYear);
-      currentPaymentHistoryRangeMonths = Number(data.filters?.selected_range_months || currentPaymentHistoryRangeMonths);
-      currentPaymentHistorySummary = data.summary || {};
-      currentPaymentHistoryCashflow = Array.isArray(data.cashflow) ? data.cashflow : [];
-      currentPaymentHistoryForecast = Array.isArray(data.forecast) ? data.forecast : [];
-      currentPaymentHistoryRecords = Array.isArray(data.records) ? data.records : [];
-      renderSubscriptionPaymentHistoryModal();
-      modal.classList.add("is-open");
-    })
-    .catch((error) => {
-      document.body.classList.remove('no-scroll');
-      showErrorMessage(normalizeSubscriptionRequestError(error, translate("error")));
-    });
+  return window.WallosSubscriptionPayments?.openSubscriptionPaymentHistoryModal?.(event, id, options);
 }
 
 function openEditSubscriptionPaymentModal(event, subscriptionId, recordId) {
-  if (event) {
-    event.stopPropagation();
-    event.preventDefault();
-  }
-
-  const modal = document.getElementById("subscription-payment-modal");
-  const historyModal = document.getElementById("subscription-payment-history-modal");
-  if (!modal) {
-    return;
-  }
-
-  const record = currentPaymentHistoryRecords.find((item) => Number(item.id) === Number(recordId));
-  if (!record) {
-    showErrorMessage(translate("error"));
-    return;
-  }
-
-  reopenPaymentHistoryAfterPaymentModalClose = true;
-  if (historyModal && historyModal.classList.contains("is-open")) {
-    historyModal.classList.remove("is-open");
-  }
-  fillSubscriptionPaymentFormFromRecord(subscriptionId, currentPaymentHistorySubscriptionName, record);
-  modal.classList.add("is-open");
+  return window.WallosSubscriptionPayments?.openEditSubscriptionPaymentModal?.(event, subscriptionId, recordId);
 }
 
 function deleteSubscriptionPaymentRecord(event, subscriptionId, recordId) {
-  if (event) {
-    event.stopPropagation();
-    event.preventDefault();
-  }
-
-  if (!confirm(translate('confirm_delete_subscription_payment_record'))) {
-    return;
-  }
-
-  window.WallosHttp.postJson("endpoints/subscription/deletepayment.php", {
-    id: subscriptionId,
-    record_id: recordId,
-  })
-    .then((data) => {
-      if (data.success) {
-        showSuccessMessage(data.message || translate("success"));
-        const preservedTab = currentPaymentHistoryTab;
-        const preservedYear = currentPaymentHistoryYear;
-        const preservedRangeMonths = currentPaymentHistoryRangeMonths;
-        refreshSubscriptionsPreservingState({
-          initiator: "payment-history",
-          subscriptionId,
-          historyTab: preservedTab,
-          historyYear: preservedYear,
-          historyRangeMonths: preservedRangeMonths,
-          reopenHistory: true,
-        }).catch(() => showErrorMessage(translate("error")));
-      } else {
-        showErrorMessage(data.message || translate("error"));
-      }
-    })
-    .catch((error) => showErrorMessage(normalizeSubscriptionRequestError(error, translate("error"))));
+  return window.WallosSubscriptionPayments?.deleteSubscriptionPaymentRecord?.(event, subscriptionId, recordId);
 }
 
 function getSubscriptionPriceRulesCurrencyOptionsHtml() {
@@ -2287,12 +2000,13 @@ document.addEventListener('DOMContentLoaded', function () {
     openViewerFromElement: openSubscriptionImageViewerFromElement,
     applyImageLayoutMode: applySubscriptionImageLayoutMode,
   });
+  window.WallosSubscriptionPayments?.initialize?.({
+    refreshSubscriptionsPreservingState,
+    getOpenSubscriptionIds,
+  });
   const subscriptionForm = document.querySelector("#subs-form");
   const submitButton = document.querySelector("#save-button");
   const endpoint = "endpoints/subscription/add.php";
-  const subscriptionPaymentForm = document.querySelector("#subscription-payment-form");
-  const subscriptionPaymentSaveButton = document.querySelector("#subscription-payment-save-button");
-  const subscriptionPaymentDueDateInput = document.querySelector("#subscription-payment-due-date");
   const subscriptionPageCreateInput = document.querySelector("#subscription-page-create-name");
 
   initializeStaticSubscriptionInteractions();
@@ -2302,12 +2016,6 @@ document.addEventListener('DOMContentLoaded', function () {
   mountSubscriptionOverlayToBody("#subscription-payment-modal");
   mountSubscriptionOverlayToBody("#subscription-payment-history-modal");
   mountSubscriptionOverlayToBody("#subscription-image-viewer");
-
-  if (subscriptionPaymentDueDateInput) {
-    subscriptionPaymentDueDateInput.addEventListener("change", function () {
-      applyPaymentRulePreviewForDueDate(this.value || "");
-    });
-  }
 
   if (subscriptionPageCreateInput) {
     subscriptionPageCreateInput.addEventListener("keydown", function (event) {
@@ -2367,61 +2075,6 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelector('#sort-options').addEventListener('focus', function () {
     isSortOptionsOpen = true;
   });
-
-  if (subscriptionPaymentForm) {
-    subscriptionPaymentForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      if (!subscriptionPaymentSaveButton) {
-        return;
-      }
-
-      subscriptionPaymentSaveButton.disabled = true;
-      const recordId = Number(document.querySelector("#subscription-payment-record-id")?.value || 0);
-
-      const payload = {
-        id: Number(document.querySelector("#subscription-payment-subscription-id")?.value || 0),
-        record_id: recordId,
-        due_date: document.querySelector("#subscription-payment-due-date")?.value || "",
-        paid_at: document.querySelector("#subscription-payment-paid-at")?.value || "",
-        amount_original: document.querySelector("#subscription-payment-amount")?.value || "",
-        currency_id: Number(document.querySelector("#subscription-payment-currency")?.value || 0),
-        payment_method_id: Number(document.querySelector("#subscription-payment-method")?.value || 0),
-        note: document.querySelector("#subscription-payment-note")?.value || "",
-      };
-
-      window.WallosHttp.postJson(
-        recordId > 0 ? "endpoints/subscription/updatepayment.php" : "endpoints/subscription/recordpayment.php",
-        payload
-      )
-        .then((data) => {
-          if (data.success) {
-            showSuccessMessage(data.message || translate("success"));
-            const shouldReopenHistory = reopenPaymentHistoryAfterPaymentModalClose && Number(payload.id || 0) > 0;
-            const preservedTab = currentPaymentHistoryTab;
-            const preservedYear = currentPaymentHistoryYear;
-            const preservedRangeMonths = currentPaymentHistoryRangeMonths;
-            const openSubscriptionIds = getOpenSubscriptionIds();
-            closeSubscriptionPaymentModal({ skipReopenHistory: true });
-            refreshSubscriptionsPreservingState({
-              initiator: "payment-save",
-              openSubscriptionIds,
-              subscriptionId: payload.id,
-              historyTab: preservedTab,
-              historyYear: preservedYear,
-              historyRangeMonths: preservedRangeMonths,
-              reopenHistory: shouldReopenHistory,
-            }).catch(() => showErrorMessage(translate("error")));
-          } else {
-            showErrorMessage(data.message || translate("error"));
-          }
-        })
-        .catch(() => showErrorMessage(translate("error")))
-        .finally(() => {
-          subscriptionPaymentSaveButton.disabled = false;
-        });
-    });
-  }
 
   const subscriptionImageViewerContent = document.querySelector("#subscription-image-viewer .subscription-image-viewer-content");
   if (subscriptionImageViewerContent) {
