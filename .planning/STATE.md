@@ -2,10 +2,10 @@
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: -
-Status: Milestone initialized
-Last activity: 2026-04-20 - Milestone v1.0 稳定性工程 started
+Phase: 1 - 自动化回归检查基线
+Plan: Context captured
+Status: Ready for planning
+Last activity: 2026-04-20 - Phase 1 context gathered
 
 ## Project Reference
 
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 
 ## Next Up
 
+- 基于 `01-CONTEXT.md` 制定 Phase 1 计划
 - 明确最小回归清单并落成可运行脚本
-- 收敛会话恢复与 401 返回契约
-- 补齐后台/前端故障反馈与缓存状态观察入口
+- 为后续 Phase 2 的会话/401 收敛保留统一 smoke 基线
 
 ---
-*Last updated: 2026-04-20 after milestone initialization*
+*Last updated: 2026-04-20 after Phase 1 context gathering*
