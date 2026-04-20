@@ -80,20 +80,25 @@
     return normalizeFilter(currentFilter);
   }
 
+  function buildFilterUrl(filterValue = null) {
+    const url = new URL(window.location.href);
+    const nextFilter = normalizeFilter(filterValue ?? getCurrentFilter());
+
+    if (nextFilter === "all") {
+      url.searchParams.delete("subscription_page");
+    } else {
+      url.searchParams.set("subscription_page", nextFilter);
+    }
+
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+
   function updateFilterUrl() {
     if (!window.history?.replaceState) {
       return;
     }
 
-    const url = new URL(window.location.href);
-    const filterValue = getCurrentFilter();
-    if (filterValue === "all") {
-      url.searchParams.delete("subscription_page");
-    } else {
-      url.searchParams.set("subscription_page", filterValue);
-    }
-
-    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    window.history.replaceState({}, "", buildFilterUrl());
   }
 
   function setPageLoadingState(loading) {
@@ -370,9 +375,31 @@
     return Promise.resolve(fetchSubscriptionsHandler(null, null, initiator));
   }
 
+  function navigateToFilter(filterValue) {
+    const nextUrl = buildFilterUrl(filterValue);
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+    setPageLoadingState(true);
+
+    window.setTimeout(() => {
+      if (nextUrl === currentUrl) {
+        window.location.reload();
+        return;
+      }
+
+      window.location.assign(nextUrl);
+    }, 24);
+
+    return Promise.resolve(null);
+  }
+
   function setFilterValue(filterValue, options = {}) {
     currentFilter = normalizeFilter(filterValue);
     renderTabs();
+
+    if (options.navigate === true) {
+      return navigateToFilter(currentFilter);
+    }
 
     if (options.updateUrl !== false) {
       updateFilterUrl();
@@ -398,7 +425,7 @@
   }
 
   function selectFilter(filterValue) {
-    return setFilterValue(filterValue);
+    return setFilterValue(filterValue, { navigate: true });
   }
 
   function openManager(event) {
