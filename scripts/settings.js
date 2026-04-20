@@ -746,10 +746,21 @@ function reloadPaymentMethods() {
   const paymentsContainer = document.querySelector("#payments-list");
   const paymentMethodsEndpoint = "endpoints/payments/get.php";
 
-  fetch(paymentMethodsEndpoint)
-    .then(response => response.text())
-    .then(data => {
+  window.WallosApi.getText(paymentMethodsEndpoint, {
+    includeCsrf: false,
+    requireOk: true,
+    fallbackErrorMessage: translate("error"),
+  })
+    .then((data) => {
       paymentsContainer.innerHTML = data;
+    })
+    .catch((error) => {
+      if (window.WallosApi?.isSessionFailureError?.(error)) {
+        window.location.reload();
+        return;
+      }
+
+      showErrorMessage(window.WallosApi?.normalizeError?.(error, translate("error")) || translate("error"));
     });
 }
 

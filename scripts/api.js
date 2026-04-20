@@ -1,4 +1,25 @@
 (function (window) {
+  function isSessionFailurePayload(data) {
+    return Boolean(
+      data
+      && typeof data === "object"
+      && (
+        data.session_expired === true
+        || data.code === "session_expired"
+        || data.error === "session_expired"
+        || data.requires_relogin === true
+      )
+    );
+  }
+
+  function isSessionFailureError(error) {
+    return Boolean(
+      error
+      && typeof error === "object"
+      && (error.sessionExpired === true || isSessionFailurePayload(error.data))
+    );
+  }
+
   function translateFallback(key, fallback) {
     if (typeof window.translate === "function") {
       const translated = window.translate(key);
@@ -17,6 +38,10 @@
     error.data = context.data;
     error.rawBody = context.rawBody;
     error.cause = context.cause;
+    error.code = context.code || (context.data && typeof context.data === "object"
+      ? String(context.data.code || context.data.error || "")
+      : "");
+    error.sessionExpired = isSessionFailurePayload(context.data);
     return error;
   }
 
@@ -93,6 +118,18 @@
       },
       normalizeError(error, fallbackMessage) {
         return this.getErrorMessage(error, fallbackMessage);
+      },
+      isSessionFailurePayload(payload) {
+        if (typeof existingHttp.isSessionFailurePayload === "function") {
+          return existingHttp.isSessionFailurePayload(payload);
+        }
+        return isSessionFailurePayload(payload);
+      },
+      isSessionFailureError(error) {
+        if (typeof existingHttp.isSessionFailureError === "function") {
+          return existingHttp.isSessionFailureError(error);
+        }
+        return isSessionFailureError(error);
       },
     };
   }
@@ -272,6 +309,8 @@
       normalizeError(error, fallbackMessage) {
         return this.getErrorMessage(error, fallbackMessage);
       },
+      isSessionFailurePayload,
+      isSessionFailureError,
     };
   }
 

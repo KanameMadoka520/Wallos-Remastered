@@ -19,9 +19,11 @@ function wallos_regression_build_suite_catalog()
             'description' => 'Checks login reuse, subscription-page JSON payloads, and authenticated pagination HTML.',
             'checks' => array(
                 'login-or-cookie' => 'Reuse existing cookies or login with supplied credentials',
+                'subscriptions-unauth-401' => 'subscriptions/get.php returns the standardized unauthenticated JSON 401 contract',
+                'subscription-pages-unauth-401' => 'subscriptionpages.php returns the standardized unauthenticated JSON 401 contract',
+                'payments-unauth-401' => 'payments/get.php returns the standardized unauthenticated JSON 401 contract',
                 'subscription-pages-json' => 'subscriptionpages.php returns the expected JSON shape',
                 'subscriptions-html' => 'subscriptions/get.php returns HTML for subscription_page=all',
-                'subscriptions-unauth-401' => 'subscriptions/get.php unauthenticated contract stays clean',
             ),
         ),
         'legacy' => array(
