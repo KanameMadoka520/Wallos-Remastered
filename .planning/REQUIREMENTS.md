@@ -19,9 +19,9 @@
 
 ### Observability
 
-- [ ] **OBS-01**: 维护者可以快速看到近期稳定性异常或关键失败事件，便于定位回归和线上异常。
-- [ ] **OBS-02**: 用户在遇到慢请求、会话失效或关键接口失败时，能看到明确且可关闭的反馈，而不是笼统的“未知错误”。
-- [ ] **OBS-03**: 维护者可以快速确认当前静态资源/Service Worker 版本状态，以便判断缓存是否影响问题复现。
+- [x] **OBS-01**: 维护者可以快速看到近期稳定性异常或关键失败事件，便于定位回归和线上异常。
+- [x] **OBS-02**: 用户在遇到慢请求、会话失效或关键接口失败时，能看到明确且可关闭的反馈，而不是笼统的“未知错误”。
+- [x] **OBS-03**: 维护者可以快速确认当前静态资源/Service Worker 版本状态，以便判断缓存是否影响问题复现。
 
 ## v2 Requirements
 
@@ -58,9 +58,9 @@
 | SESS-01 | Phase 2 | Complete |
 | SESS-02 | Phase 2 | Complete |
 | SESS-03 | Phase 2 | Complete |
-| OBS-01 | Phase 3 | Pending |
-| OBS-02 | Phase 3 | Pending |
-| OBS-03 | Phase 3 | Pending |
+| OBS-01 | Phase 3 | Complete |
+| OBS-02 | Phase 3 | Complete |
+| OBS-03 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 9 total
@@ -69,5 +69,5 @@
 
 ---
 *Requirements defined: 2026-04-20*
-*Last updated: 2026-04-20 after Phase 2 execution*
+*Last updated: 2026-04-20 after Phase 3 execution*
 
