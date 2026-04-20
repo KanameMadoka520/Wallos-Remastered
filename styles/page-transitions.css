@@ -4,24 +4,6 @@
     --wallos-page-transition-ease-in: cubic-bezier(0.19, 1, 0.22, 1);
     --wallos-page-transition-ease-out: cubic-bezier(0.77, 0, 0.18, 1);
     --wallos-page-transition-ease-float: cubic-bezier(0.23, 1, 0.32, 1);
-    --wallos-page-transition-ba-fixed-main-rgb: 0, 162, 255;
-    --wallos-page-transition-ba-fixed-accent-rgb: 112, 182, 255;
-    --wallos-page-transition-ba-fixed-surface-rgb: 244, 251, 255;
-    --wallos-page-transition-ba-fixed-surface-alt-rgb: 225, 242, 255;
-    --wallos-page-transition-ba-fixed-panel-rgb: 214, 236, 255;
-    --wallos-page-transition-ba-fixed-panel-alt-rgb: 219, 240, 255;
-    --wallos-page-transition-ba-fixed-edge-rgb: 103, 181, 255;
-    --wallos-page-transition-ba-fixed-text-rgb: 39, 114, 184;
-    --wallos-page-transition-ba-fixed-text-strong-rgb: 17, 133, 218;
-    --wallos-page-transition-ba-fixed-shadow-rgb: 28, 82, 140;
-    --wallos-page-transition-ba-fixed-glow-rgb: 83, 166, 235;
-    --wallos-page-transition-ba-theme-main-rgb: var(--main-color-rgb);
-    --wallos-page-transition-ba-theme-accent-rgb: var(--accent-color-rgb);
-    --wallos-page-transition-ba-theme-surface-rgb: var(--box-background-color-rgb);
-    --wallos-page-transition-ba-theme-background-rgb: var(--background-color-rgb);
-    --wallos-page-transition-ba-theme-highlight-rgb: var(--text-color-inverted-rgb);
-    --wallos-page-transition-ba-theme-text-rgb: var(--text-color-rgb);
-    --wallos-page-transition-ba-theme-shadow-rgb: var(--main-color-rgb);
 }
 
 .wallos-page-transition {
@@ -398,6 +380,20 @@ body.dynamic-wallpaper-enabled .wallos-page-transition-backdrop {
 
 body.dynamic-wallpaper-enabled .wallos-page-transition-grid {
     opacity: 0.3;
+}
+
+html[data-page-transition-style="bluearchive"] {
+    --wallos-page-transition-ba-fixed-main-rgb: 0, 162, 255;
+    --wallos-page-transition-ba-fixed-accent-rgb: 112, 182, 255;
+    --wallos-page-transition-ba-fixed-surface-rgb: 244, 251, 255;
+    --wallos-page-transition-ba-fixed-surface-alt-rgb: 225, 242, 255;
+    --wallos-page-transition-ba-fixed-panel-rgb: 214, 236, 255;
+    --wallos-page-transition-ba-fixed-panel-alt-rgb: 219, 240, 255;
+    --wallos-page-transition-ba-fixed-edge-rgb: 103, 181, 255;
+    --wallos-page-transition-ba-fixed-text-rgb: 39, 114, 184;
+    --wallos-page-transition-ba-fixed-text-strong-rgb: 17, 133, 218;
+    --wallos-page-transition-ba-fixed-shadow-rgb: 28, 82, 140;
+    --wallos-page-transition-ba-fixed-glow-rgb: 83, 166, 235;
 }
 
 html[data-page-transition-style="bluearchive"] .wallos-page-transition-backdrop {
@@ -1024,13 +1020,6 @@ html[data-page-transition-style^="bluearchive"] .wallos-page-transition-revealed
     opacity: 0;
 }
 
-html[data-page-transition-style="bluearchive_theme"] .wallos-page-transition-backdrop {
-    background:
-        radial-gradient(circle at 24% 34%, rgba(var(--wallos-page-transition-ba-theme-main-rgb), 0.18), transparent 32%),
-        radial-gradient(circle at 76% 28%, rgba(var(--wallos-page-transition-ba-theme-accent-rgb), 0.22), transparent 34%),
-        linear-gradient(135deg, rgba(var(--wallos-page-transition-ba-theme-background-rgb), 0.98), rgba(var(--wallos-page-transition-ba-theme-surface-rgb), 0.94));
-}
-
 html[data-page-transition-style="bluearchive_theme"] {
     --wallos-page-transition-ba-theme-main-rgb: var(--main-color-rgb);
     --wallos-page-transition-ba-theme-accent-rgb: var(--accent-color-rgb);
@@ -1040,6 +1029,13 @@ html[data-page-transition-style="bluearchive_theme"] {
     --wallos-page-transition-ba-theme-copy-rgb: var(--main-color-rgb);
     --wallos-page-transition-ba-theme-copy-strong-rgb: var(--main-color-rgb);
     --wallos-page-transition-ba-theme-shadow-rgb: var(--main-color-rgb);
+}
+
+html[data-page-transition-style="bluearchive_theme"] .wallos-page-transition-backdrop {
+    background:
+        radial-gradient(circle at 24% 34%, rgba(var(--wallos-page-transition-ba-theme-main-rgb), 0.18), transparent 32%),
+        radial-gradient(circle at 76% 28%, rgba(var(--wallos-page-transition-ba-theme-accent-rgb), 0.22), transparent 34%),
+        linear-gradient(135deg, rgba(var(--wallos-page-transition-ba-theme-background-rgb), 0.98), rgba(var(--wallos-page-transition-ba-theme-surface-rgb), 0.94));
 }
 
 html[data-page-transition-style="bluearchive_theme"] .wallos-page-transition-grid {
