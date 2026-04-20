@@ -10,7 +10,7 @@
 | Phase | Status | Name | Goal | Requirements |
 |-------|--------|------|------|--------------|
 | 1 | Complete | 自动化回归检查基线 | 建立可本地运行的最小回归脚本与执行约定 | SAFE-01, SAFE-02, SAFE-03 |
-| 2 | Pending | 会话与 401 统一层 | 统一受保护请求的登录恢复、401 契约与前端处理入口 | SESS-01, SESS-02, SESS-03 |
+| 2 | Complete | 会话与 401 统一层 | 统一受保护请求的登录恢复、401 契约与前端处理入口 | SESS-01, SESS-02, SESS-03 |
 | 3 | Pending | 可观测性与调试反馈 | 提升异常可见性、用户反馈清晰度与缓存状态可观测性 | OBS-01, OBS-02, OBS-03 |
 
 ## Phase Details
@@ -30,7 +30,8 @@
 ### Phase 2: 会话与 401 统一层
 
 **Goal:** 清理当前分散的会话恢复逻辑，统一 cookie 恢复、401 契约和前端处理方式。  
-**Requirements:** SESS-01, SESS-02, SESS-03
+**Requirements:** SESS-01, SESS-02, SESS-03  
+**Status:** Complete (2026-04-20)
 
 **Success criteria:**
 1. 页面请求、异步 endpoint 与媒体访问不再维护多套近似的会话恢复逻辑。
@@ -63,10 +64,10 @@
 
 ## Next Command
 
-`$gsd-discuss-phase 2`
+`$gsd-discuss-phase 3`
 
 Also available:
-- `$gsd-plan-phase 2`
+- `$gsd-plan-phase 3`
 
 ---
-*Roadmap last updated: 2026-04-20 after Phase 1 execution*
+*Roadmap last updated: 2026-04-20 after Phase 2 execution*

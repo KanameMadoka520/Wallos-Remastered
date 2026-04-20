@@ -9,11 +9,11 @@
 - **Goal:** 为现有复杂功能建立回归检查、统一会话/401 处理与基础可观测性，降低后续迭代回归风险。
 - **Phases:** 3
 - **Requirements:** 9
-- **Progress:** Phase 1 / 3 completed
+- **Progress:** Phase 2 / 3 completed
 
 ## Completed
 
 - None yet
 
 ---
-*Last updated: 2026-04-20 after Phase 1 execution*
+*Last updated: 2026-04-20 after Phase 2 execution*

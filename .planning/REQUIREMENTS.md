@@ -13,9 +13,9 @@
 
 ### Session Consistency
 
-- [ ] **SESS-01**: 受保护的页面请求、异步 endpoint 与媒体访问共用统一的会话初始化/恢复 helper，而不是继续散落多套相似逻辑。
-- [ ] **SESS-02**: 受保护的异步 endpoint 在会话失效时返回一致、可机读的 401 契约，避免 HTML、纯文本与 JSON 混用。
-- [ ] **SESS-03**: 前端对会话失效使用统一处理入口，能够根据场景稳定执行刷新、跳转或提示，不再每个模块各自处理。
+- [x] **SESS-01**: 受保护的页面请求、异步 endpoint 与媒体访问共用统一的会话初始化/恢复 helper，而不是继续散落多套相似逻辑。
+- [x] **SESS-02**: 受保护的异步 endpoint 在会话失效时返回一致、可机读的 401 契约，避免 HTML、纯文本与 JSON 混用。
+- [x] **SESS-03**: 前端对会话失效使用统一处理入口，能够根据场景稳定执行刷新、跳转或提示，不再每个模块各自处理。
 
 ### Observability
 
@@ -55,9 +55,9 @@
 | SAFE-01 | Phase 1 | Complete |
 | SAFE-02 | Phase 1 | Complete |
 | SAFE-03 | Phase 1 | Complete |
-| SESS-01 | Phase 2 | Pending |
-| SESS-02 | Phase 2 | Pending |
-| SESS-03 | Phase 2 | Pending |
+| SESS-01 | Phase 2 | Complete |
+| SESS-02 | Phase 2 | Complete |
+| SESS-03 | Phase 2 | Complete |
 | OBS-01 | Phase 3 | Pending |
 | OBS-02 | Phase 3 | Pending |
 | OBS-03 | Phase 3 | Pending |
@@ -69,5 +69,5 @@
 
 ---
 *Requirements defined: 2026-04-20*
-*Last updated: 2026-04-20 after Phase 1 execution*
+*Last updated: 2026-04-20 after Phase 2 execution*
 
