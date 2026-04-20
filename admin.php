@@ -7,6 +7,7 @@ require_once 'includes/backup_manager.php';
 require_once 'includes/backup_progress_messages.php';
 require_once 'includes/timezone_settings.php';
 require_once 'includes/security_rate_limit_presets.php';
+require_once 'includes/runtime_observability.php';
 
 if ($isAdmin != 1) {
     header('Location: index.php');
@@ -166,6 +167,15 @@ $totalRequestLogCount = (int) $db->querySingle('SELECT COUNT(*) FROM request_log
 $securityAnomaliesTableExists = (bool) $db->querySingle("SELECT name FROM sqlite_master WHERE type='table' AND name='security_anomalies'");
 $securityAnomalyCount = $securityAnomaliesTableExists ? (int) $db->querySingle('SELECT COUNT(*) FROM security_anomalies') : 0;
 $securityAnomalyRecentCount = $securityAnomaliesTableExists ? (int) $db->querySingle("SELECT COUNT(*) FROM security_anomalies WHERE created_at >= datetime('now', '-1 day')") : 0;
+$clientRuntimeRecentCount = $securityAnomaliesTableExists ? wallos_count_security_anomalies_by_type($db, 'client_runtime', 24) : 0;
+$requestFailureRecentCount = $securityAnomaliesTableExists ? wallos_count_security_anomalies_by_type($db, 'request_failure', 24) : 0;
+$serviceWorkerVersions = wallos_parse_service_worker_cache_versions(__DIR__ . '/service-worker.js');
+$serviceWorkerVersionSummary = trim(implode(' | ', array_filter([
+    $serviceWorkerVersions['static'] !== '' ? 'static=' . $serviceWorkerVersions['static'] : '',
+    $serviceWorkerVersions['pages'] !== '' ? 'pages=' . $serviceWorkerVersions['pages'] : '',
+    $serviceWorkerVersions['logos'] !== '' ? 'logos=' . $serviceWorkerVersions['logos'] : '',
+])));
+$serviceWorkerVersionSummary = $serviceWorkerVersionSummary !== '' ? $serviceWorkerVersionSummary : '-';
 $backupRetentionDays = wallos_get_backup_retention_days($db);
 $backupTimezone = wallos_normalize_timezone_identifier($settings['backup_timezone'] ?? '', wallos_get_default_backup_timezone());
 $timezoneOptions = wallos_get_timezone_options($backupTimezone);
@@ -268,6 +278,14 @@ $pageSections = [
         data-apply-notice="<?= htmlspecialchars(translate('rate_limit_preset_applied_notice', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-no-selection="<?= htmlspecialchars(translate('select_rate_limit_preset_first', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-presets='<?= htmlspecialchars($rateLimitPresetsJson ?: "[]", ENT_QUOTES, "UTF-8") ?>'></div>
+    <div id="admin-service-worker-ui" style="display:none;"
+        data-not-supported="<?= htmlspecialchars(translate('service_worker_not_supported', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-no-registration="<?= htmlspecialchars(translate('service_worker_no_registration', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-active="<?= htmlspecialchars(translate('service_worker_active', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-waiting="<?= htmlspecialchars(translate('service_worker_waiting', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-installing="<?= htmlspecialchars(translate('service_worker_installing', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-controlled="<?= htmlspecialchars(translate('service_worker_controlled', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-uncontrolled="<?= htmlspecialchars(translate('service_worker_uncontrolled', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
     <div class="page-layout">
         <?php render_page_navigation(translate('admin', $i18n), $pageSections); ?>
         <div class="page-content">
@@ -1036,6 +1054,26 @@ $pageSections = [
             <div class="backup-summary-card">
                 <span><?= translate('recent_security_anomalies', $i18n) ?></span>
                 <strong><?= (int) $securityAnomalyRecentCount ?></strong>
+            </div>
+            <div class="backup-summary-card">
+                <span><?= translate('recent_client_runtime_errors', $i18n) ?></span>
+                <strong><?= (int) $clientRuntimeRecentCount ?></strong>
+            </div>
+            <div class="backup-summary-card">
+                <span><?= translate('recent_request_failures', $i18n) ?></span>
+                <strong><?= (int) $requestFailureRecentCount ?></strong>
+            </div>
+            <div class="backup-summary-card">
+                <span><?= translate('service_worker_versions', $i18n) ?></span>
+                <strong class="compact-summary-text"><?= htmlspecialchars($serviceWorkerVersionSummary, ENT_QUOTES, 'UTF-8') ?></strong>
+            </div>
+            <div class="backup-summary-card">
+                <span><?= translate('service_worker_registration_state', $i18n) ?></span>
+                <strong id="admin-sw-registration-state">-</strong>
+            </div>
+            <div class="backup-summary-card">
+                <span><?= translate('service_worker_controller_state', $i18n) ?></span>
+                <strong id="admin-sw-controller-state">-</strong>
             </div>
         </div>
         <div class="buttons">
