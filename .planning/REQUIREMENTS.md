@@ -38,8 +38,6 @@
 - [x] **DOCS-01**: 主题、请求失败契约和共享请求层的使用规则形成明确文档，便于未来改动复用。
 - [x] **DOCS-02**: README / CONTRIBUTING / 规划文档能明确指出哪些层必须复用、哪些做法属于退化风险。
 
-## v1.2 Requirements
-
 ### Special Flow Convergence
 
 - [x] **SPCL-01**: 剩余低频但仍常维护的特殊请求流，在不破坏文本/下载/特殊返回语义的前提下进一步收敛。
@@ -47,15 +45,15 @@
 
 ### Subscription Second Pass
 
-- [ ] **SUB2-01**: 订阅页第二轮模块化继续减少主文件重复实现，优先处理搜索/过滤/动作分发等剩余复杂区。
-- [ ] **SUB2-02**: 第二轮订阅页减耦后，现有用户可见行为和视觉效果继续保持稳定。
+- [x] **SUB2-01**: 订阅页第二轮模块化继续减少主文件重复实现，优先处理搜索/过滤/动作分发等剩余复杂区。
+- [x] **SUB2-02**: 第二轮订阅页减耦后，现有用户可见行为和视觉效果继续保持稳定。
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
 | 数据库迁移 | 当前优先级仍是结构收敛与回归风险控制，不是重做数据层 |
-| 大型新业务功能 | 本里程碑继续聚焦收敛与减耦 |
+| 大型新业务功能 | 当前几轮都优先聚焦收敛与减耦 |
 | 大规模视觉改版 | 保持当前视觉资产稳定 |
 
 ## Traceability
@@ -79,15 +77,14 @@
 | DOCS-02 | Phase 6 | Complete |
 | SPCL-01 | Phase 7 | Complete |
 | SPCL-02 | Phase 7 | Complete |
-| SUB2-01 | Phase 8 | Pending |
-| SUB2-02 | Phase 8 | Pending |
+| SUB2-01 | Phase 8 | Complete |
+| SUB2-02 | Phase 8 | Complete |
 
 **Coverage:**
-- validated requirements: 15 total
-- v1.2 active requirements: 4 total
+- validated requirements: 19 total
 - mapped to phases: 19
 - unmapped: 0
 
 ---
 *Requirements defined: 2026-04-21*
-*Last updated: 2026-04-21 after Phase 7 execution*
+*Last updated: 2026-04-21 after Phase 8 execution*

@@ -16,7 +16,7 @@
 | 5 | Complete | 订阅页模块化重构 | 按边界拆分订阅页前端逻辑，降低复杂度并保持现有行为 | SUBM-01, SUBM-02 |
 | 6 | Complete | 契约文档化与残余收敛 | 文档化主题/API/请求层契约，补齐残余低风险收口 | DOCS-01, DOCS-02 |
 | 7 | Complete | 特殊请求流收口 | 收掉残余低频但仍常维护的特殊请求流，并与共享层对齐 | SPCL-01, SPCL-02 |
-| 8 | Pending | 订阅页第二轮减耦 | 继续降低订阅页剩余复杂区耦合度 | SUB2-01, SUB2-02 |
+| 8 | Complete | 订阅页第二轮减耦 | 继续降低订阅页剩余复杂区耦合度 | SUB2-01, SUB2-02 |
 
 ## Phase Details
 
@@ -26,20 +26,11 @@
 **Requirements:** SPCL-01, SPCL-02  
 **Status:** Complete (2026-04-21)
 
-**Success criteria:**
-1. 残余高价值特殊请求流继续减少 raw `fetch`。
-2. 特殊流仍保持原有文本/下载/特殊返回语义。
-3. 回归基线继续保持绿色。
-
 ### Phase 8: 订阅页第二轮减耦
 
 **Goal:** 继续清理订阅页主文件中剩余复杂区，优先处理搜索/过滤/动作分发等边界。  
-**Requirements:** SUB2-01, SUB2-02
-
-**Success criteria:**
-1. 订阅页主文件继续缩小复杂度。
-2. 剩余复杂区按边界继续收敛。
-3. 订阅页现有行为与视觉保持稳定。
+**Requirements:** SUB2-01, SUB2-02  
+**Status:** Complete (2026-04-21)
 
 ## Dependency Notes
 
@@ -53,10 +44,10 @@
 
 ## Next Command
 
-`$gsd-discuss-phase 8`
+`$gsd-new-milestone`
 
 Also available:
-- `$gsd-plan-phase 8`
+- 开启下一个里程碑并继续演进
 
 ---
-*Roadmap last updated: 2026-04-21 after Phase 7 execution*
+*Roadmap last updated: 2026-04-21 after Phase 8 execution*
