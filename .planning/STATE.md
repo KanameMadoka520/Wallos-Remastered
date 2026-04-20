@@ -3,9 +3,9 @@
 ## Current Position
 
 Phase: 2 - 会话与 401 统一层
-Plan: Context captured
-Status: Ready for planning
-Last activity: 2026-04-20 - Phase 2 context gathered
+Plan: 3 plans created
+Status: Ready to execute
+Last activity: 2026-04-20 - Phase 2 planned
 
 ## Project Reference
 
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 
 ## Next Up
 
-- 基于 `02-CONTEXT.md` 为 Phase 2 拆出共享会话 helper 与统一 401 契约的执行计划
-- 明确优先迁移的高风险链路：页面检查、endpoint 检查、媒体访问与前端请求层
+- 执行 `02-01-PLAN.md`，先抽共享后端 auth/session helper 与统一 endpoint failure contract
+- 再执行 `02-02-PLAN.md` / `02-03-PLAN.md`，迁移高风险链路并收拢前端 401 处理入口
 - 继续复用 Phase 1 的 regression runner 作为本阶段回归安全网
 
 ---
-*Last updated: 2026-04-20 after Phase 2 context gathering*
+*Last updated: 2026-04-20 after Phase 2 planning*
