@@ -280,11 +280,7 @@ function getCurrentSubscriptionSortOrder() {
 }
 
 function hasActiveSubscriptionFilters() {
-  return activeFilters['categories'].length > 0
-    || activeFilters['members'].length > 0
-    || activeFilters['payments'].length > 0
-    || activeFilters['state'] !== ""
-    || activeFilters['renewalType'] !== "";
+  return window.WallosSubscriptionInteractions?.hasActiveFilters?.(activeFilters) || false;
 }
 
 function canReorderSubscriptions() {
@@ -2004,35 +2000,19 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function searchSubscriptions() {
-  const searchInput = document.querySelector("#search");
-  const searchContainer = searchInput.parentElement;
-  const searchTerm = searchInput.value.trim().toLowerCase();
-
-  if (searchTerm.length > 0) {
-    searchContainer.classList.add("has-text");
-  } else {
-    searchContainer.classList.remove("has-text");
-  }
-
-  const subscriptions = document.querySelectorAll(".subscription");
-  subscriptions.forEach(subscription => {
-    const name = subscription.getAttribute('data-name').toLowerCase();
-    if (!name.includes(searchTerm)) {
-      subscription.parentElement.classList.add("hide");
-    } else {
-      subscription.parentElement.classList.remove("hide");
-    }
-  });
-
-  updateSubscriptionReorderState();
-  scheduleSubscriptionMasonryLayout();
+  return window.WallosSubscriptionInteractions?.searchSubscriptions?.(
+    activeFilters,
+    updateSubscriptionReorderState,
+    scheduleSubscriptionMasonryLayout
+  );
 }
 
 function clearSearch() {
-  const searchInput = document.querySelector("#search");
-
-  searchInput.value = "";
-  searchSubscriptions();
+  return window.WallosSubscriptionInteractions?.clearSearch?.(
+    activeFilters,
+    updateSubscriptionReorderState,
+    scheduleSubscriptionMasonryLayout
+  );
 }
 
 function generateSubscriptionImageVariants() {
@@ -2059,66 +2039,11 @@ function generateSubscriptionImageVariants() {
 }
 
 function closeSubMenus() {
-  var subMenus = document.querySelectorAll('.filtermenu-submenu-content');
-  subMenus.forEach(subMenu => {
-    subMenu.classList.remove('is-open');
-  });
-
+  return window.WallosSubscriptionInteractions?.closeSubMenus?.();
 }
 
 function setSwipeElements() {
-  if (window.mobileNavigation) {
-    const swipeElements = document.querySelectorAll('.subscription');
-
-    swipeElements.forEach((element) => {
-      let startX = 0;
-      let startY = 0;
-      let currentX = 0;
-      let currentY = 0;
-      let translateX = 0;
-      const maxTranslateX = element.classList.contains('manual') ? -240 : -180;
-
-      element.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        element.style.transition = ''; // Remove transition for smooth dragging
-      });
-
-      element.addEventListener('touchmove', (e) => {
-        currentX = e.touches[0].clientX;
-        currentY = e.touches[0].clientY;
-
-        const diffX = currentX - startX;
-        const diffY = currentY - startY;
-
-        // Check if the swipe is more horizontal than vertical
-        if (Math.abs(diffX) > Math.abs(diffY)) {
-          e.preventDefault(); // Prevent vertical scrolling
-
-          // Only update translateX if swiping within allowed range
-          if (!(translateX === maxTranslateX && diffX < 0)) {
-            translateX = Math.min(0, Math.max(maxTranslateX, diffX)); // Clamp translateX between -180 and 0
-            element.style.transform = `translateX(${translateX}px)`;
-          }
-        }
-      });
-
-      element.addEventListener('touchend', () => {
-        // Check the final swipe position to determine snap behavior
-        if (translateX < maxTranslateX / 2) {
-          // If more than halfway to the left, snap fully open
-          translateX = maxTranslateX;
-        } else {
-          // If swiped less than halfway left or swiped right, snap back to closed
-          translateX = 0;
-        }
-        element.style.transition = 'transform 0.2s ease'; // Smooth snap effect
-        element.style.transform = `translateX(${translateX}px)`;
-        element.style.zIndex = '1';
-      });
-    });
-
-  }
+  return window.WallosSubscriptionInteractions?.setSwipeElements?.();
 }
 
 const activeFilters = [];
@@ -2129,37 +2054,16 @@ activeFilters['state'] = "";
 activeFilters['renewalType'] = "";
 
 document.addEventListener("DOMContentLoaded", function () {
-  var filtermenu = document.querySelector('#filtermenu-button');
-  filtermenu.addEventListener('click', function () {
-    this.parentElement.querySelector('.filtermenu-content').classList.toggle('is-open');
-    closeSubMenus();
-  });
-
-  document.addEventListener('click', function (e) {
-    var filtermenuContent = document.querySelector('.filtermenu-content');
-    if (filtermenuContent.classList.contains('is-open')) {
-      var subMenus = document.querySelectorAll('.filtermenu-submenu');
-      var clickedInsideSubmenu = Array.from(subMenus).some(subMenu => subMenu.contains(e.target) || subMenu === e.target);
-
-      if (!filtermenu.contains(e.target) && !clickedInsideSubmenu) {
-        closeSubMenus();
-        filtermenuContent.classList.remove('is-open');
-      }
-    }
-  });
-
-  setSwipeElements();
-
+  window.WallosSubscriptionInteractions?.initialize?.(
+    activeFilters,
+    fetchSubscriptions,
+    updateSubscriptionReorderState,
+    scheduleSubscriptionMasonryLayout
+  );
 });
 
 function toggleSubMenu(subMenu) {
-  var subMenu = document.getElementById("filter-" + subMenu);
-  if (subMenu.classList.contains("is-open")) {
-    closeSubMenus();
-  } else {
-    closeSubMenus();
-    subMenu.classList.add("is-open");
-  }
+  return window.WallosSubscriptionInteractions?.toggleSubMenu?.(subMenu);
 }
 
 function toggleReplacementSub() {
@@ -2173,166 +2077,16 @@ function toggleReplacementSub() {
   }
 }
 
-document.querySelectorAll('.filter-item').forEach(function (item) {
-  item.addEventListener('click', function (e) {
-    const searchInput = document.querySelector("#search");
-    searchInput.value = "";
-
-    if (this.hasAttribute('data-categoryid')) {
-      const categoryId = this.getAttribute('data-categoryid');
-      if (activeFilters['categories'].includes(categoryId)) {
-        const categoryIndex = activeFilters['categories'].indexOf(categoryId);
-        activeFilters['categories'].splice(categoryIndex, 1);
-        this.classList.remove('selected');
-      } else {
-        activeFilters['categories'].push(categoryId);
-        this.classList.add('selected');
-      }
-    } else if (this.hasAttribute('data-memberid')) {
-      const memberId = this.getAttribute('data-memberid');
-      if (activeFilters['members'].includes(memberId)) {
-        const memberIndex = activeFilters['members'].indexOf(memberId);
-        activeFilters['members'].splice(memberIndex, 1);
-        this.classList.remove('selected');
-      } else {
-        activeFilters['members'].push(memberId);
-        this.classList.add('selected');
-      }
-    } else if (this.hasAttribute('data-paymentid')) {
-      const paymentId = this.getAttribute('data-paymentid');
-      if (activeFilters['payments'].includes(paymentId)) {
-        const paymentIndex = activeFilters['payments'].indexOf(paymentId);
-        activeFilters['payments'].splice(paymentIndex, 1);
-        this.classList.remove('selected');
-      } else {
-        activeFilters['payments'].push(paymentId);
-        this.classList.add('selected');
-      }
-    } else if (this.hasAttribute('data-state')) {
-      const state = this.getAttribute('data-state');
-      if (activeFilters['state'] === state) {
-        activeFilters['state'] = "";
-        this.classList.remove('selected');
-      } else {
-        activeFilters['state'] = state;
-        Array.from(this.parentNode.children).forEach(sibling => {
-          sibling.classList.remove('selected');
-        });
-        this.classList.add('selected');
-      }
-    } else if (this.hasAttribute('data-renewaltype')) {
-      const renewalType = this.getAttribute('data-renewaltype');
-      if (activeFilters['renewalType'] === renewalType) {
-        activeFilters['renewalType'] = "";
-        this.classList.remove('selected');
-      } else {
-        activeFilters['renewalType'] = renewalType;
-        Array.from(this.parentNode.children).forEach(sibling => {
-          sibling.classList.remove('selected');
-        });
-        this.classList.add('selected');
-      }
-    }
-
-    if (activeFilters['categories'].length > 0 || activeFilters['members'].length > 0 ||
-       activeFilters['payments'].length > 0 || activeFilters['state'] !== "" || 
-       activeFilters['renewalType'] !== "") {
-      document.querySelector('#clear-filters').classList.remove('hide');
-    } else {
-      document.querySelector('#clear-filters').classList.add('hide');
-    }
-
-    fetchSubscriptions(null, null, "filter");
-  });
-});
-
 function clearFilters() {
-  const searchInput = document.querySelector("#search");
-  searchInput.value = "";
-  activeFilters['categories'] = [];
-  activeFilters['members'] = [];
-  activeFilters['payments'] = [];
-  activeFilters['state'] = "";
-  activeFilters['renewalType'] = "";
-  
-  document.querySelectorAll('.filter-item').forEach(function (item) {
-    item.classList.remove('selected');
-  });
-  document.querySelector('#clear-filters').classList.add('hide');
-  fetchSubscriptions(null, null, "clearfilters");
+  return window.WallosSubscriptionInteractions?.clearFilters?.(activeFilters, fetchSubscriptions);
 }
 
-let currentActions = null;
-
-document.addEventListener('click', function (event) {
-  // Check if click was outside currentActions
-  if (currentActions && !currentActions.contains(event.target)) {
-    // Click was outside currentActions, close currentActions
-    currentActions.classList.remove('is-open');
-    const currentContainer = currentActions.closest('.subscription-container');
-    if (currentContainer) {
-      currentContainer.classList.remove('actions-menu-open');
-    }
-    currentActions = null;
-  }
-});
-
 function expandActions(event, subscriptionId) {
-  event.stopPropagation();
-  event.preventDefault();
-  const subscriptionDiv = document.querySelector(`.subscription[data-id="${subscriptionId}"]`);
-  const actions = subscriptionDiv.querySelector('.actions');
-  const subscriptionContainer = subscriptionDiv.closest('.subscription-container');
-
-  // Close all other open actions
-  const allActions = document.querySelectorAll('.actions.is-open');
-  allActions.forEach((openAction) => {
-    if (openAction !== actions) {
-      openAction.classList.remove('is-open');
-      const openContainer = openAction.closest('.subscription-container');
-      if (openContainer) {
-        openContainer.classList.remove('actions-menu-open');
-      }
-    }
-  });
-
-  // Toggle the clicked actions
-  const shouldOpen = !actions.classList.contains('is-open');
-  actions.classList.toggle('is-open');
-  if (subscriptionContainer) {
-    subscriptionContainer.classList.toggle('actions-menu-open', shouldOpen);
-  }
-
-  // Update currentActions
-  if (shouldOpen) {
-    currentActions = actions;
-  } else {
-    currentActions = null;
-  }
+  return window.WallosSubscriptionInteractions?.expandActions?.(event, subscriptionId);
 }
 
 function swipeHintAnimation() {
-  if (window.mobileNavigation && window.matchMedia('(max-width: 768px)').matches) {
-    const maxAnimations = 3;
-    const cookieName = 'swipeHintCount';
-
-    let count = parseInt(getCookie(cookieName)) || 0;
-    if (count < maxAnimations) {
-      const firstElement = document.querySelector('.subscription');
-      if (firstElement) {
-        firstElement.style.transition = 'transform 0.3s ease';
-        firstElement.style.transform = 'translateX(-80px)';
-
-        setTimeout(() => {
-          firstElement.style.transform = 'translateX(0px)';
-          firstElement.style.zIndex = '1';
-        }, 600);
-      }
-
-      count++;
-      document.cookie = `${cookieName}=${count}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=Lax`;
-    }
-  }
+  return window.WallosSubscriptionInteractions?.swipeHintAnimation?.();
 }
 
 function autoFillNextPaymentDate(e) {
