@@ -1734,6 +1734,7 @@ function fetchSubscriptions(id, event, initiator) {
         openEditSubscription(event, id);
       }
 
+      initializeSubscriptionInteractions();
       setSwipeElements();
       applySubscriptionDisplayColumns();
       applySubscriptionValueVisibility();
@@ -1912,6 +1913,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const subscriptionPageCreateInput = document.querySelector("#subscription-page-create-name");
 
   initializeStaticSubscriptionInteractions();
+  initializeSubscriptionInteractions();
   mountSubscriptionOverlayToBody("#subscription-form");
   mountSubscriptionOverlayToBody("#subscription-pages-manager-modal");
   mountSubscriptionOverlayToBody("#subscription-recycle-bin-modal");
@@ -2044,6 +2046,15 @@ function closeSubMenus() {
 
 function setSwipeElements() {
   return window.WallosSubscriptionInteractions?.setSwipeElements?.();
+}
+
+function initializeSubscriptionInteractions() {
+  return window.WallosSubscriptionInteractions?.initialize?.(
+    activeFilters,
+    fetchSubscriptions,
+    updateSubscriptionReorderState,
+    scheduleSubscriptionMasonryLayout
+  );
 }
 
 const activeFilters = [];

@@ -1,5 +1,6 @@
 (function () {
   let currentActions = null;
+  let interactionsInitialized = false;
 
   function hasActiveFilters(activeFilters) {
     return activeFilters['categories'].length > 0
@@ -108,6 +109,93 @@
     currentActions = shouldOpen ? actions : null;
   }
 
+  function bindExpandActionButtons() {
+    document.querySelectorAll('.actions-expand[data-subscription-action="expand-subscription-actions"]').forEach((button) => {
+      if (button.dataset.expandActionBound === "1") {
+        return;
+      }
+
+      button.dataset.expandActionBound = "1";
+      button.addEventListener('click', function (event) {
+        expandActions(event, Number(this.dataset.subscriptionId || 0));
+      });
+    });
+  }
+
+  function bindFilterItems(activeFilters, fetchSubscriptions) {
+    document.querySelectorAll('.filter-item').forEach(function (item) {
+      if (item.dataset.filterBound === "1") {
+        return;
+      }
+
+      item.dataset.filterBound = "1";
+      item.addEventListener('click', function () {
+        const searchInput = document.querySelector("#search");
+        searchInput.value = "";
+
+        if (this.hasAttribute('data-categoryid')) {
+          const categoryId = this.getAttribute('data-categoryid');
+          if (activeFilters['categories'].includes(categoryId)) {
+            const categoryIndex = activeFilters['categories'].indexOf(categoryId);
+            activeFilters['categories'].splice(categoryIndex, 1);
+            this.classList.remove('selected');
+          } else {
+            activeFilters['categories'].push(categoryId);
+            this.classList.add('selected');
+          }
+        } else if (this.hasAttribute('data-memberid')) {
+          const memberId = this.getAttribute('data-memberid');
+          if (activeFilters['members'].includes(memberId)) {
+            const memberIndex = activeFilters['members'].indexOf(memberId);
+            activeFilters['members'].splice(memberIndex, 1);
+            this.classList.remove('selected');
+          } else {
+            activeFilters['members'].push(memberId);
+            this.classList.add('selected');
+          }
+        } else if (this.hasAttribute('data-paymentid')) {
+          const paymentId = this.getAttribute('data-paymentid');
+          if (activeFilters['payments'].includes(paymentId)) {
+            const paymentIndex = activeFilters['payments'].indexOf(paymentId);
+            activeFilters['payments'].splice(paymentIndex, 1);
+            this.classList.remove('selected');
+          } else {
+            activeFilters['payments'].push(paymentId);
+            this.classList.add('selected');
+          }
+        } else if (this.hasAttribute('data-state')) {
+          const state = this.getAttribute('data-state');
+          if (activeFilters['state'] === state) {
+            activeFilters['state'] = "";
+            this.classList.remove('selected');
+          } else {
+            activeFilters['state'] = state;
+            Array.from(this.parentNode.children).forEach(sibling => sibling.classList.remove('selected'));
+            this.classList.add('selected');
+          }
+        } else if (this.hasAttribute('data-renewaltype')) {
+          const renewalType = this.getAttribute('data-renewaltype');
+          if (activeFilters['renewalType'] === renewalType) {
+            activeFilters['renewalType'] = "";
+            this.classList.remove('selected');
+          } else {
+            activeFilters['renewalType'] = renewalType;
+            Array.from(this.parentNode.children).forEach(sibling => sibling.classList.remove('selected'));
+            this.classList.add('selected');
+          }
+        }
+
+        if (hasActiveFilters(activeFilters)) {
+          document.querySelector('#clear-filters').classList.remove('hide');
+        } else {
+          document.querySelector('#clear-filters').classList.add('hide');
+        }
+
+        fetchSubscriptions(null, null, "filter");
+      });
+    });
+  }
+
   function setSwipeElements() {
     if (!window.mobileNavigation) {
       return;
@@ -190,103 +278,50 @@
 
   function initialize(activeFilters, fetchSubscriptions, updateSubscriptionReorderState, scheduleSubscriptionMasonryLayout) {
     const filtermenu = document.querySelector('#filtermenu-button');
-    if (filtermenu) {
+    if (filtermenu && filtermenu.dataset.subscriptionInteractionsBound !== "1") {
+      filtermenu.dataset.subscriptionInteractionsBound = "1";
       filtermenu.addEventListener('click', function () {
         this.parentElement.querySelector('.filtermenu-content').classList.toggle('is-open');
         closeSubMenus();
       });
+    }
 
+    bindFilterItems(activeFilters, fetchSubscriptions);
+    bindExpandActionButtons();
+
+    if (!interactionsInitialized) {
       document.addEventListener('click', function (e) {
+        const filtermenuButton = document.querySelector('#filtermenu-button');
         const filtermenuContent = document.querySelector('.filtermenu-content');
-        if (filtermenuContent && filtermenuContent.classList.contains('is-open')) {
+        if (filtermenuButton && filtermenuContent && filtermenuContent.classList.contains('is-open')) {
           const subMenus = document.querySelectorAll('.filtermenu-submenu');
           const clickedInsideSubmenu = Array.from(subMenus).some(subMenu => subMenu.contains(e.target) || subMenu === e.target);
 
-          if (!filtermenu.contains(e.target) && !clickedInsideSubmenu) {
+          if (!filtermenuButton.contains(e.target) && !clickedInsideSubmenu) {
             closeSubMenus();
             filtermenuContent.classList.remove('is-open');
           }
         }
       });
-    }
 
-    document.querySelectorAll('.filter-item').forEach(function (item) {
-      item.addEventListener('click', function () {
-        const searchInput = document.querySelector("#search");
-        searchInput.value = "";
-
-        if (this.hasAttribute('data-categoryid')) {
-          const categoryId = this.getAttribute('data-categoryid');
-          if (activeFilters['categories'].includes(categoryId)) {
-            const categoryIndex = activeFilters['categories'].indexOf(categoryId);
-            activeFilters['categories'].splice(categoryIndex, 1);
-            this.classList.remove('selected');
-          } else {
-            activeFilters['categories'].push(categoryId);
-            this.classList.add('selected');
-          }
-        } else if (this.hasAttribute('data-memberid')) {
-          const memberId = this.getAttribute('data-memberid');
-          if (activeFilters['members'].includes(memberId)) {
-            const memberIndex = activeFilters['members'].indexOf(memberId);
-            activeFilters['members'].splice(memberIndex, 1);
-            this.classList.remove('selected');
-          } else {
-            activeFilters['members'].push(memberId);
-            this.classList.add('selected');
-          }
-        } else if (this.hasAttribute('data-paymentid')) {
-          const paymentId = this.getAttribute('data-paymentid');
-          if (activeFilters['payments'].includes(paymentId)) {
-            const paymentIndex = activeFilters['payments'].indexOf(paymentId);
-            activeFilters['payments'].splice(paymentIndex, 1);
-            this.classList.remove('selected');
-          } else {
-            activeFilters['payments'].push(paymentId);
-            this.classList.add('selected');
-          }
-        } else if (this.hasAttribute('data-state')) {
-          const state = this.getAttribute('data-state');
-          if (activeFilters['state'] === state) {
-            activeFilters['state'] = "";
-            this.classList.remove('selected');
-          } else {
-            activeFilters['state'] = state;
-            Array.from(this.parentNode.children).forEach(sibling => sibling.classList.remove('selected'));
-            this.classList.add('selected');
-          }
-        } else if (this.hasAttribute('data-renewaltype')) {
-          const renewalType = this.getAttribute('data-renewaltype');
-          if (activeFilters['renewalType'] === renewalType) {
-            activeFilters['renewalType'] = "";
-            this.classList.remove('selected');
-          } else {
-            activeFilters['renewalType'] = renewalType;
-            Array.from(this.parentNode.children).forEach(sibling => sibling.classList.remove('selected'));
-            this.classList.add('selected');
-          }
+      document.addEventListener('click', function (event) {
+        const expandTrigger = event.target.closest('[data-subscription-action="expand-subscription-actions"]');
+        if (expandTrigger) {
+          return;
         }
 
-        if (hasActiveFilters(activeFilters)) {
-          document.querySelector('#clear-filters').classList.remove('hide');
-        } else {
-          document.querySelector('#clear-filters').classList.add('hide');
+        if (currentActions && !currentActions.contains(event.target)) {
+          currentActions.classList.remove('is-open');
+          const currentContainer = currentActions.closest('.subscription-container');
+          if (currentContainer) {
+            currentContainer.classList.remove('actions-menu-open');
+          }
+          currentActions = null;
         }
-
-        fetchSubscriptions(null, null, "filter");
       });
-    });
 
-    document.addEventListener('click', function (event) {
-      if (currentActions && !currentActions.contains(event.target)) {
-        currentActions.classList.remove('is-open');
-        const currentContainer = currentActions.closest('.subscription-container');
-        if (currentContainer) {
-          currentContainer.classList.remove('actions-menu-open');
-        }
-        currentActions = null;
-      }
-    });
+      interactionsInitialized = true;
+    }
 
     setSwipeElements();
   }
