@@ -1,3 +1,23 @@
+function profileRequestJson(url, options = {}) {
+    return window.WallosApi.requestJson(url, {
+        fallbackErrorMessage: options.fallbackErrorMessage || translate("unknown_error"),
+        ...options,
+    });
+}
+
+function profilePostJson(url, payload = {}, options = {}) {
+    return window.WallosApi.postJson(url, payload, {
+        fallbackErrorMessage: options.fallbackErrorMessage || translate("unknown_error"),
+        ...options,
+    });
+}
+
+function profileNormalizeError(error, fallbackMessage = null) {
+    return window.WallosApi?.normalizeError?.(error, fallbackMessage || translate("unknown_error"))
+        || fallbackMessage
+        || translate("unknown_error");
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById("userForm").addEventListener("submit", function (event) {
@@ -104,28 +124,21 @@ function successfulUpload(field, msg) {
 }
 
 function deleteAvatar(path) {
-    fetch('endpoints/user/delete_avatar.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            "X-CSRF-Token": window.csrfToken,
-        },
-        body: JSON.stringify({ avatar: path }),
-    })
-        .then(response => response.json())
+    profilePostJson('endpoints/user/delete_avatar.php', { avatar: path })
         .then(data => {
             if (data.success) {
                 var avatarContainer = document.querySelector(`.avatar-container[data-src="${path}"]`);
                 if (avatarContainer) {
                     avatarContainer.remove();
                 }
-                showSuccessMessage();
+                showSuccessMessage(data.message || translate("success"));
             } else {
-                showErrorMessage(data.message || "");
+                showErrorMessage(data.message || translate("error"));
             }
         })
         .catch((error) => {
             console.error('Error:', error);
+            showErrorMessage(profileNormalizeError(error));
         });
 }
 
@@ -137,15 +150,7 @@ function enableTotp() {
   totpSecretCode.textContent = "";
   qrCode.innerHTML = "";
 
-  fetch("endpoints/user/enable_totp.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: JSON.stringify({ action: "generate" }),
-  })
-    .then(response => response.json())
+  profilePostJson("endpoints/user/enable_totp.php", { action: "generate" })
     .then(data => {
       if (data.success) {
         totpSecret.value = data.secret;
@@ -158,7 +163,7 @@ function enableTotp() {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate("unknown_error"));
+      showErrorMessage(profileNormalizeError(error));
     });
 }
 
@@ -186,15 +191,11 @@ function submitTotp() {
     const totpCode = document.getElementById('totp').value;
     const totpSecret = document.getElementById('totp-secret').value;
 
-    fetch('endpoints/user/enable_totp.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            "X-CSRF-Token": window.csrfToken,
-        },
-        body: JSON.stringify({ totpCode: totpCode, totpSecret: totpSecret, action: 'verify' }),
+    profilePostJson('endpoints/user/enable_totp.php', {
+        totpCode: totpCode,
+        totpSecret: totpSecret,
+        action: 'verify',
     })
-        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 showSuccessMessage(data.message);
@@ -217,7 +218,7 @@ function submitTotp() {
             }
         })
         .catch(error => {
-            showErrorMessage(error);
+            showErrorMessage(profileNormalizeError(error));
             console.log(error);
         });
 }
@@ -263,15 +264,7 @@ function disableTotp() {
 function submitDisableTotp() {
     const totpCode = document.getElementById('totp-disable').value;
 
-    fetch('endpoints/user/disable_totp.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            "X-CSRF-Token": window.csrfToken,
-        },
-        body: JSON.stringify({ totpCode: totpCode }),
-    })
-        .then(response => response.json())
+    profilePostJson('endpoints/user/disable_totp.php', { totpCode: totpCode })
         .then(data => {
             if (data.success) {
                 showSuccessMessage(data.message);
@@ -283,7 +276,7 @@ function submitDisableTotp() {
             }
         })
         .catch(error => {
-            showErrorMessage(error);
+            showErrorMessage(profileNormalizeError(error));
         });
 }
 
@@ -291,13 +284,9 @@ function regenerateApiKey() {
   const regenerateButton = document.getElementById("regenerateApiKey");
   regenerateButton.disabled = true;
 
-  fetch("endpoints/user/regenerateapikey.php", {
+  profileRequestJson("endpoints/user/regenerateapikey.php", {
     method: "POST",
-    headers: {
-      "X-CSRF-Token": window.csrfToken,
-    },
   })
-    .then(response => response.json())
     .then(data => {
       regenerateButton.disabled = false;
       if (data.success) {
@@ -311,14 +300,15 @@ function regenerateApiKey() {
     .catch(error => {
       console.error(error);
       regenerateButton.disabled = false;
-      showErrorMessage(translate("unknown_error"));
+      showErrorMessage(profileNormalizeError(error));
     });
 }
 
 
 function exportAsJson() {
-    fetch("endpoints/subscriptions/export.php")
-        .then(response => response.json())
+    profileRequestJson("endpoints/subscriptions/export.php", {
+        includeCsrf: false,
+    })
         .then(data => {
             if (data.success) {
                 const subscriptions = JSON.stringify(data.subscriptions);
@@ -335,13 +325,14 @@ function exportAsJson() {
         })
         .catch(error => {
             console.log(error);
-            showErrorMessage(translate('unknown_error'));
+            showErrorMessage(profileNormalizeError(error));
         });
 }
 
 function exportAsCsv() {
-    fetch("endpoints/subscriptions/export.php")
-        .then(response => response.json())
+    profileRequestJson("endpoints/subscriptions/export.php", {
+        includeCsrf: false,
+    })
         .then(data => {
             if (data.success) {
                 const subscriptions = data.subscriptions;
@@ -360,7 +351,7 @@ function exportAsCsv() {
             }
         })
         .catch(error => {
-            showErrorMessage(translate('unknown_error'));
+            showErrorMessage(profileNormalizeError(error));
         });
 }
 
@@ -379,10 +370,28 @@ function exportUploadedImages() {
         },
     })
         .then(async (response) => {
+            if (!response.ok) {
+                const rawBody = await response.text();
+                let payload = null;
+
+                try {
+                    payload = JSON.parse(rawBody);
+                } catch (error) {
+                    payload = null;
+                }
+
+                throw new Error(payload?.message || translate('unknown_error'));
+            }
+
             const contentType = response.headers.get('content-type') || '';
+            const contentDisposition = response.headers.get('content-disposition') || '';
             if (contentType.includes('application/json')) {
                 const data = await response.json();
                 throw new Error(data.message || translate('unknown_error'));
+            }
+
+            if (!contentType.includes('application/zip') && !/attachment/i.test(contentDisposition)) {
+                throw new Error(translate('unknown_error'));
             }
 
             const blob = await response.blob();
@@ -412,15 +421,9 @@ function deleteAccount(userId) {
         return;
     }
 
-    fetch('endpoints/settings/deleteaccount.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            "X-CSRF-Token": window.csrfToken,
-        },
-        body: JSON.stringify({ userId: userId }),
+    profilePostJson('endpoints/settings/deleteaccount.php', { userId: userId }, {
+        fallbackErrorMessage: translate('unknown_error'),
     })
-        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 window.location.href = 'logout.php';
@@ -429,7 +432,7 @@ function deleteAccount(userId) {
             }
         })
         .catch((error) => {
-            showErrorMessage(translate('unknown_error'));
+            showErrorMessage(profileNormalizeError(error));
         });
 }
 

@@ -839,6 +839,107 @@ function wallosHandleJsonResult(data, options = {}) {
   return false;
 }
 
+function getRequestQueueNoticeMessages(status, pendingCount = 0) {
+  if (status === "success") {
+    return {
+      title: translateWithFallback("request_queue_success_title", "处理完成", {
+        en: "Processing complete",
+        zh_cn: "处理完成",
+        zh_tw: "處理完成",
+      }),
+      body: translateWithFallback("request_queue_success_body", "排队中的后台写入已经处理完成。", {
+        en: "Queued backend writes have finished.",
+        zh_cn: "排队中的后台写入已经处理完成。",
+        zh_tw: "排隊中的後台寫入已經處理完成。",
+      }),
+    };
+  }
+
+  const multipleFallback = `当前仍有 ${pendingCount} 个写入请求等待完成。`;
+  const body = pendingCount > 1
+    ? translateWithFallback("request_queue_pending_body_multiple", multipleFallback, {
+      en: `%1$d write requests are still waiting to finish.`,
+      zh_cn: "当前仍有 %1$d 个写入请求等待完成。",
+      zh_tw: "目前仍有 %1$d 個寫入請求等待完成。",
+    }).replace("%1$d", String(pendingCount))
+    : translateWithFallback("request_queue_pending_body", "后台写入较忙，当前请求正在排队处理，请稍候。", {
+      en: "The server is busy writing data. Your request is queued and will finish shortly.",
+      zh_cn: "后台写入较忙，当前请求正在排队处理，请稍候。",
+      zh_tw: "後台寫入較忙，目前請求正在排隊處理，請稍候。",
+    });
+
+  return {
+    title: translateWithFallback("request_queue_pending_title", "后台操作排队处理中", {
+      en: "Backend queue in progress",
+      zh_cn: "后台操作排队处理中",
+      zh_tw: "後台操作排隊處理中",
+    }),
+    body,
+  };
+}
+
+function normalizeToastContent(type, message) {
+  const fallbackTitle = type === "error" ? translate("error") : translate("success");
+  const fallbackBody = type === "error" ? translate("toast_error_generic") : translate("toast_success_generic");
+  const rawMessage = message instanceof Error
+    ? String(message.message || "").trim()
+    : String(message ?? "").trim();
+
+  if (!rawMessage) {
+    return {
+      title: fallbackTitle,
+      body: fallbackBody,
+      shouldDisplay: false,
+    };
+  }
+
+  const genericCandidates = new Set([
+    fallbackTitle,
+    type === "error" ? "Error" : "Success",
+    type === "error" ? "error" : "success",
+  ]);
+
+  if (genericCandidates.has(rawMessage)) {
+    return {
+      title: fallbackTitle,
+      body: fallbackBody,
+      shouldDisplay: false,
+    };
+  }
+
+  const separatorMatch = rawMessage.match(/^([^:\n：]{1,60})[:：]\s*([\s\S]+)$/u);
+  if (separatorMatch) {
+    return {
+      title: separatorMatch[1].trim(),
+      body: separatorMatch[2].trim(),
+      shouldDisplay: true,
+    };
+  }
+
+  const lineMatch = rawMessage.match(/^([^\n]{1,70})\n+([\s\S]+)$/);
+  if (lineMatch) {
+    return {
+      title: lineMatch[1].trim(),
+      body: lineMatch[2].trim(),
+      shouldDisplay: true,
+    };
+  }
+
+  if (rawMessage.length <= 80) {
+    return {
+      title: rawMessage,
+      body: "",
+      shouldDisplay: true,
+    };
+  }
+
+  return {
+    title: fallbackTitle,
+    body: rawMessage,
+    shouldDisplay: true,
+  };
+}
+
 window.WallosHttp = {
   request: wallosRequest,
   requestJson: wallosRequestJson,
@@ -999,7 +1100,7 @@ function showToast(type, message) {
   }
 
   const normalized = normalizeToastContent(type, message);
-  if (!normalized.shouldDisplay && !hasUserInteractedWithPage) {
+  if (!normalized.shouldDisplay) {
     return;
   }
 

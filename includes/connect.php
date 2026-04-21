@@ -10,6 +10,21 @@ $db->exec('PRAGMA synchronous = NORMAL');
 $db->exec('PRAGMA foreign_keys = ON');
 
 if (!$db) {
+    $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? $_SERVER['SCRIPT_FILENAME'] ?? ''));
+    $isEndpointRequest = strpos($scriptName, '/endpoints/') !== false;
+
+    if ($isEndpointRequest) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode([
+            'success' => false,
+            'code' => 'database_connection_failed',
+            'error' => 'database_connection_failed',
+            'message' => 'Connection to the database failed.',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     die('Connection to the database failed.');
 }
 

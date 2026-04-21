@@ -1,4 +1,16 @@
 (function () {
+  function adminRegistrationPostJson(url, payload = {}, options = {}) {
+    return window.WallosApi.postJson(url, payload, {
+      fallbackErrorMessage: options.fallbackErrorMessage || translate("error"),
+    });
+  }
+
+  function normalizeAdminRegistrationError(error, fallbackMessage = null) {
+    return window.WallosApi?.normalizeError?.(error, fallbackMessage || translate("error"))
+      || fallbackMessage
+      || translate("error");
+  }
+
   function saveAccountRegistrationsButton() {
     const button = document.getElementById("saveAccountRegistrations");
     button.disabled = true;
@@ -14,24 +26,16 @@
       custom_edition_subtitle: document.getElementById("customEditionSubtitle").value,
     };
 
-    fetch("endpoints/admin/saveopenregistrations.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify(data),
-    })
-      .then((response) => response.json())
+    adminRegistrationPostJson("endpoints/admin/saveopenregistrations.php", data)
       .then((data) => {
         if (data.success) {
           showSuccessMessage(data.message);
         } else {
-          showErrorMessage(data.message);
+          showErrorMessage(data.message || translate("error"));
         }
       })
       .catch((error) => {
-        showErrorMessage(error);
+        showErrorMessage(normalizeAdminRegistrationError(error));
       })
       .finally(() => {
         button.disabled = false;
@@ -44,15 +48,7 @@
 
     const maxUses = document.getElementById("inviteCodeMaxUses").value || 1;
 
-    fetch("endpoints/admin/generateinvitecode.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({ maxUses }),
-    })
-      .then((response) => response.json())
+    adminRegistrationPostJson("endpoints/admin/generateinvitecode.php", { maxUses })
       .then((data) => {
         if (data.success) {
           showSuccessMessage(`${data.message} ${data.code}`);
@@ -61,7 +57,7 @@
           showErrorMessage(data.message || translate("error"));
         }
       })
-      .catch(() => showErrorMessage(translate("error")))
+      .catch((error) => showErrorMessage(normalizeAdminRegistrationError(error)))
       .finally(() => {
         button.disabled = false;
       });
@@ -72,15 +68,7 @@
       return;
     }
 
-    fetch("endpoints/admin/deleteinvitecode.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({ inviteCodeId }),
-    })
-      .then((response) => response.json())
+    adminRegistrationPostJson("endpoints/admin/deleteinvitecode.php", { inviteCodeId })
       .then((data) => {
         if (data.success) {
           showSuccessMessage(data.message);
@@ -89,7 +77,7 @@
           showErrorMessage(data.message || translate("error"));
         }
       })
-      .catch(() => showErrorMessage(translate("error")));
+      .catch((error) => showErrorMessage(normalizeAdminRegistrationError(error)));
   }
 
   function permanentlyDeleteInviteCode(inviteCodeId, button) {
@@ -102,15 +90,7 @@
       button.disabled = true;
     }
 
-    fetch("endpoints/admin/permanentlydeleteinvitecode.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({ inviteCodeId }),
-    })
-      .then((response) => response.json())
+    adminRegistrationPostJson("endpoints/admin/permanentlydeleteinvitecode.php", { inviteCodeId })
       .then((data) => {
         if (data.success) {
           showSuccessMessage(data.message);
@@ -119,7 +99,7 @@
           showErrorMessage(data.message || translate("error"));
         }
       })
-      .catch(() => showErrorMessage(translate("error")))
+      .catch((error) => showErrorMessage(normalizeAdminRegistrationError(error)))
       .finally(() => {
         if (button) {
           button.disabled = false;

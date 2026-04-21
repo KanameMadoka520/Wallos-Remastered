@@ -10,6 +10,17 @@ if (!file_exists('../../images/uploads/logos')) {
     mkdir('../../images/uploads/logos/avatars', 0777, true);
 }
 
+function emitPaymentAddJsonError($i18n, $message, $statusCode = 400)
+{
+    http_response_code((int) $statusCode);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode([
+        'success' => false,
+        'message' => (string) $message,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 function sanitizeFilename($filename)
 {
     $filename = preg_replace("/[^a-zA-Z0-9\s]/", "", $filename);
@@ -27,23 +38,13 @@ function validateFileExtension($fileExtension)
 function getLogoFromUrl($url, $uploadDir, $name, $i18n, $settings)
 {
     if (!filter_var($url, FILTER_VALIDATE_URL) || !preg_match('/^https?:\/\//i', $url)) {
-        $response = [
-            "success" => false,
-            "message" => "Invalid URL format."
-        ];
-        echo json_encode($response);
-        exit();
+        emitPaymentAddJsonError($i18n, "Invalid URL format.");
     }
 
     $host = parse_url($url, PHP_URL_HOST);
     $ip = gethostbyname($host);
     if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-        $response = [
-            "success" => false,
-            "message" => "Invalid IP Address."
-        ];
-        echo json_encode($response);
-        exit();
+        emitPaymentAddJsonError($i18n, "Invalid IP Address.");
     }
 
     $ch = curl_init($url);
@@ -63,16 +64,16 @@ function getLogoFromUrl($url, $uploadDir, $name, $i18n, $settings)
         if (saveLogo($imageData, $uploadFile, $name, $settings)) {
             unset($ch);
             return $fileName;
-        } else {
-            echo translate('error_fetching_image', $i18n) . ": " . curl_error($ch);
-            unset($ch);
-            return "";
         }
-    } else {
-        echo translate('error_fetching_image', $i18n) . ": " . curl_error($ch);
+
+        $curlError = curl_error($ch);
         unset($ch);
-        return "";
+        emitPaymentAddJsonError($i18n, translate('error_fetching_image', $i18n) . ": " . $curlError);
     }
+
+    $curlError = curl_error($ch);
+    unset($ch);
+    emitPaymentAddJsonError($i18n, translate('error_fetching_image', $i18n) . ": " . $curlError);
 }
 
 
@@ -229,6 +230,10 @@ if ($iconUrl !== "") {
     }
 }
 
+if ($icon === "") {
+    emitPaymentAddJsonError($i18n, translate('error', $i18n), 500);
+}
+
 // Get the maximum existing ID
 $stmt = $db->prepare("SELECT MAX(id) as maxID FROM payment_methods");
 $result = $stmt->execute();
@@ -256,7 +261,7 @@ if ($stmt->execute()) {
     echo $json;
     exit();
 } else {
-    echo translate('error', $i18n) . ": " . $db->lastErrorMsg();
+    emitPaymentAddJsonError($i18n, translate('error', $i18n) . ": " . $db->lastErrorMsg(), 500);
 }
 
 $db->close();

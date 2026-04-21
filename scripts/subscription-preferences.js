@@ -54,19 +54,14 @@
   }
 
   function persistPreferences() {
-    return fetch(SUBSCRIPTION_PREFERENCES_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({
+    return window.WallosApi.postJson(SUBSCRIPTION_PREFERENCES_ENDPOINT, {
         display_columns: displayColumns,
         value_visibility: valueVisibility,
         image_layout_form: imageLayoutPreferences.form,
         image_layout_detail: imageLayoutPreferences.detail,
-      }),
-    }).then((response) => response.json());
+      }, {
+        fallbackErrorMessage: translate("error"),
+      });
   }
 
   function scheduleSave(options = {}) {
@@ -85,6 +80,10 @@
 
       persistPreferences()
         .then((data) => {
+          if (!data?.success) {
+            throw new Error(data?.message || translate("error"));
+          }
+
           if (data?.success && shouldReloadAfterSave) {
             shouldReloadAfterSave = false;
             window.location.reload();
@@ -99,6 +98,7 @@
           shouldReloadAfterSave = false;
           pendingReloadPreferenceSave = false;
           setPendingReloadControls(false);
+          showErrorMessage(window.WallosApi?.normalizeError?.(error, translate("error")) || translate("error"));
         });
     };
 

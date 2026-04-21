@@ -207,5 +207,82 @@
       .finally(() => { if (button) button.disabled = false; });
   }
 
+  function postJson(url, payload = {}, headers = {}) {
+    return window.WallosApi.postJson(url, payload, {
+      headers,
+      fallbackErrorMessage: translate('error'),
+    });
+  }
+
+  function normalizeBackupError(error, fallbackMessage = null) {
+    return window.WallosApi?.normalizeError?.(error, fallbackMessage || translate('error'))
+      || fallbackMessage
+      || translate('error');
+  }
+
+  function restoreDB() {
+    const input = document.getElementById('restoreDBFile');
+    const file = input?.files?.[0];
+    if (!file) {
+      showErrorMessage(translate('no_file_selected'));
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    const button = document.getElementById('restoreDB');
+    if (button) {
+      button.disabled = true;
+    }
+
+    window.WallosApi.postForm('endpoints/db/restore.php', formData, {
+      fallbackErrorMessage: translate('restore_failed'),
+    })
+      .then((data) => {
+        if (data.success) {
+          showSuccessMessage(data.message);
+          runPostRestoreActions();
+          return;
+        }
+
+        showErrorMessage(data.message || translate('restore_failed'));
+      })
+      .catch((error) => {
+        console.error(error);
+        showErrorMessage(normalizeBackupError(error, translate('restore_failed')));
+      })
+      .finally(() => {
+        if (button) {
+          button.disabled = false;
+        }
+      });
+  }
+
+  function cleanupOldBackupsButton(button) {
+    const confirmMessage = button?.dataset.confirmMessage || 'Clean up old backups now?';
+    if (!confirm(confirmMessage)) return;
+    if (button) button.disabled = true;
+
+    window.WallosApi.requestJson('endpoints/admin/cleanupbackups.php', {
+      method: 'POST',
+      fallbackErrorMessage: translate('error'),
+    })
+      .then((data) => {
+        if (data.success) {
+          showSuccessMessage(data.message);
+          setTimeout(() => window.location.reload(), 500);
+          return;
+        }
+
+        showErrorMessage(data.message || translate('error'));
+      })
+      .catch((error) => showErrorMessage(normalizeBackupError(error)))
+      .finally(() => {
+        if (button) {
+          button.disabled = false;
+        }
+      });
+  }
+
   window.WallosAdminBackups = { backupDB, runPostRestoreActions, updateBackupCardStatus, verifyBackup, restoreBackup, openRestoreDBFileSelect, restoreDB, saveBackupSettingsButton, cleanupOldBackupsButton };
 })();

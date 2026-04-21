@@ -19,6 +19,24 @@ function hexToRgbString(hex) {
   return `${r}, ${g}, ${b}`;
 }
 
+function themePostJson(url, payload = {}, options = {}) {
+  return window.WallosApi.postJson(url, payload, {
+    fallbackErrorMessage: options.fallbackErrorMessage || translate('unknown_error'),
+  });
+}
+
+function themePostForm(url, payload = {}, options = {}) {
+  return window.WallosApi.postForm(url, payload, {
+    fallbackErrorMessage: options.fallbackErrorMessage || translate('unknown_error'),
+  });
+}
+
+function normalizeThemeRequestError(error, fallbackMessage = null) {
+  return window.WallosApi?.normalizeError?.(error, fallbackMessage || translate('unknown_error'))
+    || fallbackMessage
+    || translate('unknown_error');
+}
+
 function applyDecorativeBackgroundState(enabled) {
   document.body.classList.toggle('decorative-background-enabled', enabled);
   document.body.classList.toggle('decorative-background-disabled', !enabled);
@@ -90,15 +108,7 @@ function setPageTransitionSettings(forcedStyle = null) {
     input.disabled = true;
   });
 
-  fetch('endpoints/settings/page_transition.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ enabled: enabled, style: checkedStyle })
-  })
-    .then(response => response.json())
+  themePostJson('endpoints/settings/page_transition.php', { enabled: enabled, style: checkedStyle })
     .then(data => {
       if (data.success) {
         window.pageTransitionEnabled = enabled;
@@ -112,9 +122,9 @@ function setPageTransitionSettings(forcedStyle = null) {
         showErrorMessage(data.message);
       }
     })
-    .catch(() => {
+    .catch((error) => {
       enabledCheckbox.checked = !enabled;
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(normalizeThemeRequestError(error));
     })
     .finally(() => {
       enabledCheckbox.disabled = false;
@@ -124,35 +134,36 @@ function setPageTransitionSettings(forcedStyle = null) {
 
 function switchTheme() {
   const darkThemeCss = document.querySelector("#dark-theme");
+  const previousThemeChoice = darkThemeCss.disabled ? 'light' : 'dark';
   darkThemeCss.disabled = !darkThemeCss.disabled;
 
   const themeChoice = darkThemeCss.disabled ? 'light' : 'dark';
-  document.cookie = 'theme=' + themeValue + '; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=Lax';
+  const previousThemeCookie = getCookie('theme') || '';
+  document.cookie = `theme=${themeChoice}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=Lax`;
 
   setBodyThemeClass(themeChoice);
 
   const button = document.getElementById("switchTheme");
   button.disabled = true;
 
-  fetch('endpoints/settings/theme.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ theme: themeChoice === 'dark' })
-  })
-    .then(response => response.json())
+  themePostJson('endpoints/settings/theme.php', { theme: themeChoice === 'dark' ? 1 : 0 })
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
         window.WallosThemeColor?.update?.();
       } else {
+        document.cookie = `theme=${previousThemeCookie}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=Lax`;
+        darkThemeCss.disabled = previousThemeChoice === 'light';
+        setBodyThemeClass(previousThemeChoice);
         showErrorMessage(data.message);
       }
       button.disabled = false;
     }).catch(error => {
+      document.cookie = `theme=${previousThemeCookie}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=Lax`;
+      darkThemeCss.disabled = previousThemeChoice === 'light';
+      setBodyThemeClass(previousThemeChoice);
       button.disabled = false;
+      showErrorMessage(normalizeThemeRequestError(error));
     });
 }
 
@@ -169,15 +180,7 @@ function setDarkTheme(theme) {
   lightThemeButton.disabled = true;
   automaticThemeButton.disabled = true;
 
-  fetch('endpoints/settings/theme.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ theme: theme })
-  })
-    .then(response => response.json())
+  themePostJson('endpoints/settings/theme.php', { theme: theme })
     .then(data => {
       if (data.success) {
         darkThemeButton.disabled = false;
@@ -220,6 +223,7 @@ function setDarkTheme(theme) {
       darkThemeButton.disabled = false;
       lightThemeButton.disabled = false;
       automaticThemeButton.disabled = false;
+      showErrorMessage(normalizeThemeRequestError(error));
     });
 }
 
@@ -259,15 +263,7 @@ function setTheme(themeColor) {
 
   document.cookie = `colorTheme=${themeColor}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=Lax`;
 
-  fetch('endpoints/settings/colortheme.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ color: themeColor })
-  })
-    .then(response => response.json())
+  themePostJson('endpoints/settings/colortheme.php', { color: themeColor })
     .then(data => {
       if (data.success) {
         window.WallosThemeColor?.update?.();
@@ -277,7 +273,7 @@ function setTheme(themeColor) {
       }
     })
     .catch(error => {
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(normalizeThemeRequestError(error));
     });
 
 }
@@ -286,16 +282,9 @@ function resetCustomColors() {
   const button = document.getElementById("reset-colors");
   button.disabled = true;
 
-  fetch("endpoints/settings/resettheme.php", {
-    method: "POST",
-    headers: {
-      "X-CSRF-Token": window.csrfToken,
-    },
-    body: new URLSearchParams({
-      action: "reset",
-    }),
+  themePostForm("endpoints/settings/resettheme.php", {
+    action: "reset",
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -322,7 +311,7 @@ function resetCustomColors() {
     })
     .catch(error => {
       console.error(error);
-      showErrorMessage(translate("unknown_error"));
+      showErrorMessage(normalizeThemeRequestError(error));
     })
     .finally(() => {
       button.disabled = false;
@@ -339,15 +328,7 @@ function saveCustomColors() {
   const hoverColor = document.getElementById("hoverColor").value;
   const textColor = document.getElementById("textColor").value;
 
-  fetch('endpoints/settings/customtheme.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ mainColor: mainColor, accentColor: accentColor, hoverColor: hoverColor, textColor: textColor })
-  })
-    .then(response => response.json())
+  themePostJson('endpoints/settings/customtheme.php', { mainColor: mainColor, accentColor: accentColor, hoverColor: hoverColor, textColor: textColor })
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -363,7 +344,7 @@ function saveCustomColors() {
       button.disabled = false;
     })
     .catch(error => {
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(normalizeThemeRequestError(error));
       button.disabled = false;
     });
 
@@ -375,15 +356,7 @@ function saveCustomCss() {
 
   const customCss = document.getElementById("customCss").value;
 
-  fetch('endpoints/settings/customcss.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ customCss: customCss })
-  })
-    .then(response => response.json())
+  themePostJson('endpoints/settings/customcss.php', { customCss: customCss })
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -393,7 +366,7 @@ function saveCustomCss() {
       button.disabled = false;
     })
     .catch(error => {
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(normalizeThemeRequestError(error));
       button.disabled = false;
     });
 }
@@ -407,15 +380,7 @@ function setDecorativeBackground() {
   const enabled = checkbox.checked;
   checkbox.disabled = true;
 
-  fetch('endpoints/settings/decorative_background.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ value: enabled })
-  })
-    .then(response => response.json())
+  themePostJson('endpoints/settings/decorative_background.php', { value: enabled })
     .then(data => {
       if (data.success) {
         applyDecorativeBackgroundState(enabled);
@@ -425,9 +390,9 @@ function setDecorativeBackground() {
         showErrorMessage(data.message);
       }
     })
-    .catch(() => {
+    .catch((error) => {
       checkbox.checked = !enabled;
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(normalizeThemeRequestError(error));
     })
     .finally(() => {
       checkbox.disabled = false;
@@ -443,15 +408,7 @@ function setDynamicWallpaper() {
   const enabled = checkbox.checked;
   checkbox.disabled = true;
 
-  fetch('endpoints/settings/dynamic_wallpaper.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ value: enabled })
-  })
-    .then(response => response.json())
+  themePostJson('endpoints/settings/dynamic_wallpaper.php', { value: enabled })
     .then(data => {
       if (data.success) {
         applyDynamicWallpaperState(enabled);
@@ -462,10 +419,10 @@ function setDynamicWallpaper() {
         showErrorMessage(data.message);
       }
     })
-    .catch(() => {
+    .catch((error) => {
       checkbox.checked = !enabled;
       updateDynamicWallpaperControls();
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(normalizeThemeRequestError(error));
     })
     .finally(() => {
       checkbox.disabled = false;
@@ -481,15 +438,7 @@ function setDynamicWallpaperBlur() {
   const enabled = checkbox.checked;
   checkbox.disabled = true;
 
-  fetch('endpoints/settings/dynamic_wallpaper_blur.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': window.csrfToken,
-    },
-    body: JSON.stringify({ value: enabled })
-  })
-    .then(response => response.json())
+  themePostJson('endpoints/settings/dynamic_wallpaper_blur.php', { value: enabled })
     .then(data => {
       if (data.success) {
         applyDynamicWallpaperBlurState(enabled);
@@ -499,9 +448,9 @@ function setDynamicWallpaperBlur() {
         showErrorMessage(data.message);
       }
     })
-    .catch(() => {
+    .catch((error) => {
       checkbox.checked = !enabled;
-      showErrorMessage(translate('unknown_error'));
+      showErrorMessage(normalizeThemeRequestError(error));
     })
     .finally(() => {
       checkbox.disabled = false;
