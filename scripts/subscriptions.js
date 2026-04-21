@@ -1679,11 +1679,6 @@ function fetchSubscriptions(id, event, initiator) {
     window.location.reload();
   };
 
-  if (subscriptionCardSortable) {
-    subscriptionCardSortable.destroy();
-    subscriptionCardSortable = null;
-  }
-
   if (activeFilters['categories'].length > 0) {
     getSubscriptions += `?categories=${activeFilters['categories']}`;
   }
@@ -1854,8 +1849,11 @@ function submitFormData(formData, submitButton, endpoint) {
 
     if (request.status >= 200 && request.status < 300 && data.status === "Success") {
       showSuccessMessage(data.message);
-      fetchSubscriptions(null, null, "add");
       closeAddSubscription();
+      fetchSubscriptions(null, null, "add").catch((error) => {
+        console.error("Failed to refresh subscriptions after saving.", error);
+        window.setTimeout(() => window.location.reload(), 120);
+      });
     } else {
       showErrorMessage(data.message || translate("unknown_error"));
     }
