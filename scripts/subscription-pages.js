@@ -500,9 +500,10 @@
       return;
     }
 
+    const deletedCurrentPage = String(pageId) === currentFilter;
     submitAction({ action: "delete", page_id: pageId }, { selectedValue: getDefaultSelection() })
       .then(() => {
-        if (String(pageId) === currentFilter) {
+        if (deletedCurrentPage) {
           currentFilter = "unassigned";
           updateFilterUrl();
         }

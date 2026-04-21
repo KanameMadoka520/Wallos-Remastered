@@ -1178,6 +1178,7 @@ function openEditSubscription(event, id) {
     })
     .catch((error) => {
       console.log(error);
+      body.classList.remove('no-scroll');
       showErrorMessage(normalizeSubscriptionRequestError(error, translate('failed_to_load_subscription')));
     });
 }
@@ -1737,6 +1738,11 @@ function fetchSubscriptions(id, event, initiator) {
       initializeSubscriptionMediaSortables();
       initializeSubscriptionCardSortable();
       renderSubscriptionPageTabs();
+      const searchInput = document.querySelector("#search");
+      if (searchInput?.value.trim()) {
+        searchSubscriptions();
+      }
+
       if (initiator === "add") {
         if (document.getElementsByClassName('subscription').length === 1) {
           setTimeout(() => {
@@ -2062,7 +2068,30 @@ activeFilters['payments'] = [];
 activeFilters['state'] = "";
 activeFilters['renewalType'] = "";
 
+function initializeActiveFiltersFromPage() {
+  const currentUrl = new URL(window.location.href);
+  const splitIds = (value) => String(value || "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== "");
+
+  activeFilters['categories'] = splitIds(
+    currentUrl.searchParams.get("categories") || currentUrl.searchParams.get("category")
+  );
+  activeFilters['members'] = splitIds(
+    currentUrl.searchParams.get("members") || currentUrl.searchParams.get("member")
+  );
+  activeFilters['payments'] = splitIds(
+    currentUrl.searchParams.get("payments") || currentUrl.searchParams.get("payment")
+  );
+  activeFilters['state'] = String(currentUrl.searchParams.get("state") || "").trim();
+  activeFilters['renewalType'] = String(
+    currentUrl.searchParams.get("renewalType") || currentUrl.searchParams.get("renewal_type") || ""
+  ).trim();
+}
+
 document.addEventListener("DOMContentLoaded", function () {
+  initializeActiveFiltersFromPage();
   window.WallosSubscriptionInteractions?.initialize?.(
     activeFilters,
     fetchSubscriptions,

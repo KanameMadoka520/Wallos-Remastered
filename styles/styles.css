@@ -4071,7 +4071,7 @@ button.dark-theme-button i {
   transform: translateX(calc(100% + 30px));
   transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.35);
   box-sizing: border-box;
-  z-index: 5;
+  z-index: 12060;
   width: min(420px, calc(100vw - 32px));
   max-width: min(420px, calc(100vw - 32px));
   opacity: 0;
@@ -5623,6 +5623,9 @@ button.dark-theme-button i {
 
 .generated-password-modal {
   width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  box-sizing: border-box;
   border: 1px solid var(--box-border-color);
   border-radius: 18px;
   padding: 22px;

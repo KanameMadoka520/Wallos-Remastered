@@ -119,69 +119,92 @@ function runDatabaseMigration() {
       if (!response.ok) {
         throw new Error(translate('network_response_error'));
       }
+    })
+    .catch((error) => {
+      console.error(error);
     });
 }
 
 function showErrorMessage(message) {
   const toast = document.querySelector(".toast#errorToast");
-  (closeIcon = document.querySelector(".close-error")),
-    (errorMessage = document.querySelector(".errorMessage")),
-    (progress = document.querySelector(".progress.error"));
-  let timer1, timer2;
+  const closeIcon = document.querySelector(".close-error");
+  const errorMessage = document.querySelector(".errorMessage");
+  const progress = document.querySelector(".progress.error");
+  if (!toast || !closeIcon || !errorMessage || !progress) {
+    return;
+  }
+
+  if (toast._hideTimer) {
+    clearTimeout(toast._hideTimer);
+  }
+  if (toast._progressTimer) {
+    clearTimeout(toast._progressTimer);
+  }
+
   errorMessage.textContent = message;
   toast.classList.add("active");
   progress.classList.add("active");
-  timer1 = setTimeout(() => {
+  toast._hideTimer = setTimeout(() => {
     toast.classList.remove("active");
-    closeIcon.removeEventListener("click", () => { });
   }, 5000);
 
-  timer2 = setTimeout(() => {
+  toast._progressTimer = setTimeout(() => {
     progress.classList.remove("active");
   }, 5300);
 
-  closeIcon.addEventListener("click", () => {
+  closeIcon.onclick = () => {
     toast.classList.remove("active");
 
     setTimeout(() => {
       progress.classList.remove("active");
     }, 300);
 
-    clearTimeout(timer1);
-    clearTimeout(timer2);
-    closeIcon.removeEventListener("click", () => { });
-  });
+    clearTimeout(toast._hideTimer);
+    clearTimeout(toast._progressTimer);
+    toast._hideTimer = null;
+    toast._progressTimer = null;
+  };
 }
 
 function showSuccessMessage(message) {
   const toast = document.querySelector(".toast#successToast");
-  (closeIcon = document.querySelector(".close-success")),
-    (successMessage = document.querySelector(".successMessage")),
-    (progress = document.querySelector(".progress.success"));
-  let timer1, timer2;
+  const closeIcon = document.querySelector(".close-success");
+  const successMessage = document.querySelector(".successMessage");
+  const progress = document.querySelector(".progress.success");
+  if (!toast || !closeIcon || !successMessage || !progress) {
+    return;
+  }
+
+  if (toast._hideTimer) {
+    clearTimeout(toast._hideTimer);
+  }
+  if (toast._progressTimer) {
+    clearTimeout(toast._progressTimer);
+  }
+
   successMessage.textContent = message;
   toast.classList.add("active");
   progress.classList.add("active");
-  timer1 = setTimeout(() => {
+  toast._hideTimer = setTimeout(() => {
     toast.classList.remove("active");
-    closeIcon.removeEventListener("click", () => { });
   }, 5000);
 
-  timer2 = setTimeout(() => {
+  toast._progressTimer = setTimeout(() => {
     progress.classList.remove("active");
   }, 5300);
 
-  closeIcon.addEventListener("click", () => {
+  closeIcon.onclick = () => {
     toast.classList.remove("active");
 
     setTimeout(() => {
       progress.classList.remove("active");
     }, 300);
 
-    clearTimeout(timer1);
-    clearTimeout(timer2);
-    closeIcon.removeEventListener("click", () => { });
-  });
+    clearTimeout(toast._hideTimer);
+    clearTimeout(toast._progressTimer);
+    toast._hideTimer = null;
+    toast._progressTimer = null;
+  };
 }
 
 
@@ -201,11 +224,10 @@ function restoreDB() {
   const formData = new FormData();
   formData.append('file', file);
 
-  fetch('endpoints/db/import.php', {
-    method: 'POST',
-    body: formData
+  window.WallosApi.postForm('endpoints/db/import.php', formData, {
+    includeCsrf: false,
+    fallbackErrorMessage: translate('unknown_error'),
   })
-    .then(response => response.json())
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
@@ -218,10 +240,10 @@ function restoreDB() {
             window.location.href = 'logout.php';
           });
       } else {
-        showErrorMessage(data.message);
+        showErrorMessage(data.message || translate('unknown_error'));
       }
     })
-    .catch(error => showErrorMessage('Error:', error));
+    .catch(error => showErrorMessage(error?.message || translate('unknown_error')));
 }
 
 function checkThemeNeedsUpdate() {

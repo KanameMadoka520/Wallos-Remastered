@@ -1,4 +1,16 @@
 (function () {
+  function adminUsersPostJson(url, payload = {}, options = {}) {
+    return window.WallosApi.postJson(url, payload, {
+      fallbackErrorMessage: options.fallbackErrorMessage || translate("error"),
+    });
+  }
+
+  function normalizeAdminUsersError(error, fallbackMessage = null) {
+    return window.WallosApi?.normalizeError?.(error, fallbackMessage || translate("error"))
+      || fallbackMessage
+      || translate("error");
+  }
+
   function removeUser(userId) {
     const reason = prompt(translate("recycle_bin_reason_prompt"));
     if (reason === null) {
@@ -14,27 +26,19 @@
       return;
     }
 
-    fetch("endpoints/admin/deleteuser.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({
+    adminUsersPostJson("endpoints/admin/deleteuser.php", {
         userId,
         reason: reason.trim(),
-      }),
     })
-      .then((response) => response.json())
       .then((data) => {
         if (data.success) {
           showSuccessMessage(data.message);
           window.location.reload();
         } else {
-          showErrorMessage(data.message);
+          showErrorMessage(data.message || translate("error"));
         }
       })
-      .catch((error) => showErrorMessage("Error:", error));
+      .catch((error) => showErrorMessage(normalizeAdminUsersError(error)));
   }
 
   function resetUserPassword(userId, button) {
@@ -47,15 +51,7 @@
       button.disabled = true;
     }
 
-    fetch("endpoints/admin/resetuserpassword.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({ userId }),
-    })
-      .then((response) => response.json())
+    adminUsersPostJson("endpoints/admin/resetuserpassword.php", { userId })
       .then((data) => {
         if (data.success) {
           showSuccessMessage(data.message);
@@ -64,7 +60,7 @@
           showErrorMessage(data.message || translate("error"));
         }
       })
-      .catch(() => showErrorMessage(translate("error")))
+      .catch((error) => showErrorMessage(normalizeAdminUsersError(error)))
       .finally(() => {
         if (button) {
           button.disabled = false;
@@ -250,15 +246,7 @@
   }
 
   function restoreUser(userId) {
-    fetch("endpoints/admin/restoreuser.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({ userId }),
-    })
-      .then((response) => response.json())
+    adminUsersPostJson("endpoints/admin/restoreuser.php", { userId })
       .then((data) => {
         if (data.success) {
           showSuccessMessage(data.message);
@@ -267,7 +255,7 @@
           showErrorMessage(data.message || translate("error"));
         }
       })
-      .catch(() => showErrorMessage(translate("error")));
+      .catch((error) => showErrorMessage(normalizeAdminUsersError(error)));
   }
 
   function permanentlyDeleteUser(userId) {
@@ -279,15 +267,7 @@
       return;
     }
 
-    fetch("endpoints/admin/permanentlydeleteuser.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({ userId }),
-    })
-      .then((response) => response.json())
+    adminUsersPostJson("endpoints/admin/permanentlydeleteuser.php", { userId })
       .then((data) => {
         if (data.success) {
           showSuccessMessage(data.message);
@@ -296,7 +276,7 @@
           showErrorMessage(data.message || translate("error"));
         }
       })
-      .catch(() => showErrorMessage(translate("error")));
+      .catch((error) => showErrorMessage(normalizeAdminUsersError(error)));
   }
 
   function updateUserGroup(userId, selectElement) {
@@ -305,18 +285,10 @@
 
     selectElement.disabled = true;
 
-    fetch("endpoints/admin/updateusergroup.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({
+    adminUsersPostJson("endpoints/admin/updateusergroup.php", {
         userId,
         userGroup: nextValue,
-      }),
     })
-      .then((response) => response.json())
       .then((data) => {
         if (data.success) {
           selectElement.dataset.currentValue = nextValue;
@@ -326,9 +298,9 @@
           showErrorMessage(data.message || translate("error"));
         }
       })
-      .catch(() => {
+      .catch((error) => {
         selectElement.value = previousValue;
-        showErrorMessage(translate("error"));
+        showErrorMessage(normalizeAdminUsersError(error));
       })
       .finally(() => {
         selectElement.disabled = false;
@@ -343,29 +315,21 @@
     const email = document.getElementById("newEmail").value;
     const password = document.getElementById("newPassword").value;
 
-    fetch("endpoints/admin/adduser.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({
+    adminUsersPostJson("endpoints/admin/adduser.php", {
         username,
         email,
         password,
-      }),
     })
-      .then((response) => response.json())
       .then((data) => {
         if (data.success) {
           showSuccessMessage(data.message);
           window.location.reload();
         } else {
-          showErrorMessage(data.message);
+          showErrorMessage(data.message || translate("error"));
         }
       })
       .catch((error) => {
-        showErrorMessage(error);
+        showErrorMessage(normalizeAdminUsersError(error));
       })
       .finally(() => {
         button.disabled = false;
@@ -390,15 +354,7 @@
 
     button.disabled = true;
 
-    fetch("endpoints/admin/updatescheduleddeleteat.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({ userId, scheduledDeleteAt }),
-    })
-      .then((response) => response.json())
+    adminUsersPostJson("endpoints/admin/updatescheduleddeleteat.php", { userId, scheduledDeleteAt })
       .then((data) => {
         if (data.success) {
           showSuccessMessage(data.message);
@@ -412,7 +368,7 @@
           showErrorMessage(data.message || translate("error"));
         }
       })
-      .catch(() => showErrorMessage(translate("error")))
+      .catch((error) => showErrorMessage(normalizeAdminUsersError(error)))
       .finally(() => {
         button.disabled = false;
       });

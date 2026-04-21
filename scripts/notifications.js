@@ -20,25 +20,19 @@ function openNotificationsSettings(type) {
 }
 
 function makeFetchCall(url, data, button) {
-    return fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            "X-CSRF-Token": window.csrfToken,
-        },
-        body: JSON.stringify(data),
+    return window.WallosApi.postJson(url, data, {
+        fallbackErrorMessage: translate('error'),
     })
-    .then(response => response.json())
     .then(data => {
         if (data.success) {
             showSuccessMessage(data.message);
         } else {
-            showErrorMessage(data.message);
+            showErrorMessage(data.message || translate('error'));
         }
         button.disabled = false;
     })
     .catch((error) => {
-        showErrorMessage(error);
+        showErrorMessage(window.WallosApi?.normalizeError?.(error, translate('error')) || translate('error'));
         button.disabled = false;
     });
 

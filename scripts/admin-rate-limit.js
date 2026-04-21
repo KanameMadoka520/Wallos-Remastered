@@ -1,4 +1,16 @@
 (function () {
+  function adminRateLimitPostJson(url, payload = {}, options = {}) {
+    return window.WallosApi.postJson(url, payload, {
+      fallbackErrorMessage: options.fallbackErrorMessage || translate("error"),
+    });
+  }
+
+  function normalizeAdminRateLimitError(error, fallbackMessage = null) {
+    return window.WallosApi?.normalizeError?.(error, fallbackMessage || translate("error"))
+      || fallbackMessage
+      || translate("error");
+  }
+
   function getRateLimitPresetUi() {
     return document.getElementById("admin-rate-limit-preset-ui");
   }
@@ -28,24 +40,16 @@
       image_download_mb_per_hour: document.getElementById("image_download_mb_per_hour").value,
     };
 
-    fetch("endpoints/admin/savesecuritysettings.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify(data),
-    })
-      .then((response) => response.json())
+    adminRateLimitPostJson("endpoints/admin/savesecuritysettings.php", data)
       .then((data) => {
         if (data.success) {
           showSuccessMessage(data.message);
         } else {
-          showErrorMessage(data.message);
+          showErrorMessage(data.message || translate("error"));
         }
       })
       .catch((error) => {
-        showErrorMessage(error);
+        showErrorMessage(normalizeAdminRateLimitError(error));
       })
       .finally(() => {
         button.disabled = false;
@@ -156,19 +160,11 @@
       return;
     }
 
-    fetch("endpoints/admin/ratelimitpresets.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({
+    adminRateLimitPostJson("endpoints/admin/ratelimitpresets.php", {
         action: "create",
         name: normalizedName,
         config: getCurrentRateLimitConfig(),
-      }),
     })
-      .then((response) => response.json())
       .then((data) => {
         if (!data.success) {
           throw new Error(data.message || translate("error"));
@@ -177,7 +173,7 @@
         showSuccessMessage(data.message);
         window.location.reload();
       })
-      .catch((error) => showErrorMessage(error.message || translate("error")));
+      .catch((error) => showErrorMessage(normalizeAdminRateLimitError(error)));
   }
 
   function saveRateLimitPresetButton() {
@@ -188,19 +184,11 @@
       return;
     }
 
-    fetch("endpoints/admin/ratelimitpresets.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({
+    adminRateLimitPostJson("endpoints/admin/ratelimitpresets.php", {
         action: "update",
         preset_id: preset.id,
         config: getCurrentRateLimitConfig(),
-      }),
     })
-      .then((response) => response.json())
       .then((data) => {
         if (!data.success) {
           throw new Error(data.message || translate("error"));
@@ -209,7 +197,7 @@
         showSuccessMessage(data.message);
         window.location.reload();
       })
-      .catch((error) => showErrorMessage(error.message || translate("error")));
+      .catch((error) => showErrorMessage(normalizeAdminRateLimitError(error)));
   }
 
   function deleteRateLimitPresetButton() {
@@ -224,18 +212,10 @@
       return;
     }
 
-    fetch("endpoints/admin/ratelimitpresets.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({
+    adminRateLimitPostJson("endpoints/admin/ratelimitpresets.php", {
         action: "delete",
         preset_id: preset.id,
-      }),
     })
-      .then((response) => response.json())
       .then((data) => {
         if (!data.success) {
           throw new Error(data.message || translate("error"));
@@ -244,7 +224,7 @@
         showSuccessMessage(data.message);
         window.location.reload();
       })
-      .catch((error) => showErrorMessage(error.message || translate("error")));
+      .catch((error) => showErrorMessage(normalizeAdminRateLimitError(error)));
   }
 
   window.WallosAdminRateLimit = {

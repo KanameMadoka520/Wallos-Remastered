@@ -53,10 +53,9 @@
   function fetchSecurityAnomalies(filters, resultSummary, resultContainer, searchButton, ui) {
     searchButton.disabled = true;
     resultSummary.textContent = ui.dataset.searchLabel || 'Loading...';
-    fetch('endpoints/admin/securityanomalies.php', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.csrfToken }, body: JSON.stringify(filters),
+    window.WallosApi.postJson('endpoints/admin/securityanomalies.php', filters, {
+      fallbackErrorMessage: ui.dataset.errorLabel || 'Error',
     })
-      .then((response) => response.json())
       .then((data) => {
         if (!data.success) throw new Error(data.message || (ui.dataset.errorLabel || 'Error'));
         resultContainer.dataset.logs = JSON.stringify(data.items || []);
@@ -65,7 +64,7 @@
         const itemCount = Array.isArray(data.items) ? data.items.length : 0;
         resultSummary.textContent = (ui.dataset.showingLabel || 'Showing %1$d of %2$d matching access logs').replace('%1$d', String(itemCount)).replace('%2$d', String(data.total || 0));
       })
-      .catch((error) => { resultSummary.textContent = ui.dataset.errorLabel || 'Error'; showErrorMessage(error.message || ui.dataset.errorLabel || 'Error'); })
+      .catch((error) => { resultSummary.textContent = ui.dataset.errorLabel || 'Error'; showErrorMessage(window.WallosApi?.normalizeError?.(error, ui.dataset.errorLabel || 'Error') || ui.dataset.errorLabel || 'Error'); })
       .finally(() => { searchButton.disabled = false; });
   }
 
@@ -105,10 +104,12 @@
     clearButton.addEventListener('click', () => {
       if (!confirm(ui.dataset.clearConfirmLabel || 'Clear all anomalies now?')) return;
       clearButton.disabled = true;
-      fetch('endpoints/admin/clearsecurityanomalies.php', { method: 'POST', headers: { 'X-CSRF-Token': window.csrfToken } })
-        .then((response) => response.json())
+      window.WallosApi.requestJson('endpoints/admin/clearsecurityanomalies.php', {
+        method: 'POST',
+        fallbackErrorMessage: ui.dataset.errorLabel || 'Error',
+      })
         .then((data) => { if (!data.success) throw new Error(data.message || (ui.dataset.errorLabel || 'Error')); showSuccessMessage(data.message); runSearch(); })
-        .catch((error) => showErrorMessage(error.message || ui.dataset.errorLabel || 'Error'))
+        .catch((error) => showErrorMessage(window.WallosApi?.normalizeError?.(error, ui.dataset.errorLabel || 'Error') || ui.dataset.errorLabel || 'Error'))
         .finally(() => { clearButton.disabled = false; });
     });
     body.appendChild(filterGrid); body.appendChild(resultSummary); body.appendChild(resultContainer);
@@ -178,8 +179,9 @@
   function fetchAdminAccessLogs(filters, resultSummary, resultContainer, searchButton, ui) {
     searchButton.disabled = true;
     resultSummary.textContent = ui.dataset.searchLabel || 'Loading...';
-    fetch('endpoints/admin/accesslogs.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.csrfToken }, body: JSON.stringify(filters) })
-      .then((response) => response.json())
+    window.WallosApi.postJson('endpoints/admin/accesslogs.php', filters, {
+      fallbackErrorMessage: ui.dataset.errorLabel || 'Error',
+    })
       .then((data) => {
         if (!data.success) throw new Error(data.message || (ui.dataset.errorLabel || 'Error'));
         resultContainer.dataset.logs = JSON.stringify(data.logs || []);
@@ -188,7 +190,7 @@
         const logCount = Array.isArray(data.logs) ? data.logs.length : 0;
         resultSummary.textContent = (ui.dataset.showingLabel || 'Showing %1$d of %2$d matching access logs').replace('%1$d', String(logCount)).replace('%2$d', String(data.total || 0));
       })
-      .catch((error) => { resultSummary.textContent = ui.dataset.errorLabel || 'Error'; showErrorMessage(error.message || ui.dataset.errorLabel || 'Error'); })
+      .catch((error) => { resultSummary.textContent = ui.dataset.errorLabel || 'Error'; showErrorMessage(window.WallosApi?.normalizeError?.(error, ui.dataset.errorLabel || 'Error') || ui.dataset.errorLabel || 'Error'); })
       .finally(() => { searchButton.disabled = false; });
   }
 
@@ -229,10 +231,12 @@
     clearButton.addEventListener('click', () => {
       if (!confirm(ui.dataset.clearConfirmLabel || 'Clear all access logs now?')) return;
       clearButton.disabled = true;
-      fetch('endpoints/admin/clearaccesslogs.php', { method: 'POST', headers: { 'X-CSRF-Token': window.csrfToken } })
-        .then((response) => response.json())
+      window.WallosApi.requestJson('endpoints/admin/clearaccesslogs.php', {
+        method: 'POST',
+        fallbackErrorMessage: ui.dataset.errorLabel || 'Error',
+      })
         .then((data) => { if (!data.success) throw new Error(data.message || (ui.dataset.errorLabel || 'Error')); showSuccessMessage(data.message); runSearch(); })
-        .catch((error) => showErrorMessage(error.message || ui.dataset.errorLabel || 'Error'))
+        .catch((error) => showErrorMessage(window.WallosApi?.normalizeError?.(error, ui.dataset.errorLabel || 'Error') || ui.dataset.errorLabel || 'Error'))
         .finally(() => { clearButton.disabled = false; });
     });
     body.appendChild(filterGrid); body.appendChild(resultSummary); body.appendChild(resultContainer);

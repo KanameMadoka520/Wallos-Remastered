@@ -214,24 +214,16 @@
       return;
     }
 
-    fetch("endpoints/subscription/reorderimages.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": window.csrfToken,
-      },
-      body: JSON.stringify({
+    window.WallosApi.postJson("endpoints/subscription/reorderimages.php", {
         subscriptionId,
         imageIds,
-      }),
     })
-      .then((response) => response.json())
       .then((data) => {
         if (!data.success) {
           showErrorMessage(data.message || translate("error"));
         }
       })
-      .catch(() => showErrorMessage(translate("error")));
+      .catch((error) => showErrorMessage(window.WallosApi?.normalizeError?.(error, translate("error")) || translate("error")));
   }
 
   function initializeSubscriptionMediaSortables() {
