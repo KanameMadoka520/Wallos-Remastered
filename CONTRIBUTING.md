@@ -1,4 +1,4 @@
-# Wallos-Remastered 贡献指南
+﻿# Wallos-Remastered 贡献指南
 
 ## 基本原则
 
@@ -77,3 +77,13 @@ docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-ur
 详细说明请继续阅读：
 
 - `docs/共享请求层与稳定性契约.md`
+
+## 安全回归提醒
+
+涉及以下链路时，提交前请额外确认不要回退本次安全边界：
+
+- 不要重新把“禁用登录”做回公网可触发的管理员旁路
+- 不要重新允许空实例通过公网域名执行首次数据库恢复
+- 不要重新把永久 API key 设计成通过 URL 查询参数传递
+- 不要在支付图标或其他外链抓取逻辑中恢复无约束的自动重定向
+

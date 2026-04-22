@@ -1,4 +1,4 @@
-# Wallos-Remastered
+﻿# Wallos-Remastered
 
 [简体中文 README](README.md)
 
@@ -137,3 +137,14 @@ Runtime-only files are also ignored through `.gitignore` and `.dockerignore`.
 - `CHANGELOG.md`
 - `SECURITY.md`
 - `FRP+Nginx+Fail2ban防刷站部署指南.md`
+
+## 2026-04 Security Behavior Changes
+
+The following behavior changes were added to reduce risk on public deployments, FRP tunnels, reverse proxies, and VPS gateway setups:
+
+- `Disable login` is no longer equivalent to “auto-login any visitor as admin”. The bypass now works only for direct local requests.
+- If the instance is exposed through a public domain, FRP, or a reverse proxy, keep normal login enabled and use the regular admin login flow.
+- Initial database restore on an empty instance is now limited to direct local access to prevent hostile first-import takeover on fresh deployments.
+- API keys should no longer be passed through URL query strings. Prefer `X-API-Key` or `Authorization: Bearer ...` headers so keys do not leak into browser history or proxy logs.
+- Payment icon remote fetching now validates redirects more strictly. Some unusual redirect-heavy URLs may be rejected by design.
+
