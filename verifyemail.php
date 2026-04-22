@@ -6,6 +6,7 @@ require_once 'includes/checkuser.php';
 require_once 'includes/i18n/languages.php';
 require_once 'includes/i18n/getlang.php';
 require_once 'includes/i18n/' . $lang . '.php';
+require_once 'includes/request_security.php';
 
 require_once 'includes/version.php';
 
@@ -16,11 +17,7 @@ if ($userCount == 0) {
 
 $secondsInMonth = 30 * 24 * 60 * 60;
 if (session_status() === PHP_SESSION_NONE) {
-    session_set_cookie_params([
-        'lifetime' => $secondsInMonth,             
-        'httponly' => true,          
-        'samesite' => 'Lax'          
-    ]);
+    session_set_cookie_params(wallos_build_session_cookie_params($secondsInMonth));
     session_start();
 }
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {

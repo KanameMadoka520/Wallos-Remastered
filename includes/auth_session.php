@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/user_status.php';
+require_once __DIR__ . '/request_security.php';
 
 function wallos_auth_get_session_lifetime_seconds()
 {
@@ -11,19 +12,14 @@ function wallos_auth_start_session()
     if (session_status() === PHP_SESSION_NONE) {
         $secondsInMonth = wallos_auth_get_session_lifetime_seconds();
         ini_set('session.gc_maxlifetime', (string) $secondsInMonth);
-        session_set_cookie_params([
-            'lifetime' => $secondsInMonth,
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
+        session_set_cookie_params(wallos_build_session_cookie_params($secondsInMonth));
         session_start();
     }
 }
 
 function wallos_auth_clear_login_cookie()
 {
-    setcookie('wallos_login', '', time() - 3600, '/');
-    setcookie('wallos_login', '', time() - 3600);
+    setcookie('wallos_login', '', wallos_build_cookie_options(time() - 3600, ['httponly' => true]));
 }
 
 function wallos_auth_reset_login_state()
@@ -76,14 +72,9 @@ function wallos_auth_is_token_valid_for_user($db, $userId, $token)
         return false;
     }
 
-    if (wallos_auth_is_login_disabled($db)) {
-        $stmt = $db->prepare('SELECT 1 FROM login_tokens WHERE user_id = :user_id LIMIT 1');
-        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    } else {
-        $stmt = $db->prepare('SELECT 1 FROM login_tokens WHERE user_id = :user_id AND token = :token LIMIT 1');
-        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-        $stmt->bindValue(':token', $token, SQLITE3_TEXT);
-    }
+    $stmt = $db->prepare('SELECT 1 FROM login_tokens WHERE user_id = :user_id AND token = :token LIMIT 1');
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $stmt->bindValue(':token', $token, SQLITE3_TEXT);
 
     $result = $stmt->execute();
     $row = $result ? $result->fetchArray(SQLITE3_NUM) : false;

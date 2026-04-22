@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../theme_cookie_sync.php';
+require_once __DIR__ . '/../request_security.php';
 
 if (!isset($userData)) {
     die("User data missing for OIDC login.");
@@ -29,24 +30,14 @@ $addLoginTokensStmt->execute();
 
 $_SESSION['token'] = $token;
 $cookieValue = $username . "|" . $token . "|" . $main_currency;
-setcookie('wallos_login', $cookieValue, [
-    'expires' => $cookieExpire,
-    'samesite' => 'Lax',
-    'httponly' => true,
-]);
+setcookie('wallos_login', $cookieValue, wallos_build_cookie_options($cookieExpire, ['httponly' => true]));
 
 // Set language cookie
-setcookie('language', $language, [
-    'expires' => $cookieExpire,
-    'samesite' => 'Lax'
-]);
+setcookie('language', $language, wallos_build_cookie_options($cookieExpire));
 
 // Set sort order default
 if (!isset($_COOKIE['sortOrder'])) {
-    setcookie('sortOrder', 'manual_order', [
-        'expires' => $cookieExpire,
-        'samesite' => 'Lax'
-    ]);
+    setcookie('sortOrder', 'manual_order', wallos_build_cookie_options($cookieExpire));
 }
 
 wallos_sync_theme_cookies_for_user($db, $userId, $cookieExpire);

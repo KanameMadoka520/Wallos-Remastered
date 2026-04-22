@@ -9,6 +9,7 @@ require_once 'includes/user_status.php';
 require_once 'includes/request_logs.php';
 require_once 'includes/login_rate_limit.php';
 require_once 'includes/decorative_background.php';
+require_once 'includes/request_security.php';
 require_once 'includes/theme_resolver.php';
 require_once 'includes/theme_cookie_sync.php';
 require_once 'includes/theme_color.php';
@@ -54,11 +55,7 @@ if ($userCount == 0) {
 $secondsInMonth = 30 * 24 * 60 * 60;
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.gc_maxlifetime', (string) $secondsInMonth);
-    session_set_cookie_params([
-        'lifetime' => $secondsInMonth,             
-        'httponly' => true,          
-        'samesite' => 'Lax'          
-    ]);
+    session_set_cookie_params(wallos_build_session_cookie_params($secondsInMonth));
     session_start();
 }
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
@@ -75,7 +72,8 @@ $cookieExpire = time() + (30 * 24 * 60 * 60);
 $adminQuery = "SELECT login_disabled FROM admin";
 $adminResult = $db->query($adminQuery);
 $adminRow = $adminResult->fetchArray(SQLITE3_ASSOC);
-if ($adminRow['login_disabled'] == 1) {
+$localLoginBypassAllowed = wallos_request_allows_local_login_bypass();
+if ($adminRow['login_disabled'] == 1 && $localLoginBypassAllowed) {
 
     $query = "SELECT id, username, main_currency, language FROM user WHERE id = :id";
     $stmt = $db->prepare($query);
@@ -101,26 +99,15 @@ if ($adminRow['login_disabled'] == 1) {
         $_SESSION['loggedin'] = true;
         $_SESSION['main_currency'] = $main_currency;
         $_SESSION['userId'] = $userId;
-        setcookie('language', $language, [
-            'expires' => $cookieExpire,
-            'samesite' => 'Lax'
-        ]);
+        $_SESSION['token'] = '';
+        setcookie('language', $language, wallos_build_cookie_options($cookieExpire));
 
         if (!isset($_COOKIE['sortOrder'])) {
-            setcookie('sortOrder', 'manual_order', [
-                'expires' => $cookieExpire,
-                'samesite' => 'Lax'
-            ]);
+            setcookie('sortOrder', 'manual_order', wallos_build_cookie_options($cookieExpire));
         }
 
         wallos_sync_theme_cookies_for_user($db, $userId, $cookieExpire);
-
-        $cookieValue = $username . "|" . "abc123ABC" . "|" . $main_currency;
-        setcookie('wallos_login', $cookieValue, [
-            'expires' => $cookieExpire,
-            'samesite' => 'Lax',
-            'httponly' => true,
-        ]);
+        setcookie('wallos_login', '', wallos_build_cookie_options(time() - 3600, ['httponly' => true]));
 
         $db->close();
         header("Location: .");
@@ -167,11 +154,7 @@ if ($oidcRow) {
             // Generate a CSRF-protecting state string
             $secondsInMonth = 30 * 24 * 60 * 60;
             if (session_status() === PHP_SESSION_NONE) {
-                session_set_cookie_params([
-                    'lifetime' => $secondsInMonth,             
-                    'httponly' => true,          
-                    'samesite' => 'Lax'          
-                ]);
+                session_set_cookie_params(wallos_build_session_cookie_params($secondsInMonth));
                 session_start();
             }
             $state = bin2hex(random_bytes(16));
@@ -282,27 +265,17 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
                     $addLoginTokensStmt->execute();
                     $_SESSION['token'] = $token;
                     $cookieValue = $username . "|" . $token . "|" . $main_currency;
-                    setcookie('wallos_login', $cookieValue, [
-                        'expires' => $cookieExpire,
-                        'samesite' => 'Lax',
-                        'httponly' => true,
-                    ]);
+                    setcookie('wallos_login', $cookieValue, wallos_build_cookie_options($cookieExpire, ['httponly' => true]));
                 }
 
                 $_SESSION['username'] = $username;
                 $_SESSION['loggedin'] = true;
                 $_SESSION['main_currency'] = $main_currency;
                 $_SESSION['userId'] = $userId;
-                setcookie('language', $language, [
-                    'expires' => $cookieExpire,
-                    'samesite' => 'Lax'
-                ]);
+                setcookie('language', $language, wallos_build_cookie_options($cookieExpire));
 
                 if (!isset($_COOKIE['sortOrder'])) {
-                    setcookie('sortOrder', 'manual_order', [
-                        'expires' => $cookieExpire,
-                        'samesite' => 'Lax'
-                    ]);
+                    setcookie('sortOrder', 'manual_order', wallos_build_cookie_options($cookieExpire));
                 }
 
                 wallos_sync_theme_cookies_for_user($db, $userId, $cookieExpire);
