@@ -383,6 +383,14 @@ $pageSections = [
                     <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
                     <?= translate('disable_login_info2', $i18n) ?>
                 </p>
+                <p>
+                    <i class="fa fa-shield-halved" aria-hidden="true"></i>
+                    <?= translate('disable_login_security_info', $i18n) ?>
+                </p>
+                <p>
+                    <i class="fa fa-network-wired" aria-hidden="true"></i>
+                    <?= translate('disable_login_security_info2', $i18n) ?>
+                </p>
             </div>
             <div class="buttons">
                 <input type="submit" class="thin mobile-grow" value="<?= translate('save', $i18n) ?>"

@@ -524,6 +524,10 @@ wallos_log_request($db, 0, '');
                                     id="restoreDB" onClick="openRestoreDBFileSelect()" />
                                 <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="restoreDB()"
                                     accept=".zip">
+                                <p class="settings-notes registration-restore-note">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                    <?= translate('restore_database_local_only_info', $i18n) ?>
+                                </p>
                             </div>
                             <?php
                         }
