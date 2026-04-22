@@ -5,6 +5,7 @@ require_once 'includes/checkuser.php';
 require_once 'includes/i18n/languages.php';
 require_once 'includes/i18n/getlang.php';
 require_once 'includes/i18n/' . $lang . '.php';
+require_once 'includes/request_security.php';
 require_once 'includes/theme_resolver.php';
 require_once 'includes/theme_cookie_sync.php';
 
@@ -15,7 +16,10 @@ if ($userCount == 0) {
     exit();
 }
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params(wallos_build_session_cookie_params(30 * 24 * 60 * 60));
+    session_start();
+}
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $db->close();
@@ -116,24 +120,14 @@ if (isset($_POST['one-time-code'])) {
             $addLoginTokensStmt->execute();
             $cookieExpire = time() + (30 * 24 * 60 * 60);
             $cookieValue = $user['username'] . "|" . $token . "|" . $user['main_currency'];
-            setcookie('wallos_login', $cookieValue, [
-                'expires'  => $cookieExpire,
-                'samesite' => 'Lax',
-                'httponly' => true,
-            ]);
+            setcookie('wallos_login', $cookieValue, wallos_build_cookie_options($cookieExpire, ['httponly' => true]));
             unset($_SESSION['pending_remember_me']);
         }
 
-        setcookie('language', $user['language'], [
-            'expires' => $cookieExpire,
-            'samesite' => 'Lax'
-        ]);
+        setcookie('language', $user['language'], wallos_build_cookie_options($cookieExpire));
 
         if (!isset($_COOKIE['sortOrder'])) {
-            setcookie('sortOrder', 'manual_order', [
-                'expires' => $cookieExpire,
-                'samesite' => 'Lax'
-            ]);
+            setcookie('sortOrder', 'manual_order', wallos_build_cookie_options($cookieExpire));
         }
 
         wallos_sync_theme_cookies_for_user($db, $_SESSION['totp_user_id'], $cookieExpire);
