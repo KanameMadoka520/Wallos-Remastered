@@ -60,6 +60,8 @@ function wallos_delete_user_data($db, $targetUserId, $basePath)
 
     $deleteStatements = [
         'DELETE FROM login_tokens WHERE user_id = :id',
+        'DELETE FROM subscription_payment_records WHERE user_id = :id',
+        'DELETE FROM subscription_price_rules WHERE user_id = :id',
         'DELETE FROM subscription_uploaded_images WHERE user_id = :id',
         'DELETE FROM subscriptions WHERE user_id = :id',
         'DELETE FROM settings WHERE user_id = :id',
