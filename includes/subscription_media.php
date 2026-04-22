@@ -64,7 +64,70 @@ function wallos_append_subscription_uploaded_image_urls(array $image)
         $image['download_url'] = '';
     }
 
+    $basePath = dirname(__DIR__);
+    $originalSize = wallos_get_subscription_uploaded_image_size_payload(
+        $basePath,
+        (string) ($image['path'] ?? ''),
+        isset($image['file_size']) ? (int) $image['file_size'] : null
+    );
+    $previewSize = wallos_get_subscription_uploaded_image_size_payload(
+        $basePath,
+        (string) ($image['preview_path'] ?? '')
+    );
+    $thumbnailSize = wallos_get_subscription_uploaded_image_size_payload(
+        $basePath,
+        (string) ($image['thumbnail_path'] ?? '')
+    );
+
+    $image['original_size_bytes'] = $originalSize['bytes'];
+    $image['original_size_label'] = $originalSize['label'];
+    $image['preview_size_bytes'] = $previewSize['bytes'];
+    $image['preview_size_label'] = $previewSize['label'];
+    $image['thumbnail_size_bytes'] = $thumbnailSize['bytes'];
+    $image['thumbnail_size_label'] = $thumbnailSize['label'];
+    $image['variant_sizes'] = [
+        'thumbnail' => $thumbnailSize,
+        'preview' => $previewSize,
+        'original' => $originalSize,
+    ];
+
     return $image;
+}
+
+function wallos_format_subscription_uploaded_image_size($bytes)
+{
+    $bytes = max(0, (int) $bytes);
+    if ($bytes <= 0) {
+        return '';
+    }
+
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $size = (float) $bytes;
+    $unitIndex = 0;
+
+    while ($size >= 1024 && $unitIndex < count($units) - 1) {
+        $size /= 1024;
+        $unitIndex++;
+    }
+
+    return number_format($size, $unitIndex === 0 ? 0 : 1) . ' ' . $units[$unitIndex];
+}
+
+function wallos_get_subscription_uploaded_image_size_payload($basePath, $relativePath, $fallbackBytes = null)
+{
+    $bytes = 0;
+
+    $absolutePath = wallos_resolve_subscription_image_absolute_path($basePath, $relativePath);
+    if ($absolutePath !== '') {
+        $bytes = (int) @filesize($absolutePath);
+    } elseif ($fallbackBytes !== null) {
+        $bytes = max(0, (int) $fallbackBytes);
+    }
+
+    return [
+        'bytes' => $bytes,
+        'label' => wallos_format_subscription_uploaded_image_size($bytes),
+    ];
 }
 
 function wallos_get_subscription_media_disk_dir($basePath, $userId = null)

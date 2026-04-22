@@ -58,7 +58,35 @@
       originalUrl: button.dataset.viewerOriginal || button.dataset.viewerSrc || "",
       downloadUrl: button.dataset.viewerDownload || button.dataset.viewerSrc || "",
       label: button.dataset.viewerLabel || "",
+      sizeLabels: {
+        thumbnail: button.dataset.viewerSizeThumbnail || "",
+        preview: button.dataset.viewerSizePreview || "",
+        original: button.dataset.viewerSizeOriginal || "",
+      },
     })).filter((item) => item.src !== "");
+  }
+
+  function updateViewerMeta(item) {
+    const meta = document.querySelector("#subscription-image-viewer-meta");
+    const fileNameElement = document.querySelector("#subscription-image-viewer-file-name");
+    const thumbnailSizeElement = document.querySelector("#subscription-image-viewer-size-thumbnail");
+    const previewSizeElement = document.querySelector("#subscription-image-viewer-size-preview");
+    const originalSizeElement = document.querySelector("#subscription-image-viewer-size-original");
+
+    if (!meta || !fileNameElement || !thumbnailSizeElement || !previewSizeElement || !originalSizeElement) {
+      return;
+    }
+
+    const thumbnailSize = String(item?.sizeLabels?.thumbnail || "").trim();
+    const previewSize = String(item?.sizeLabels?.preview || "").trim();
+    const originalSize = String(item?.sizeLabels?.original || "").trim();
+    const hasAnySize = thumbnailSize !== "" || previewSize !== "" || originalSize !== "";
+
+    meta.classList.toggle("is-hidden", !hasAnySize);
+    fileNameElement.textContent = String(item?.label || "").trim();
+    thumbnailSizeElement.textContent = thumbnailSize || translate("subscription_image_size_unknown");
+    previewSizeElement.textContent = previewSize || translate("subscription_image_size_unknown");
+    originalSizeElement.textContent = originalSize || translate("subscription_image_size_unknown");
   }
 
   function setPreviewProgress(percentage) {
@@ -222,6 +250,7 @@
     if (counter) {
       counter.textContent = `${currentSubscriptionImageViewerIndex + 1} / ${currentSubscriptionImageViewerItems.length}`;
     }
+    updateViewerMeta(item);
 
     if (currentSubscriptionImageViewerSrc === "") {
       viewerContent.classList.remove("is-loading");
@@ -266,6 +295,11 @@
     const downloadLink = document.querySelector("#subscription-image-viewer-download");
     const previousButton = document.querySelector("#subscription-image-viewer-prev");
     const nextButton = document.querySelector("#subscription-image-viewer-next");
+    const meta = document.querySelector("#subscription-image-viewer-meta");
+    const fileNameElement = document.querySelector("#subscription-image-viewer-file-name");
+    const thumbnailSizeElement = document.querySelector("#subscription-image-viewer-size-thumbnail");
+    const previewSizeElement = document.querySelector("#subscription-image-viewer-size-preview");
+    const originalSizeElement = document.querySelector("#subscription-image-viewer-size-original");
 
     if (viewer) {
       viewer.classList.remove("is-open");
@@ -293,6 +327,21 @@
     }
     if (nextButton) {
       nextButton.disabled = true;
+    }
+    if (meta) {
+      meta.classList.add("is-hidden");
+    }
+    if (fileNameElement) {
+      fileNameElement.textContent = "";
+    }
+    if (thumbnailSizeElement) {
+      thumbnailSizeElement.textContent = translate("subscription_image_size_unknown");
+    }
+    if (previewSizeElement) {
+      previewSizeElement.textContent = translate("subscription_image_size_unknown");
+    }
+    if (originalSizeElement) {
+      originalSizeElement.textContent = translate("subscription_image_size_unknown");
     }
     if (currentSubscriptionImageOriginalRequest) {
       currentSubscriptionImageOriginalRequest.abort();

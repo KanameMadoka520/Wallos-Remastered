@@ -262,6 +262,46 @@
     return translate("subscription_image_source_server");
   }
 
+  function getUploadedImageSizeLabel(image, variant) {
+    const key = `${variant}_size_label`;
+    const value = String(image?.[key] || "").trim();
+    if (value !== "") {
+      return value;
+    }
+
+    return translate("subscription_image_size_unknown");
+  }
+
+  function buildUploadedImageSizeSummary(image) {
+    if (!image || !image.id) {
+      return "";
+    }
+
+    return [
+      `${translate("subscription_image_variant_thumbnail")}: ${getUploadedImageSizeLabel(image, "thumbnail")}`,
+      `${translate("subscription_image_variant_preview")}: ${getUploadedImageSizeLabel(image, "preview")}`,
+      `${translate("subscription_image_variant_original")}: ${getUploadedImageSizeLabel(image, "original")}`,
+    ].join(" / ");
+  }
+
+  function formatClientFileSize(bytes) {
+    const normalizedBytes = Math.max(0, Number(bytes || 0));
+    if (normalizedBytes <= 0) {
+      return translate("subscription_image_size_unknown");
+    }
+
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let size = normalizedBytes;
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex += 1;
+    }
+
+    return `${unitIndex === 0 ? Math.round(size) : size.toFixed(1)} ${units[unitIndex]}`;
+  }
+
   function buildFormViewerItems() {
     const items = [];
 
@@ -278,6 +318,11 @@
         originalUrl,
         downloadUrl,
         label: getUploadedImageDisplayName(image),
+        sizeLabels: {
+          thumbnail: getUploadedImageSizeLabel(image, "thumbnail"),
+          preview: getUploadedImageSizeLabel(image, "preview"),
+          original: getUploadedImageSizeLabel(image, "original"),
+        },
       });
     });
 
@@ -288,6 +333,11 @@
         originalUrl: objectUrl,
         downloadUrl: objectUrl,
         label: file.name,
+        sizeLabels: {
+          thumbnail: translate("subscription_image_size_unknown"),
+          preview: translate("subscription_image_size_unknown"),
+          original: formatClientFileSize(file.size),
+        },
       });
     });
 
@@ -319,6 +369,7 @@
           badgeText: translate("subscription_image_existing_badge"),
           fileName: getUploadedImageDisplayName(image),
           sourceText: translate("subscription_image_source_server"),
+          sizeSummary: buildUploadedImageSizeSummary(image),
           extraClassName: "existing",
           orderToken: `existing:${Number(image.id)}`,
           onRemove: () => removeExistingUploadedImage(image.id),
@@ -337,6 +388,7 @@
           badgeText: translate("subscription_image_new_badge"),
           fileName: file.name,
           sourceText: translate("subscription_image_source_new"),
+          sizeSummary: "",
           extraClassName: "new",
           orderToken: `new:${ensureSelectedDetailImageFileToken(file)}`,
           onRemove: () => removeSelectedDetailImage(index),
@@ -360,6 +412,7 @@
     badgeText,
     fileName = "",
     sourceText = "",
+    sizeSummary = "",
     extraClassName = "",
     orderToken = "",
     onRemove,
@@ -404,6 +457,11 @@
     const sourceElement = document.createElement("span");
     sourceElement.textContent = sourceText || badgeText;
 
+    const sizeElement = document.createElement("span");
+    sizeElement.className = "subscription-detail-image-size-summary";
+    sizeElement.textContent = sizeSummary;
+    sizeElement.hidden = sizeSummary === "";
+
     const removeButton = document.createElement("button");
     removeButton.type = "button";
     removeButton.className = "subscription-detail-image-remove";
@@ -422,6 +480,7 @@
     card.appendChild(badge);
     meta.appendChild(nameElement);
     meta.appendChild(sourceElement);
+    meta.appendChild(sizeElement);
     card.appendChild(meta);
     card.appendChild(removeButton);
 

@@ -1496,6 +1496,23 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       <div class="subscription-image-upload-progress-value" id="subscription-image-original-progress-value">0%</div>
     </div>
   </div>
+  <div class="subscription-image-viewer-meta is-hidden" id="subscription-image-viewer-meta">
+    <div class="subscription-image-viewer-file-name" id="subscription-image-viewer-file-name"></div>
+    <div class="subscription-image-viewer-size-grid">
+      <div class="subscription-image-viewer-size-item">
+        <span><?= translate('subscription_image_variant_thumbnail', $i18n) ?></span>
+        <strong id="subscription-image-viewer-size-thumbnail"><?= translate('subscription_image_size_unknown', $i18n) ?></strong>
+      </div>
+      <div class="subscription-image-viewer-size-item">
+        <span><?= translate('subscription_image_variant_preview', $i18n) ?></span>
+        <strong id="subscription-image-viewer-size-preview"><?= translate('subscription_image_size_unknown', $i18n) ?></strong>
+      </div>
+      <div class="subscription-image-viewer-size-item">
+        <span><?= translate('subscription_image_variant_original', $i18n) ?></span>
+        <strong id="subscription-image-viewer-size-original"><?= translate('subscription_image_size_unknown', $i18n) ?></strong>
+      </div>
+    </div>
+  </div>
   <div class="buttons">
     <button type="button" class="secondary-button thin subscription-image-action-button"
       data-subscription-action="close-image-viewer">
