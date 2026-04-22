@@ -35,45 +35,122 @@ function validateFileExtension($fileExtension)
     return in_array($fileExtension, $allowedExtensions);
 }
 
+function normalizePaymentLogoRedirectUrl($currentUrl, $locationHeader)
+{
+    $locationHeader = trim((string) $locationHeader);
+    if ($locationHeader === '') {
+        return '';
+    }
+
+    if (preg_match('/^https?:\/\//i', $locationHeader)) {
+        return $locationHeader;
+    }
+
+    $currentUrlParts = parse_url($currentUrl);
+    if (!is_array($currentUrlParts) || empty($currentUrlParts['scheme']) || empty($currentUrlParts['host'])) {
+        return '';
+    }
+
+    $scheme = $currentUrlParts['scheme'];
+    $host = $currentUrlParts['host'];
+    $port = isset($currentUrlParts['port']) ? ':' . $currentUrlParts['port'] : '';
+
+    if (strpos($locationHeader, '//') === 0) {
+        return $scheme . ':' . $locationHeader;
+    }
+
+    if (strpos($locationHeader, '/') === 0) {
+        return $scheme . '://' . $host . $port . $locationHeader;
+    }
+
+    $basePath = $currentUrlParts['path'] ?? '/';
+    $directory = rtrim(str_replace('\\', '/', dirname($basePath)), '/');
+    if ($directory === '.') {
+        $directory = '';
+    }
+
+    return $scheme . '://' . $host . $port . $directory . '/' . ltrim($locationHeader, '/');
+}
+
 function getLogoFromUrl($url, $uploadDir, $name, $i18n, $settings)
 {
-    if (!filter_var($url, FILTER_VALIDATE_URL) || !preg_match('/^https?:\/\//i', $url)) {
-        emitPaymentAddJsonError($i18n, "Invalid URL format.");
-    }
+    $maxRedirects = 3;
+    $currentUrl = $url;
 
-    $host = parse_url($url, PHP_URL_HOST);
-    $ip = gethostbyname($host);
-    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-        emitPaymentAddJsonError($i18n, "Invalid IP Address.");
-    }
-
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
-
-    $imageData = curl_exec($ch);
-
-    if ($imageData !== false) {
-        $timestamp = time();
-        $fileName = $timestamp . '-payments-' . sanitizeFilename($name) . '.png';
-        $uploadDir = '../../images/uploads/logos/';
-        $uploadFile = $uploadDir . $fileName;
-
-        if (saveLogo($imageData, $uploadFile, $name, $settings)) {
-            unset($ch);
-            return $fileName;
+    for ($redirectIndex = 0; $redirectIndex <= $maxRedirects; $redirectIndex++) {
+        if (!filter_var($currentUrl, FILTER_VALIDATE_URL) || !preg_match('/^https?:\/\//i', $currentUrl)) {
+            emitPaymentAddJsonError($i18n, 'Invalid URL format.');
         }
 
+        $urlParts = parse_url($currentUrl);
+        if (!is_array($urlParts) || empty($urlParts['host']) || empty($urlParts['scheme'])) {
+            emitPaymentAddJsonError($i18n, 'Invalid URL format.');
+        }
+
+        $host = (string) $urlParts['host'];
+        $port = isset($urlParts['port']) ? (int) $urlParts['port'] : ($urlParts['scheme'] === 'https' ? 443 : 80);
+        $ip = gethostbyname($host);
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            emitPaymentAddJsonError($i18n, 'Invalid IP Address.');
+        }
+
+        $ch = curl_init($currentUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 0);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        if (defined('CURLOPT_PROTOCOLS') && defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
+            curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
+        if (defined('CURLOPT_REDIR_PROTOCOLS') && defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
+            curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
+        curl_setopt($ch, CURLOPT_RESOLVE, ["{$host}:{$port}:{$ip}"]);
+
+        $response = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
         $curlError = curl_error($ch);
-        unset($ch);
-        emitPaymentAddJsonError($i18n, translate('error_fetching_image', $i18n) . ": " . $curlError);
+
+        if ($response === false) {
+            curl_close($ch);
+            emitPaymentAddJsonError($i18n, translate('error_fetching_image', $i18n) . ': ' . $curlError);
+        }
+
+        $responseHeaders = substr($response, 0, $headerSize);
+        $responseBody = substr($response, $headerSize);
+        curl_close($ch);
+
+        if ($httpCode >= 300 && $httpCode < 400) {
+            if (!preg_match('/^Location:\s*(.+)$/im', $responseHeaders, $matches)) {
+                break;
+            }
+
+            $redirectTarget = normalizePaymentLogoRedirectUrl($currentUrl, $matches[1] ?? '');
+            if ($redirectTarget === '') {
+                break;
+            }
+
+            $currentUrl = $redirectTarget;
+            continue;
+        }
+
+        if ($httpCode === 200 && $responseBody !== false && $responseBody !== '') {
+            $timestamp = time();
+            $fileName = $timestamp . '-payments-' . sanitizeFilename($name) . '.png';
+            $uploadDir = '../../images/uploads/logos/';
+            $uploadFile = $uploadDir . $fileName;
+
+            if (saveLogo($responseBody, $uploadFile, $name, $settings)) {
+                return $fileName;
+            }
+        }
+
+        emitPaymentAddJsonError($i18n, translate('error_fetching_image', $i18n));
     }
 
-    $curlError = curl_error($ch);
-    unset($ch);
-    emitPaymentAddJsonError($i18n, translate('error_fetching_image', $i18n) . ": " . $curlError);
+    emitPaymentAddJsonError($i18n, translate('error_fetching_image', $i18n));
 }
 
 
