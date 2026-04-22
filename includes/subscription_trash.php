@@ -85,6 +85,16 @@ function wallos_delete_subscription_data($db, $subscriptionId, $userId, $basePat
     $clearReplacementStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
     $clearReplacementStmt->execute();
 
+    $deletePaymentsStmt = $db->prepare('DELETE FROM subscription_payment_records WHERE subscription_id = :subscription_id AND user_id = :user_id');
+    $deletePaymentsStmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+    $deletePaymentsStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $deletePaymentsStmt->execute();
+
+    $deleteRulesStmt = $db->prepare('DELETE FROM subscription_price_rules WHERE subscription_id = :subscription_id AND user_id = :user_id');
+    $deleteRulesStmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
+    $deleteRulesStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $deleteRulesStmt->execute();
+
     wallos_delete_subscription_uploaded_images_for_subscription($db, $basePath, $subscriptionId, $userId);
 
     $deleteStmt = $db->prepare('DELETE FROM subscriptions WHERE id = :subscription_id AND user_id = :user_id');
