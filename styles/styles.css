@@ -3602,11 +3602,12 @@ button.dark-theme-button i {
 
 .subscription-image-viewer-meta {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
   width: fit-content;
-  max-width: min(420px, 100%);
+  max-width: min(860px, 100%);
   margin: -4px 0 16px auto;
   padding: 8px 12px;
   border-radius: 12px;
@@ -3629,27 +3630,42 @@ button.dark-theme-button i {
   font-weight: 700;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.96);
-  overflow-wrap: anywhere;
-  text-align: right;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
 }
 
 .subscription-image-viewer-size-grid {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  white-space: nowrap;
 }
 
 .subscription-image-viewer-size-item {
   display: inline-flex;
   align-items: baseline;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 6px;
   padding: 0;
   border: 0;
   background: transparent;
+  position: relative;
+}
+
+.subscription-image-viewer-size-item + .subscription-image-viewer-size-item::before {
+  content: "/";
+  margin-right: 2px;
+  color: rgba(255, 255, 255, 0.48);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
 }
 
 .subscription-image-viewer-size-item span {
@@ -3785,17 +3801,19 @@ button.dark-theme-button i {
   .subscription-image-viewer-meta {
     width: 100%;
     max-width: 100%;
-    align-items: stretch;
+    justify-content: flex-start;
     margin-top: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 
   .subscription-image-viewer-file-name {
-    text-align: left;
+    flex: 0 0 auto;
+    max-width: none;
   }
 
-  .subscription-image-viewer-size-grid,
-  .subscription-image-viewer-size-item {
-    align-items: flex-start;
+  .subscription-image-viewer-size-grid {
+    flex: 0 0 auto;
   }
 
   .subscription-image-viewer-size-item {
