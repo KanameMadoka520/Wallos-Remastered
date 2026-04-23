@@ -3601,6 +3601,10 @@ button.dark-theme-button i {
 }
 
 .subscription-image-viewer-meta {
+  --subscription-image-viewer-meta-surface-rgb: 9, 14, 21;
+  --subscription-image-viewer-meta-accent-rgb: var(--main-color-rgb);
+  --subscription-image-viewer-meta-title-rgb: 255, 255, 255;
+  --subscription-image-viewer-meta-body-rgb: 255, 255, 255;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -3611,14 +3615,27 @@ button.dark-theme-button i {
   margin: -4px 0 16px auto;
   padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(var(--subscription-image-viewer-meta-accent-rgb), 0.26);
   background:
-    linear-gradient(135deg, rgba(7, 12, 19, 0.78), rgba(var(--main-color-rgb), 0.18));
+    linear-gradient(
+      135deg,
+      rgba(var(--subscription-image-viewer-meta-surface-rgb), 0.82),
+      rgba(var(--subscription-image-viewer-meta-accent-rgb), 0.2)
+    );
   box-shadow:
     0 12px 28px rgba(0, 0, 0, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+}
+
+body.dark .subscription-image-viewer-meta {
+  --subscription-image-viewer-meta-surface-rgb: 6, 10, 17;
+}
+
+body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
+  --subscription-image-viewer-meta-surface-rgb: 8, 12, 20;
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .subscription-image-viewer-meta.is-hidden {
@@ -3629,7 +3646,7 @@ button.dark-theme-button i {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
-  color: rgba(255, 255, 255, 0.96);
+  color: rgba(var(--subscription-image-viewer-meta-title-rgb), 0.96);
   flex: 0 1 auto;
   min-width: 0;
   max-width: 260px;
@@ -3664,20 +3681,20 @@ button.dark-theme-button i {
 .subscription-image-viewer-size-item + .subscription-image-viewer-size-item::before {
   content: "/";
   margin-right: 2px;
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(var(--subscription-image-viewer-meta-body-rgb), 0.48);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
 }
 
 .subscription-image-viewer-size-item span {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.74);
+  color: rgba(var(--subscription-image-viewer-meta-body-rgb), 0.74);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
 }
 
 .subscription-image-viewer-size-item strong {
   font-size: 13px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.96);
+  color: rgba(var(--subscription-image-viewer-meta-title-rgb), 0.96);
   overflow-wrap: anywhere;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
 }
