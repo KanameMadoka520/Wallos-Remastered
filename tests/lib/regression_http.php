@@ -355,6 +355,16 @@ function wallos_regression_http_has_meta(array $response, $metaName)
     return preg_match($pattern, (string) $response['body']) === 1;
 }
 
+function wallos_regression_http_meta_content(array $response, $metaName)
+{
+    $pattern = '/<meta[^>]+name=["\']' . preg_quote((string) $metaName, '/') . '["\'][^>]*content=["\']([^"\']+)["\']/i';
+    if (preg_match($pattern, (string) $response['body'], $matches) !== 1) {
+        return '';
+    }
+
+    return trim((string) $matches[1]);
+}
+
 function wallos_regression_http_body_contains(array $response, $needle)
 {
     return strpos((string) $response['body'], (string) $needle) !== false;

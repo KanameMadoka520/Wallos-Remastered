@@ -74,6 +74,8 @@ curl http://127.0.0.1:18282/health.php
 docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-url=http://127.0.0.1
 ```
 
+这套 runner 当前包含公共页面、登录态 endpoint、静态契约和既有 PHP 逻辑回归。静态契约会检查主题默认值、订阅页关键 DOM、订阅页脚本加载顺序、共享请求层、API key 传输约定和订阅图片大小显示槽位，目的是提前发现“按钮事件漂移”“局部刷新返回格式漂移”“主题默认值被改回蓝色”等问题。
+
 详细说明请继续阅读：
 
 - `docs/共享请求层与稳定性契约.md`

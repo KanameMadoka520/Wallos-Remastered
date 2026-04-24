@@ -339,6 +339,19 @@ OK
 docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-url=http://127.0.0.1
 ```
 
+当前回归 runner 会覆盖：
+
+- `health.php`
+- 登录页 / 注册页主题与默认紫色主题
+- Service Worker 缓存契约
+- 未登录 endpoint 的标准 `401` JSON 契约
+- 订阅分页 JSON 契约
+- 订阅页关键 DOM 与脚本加载顺序
+- 订阅页共享请求层、会话失效处理和事件重绑契约
+- API key Header / POST 优先传输契约
+- 订阅图片缩略图、预览图、原图大小显示契约
+- 既有预算、账本、偏好逻辑回归
+
 如果你准备继续维护本仓库，请优先阅读：
 
 - `CONTRIBUTING.md`

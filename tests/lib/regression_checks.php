@@ -14,19 +14,37 @@ function wallos_regression_run_public_suite(array $config, array $suiteDefinitio
     );
 
     $loginResponse = wallos_regression_http_request($client, 'GET', wallos_regression_build_url($config, 'login.php'));
+    $loginThemeColor = strtolower(wallos_regression_http_meta_content($loginResponse, 'theme-color'));
     $results[] = wallos_regression_make_result(
         ($loginResponse['status'] === 200 && wallos_regression_http_has_meta($loginResponse, 'theme-color')) ? 'PASS' : 'FAIL',
         'public',
         'login-theme-color',
         wallos_regression_build_http_detail($loginResponse, 'Expected login.php to expose meta[name="theme-color"]')
     );
+    $results[] = wallos_regression_make_result(
+        ($loginResponse['status'] === 200 && $loginThemeColor === '#6d4aff') ? 'PASS' : 'FAIL',
+        'public',
+        'login-default-purple-theme',
+        $loginThemeColor !== ''
+            ? 'Resolved theme-color: ' . $loginThemeColor
+            : wallos_regression_build_http_detail($loginResponse, 'Expected public login default theme-color #6D4AFF')
+    );
 
     $registrationResponse = wallos_regression_http_request($client, 'GET', wallos_regression_build_url($config, 'registration.php'));
+    $registrationThemeColor = strtolower(wallos_regression_http_meta_content($registrationResponse, 'theme-color'));
     $results[] = wallos_regression_make_result(
         ($registrationResponse['status'] === 200 && wallos_regression_http_has_meta($registrationResponse, 'theme-color')) ? 'PASS' : 'FAIL',
         'public',
         'registration-theme-color',
         wallos_regression_build_http_detail($registrationResponse, 'Expected registration.php to expose meta[name="theme-color"]')
+    );
+    $results[] = wallos_regression_make_result(
+        ($registrationResponse['status'] === 200 && $registrationThemeColor === '#6d4aff') ? 'PASS' : 'FAIL',
+        'public',
+        'registration-default-purple-theme',
+        $registrationThemeColor !== ''
+            ? 'Resolved theme-color: ' . $registrationThemeColor
+            : wallos_regression_build_http_detail($registrationResponse, 'Expected public registration default theme-color #6D4AFF')
     );
 
     $allJsPath = $config['repo_root'] . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'all.js';
@@ -65,6 +83,145 @@ function wallos_regression_run_public_suite(array $config, array $suiteDefinitio
         file_exists($serviceWorkerPath)
             ? 'Expected service-worker.js to keep endpoints network-only and avoid ignoreSearch cache fallbacks for dynamic pages.'
             : 'service-worker.js not found'
+    );
+
+    return $results;
+}
+
+function wallos_regression_run_static_suite(array $config, array $suiteDefinition)
+{
+    $results = array();
+
+    $settingsDefaults = wallos_regression_read_repo_file($config, 'includes/settings_defaults.php');
+    $themeColor = wallos_regression_read_repo_file($config, 'includes/theme_color.php');
+    $defaultThemeValid = wallos_regression_text_has_all($settingsDefaults, array(
+        "'color_theme' => 'purple'",
+        "'page_transition_enabled' => 1",
+        "'page_transition_style' => 'bluearchive_theme'",
+    )) && strpos($themeColor, "'purple' => '#6D4AFF'") !== false;
+    $results[] = wallos_regression_make_result(
+        $defaultThemeValid ? 'PASS' : 'FAIL',
+        'static',
+        'default-theme-contract',
+        $defaultThemeValid
+            ? 'Default settings keep purple theme and Blue Archive transition enabled for new users.'
+            : 'Expected purple theme defaults and Blue Archive transition defaults in settings/theme helpers.'
+    );
+
+    $subscriptionsPhp = wallos_regression_read_repo_file($config, 'subscriptions.php');
+    $subscriptionDomNeedles = array(
+        'id="main-actions"',
+        'id="subscription-page-tabs"',
+        'id="subscription-page-loading-overlay"',
+        'id="subscriptions"',
+        'id="subscription-pages-manager-modal"',
+        'id="subscription-recycle-bin-modal"',
+        'id="subscription-form"',
+        'data-subscription-action="open-add-subscription"',
+        'data-subscription-action="select-page-filter"',
+        'data-subscription-action="open-pages-manager"',
+        'data-subscription-action="set-display-columns"',
+        'data-subscription-action="toggle-value-metric"',
+        'data-subscription-action="open-recycle-bin"',
+        'data-subscription-action="open-image-original"',
+    );
+    $domMissing = wallos_regression_missing_needles($subscriptionsPhp, $subscriptionDomNeedles);
+    $results[] = wallos_regression_make_result(
+        empty($domMissing) ? 'PASS' : 'FAIL',
+        'static',
+        'subscription-page-dom-contract',
+        empty($domMissing)
+            ? 'subscriptions.php keeps critical controls, modals, and action hooks.'
+            : 'Missing DOM/action hooks: ' . implode(', ', $domMissing)
+    );
+
+    $subscriptionModules = array(
+        'scripts/libs/sortable.min.js',
+        'scripts/subscription-pages.js',
+        'scripts/subscription-preferences.js',
+        'scripts/subscription-media.js',
+        'scripts/subscription-image-viewer.js',
+        'scripts/subscription-price-rules.js',
+        'scripts/subscription-layout.js',
+        'scripts/subscription-payments.js',
+        'scripts/subscription-interactions.js',
+        'scripts/subscriptions.js',
+    );
+    $moduleOrderValid = wallos_regression_text_has_ordered_needles($subscriptionsPhp, $subscriptionModules);
+    $results[] = wallos_regression_make_result(
+        $moduleOrderValid ? 'PASS' : 'FAIL',
+        'static',
+        'subscription-module-load-order',
+        $moduleOrderValid
+            ? 'Subscription scripts load in dependency order.'
+            : 'Expected subscription scripts to load in the documented dependency order.'
+    );
+
+    $subscriptionPagesJs = wallos_regression_read_repo_file($config, 'scripts/subscription-pages.js');
+    $subscriptionsJs = wallos_regression_read_repo_file($config, 'scripts/subscriptions.js');
+    $subscriptionInteractionsJs = wallos_regression_read_repo_file($config, 'scripts/subscription-interactions.js');
+    $frontendLifecycleValid = wallos_regression_text_has_all($subscriptionPagesJs, array(
+        'window.WallosHttp.getJson',
+        'window.WallosHttp.postJson',
+        'setPageLoadingState',
+        'replaceState',
+    )) && wallos_regression_text_has_all($subscriptionsJs, array(
+        'window.WallosApi.getText',
+        'isSessionFailureError',
+        'WallosSubscriptionInteractions',
+        'scheduleSubscriptionMasonryLayout',
+    )) && wallos_regression_text_has_all($subscriptionInteractionsJs, array(
+        'bindExpandActionButtons',
+        'dataset.expandActionBound',
+        'actions-menu-open',
+    ));
+    $results[] = wallos_regression_make_result(
+        $frontendLifecycleValid ? 'PASS' : 'FAIL',
+        'static',
+        'subscription-frontend-lifecycle-contract',
+        $frontendLifecycleValid
+            ? 'Subscription page scripts keep shared HTTP calls, loading state, session handling, and rebinding hooks.'
+            : 'Expected subscription scripts to keep shared HTTP calls, session handling, and interaction rebinding hooks.'
+    );
+
+    $requestSecurity = wallos_regression_read_repo_file($config, 'includes/request_security.php');
+    $connectEndpoint = wallos_regression_read_repo_file($config, 'includes/connect_endpoint.php');
+    $apiTransportValid = wallos_regression_text_has_all($requestSecurity, array(
+        'function wallos_get_api_key_from_headers',
+        'HTTP_X_API_KEY',
+        'HTTP_AUTHORIZATION',
+        'Bearer',
+        "unset(\$_GET['api_key'], \$_GET['apiKey'], \$_REQUEST['api_key'], \$_REQUEST['apiKey']);",
+    )) && wallos_regression_text_has_all($connectEndpoint, array(
+        "require_once __DIR__ . '/request_security.php';",
+        'wallos_prepare_api_request_credentials();',
+    ));
+    $results[] = wallos_regression_make_result(
+        $apiTransportValid ? 'PASS' : 'FAIL',
+        'static',
+        'api-key-transport-contract',
+        $apiTransportValid
+            ? 'API key handling still strips query parameters and prefers headers/POST.'
+            : 'Expected request_security/connect_endpoint to keep header-first API key handling and query stripping.'
+    );
+
+    $subscriptionImageViewerJs = wallos_regression_read_repo_file($config, 'scripts/subscription-image-viewer.js');
+    $imageSizeValid = wallos_regression_text_has_all($subscriptionsPhp, array(
+        'id="subscription-image-viewer-size-thumbnail"',
+        'id="subscription-image-viewer-size-preview"',
+        'id="subscription-image-viewer-size-original"',
+    )) && wallos_regression_text_has_all($subscriptionImageViewerJs, array(
+        'viewerSizeThumbnail',
+        'viewerSizePreview',
+        'viewerSizeOriginal',
+    ));
+    $results[] = wallos_regression_make_result(
+        $imageSizeValid ? 'PASS' : 'FAIL',
+        'static',
+        'subscription-image-size-contract',
+        $imageSizeValid
+            ? 'Image viewer keeps thumbnail, preview, and original size labels.'
+            : 'Expected image viewer markup and JS to keep all three size labels.'
     );
 
     return $results;
@@ -302,4 +459,53 @@ function wallos_regression_json_session_expired_contract_is_valid(array $respons
         && $payload['success'] === false
         && $payload['code'] === 'session_expired'
         && !empty($payload['session_expired']);
+}
+
+function wallos_regression_read_repo_file(array $config, $relativePath)
+{
+    $absolutePath = $config['repo_root'] . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string) $relativePath);
+    if (!is_file($absolutePath)) {
+        return '';
+    }
+
+    $contents = file_get_contents($absolutePath);
+    return $contents === false ? '' : (string) $contents;
+}
+
+function wallos_regression_text_has_all($text, array $needles)
+{
+    foreach ($needles as $needle) {
+        if (strpos((string) $text, (string) $needle) === false) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function wallos_regression_missing_needles($text, array $needles)
+{
+    $missing = array();
+    foreach ($needles as $needle) {
+        if (strpos((string) $text, (string) $needle) === false) {
+            $missing[] = (string) $needle;
+        }
+    }
+
+    return $missing;
+}
+
+function wallos_regression_text_has_ordered_needles($text, array $needles)
+{
+    $offset = 0;
+    foreach ($needles as $needle) {
+        $position = strpos((string) $text, (string) $needle, $offset);
+        if ($position === false) {
+            return false;
+        }
+
+        $offset = $position + strlen((string) $needle);
+    }
+
+    return true;
 }

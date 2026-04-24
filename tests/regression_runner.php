@@ -38,6 +38,7 @@ $selectedSuites = $config['selected_suites'];
 $suiteRunners = array(
     'public' => 'wallos_regression_run_public_suite',
     'auth' => 'wallos_regression_run_auth_suite',
+    'static' => 'wallos_regression_run_static_suite',
     'legacy' => 'wallos_regression_run_legacy_suite',
 );
 

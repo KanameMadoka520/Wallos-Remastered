@@ -82,6 +82,16 @@ Expected response:
 OK
 ```
 
+## Regression Checks
+
+After changing high-risk pages or shared request logic, run:
+
+```bash
+docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-url=http://127.0.0.1
+```
+
+The runner checks public pages, default purple theme behavior, Service Worker cache contracts, unauthenticated endpoint `401` contracts, subscription page JSON/HTML contracts, subscription frontend static contracts, API key transport rules, subscription image size slots, and the existing PHP logic regressions.
+
 ## Highlights
 
 ### Admin
