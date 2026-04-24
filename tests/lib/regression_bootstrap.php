@@ -9,7 +9,9 @@ function wallos_regression_build_suite_catalog()
             'checks' => array(
                 'health-endpoint' => 'health.php returns HTTP 200 and body OK',
                 'login-theme-color' => 'login.php responds and exposes meta[name="theme-color"]',
+                'login-default-purple-theme' => 'login.php defaults to the Remastered purple theme for new visitors',
                 'registration-theme-color' => 'registration.php responds and exposes meta[name="theme-color"]',
+                'registration-default-purple-theme' => 'registration.php defaults to the Remastered purple theme for new visitors',
                 'service-worker-registration' => 'scripts/all.js still registers service-worker.js',
                 'service-worker-cache-contract' => 'service-worker.js still declares cache version constants',
                 'service-worker-dynamic-cache-guard' => 'service-worker.js does not fuzzy-cache endpoints or query-string variants',
@@ -25,6 +27,18 @@ function wallos_regression_build_suite_catalog()
                 'payments-unauth-401' => 'payments/get.php returns the standardized unauthenticated JSON 401 contract',
                 'subscription-pages-json' => 'subscriptionpages.php returns the expected JSON shape',
                 'subscriptions-html' => 'subscriptions/get.php returns HTML for subscription_page=all',
+            ),
+        ),
+        'static' => array(
+            'label' => 'Static contract checks',
+            'description' => 'Checks high-risk frontend, theme, API, and media contracts without requiring a login.',
+            'checks' => array(
+                'default-theme-contract' => 'New users keep the purple theme and Blue Archive transition defaults',
+                'subscription-page-dom-contract' => 'subscriptions.php keeps the critical controls and modal anchors',
+                'subscription-module-load-order' => 'subscriptions.php loads subscription modules in dependency order',
+                'subscription-frontend-lifecycle-contract' => 'subscription page scripts keep shared request and rebind lifecycle hooks',
+                'api-key-transport-contract' => 'API credentials still prefer headers/POST and strip query-string api_key',
+                'subscription-image-size-contract' => 'subscription image viewer keeps thumbnail/preview/original size slots',
             ),
         ),
         'legacy' => array(
@@ -77,6 +91,11 @@ function wallos_regression_parse_cli_config(array $argv, array $catalog)
 
         if ($argument === '--auth-only') {
             $config['suite_mode'] = 'auth';
+            continue;
+        }
+
+        if ($argument === '--static-only') {
+            $config['suite_mode'] = 'static';
             continue;
         }
 
@@ -168,6 +187,10 @@ function wallos_regression_resolve_selected_suites($suiteMode, array $catalog)
         return array('auth');
     }
 
+    if ($suiteMode === 'static') {
+        return array('static');
+    }
+
     if ($suiteMode === 'legacy') {
         return array('legacy');
     }
@@ -208,6 +231,7 @@ function wallos_regression_render_help(array $catalog, $commandName)
         '  --timeout SECONDS      HTTP timeout in seconds (default: 20)',
         '  --public-only          Run public smoke checks only',
         '  --auth-only            Run authenticated smoke checks only',
+        '  --static-only          Run static contract checks only',
         '  --existing-only        Run existing PHP regression scripts only',
         '',
         'Environment fallbacks:',
