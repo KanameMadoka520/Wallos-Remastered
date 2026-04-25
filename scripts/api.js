@@ -20,6 +20,28 @@
     );
   }
 
+  function isCsrfFailurePayload(data) {
+    if (!data || typeof data !== "object") {
+      return false;
+    }
+
+    const code = String(data.code || data.error || "").toLowerCase();
+    if (code === "invalid_csrf") {
+      return true;
+    }
+
+    const message = String(data.message || "").toLowerCase();
+    return message.includes("invalid csrf token");
+  }
+
+  function isCsrfFailureError(error) {
+    return Boolean(
+      error
+      && typeof error === "object"
+      && (error.csrfInvalid === true || isCsrfFailurePayload(error.data))
+    );
+  }
+
   function translateFallback(key, fallback) {
     if (typeof window.translate === "function") {
       const translated = window.translate(key);
@@ -42,6 +64,7 @@
       ? String(context.data.code || context.data.error || "")
       : "");
     error.sessionExpired = isSessionFailurePayload(context.data);
+    error.csrfInvalid = isCsrfFailurePayload(context.data);
     return error;
   }
 
@@ -130,6 +153,24 @@
           return existingHttp.isSessionFailureError(error);
         }
         return isSessionFailureError(error);
+      },
+      isCsrfFailurePayload(payload) {
+        if (typeof existingHttp.isCsrfFailurePayload === "function") {
+          return existingHttp.isCsrfFailurePayload(payload);
+        }
+        return isCsrfFailurePayload(payload);
+      },
+      isCsrfFailureError(error) {
+        if (typeof existingHttp.isCsrfFailureError === "function") {
+          return existingHttp.isCsrfFailureError(error);
+        }
+        return isCsrfFailureError(error);
+      },
+      showCsrfTokenRefreshReminder() {
+        if (typeof existingHttp.showCsrfTokenRefreshReminder === "function") {
+          return existingHttp.showCsrfTokenRefreshReminder();
+        }
+        return false;
       },
     };
   }
@@ -238,7 +279,7 @@
       const data = parsedResponse.data;
 
       if (shouldCheckHttp && !response.ok) {
-        throw createFallbackRequestError(
+        const requestError = createFallbackRequestError(
           extractResponseMessage(data, effectiveErrorMessage || translateFallback("network_response_error", "Network response error")),
           {
             response,
@@ -247,10 +288,14 @@
             rawBody: parsedResponse.rawBody,
           }
         );
+        if (isCsrfFailureError(requestError)) {
+          window.dispatchEvent(new CustomEvent("wallos:csrf-invalid", { detail: requestError }));
+        }
+        throw requestError;
       }
 
       if (checkSuccess && (!data || data[successField] !== true)) {
-        throw createFallbackRequestError(
+        const requestError = createFallbackRequestError(
           extractResponseMessage(data, effectiveErrorMessage || translateFallback("error", "Error")),
           {
             response,
@@ -259,6 +304,10 @@
             rawBody: parsedResponse.rawBody,
           }
         );
+        if (isCsrfFailureError(requestError)) {
+          window.dispatchEvent(new CustomEvent("wallos:csrf-invalid", { detail: requestError }));
+        }
+        throw requestError;
       }
 
       return data;
@@ -311,6 +360,8 @@
       },
       isSessionFailurePayload,
       isSessionFailureError,
+      isCsrfFailurePayload,
+      isCsrfFailureError,
     };
   }
 

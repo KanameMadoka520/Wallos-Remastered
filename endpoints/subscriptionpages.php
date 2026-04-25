@@ -50,7 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
 if (!verify_csrf_token($csrfToken)) {
-    subscription_pages_json_response(false, 'Invalid CSRF token');
+    subscription_pages_json_response(false, 'Invalid CSRF token', [
+        'code' => 'invalid_csrf',
+        'error' => 'invalid_csrf',
+    ]);
 }
 
 $data = json_decode(file_get_contents('php://input'), true);

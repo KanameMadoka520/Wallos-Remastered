@@ -1853,6 +1853,13 @@ function submitFormData(formData, submitButton, endpoint) {
       return;
     }
 
+    if (window.WallosHttp?.isCsrfFailurePayload?.(data)) {
+      window.WallosHttp.showCsrfTokenRefreshReminder?.();
+      hideDetailImageUploadProgress();
+      submitButton.disabled = false;
+      return;
+    }
+
     if (request.status >= 200 && request.status < 300 && data.status === "Success") {
       showSuccessMessage(data.message);
       closeAddSubscription();

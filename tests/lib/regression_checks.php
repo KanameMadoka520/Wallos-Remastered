@@ -184,6 +184,33 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected subscription scripts to keep shared HTTP calls, session handling, and interaction rebinding hooks.'
     );
 
+    $commonJs = wallos_regression_read_repo_file($config, 'scripts/common.js');
+    $apiJs = wallos_regression_read_repo_file($config, 'scripts/api.js');
+    $subscriptionPagesEndpoint = wallos_regression_read_repo_file($config, 'endpoints/subscriptionpages.php');
+    $csrfRefreshReminderValid = wallos_regression_text_has_all($commonJs, array(
+        'CSRF_BACKGROUND_STALE_MS',
+        'showCsrfTokenRefreshReminder',
+        'isWallosCsrfFailurePayload',
+        'wallos:csrf-invalid',
+        'visibilitychange',
+    )) && wallos_regression_text_has_all($apiJs, array(
+        'isCsrfFailurePayload',
+        'csrfInvalid',
+    )) && wallos_regression_text_has_all($subscriptionsJs, array(
+        'showCsrfTokenRefreshReminder',
+    )) && wallos_regression_text_has_all($subscriptionPagesEndpoint, array(
+        "'code' => 'invalid_csrf'",
+        "'error' => 'invalid_csrf'",
+    ));
+    $results[] = wallos_regression_make_result(
+        $csrfRefreshReminderValid ? 'PASS' : 'FAIL',
+        'static',
+        'csrf-refresh-reminder-contract',
+        $csrfRefreshReminderValid
+            ? 'Long-idle foreground recovery and invalid CSRF responses keep the refresh reminder path.'
+            : 'Expected common/api/subscription scripts and subscriptionpages.php to keep invalid CSRF refresh reminder hooks.'
+    );
+
     $requestSecurity = wallos_regression_read_repo_file($config, 'includes/request_security.php');
     $connectEndpoint = wallos_regression_read_repo_file($config, 'includes/connect_endpoint.php');
     $apiTransportValid = wallos_regression_text_has_all($requestSecurity, array(
