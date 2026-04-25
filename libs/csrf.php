@@ -36,7 +36,8 @@ function get_csrf_token_created_at(): int {
 }
 
 function get_csrf_token_expires_at(): int {
-    return get_csrf_token_created_at() + wallos_auth_get_session_lifetime_seconds();
+    generate_csrf_token();
+    return time() + wallos_auth_get_session_lifetime_seconds();
 }
 
 function get_csrf_token_fingerprint(): string {
