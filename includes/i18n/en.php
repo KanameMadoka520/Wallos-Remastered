@@ -843,6 +843,9 @@ $i18n = [
     "service_worker_installing" => "Installing",
     "service_worker_controlled" => "Controlled",
     "service_worker_uncontrolled" => "Uncontrolled",
+    "csrf_token_footer_label" => "Security token fingerprint:",
+    "csrf_token_footer_expires" => "Estimated expiry:",
+    "csrf_token_footer_note" => "Only a short fingerprint is shown here. The real CSRF token remains hidden and follows the server session.",
 ];
 
 

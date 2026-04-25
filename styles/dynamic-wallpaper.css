@@ -289,9 +289,20 @@ body.dynamic-wallpaper-enabled .page-nav-title,
 body.dynamic-wallpaper-enabled .dropbtn,
 body.dynamic-wallpaper-enabled .dropbtn:after,
 body.dynamic-wallpaper-enabled .custom-edition-text,
+body.dynamic-wallpaper-enabled .page-edition-security-token,
 body.dynamic-wallpaper-enabled .subscription-upload-policy-header,
 body.dynamic-wallpaper-enabled .subscription-upload-policy-banner .user-group-badge {
     color: var(--wallos-dynamic-text-color);
+}
+
+body.dynamic-wallpaper-enabled .page-edition-security-token i {
+    color: rgba(var(--main-color-rgb), 0.92);
+}
+
+body.dynamic-wallpaper-enabled .page-edition-security-token code {
+    background: rgba(var(--main-color-rgb), 0.20);
+    color: var(--wallos-dynamic-text-color);
+    border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 body.dynamic-wallpaper-enabled .dropdown-content a {
