@@ -107,6 +107,7 @@ The runner checks public pages, default purple theme behavior, Service Worker ca
 
 - multiple server-hosted images per subscription
 - original / preview / thumbnail layering
+- when upload compression is disabled, the original file is stored byte-for-byte; when compression is enabled, the stored original is processed once
 - protected media endpoint
 - drag-and-drop ordering
 - upload and processing progress
