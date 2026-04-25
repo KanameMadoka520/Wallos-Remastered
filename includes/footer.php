@@ -6,11 +6,22 @@ $csrfTokenExpiresAt = function_exists('get_csrf_token_expires_at') ? get_csrf_to
 $csrfTokenExpiresDisplay = '';
 if ($csrfTokenExpiresAt > 0) {
   try {
-    $csrfTokenExpiresDisplay = (new DateTimeImmutable('@' . $csrfTokenExpiresAt))
-      ->setTimezone(new DateTimeZone(date_default_timezone_get()))
-      ->format('Y-m-d H:i:s T');
-  } catch (Exception $exception) {
-    $csrfTokenExpiresDisplay = date('Y-m-d H:i:s T', $csrfTokenExpiresAt);
+    $csrfTokenDisplayTimezone = date_default_timezone_get();
+    if (function_exists('wallos_normalize_timezone_identifier')) {
+      $csrfTokenDisplayTimezone = wallos_normalize_timezone_identifier(
+        $settings['user_timezone'] ?? $csrfTokenDisplayTimezone,
+        function_exists('wallos_get_default_user_timezone') ? wallos_get_default_user_timezone() : $csrfTokenDisplayTimezone
+      );
+    }
+    $csrfTokenExpiryDateTime = (new DateTimeImmutable('@' . $csrfTokenExpiresAt))
+      ->setTimezone(new DateTimeZone($csrfTokenDisplayTimezone));
+    $csrfTokenTimezoneLabel = $csrfTokenDisplayTimezone;
+    if (function_exists('wallos_get_timezone_offset_label')) {
+      $csrfTokenTimezoneLabel .= ' (' . wallos_get_timezone_offset_label($csrfTokenDisplayTimezone, $csrfTokenExpiryDateTime) . ')';
+    }
+    $csrfTokenExpiresDisplay = $csrfTokenExpiryDateTime->format('Y-m-d H:i:s') . ' ' . $csrfTokenTimezoneLabel;
+  } catch (Throwable $throwable) {
+    $csrfTokenExpiresDisplay = date('Y-m-d H:i:s P', $csrfTokenExpiresAt);
   }
 }
 ?>

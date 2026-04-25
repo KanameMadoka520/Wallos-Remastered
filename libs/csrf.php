@@ -3,6 +3,7 @@ require_once __DIR__ . '/../includes/request_security.php';
 require_once __DIR__ . '/../includes/auth_session.php';
 
 const WALLOS_CSRF_TOKEN_CREATED_AT_SESSION_KEY = 'csrf_token_created_at';
+const WALLOS_CSRF_REFRESH_RECOMMENDED_SECONDS = 30 * 60;
 
 if (session_status() === PHP_SESSION_NONE) {
     $secondsInMonth = wallos_auth_get_session_lifetime_seconds();
@@ -37,7 +38,7 @@ function get_csrf_token_created_at(): int {
 
 function get_csrf_token_expires_at(): int {
     generate_csrf_token();
-    return time() + wallos_auth_get_session_lifetime_seconds();
+    return time() + WALLOS_CSRF_REFRESH_RECOMMENDED_SECONDS;
 }
 
 function get_csrf_token_fingerprint(): string {

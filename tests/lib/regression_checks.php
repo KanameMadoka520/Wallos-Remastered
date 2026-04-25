@@ -217,6 +217,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $dynamicWallpaperCss = wallos_regression_read_repo_file($config, 'styles/dynamic-wallpaper.css');
     $csrfFooterValid = wallos_regression_text_has_all($csrfPhp, array(
         'csrf_token_created_at',
+        'WALLOS_CSRF_REFRESH_RECOMMENDED_SECONDS = 30 * 60',
         'get_csrf_token_fingerprint',
         'get_csrf_token_expires_at',
         "substr(hash('sha256', generate_csrf_token()), 0, 12)",
@@ -224,6 +225,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'page-edition-security-token',
         'get_csrf_token_fingerprint',
         'get_csrf_token_expires_at',
+        "settings['user_timezone']",
+        'wallos_get_timezone_offset_label',
         'csrf_token_footer_label',
         'csrf_token_footer_expires',
     )) && wallos_regression_text_has_all($stylesCss, array(
