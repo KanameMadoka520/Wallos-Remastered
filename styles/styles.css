@@ -170,6 +170,15 @@ h3 {
   letter-spacing: 0.04em;
 }
 
+.page-edition-security-token [data-csrf-token-remaining] {
+  color: rgba(var(--success-color-rgb), 0.92);
+  font-weight: 600;
+}
+
+.page-edition-security-token [data-csrf-token-remaining].is-expired {
+  color: rgba(var(--error-color-rgb), 0.92);
+}
+
 @media (max-width: 768px) {
   .page-edition-footer {
     padding: 10px 12px calc(12px + env(safe-area-inset-bottom));

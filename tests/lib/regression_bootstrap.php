@@ -25,8 +25,14 @@ function wallos_regression_build_suite_catalog()
                 'subscriptions-unauth-401' => 'subscriptions/get.php returns the standardized unauthenticated JSON 401 contract',
                 'subscription-pages-unauth-401' => 'subscriptionpages.php returns the standardized unauthenticated JSON 401 contract',
                 'payments-unauth-401' => 'payments/get.php returns the standardized unauthenticated JSON 401 contract',
+                'subscriptions-page-shell' => 'subscriptions.php opens as an authenticated browser shell without warnings',
                 'subscription-pages-json' => 'subscriptionpages.php returns the expected JSON shape',
                 'subscriptions-html' => 'subscriptions/get.php returns HTML for subscription_page=all',
+                'subscription-action-hooks' => 'subscription cards keep action-menu, edit, payment, and image-viewer hooks',
+                'subscription-edit-json' => 'subscription/get.php returns editable JSON for a visible subscription',
+                'subscription-payment-history-json' => 'subscription/paymenthistory.php returns payment-history JSON for a visible subscription',
+                'subscription-media-access' => 'subscription uploaded image preview/original endpoints remain access-controlled and readable',
+                'subscription-mutating-flow' => 'optional create/edit/payment/delete flow works when --mutating-auth-checks is enabled',
             ),
         ),
         'static' => array(
@@ -39,9 +45,11 @@ function wallos_regression_build_suite_catalog()
                 'subscription-frontend-lifecycle-contract' => 'subscription page scripts keep shared request and rebind lifecycle hooks',
                 'csrf-refresh-reminder-contract' => 'Long-idle pages and invalid CSRF responses show a refresh reminder instead of a generic error',
                 'csrf-footer-fingerprint-contract' => 'page footer shows a short CSRF token fingerprint and estimated expiry without exposing the raw token',
+                'service-worker-refresh-contract' => 'admin can publish client cache refresh notices and static assets use stricter versioning',
                 'api-key-transport-contract' => 'API credentials still prefer headers/POST and strip query-string api_key',
                 'subscription-image-original-passthrough-contract' => 'Uncompressed subscription image uploads keep original bytes instead of re-encoding originals',
                 'subscription-image-size-contract' => 'subscription image viewer keeps thumbnail/preview/original size slots',
+                'maintenance-tools-contract' => 'admin maintenance tools expose retention strategy, image audit, and SQLite maintenance',
             ),
         ),
         'legacy' => array(
@@ -51,6 +59,7 @@ function wallos_regression_build_suite_catalog()
                 'budget-regression' => 'Execute tests/budget_regression_test.php',
                 'payment-ledger' => 'Execute tests/payment_ledger_test.php',
                 'subscription-preferences' => 'Execute tests/subscription_preferences_test.php',
+                'csrf-ttl' => 'Execute tests/csrf_ttl_test.php',
             ),
         ),
     );
@@ -67,6 +76,7 @@ function wallos_regression_parse_cli_config(array $argv, array $catalog)
         'username' => trim((string) getenv('WALLOS_TEST_USERNAME')),
         'password' => trim((string) getenv('WALLOS_TEST_PASSWORD')),
         'timeout' => (int) (getenv('WALLOS_TEST_TIMEOUT') !== false ? getenv('WALLOS_TEST_TIMEOUT') : 20),
+        'allow_mutations' => in_array(strtolower((string) getenv('WALLOS_TEST_ALLOW_MUTATIONS')), array('1', 'true', 'yes', 'on'), true),
         'show_help' => false,
         'show_list' => false,
         'suite_mode' => 'all',
@@ -104,6 +114,11 @@ function wallos_regression_parse_cli_config(array $argv, array $catalog)
 
         if ($argument === '--existing-only' || $argument === '--run-existing') {
             $config['suite_mode'] = 'legacy';
+            continue;
+        }
+
+        if ($argument === '--mutating-auth-checks') {
+            $config['allow_mutations'] = true;
             continue;
         }
 
@@ -232,13 +247,14 @@ function wallos_regression_render_help(array $catalog, $commandName)
         '  --username VALUE       Username for scripted login when cookie is not supplied',
         '  --password VALUE       Password for scripted login when cookie is not supplied',
         '  --timeout SECONDS      HTTP timeout in seconds (default: 20)',
+        '  --mutating-auth-checks Create/edit/delete temporary subscription data during auth checks',
         '  --public-only          Run public smoke checks only',
         '  --auth-only            Run authenticated smoke checks only',
         '  --static-only          Run static contract checks only',
         '  --existing-only        Run existing PHP regression scripts only',
         '',
         'Environment fallbacks:',
-        '  WALLOS_BASE_URL, WALLOS_TEST_COOKIE, WALLOS_TEST_USERNAME, WALLOS_TEST_PASSWORD, WALLOS_TEST_TIMEOUT',
+        '  WALLOS_BASE_URL, WALLOS_TEST_COOKIE, WALLOS_TEST_USERNAME, WALLOS_TEST_PASSWORD, WALLOS_TEST_TIMEOUT, WALLOS_TEST_ALLOW_MUTATIONS',
         '',
         'Suites:',
     );

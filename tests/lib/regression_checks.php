@@ -218,13 +218,20 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $csrfFooterValid = wallos_regression_text_has_all($csrfPhp, array(
         'csrf_token_created_at',
         'WALLOS_CSRF_REFRESH_RECOMMENDED_SECONDS = 30 * 60',
+        'function wallos_csrf_token_is_expired',
+        'wallos_rotate_csrf_token',
+        "unset(\$_SESSION['csrf_token'], \$_SESSION[WALLOS_CSRF_TOKEN_CREATED_AT_SESSION_KEY]);",
         'get_csrf_token_fingerprint',
         'get_csrf_token_expires_at',
         "substr(hash('sha256', generate_csrf_token()), 0, 12)",
     )) && wallos_regression_text_has_all($footerPhp, array(
         'page-edition-security-token',
         'get_csrf_token_fingerprint',
+        'get_csrf_token_created_at',
         'get_csrf_token_expires_at',
+        'csrf_token_footer_page_loaded',
+        'csrf_token_footer_created',
+        'csrf_token_footer_remaining_dynamic',
         "settings['user_timezone']",
         'wallos_get_timezone_offset_label',
         'csrf_token_footer_label',
@@ -235,6 +242,10 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     )) && wallos_regression_text_has_all($dynamicWallpaperCss, array(
         'body.dynamic-wallpaper-enabled .page-edition-security-token',
         'body.dynamic-wallpaper-enabled .page-edition-security-token code',
+    )) && wallos_regression_text_has_all($commonJs, array(
+        'initializeCsrfFooterStatus',
+        '[data-csrf-token-remaining]',
+        'expiresAtSeconds',
     ));
     $results[] = wallos_regression_make_result(
         $csrfFooterValid ? 'PASS' : 'FAIL',
@@ -243,6 +254,43 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         $csrfFooterValid
             ? 'Footer shows a CSRF fingerprint and estimated expiry without exposing the raw token.'
             : 'Expected CSRF helpers, footer markup, and theme styles for the footer security token fingerprint.'
+    );
+
+    $headerPhp = wallos_regression_read_repo_file($config, 'includes/header.php');
+    $serviceWorkerJs = wallos_regression_read_repo_file($config, 'service-worker.js');
+    $adminPhp = wallos_regression_read_repo_file($config, 'admin.php');
+    $adminJs = wallos_regression_read_repo_file($config, 'scripts/admin.js');
+    $cacheRefreshEndpoint = wallos_regression_read_repo_file($config, 'endpoints/admin/requestcacherefresh.php');
+    $cacheRefreshValid = wallos_regression_text_has_all($headerPhp, array(
+        'cache_refresh.php',
+        'window.WallosCacheRefresh',
+        '@filemtime(__DIR__ . \'/../scripts/common.js\')',
+    )) && wallos_regression_text_has_all($serviceWorkerJs, array(
+        "static-cache-v17",
+        "WALLOS_CLEAR_CACHES",
+        "WALLOS_CACHE_PREFIXES",
+    )) && wallos_regression_text_has_all($commonJs, array(
+        'initializeCacheRefreshMarker',
+        'clearWallosClientCaches',
+        'wallos-client-cache-refresh-token',
+    )) && wallos_regression_text_has_all($adminPhp, array(
+        'service_worker_broadcast_refresh',
+        'requestClientCacheRefreshButton',
+    )) && wallos_regression_text_has_all($adminJs, array(
+        'requestClientCacheRefreshButton',
+        'endpoints/admin/requestcacherefresh.php',
+        'WallosClientCache',
+    )) && wallos_regression_text_has_all($cacheRefreshEndpoint, array(
+        'wallos_write_cache_refresh_marker',
+        'validate_endpoint_admin.php',
+    ));
+    $results[] = wallos_regression_make_result(
+        $cacheRefreshValid ? 'PASS' : 'FAIL',
+        'static',
+        'service-worker-refresh-contract',
+        $cacheRefreshValid
+            ? 'Service Worker cache refresh marker, admin trigger, and filemtime static versions are wired.'
+            : 'Expected cache refresh marker, SW clear message, admin trigger, and stricter static asset versioning.'
     );
 
     $requestSecurity = wallos_regression_read_repo_file($config, 'includes/request_security.php');
@@ -287,10 +335,15 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'id="subscription-image-viewer-size-thumbnail"',
         'id="subscription-image-viewer-size-preview"',
         'id="subscription-image-viewer-size-original"',
+        'subscription_image_processing_strategy_info',
     )) && wallos_regression_text_has_all($subscriptionImageViewerJs, array(
         'viewerSizeThumbnail',
         'viewerSizePreview',
         'viewerSizeOriginal',
+        'viewerPreviewReusedOriginal',
+    )) && wallos_regression_text_has_all($subscriptionMediaPhp, array(
+        'preview_reused_original',
+        'thumbnail_reused_original',
     ));
     $results[] = wallos_regression_make_result(
         $imageSizeValid ? 'PASS' : 'FAIL',
@@ -299,6 +352,34 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         $imageSizeValid
             ? 'Image viewer keeps thumbnail, preview, and original size labels.'
             : 'Expected image viewer markup and JS to keep all three size labels.'
+    );
+
+    $systemMaintenancePhp = wallos_regression_read_repo_file($config, 'includes/system_maintenance.php');
+    $systemMaintenanceEndpoint = wallos_regression_read_repo_file($config, 'endpoints/admin/systemmaintenance.php');
+    $maintenanceValid = wallos_regression_text_has_all($systemMaintenancePhp, array(
+        'wallos_audit_subscription_image_storage',
+        'wallos_run_sqlite_maintenance',
+        'WALLOS_REQUEST_LOG_RETENTION_DAYS',
+        'VACUUM',
+        'ANALYZE',
+    )) && wallos_regression_text_has_all($systemMaintenanceEndpoint, array(
+        'scan_subscription_images',
+        'run_sqlite_maintenance',
+        'validate_endpoint_admin.php',
+    )) && wallos_regression_text_has_all($adminPhp, array(
+        'maintenance_retention_strategy',
+        'adminMaintenanceResult',
+    )) && wallos_regression_text_has_all($adminJs, array(
+        'runAdminMaintenanceAction',
+        'endpoints/admin/systemmaintenance.php',
+    ));
+    $results[] = wallos_regression_make_result(
+        $maintenanceValid ? 'PASS' : 'FAIL',
+        'static',
+        'maintenance-tools-contract',
+        $maintenanceValid
+            ? 'Admin maintenance tools expose retention policy, subscription image audit, and SQLite maintenance.'
+            : 'Expected system maintenance helper, admin endpoint, and admin UI wiring.'
     );
 
     return $results;
@@ -378,6 +459,22 @@ function wallos_regression_run_auth_suite(array $config, array $suiteDefinition)
     }
 
     $authClient = $authState['client'];
+    $subscriptionsShellResponse = wallos_regression_http_request(
+        $authClient,
+        'GET',
+        wallos_regression_build_url($config, 'subscriptions.php')
+    );
+    $subscriptionsShellValid = $subscriptionsShellResponse['status'] === 200
+        && strpos((string) $subscriptionsShellResponse['body'], 'id="subscriptions"') !== false
+        && strpos((string) $subscriptionsShellResponse['body'], 'id="subscription-form"') !== false
+        && !wallos_regression_body_has_php_warning($subscriptionsShellResponse['body']);
+    $results[] = wallos_regression_make_result(
+        $subscriptionsShellValid ? 'PASS' : 'FAIL',
+        'auth',
+        'subscriptions-page-shell',
+        wallos_regression_build_http_detail($subscriptionsShellResponse, 'Expected authenticated subscriptions.php shell without warnings')
+    );
+
     $pagesResponse = wallos_regression_http_request(
         $authClient,
         'GET',
@@ -415,6 +512,91 @@ function wallos_regression_run_auth_suite(array $config, array $suiteDefinition)
         'subscriptions-html',
         wallos_regression_build_http_detail($subscriptionsResponse, 'Expected authenticated HTML without warnings or dumped code')
     );
+
+    $subscriptionsHtml = (string) $subscriptionsResponse['body'];
+    $firstSubscriptionId = wallos_regression_extract_first_subscription_id($subscriptionsHtml);
+    $actionHooksValid = $subscriptionsHtmlValid
+        && (
+            strpos($subscriptionsHtml, 'no-matching-subscriptions') !== false
+            || wallos_regression_text_has_all($subscriptionsHtml, array(
+                'data-subscription-action="expand-subscription-actions"',
+                'data-subscription-action="open-edit-subscription"',
+                'data-subscription-action="open-payment-history"',
+            ))
+        );
+    $results[] = wallos_regression_make_result(
+        $actionHooksValid ? 'PASS' : 'FAIL',
+        'auth',
+        'subscription-action-hooks',
+        $actionHooksValid
+            ? 'Authenticated subscription HTML keeps action, edit, payment-history, and viewer hook contracts.'
+            : 'Expected subscription HTML to include action-menu/edit/payment-history hooks for visible cards.'
+    );
+
+    if ($firstSubscriptionId > 0) {
+        $editResponse = wallos_regression_http_request(
+            $authClient,
+            'GET',
+            wallos_regression_build_url($config, 'endpoints/subscription/get.php?id=' . $firstSubscriptionId)
+        );
+        $editJson = wallos_regression_http_decode_json($editResponse);
+        $editJsonValid = $editResponse['status'] === 200
+            && $editJson['ok']
+            && is_array($editJson['data'])
+            && (int) ($editJson['data']['id'] ?? 0) === $firstSubscriptionId
+            && array_key_exists('name', $editJson['data'])
+            && !wallos_regression_body_has_php_warning($editResponse['body']);
+        $results[] = wallos_regression_make_result(
+            $editJsonValid ? 'PASS' : 'FAIL',
+            'auth',
+            'subscription-edit-json',
+            $editJsonValid
+                ? 'subscription/get.php returned editable JSON for a visible subscription.'
+                : wallos_regression_build_json_failure_detail($editResponse, $editJson, 'Expected editable subscription JSON.')
+        );
+
+        $historyResponse = wallos_regression_http_request(
+            $authClient,
+            'GET',
+            wallos_regression_build_url($config, 'endpoints/subscription/paymenthistory.php?id=' . $firstSubscriptionId)
+        );
+        $historyJson = wallos_regression_http_decode_json($historyResponse);
+        $historyValid = $historyResponse['status'] === 200
+            && $historyJson['ok']
+            && is_array($historyJson['data'])
+            && !empty($historyJson['data']['success'])
+            && isset($historyJson['data']['subscription'], $historyJson['data']['summary'], $historyJson['data']['records'])
+            && !wallos_regression_body_has_php_warning($historyResponse['body']);
+        $results[] = wallos_regression_make_result(
+            $historyValid ? 'PASS' : 'FAIL',
+            'auth',
+            'subscription-payment-history-json',
+            $historyValid
+                ? 'paymenthistory.php returned the modal payload for a visible subscription.'
+                : wallos_regression_build_json_failure_detail($historyResponse, $historyJson, 'Expected payment-history JSON payload.')
+        );
+    } else {
+        $results[] = wallos_regression_make_result('SKIP', 'auth', 'subscription-edit-json', 'Skipped because the authenticated account has no visible subscriptions.');
+        $results[] = wallos_regression_make_result('SKIP', 'auth', 'subscription-payment-history-json', 'Skipped because the authenticated account has no visible subscriptions.');
+    }
+
+    $mediaCheck = wallos_regression_check_subscription_media_access($authClient, $config, $subscriptionsHtml);
+    $results[] = $mediaCheck;
+
+    if (!empty($config['allow_mutations'])) {
+        $results[] = wallos_regression_run_mutating_subscription_flow(
+            $authClient,
+            $config,
+            (string) $subscriptionsShellResponse['body']
+        );
+    } else {
+        $results[] = wallos_regression_make_result(
+            'SKIP',
+            'auth',
+            'subscription-mutating-flow',
+            'Skipped by default. Re-run with --mutating-auth-checks to create/edit/delete temporary test data.'
+        );
+    }
 
     return $results;
 }
@@ -469,6 +651,286 @@ function wallos_regression_acquire_authenticated_client(array $config)
     );
 }
 
+function wallos_regression_extract_csrf_token($html)
+{
+    if (preg_match('/window\.csrfToken\s*=\s*"([^"]+)"/', (string) $html, $matches) !== 1) {
+        return '';
+    }
+
+    return html_entity_decode((string) $matches[1], ENT_QUOTES, 'UTF-8');
+}
+
+function wallos_regression_extract_first_subscription_id($html)
+{
+    if (preg_match('/class="subscription[^"]*"[^>]*data-id="(\d+)"/', (string) $html, $matches) === 1) {
+        return (int) $matches[1];
+    }
+
+    if (preg_match('/data-subscription-id="(\d+)"/', (string) $html, $matches) === 1) {
+        return (int) $matches[1];
+    }
+
+    return 0;
+}
+
+function wallos_regression_extract_first_uploaded_image_id($html)
+{
+    if (preg_match('/data-uploaded-image-id="(\d+)"/', (string) $html, $matches) !== 1) {
+        return 0;
+    }
+
+    return (int) $matches[1];
+}
+
+function wallos_regression_extract_selected_form_option_value($html, $selectId)
+{
+    $pattern = '/<select\b[^>]*id="' . preg_quote((string) $selectId, '/') . '"[^>]*>(.*?)<\/select>/is';
+    if (preg_match($pattern, (string) $html, $matches) !== 1) {
+        return '';
+    }
+
+    $selectHtml = (string) $matches[1];
+    if (preg_match('/<option\b[^>]*value="([^"]*)"[^>]*selected[^>]*>/is', $selectHtml, $selectedMatches) === 1) {
+        return html_entity_decode((string) $selectedMatches[1], ENT_QUOTES, 'UTF-8');
+    }
+
+    if (preg_match('/<option\b[^>]*value="([^"]*)"[^>]*>/is', $selectHtml, $firstMatches) === 1) {
+        return html_entity_decode((string) $firstMatches[1], ENT_QUOTES, 'UTF-8');
+    }
+
+    return '';
+}
+
+function wallos_regression_post_json_with_csrf(array &$client, array $config, $path, $csrfToken, array $payload)
+{
+    return wallos_regression_http_request(
+        $client,
+        'POST',
+        wallos_regression_build_url($config, $path),
+        array(
+            'headers' => array(
+                'Content-Type: application/json',
+                'X-CSRF-Token: ' . $csrfToken,
+            ),
+            'body' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        )
+    );
+}
+
+function wallos_regression_check_subscription_media_access(array &$authClient, array $config, $subscriptionsHtml)
+{
+    $imageId = wallos_regression_extract_first_uploaded_image_id($subscriptionsHtml);
+    if ($imageId <= 0) {
+        return wallos_regression_make_result(
+            'SKIP',
+            'auth',
+            'subscription-media-access',
+            'Skipped because no uploaded subscription image is visible for this account.'
+        );
+    }
+
+    $previewResponse = wallos_regression_http_request(
+        $authClient,
+        'GET',
+        wallos_regression_build_url($config, 'endpoints/media/subscriptionimage.php?id=' . $imageId . '&variant=preview')
+    );
+    $originalResponse = wallos_regression_http_request(
+        $authClient,
+        'GET',
+        wallos_regression_build_url($config, 'endpoints/media/subscriptionimage.php?id=' . $imageId . '&variant=original')
+    );
+
+    $previewType = wallos_regression_http_header($previewResponse, 'Content-Type');
+    $originalType = wallos_regression_http_header($originalResponse, 'Content-Type');
+    $valid = $previewResponse['status'] === 200
+        && $originalResponse['status'] === 200
+        && stripos($previewType, 'image/') !== false
+        && stripos($originalType, 'image/') !== false
+        && strlen((string) $previewResponse['body']) > 0
+        && strlen((string) $originalResponse['body']) > 0;
+
+    return wallos_regression_make_result(
+        $valid ? 'PASS' : 'FAIL',
+        'auth',
+        'subscription-media-access',
+        $valid
+            ? 'Uploaded subscription image preview/original endpoints returned image content for the authenticated owner.'
+            : 'Expected preview/original image endpoints to return image content. Preview: ' . wallos_regression_build_http_detail($previewResponse, 'No preview body') . ' Original: ' . wallos_regression_build_http_detail($originalResponse, 'No original body')
+    );
+}
+
+function wallos_regression_run_mutating_subscription_flow(array &$authClient, array $config, $subscriptionsShellHtml)
+{
+    $csrfToken = wallos_regression_extract_csrf_token($subscriptionsShellHtml);
+    $currencyId = wallos_regression_extract_selected_form_option_value($subscriptionsShellHtml, 'currency');
+    $paymentMethodId = wallos_regression_extract_selected_form_option_value($subscriptionsShellHtml, 'payment_method');
+    $payerUserId = wallos_regression_extract_selected_form_option_value($subscriptionsShellHtml, 'payer_user');
+    $categoryId = wallos_regression_extract_selected_form_option_value($subscriptionsShellHtml, 'category');
+
+    if ($csrfToken === '' || $currencyId === '' || $paymentMethodId === '' || $payerUserId === '' || $categoryId === '') {
+        return wallos_regression_make_result(
+            'FAIL',
+            'auth',
+            'subscription-mutating-flow',
+            'Could not extract CSRF token or required select defaults from subscriptions.php.'
+        );
+    }
+
+    $today = new DateTimeImmutable('today');
+    $nextPayment = $today->modify('+1 month')->format('Y-m-d');
+    $testName = 'Wallos Regression Smoke ' . gmdate('YmdHis');
+    $basePayload = array(
+        'csrf_token' => $csrfToken,
+        'name' => $testName,
+        'price' => '1.23',
+        'currency_id' => $currencyId,
+        'frequency' => '1',
+        'cycle' => '3',
+        'next_payment' => $nextPayment,
+        'start_date' => $today->format('Y-m-d'),
+        'payment_method_id' => $paymentMethodId,
+        'payer_user_id' => $payerUserId,
+        'category_id' => $categoryId,
+        'notes' => 'Temporary regression subscription. Safe to delete.',
+        'url' => '',
+        'logo-url' => '',
+        'notify_days_before' => '-1',
+        'cancellation_date' => '',
+        'replacement_subscription_id' => '0',
+        'detail_image_urls' => '',
+        'subscription_price_rules_json' => '[]',
+        'remove_uploaded_image_ids' => '',
+        'detail_image_order' => '',
+        'manual_cycle_used_value_main' => '',
+        'compress_subscription_image' => '0',
+        'auto_renew' => 'on',
+    );
+
+    $addResponse = wallos_regression_http_request(
+        $authClient,
+        'POST',
+        wallos_regression_build_url($config, 'endpoints/subscription/add.php'),
+        array('body' => http_build_query($basePayload))
+    );
+    $addJson = wallos_regression_http_decode_json($addResponse);
+    if ($addResponse['status'] !== 200 || !$addJson['ok'] || (($addJson['data']['status'] ?? '') !== 'Success')) {
+        return wallos_regression_make_result(
+            'FAIL',
+            'auth',
+            'subscription-mutating-flow',
+            wallos_regression_build_json_failure_detail($addResponse, $addJson, 'Expected temporary subscription add to succeed.')
+        );
+    }
+
+    $listResponse = wallos_regression_http_request(
+        $authClient,
+        'GET',
+        wallos_regression_build_url($config, 'endpoints/subscriptions/get.php?subscription_page=all')
+    );
+    $subscriptionId = wallos_regression_extract_subscription_id_by_name($listResponse['body'], $testName);
+    if ($subscriptionId <= 0) {
+        return wallos_regression_make_result(
+            'FAIL',
+            'auth',
+            'subscription-mutating-flow',
+            'Temporary subscription was added but could not be found in refreshed subscription HTML.'
+        );
+    }
+
+    $updatedName = $testName . ' Edited';
+    $editPayload = $basePayload;
+    $editPayload['id'] = (string) $subscriptionId;
+    $editPayload['name'] = $updatedName;
+    $editPayload['price'] = '2.34';
+    $editResponse = wallos_regression_http_request(
+        $authClient,
+        'POST',
+        wallos_regression_build_url($config, 'endpoints/subscription/add.php'),
+        array('body' => http_build_query($editPayload))
+    );
+    $editJson = wallos_regression_http_decode_json($editResponse);
+
+    $paymentResponse = wallos_regression_post_json_with_csrf(
+        $authClient,
+        $config,
+        'endpoints/subscription/recordpayment.php',
+        $csrfToken,
+        array(
+            'id' => $subscriptionId,
+            'due_date' => $today->format('Y-m-d'),
+            'paid_at' => $today->format('Y-m-d'),
+            'amount_original' => 2.34,
+            'currency_id' => (int) $currencyId,
+            'payment_method_id' => (int) $paymentMethodId,
+            'note' => 'Temporary regression payment.',
+        )
+    );
+    $paymentJson = wallos_regression_http_decode_json($paymentResponse);
+
+    $deleteResponse = wallos_regression_post_json_with_csrf(
+        $authClient,
+        $config,
+        'endpoints/subscription/delete.php',
+        $csrfToken,
+        array('id' => $subscriptionId)
+    );
+    $deleteJson = wallos_regression_http_decode_json($deleteResponse);
+
+    $permanentDeleteResponse = wallos_regression_post_json_with_csrf(
+        $authClient,
+        $config,
+        'endpoints/subscription/permanentdelete.php',
+        $csrfToken,
+        array('id' => $subscriptionId)
+    );
+    $permanentDeleteJson = wallos_regression_http_decode_json($permanentDeleteResponse);
+
+    $valid = $editResponse['status'] === 200
+        && $editJson['ok']
+        && (($editJson['data']['status'] ?? '') === 'Success')
+        && $paymentResponse['status'] === 200
+        && $paymentJson['ok']
+        && !empty($paymentJson['data']['success'])
+        && $deleteResponse['status'] === 200
+        && $deleteJson['ok']
+        && !empty($deleteJson['data']['success'])
+        && $permanentDeleteResponse['status'] === 200
+        && $permanentDeleteJson['ok']
+        && !empty($permanentDeleteJson['data']['success']);
+
+    return wallos_regression_make_result(
+        $valid ? 'PASS' : 'FAIL',
+        'auth',
+        'subscription-mutating-flow',
+        $valid
+            ? 'Temporary subscription create, edit, payment record, recycle-bin move, and permanent cleanup succeeded.'
+            : 'Mutating flow failed. Edit: ' . wallos_regression_build_json_failure_detail($editResponse, $editJson, 'edit failed')
+                . ' Payment: ' . wallos_regression_build_json_failure_detail($paymentResponse, $paymentJson, 'payment failed')
+                . ' Delete: ' . wallos_regression_build_json_failure_detail($deleteResponse, $deleteJson, 'delete failed')
+                . ' Permanent delete: ' . wallos_regression_build_json_failure_detail($permanentDeleteResponse, $permanentDeleteJson, 'permanent delete failed')
+    );
+}
+
+function wallos_regression_extract_subscription_id_by_name($html, $subscriptionName)
+{
+    $quotedName = preg_quote(htmlspecialchars((string) $subscriptionName, ENT_QUOTES, 'UTF-8'), '/');
+    $pattern = '/<div class="subscription[^"]*"[^>]*data-id="(\d+)"[^>]*data-name="' . $quotedName . '"/is';
+    if (preg_match($pattern, (string) $html, $matches) === 1) {
+        return (int) $matches[1];
+    }
+
+    $plainPattern = '/<div class="subscription[^"]*"[^>]*data-id="(\d+)"[^>]*data-name="([^"]+)"/is';
+    if (preg_match_all($plainPattern, (string) $html, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $match) {
+            if (html_entity_decode((string) $match[2], ENT_QUOTES, 'UTF-8') === (string) $subscriptionName) {
+                return (int) $match[1];
+            }
+        }
+    }
+
+    return 0;
+}
+
 function wallos_regression_build_url(array $config, $path)
 {
     return rtrim((string) $config['base_url'], '/') . '/' . ltrim((string) $path, '/');
@@ -494,7 +956,11 @@ function wallos_regression_build_http_detail(array $response, $fallbackMessage)
 function wallos_regression_build_json_failure_detail(array $response, array $decodedJson, $fallbackMessage)
 {
     if ($decodedJson['ok']) {
-        return 'JSON decoded, but required keys or success flag were missing.';
+        $preview = json_encode($decodedJson['data'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (!is_string($preview)) {
+            $preview = '';
+        }
+        return 'JSON decoded, but required keys or success flag were missing. Body: ' . substr($preview, 0, 500);
     }
 
     $errorMessage = trim((string) $decodedJson['error']);

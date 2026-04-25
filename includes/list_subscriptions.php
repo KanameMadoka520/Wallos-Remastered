@@ -467,6 +467,8 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                                     data-viewer-size-thumbnail="<?= htmlspecialchars((string) ($uploadedImage['thumbnail_size_label'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                     data-viewer-size-preview="<?= htmlspecialchars((string) ($uploadedImage['preview_size_label'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                     data-viewer-size-original="<?= htmlspecialchars((string) ($uploadedImage['original_size_label'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                    data-viewer-preview-reused-original="<?= !empty($uploadedImage['preview_reused_original']) ? '1' : '0' ?>"
+                                    data-viewer-thumbnail-reused-original="<?= !empty($uploadedImage['thumbnail_reused_original']) ? '1' : '0' ?>"
                                     data-subscription-action="open-subscription-image-viewer">
                                     <img src="<?= htmlspecialchars($imageThumbUrl !== '' ? $imageThumbUrl : $imagePreviewUrl, ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($uploadedImageName, ENT_QUOTES, 'UTF-8') ?>"

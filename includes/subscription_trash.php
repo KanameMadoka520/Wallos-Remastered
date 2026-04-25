@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/subscription_media.php';
+
 define('WALLOS_SUBSCRIPTION_STATUS_ACTIVE', 'active');
 define('WALLOS_SUBSCRIPTION_STATUS_TRASHED', 'trashed');
 

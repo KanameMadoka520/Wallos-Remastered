@@ -8,6 +8,9 @@
 .env.*
 .tmp/
 交接文档.md
+node_modules/
+playwright-report/
+test-results/
 *.log
 *.zip
 *.tar

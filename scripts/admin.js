@@ -33,6 +33,21 @@ function adminGetText(url, options = {}) {
   });
 }
 
+function adminTranslateWithFallback(key, fallback) {
+  if (typeof translateWithFallback === "function") {
+    return translateWithFallback(key, fallback);
+  }
+
+  if (typeof translate === "function") {
+    const value = translate(key);
+    if (value && value !== "[Translation Missing]") {
+      return value;
+    }
+  }
+
+  return fallback;
+}
+
 function testSmtpSettingsButton() {
   const button = document.getElementById("testSmtpSettingsButton");
   button.disabled = true;
@@ -449,6 +464,72 @@ function deleteUnusedLogos() {
     });
 }
 
+function formatAdminMaintenanceAudit(audit) {
+  if (!audit || typeof audit !== "object") {
+    return translate("success");
+  }
+
+  const lines = [
+    `${adminTranslateWithFallback("subscription_image_indexed_rows", "Indexed Image Rows")}: ${audit.indexed_rows ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_indexed_files", "Indexed Image Files")}: ${audit.indexed_files ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_disk_files", "Files On Disk")}: ${audit.disk_files ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_orphan_files", "Orphan Files")}: ${audit.orphan_files ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_missing_variants", "Rows Missing Variants")}: ${audit.missing_variant_rows ?? 0}`,
+  ];
+
+  if (Array.isArray(audit.orphan_samples) && audit.orphan_samples.length > 0) {
+    lines.push("");
+    lines.push("Samples:");
+    audit.orphan_samples.forEach((item) => lines.push(`- ${item}`));
+  }
+
+  return lines.join("\n");
+}
+
+function runAdminMaintenanceAction(action, button) {
+  const resultTextArea = document.getElementById('adminMaintenanceResult');
+  if (button?.dataset.confirmMessage && !confirm(button.dataset.confirmMessage)) {
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+  }
+  if (resultTextArea) {
+    resultTextArea.value = adminTranslateWithFallback("maintenance_running", "Maintenance task is running...");
+  }
+
+  adminPostJson('endpoints/admin/systemmaintenance.php', { action })
+    .then((data) => {
+      if (!data.success) {
+        throw new Error(data.message || translate("error"));
+      }
+
+      showSuccessMessage(data.message || translate("success"));
+      if (resultTextArea) {
+        if (data.audit) {
+          resultTextArea.value = formatAdminMaintenanceAudit(data.audit);
+        } else if (data.result) {
+          resultTextArea.value = `${data.message || translate("success")}\nDuration: ${data.result.duration_ms || 0} ms`;
+        } else {
+          resultTextArea.value = data.message || translate("success");
+        }
+      }
+    })
+    .catch((error) => {
+      const message = getAdminRequestErrorMessage(error);
+      showErrorMessage(message);
+      if (resultTextArea) {
+        resultTextArea.value = message;
+      }
+    })
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+      }
+    });
+}
+
 function toggleUpdateNotification() {
   const notificationEnabledCheckbox = document.getElementById('updateNotification');
   const notificationEnabled = notificationEnabledCheckbox.checked ? 1 : 0;
@@ -615,4 +696,47 @@ function initializeAdminServiceWorkerStatus() {
 }
 
 document.addEventListener("DOMContentLoaded", initializeAdminServiceWorkerStatus);
+
+function clearClientCacheButton(button) {
+  const ui = document.getElementById("admin-service-worker-ui");
+  if (button) {
+    button.disabled = true;
+  }
+
+  Promise.resolve(window.WallosClientCache?.clear?.())
+    .then(() => {
+      showSuccessMessage(ui?.dataset.cacheClearSuccess || translate("success"));
+      initializeAdminServiceWorkerStatus();
+    })
+    .catch(() => showErrorMessage(ui?.dataset.cacheRefreshFailed || translate("error")))
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+      }
+    });
+}
+
+function requestClientCacheRefreshButton(button) {
+  const ui = document.getElementById("admin-service-worker-ui");
+  if (button) {
+    button.disabled = true;
+  }
+
+  adminPostJson('endpoints/admin/requestcacherefresh.php', {})
+    .then((data) => {
+      if (!data.success) {
+        throw new Error(data.message || ui?.dataset.cacheRefreshFailed || translate("error"));
+      }
+
+      showSuccessMessage(data.message || ui?.dataset.cacheRefreshSuccess || translate("success"));
+      return Promise.resolve(window.WallosClientCache?.clear?.());
+    })
+    .then(() => initializeAdminServiceWorkerStatus())
+    .catch((error) => showErrorMessage(getAdminRequestErrorMessage(error)))
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+      }
+    });
+}
 

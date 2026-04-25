@@ -1,6 +1,7 @@
-const STATIC_CACHE = 'static-cache-v16';
-const PAGES_CACHE = 'pages-cache-v16';
-const LOGOS_CACHE = 'logos-cache-v16';
+const STATIC_CACHE = 'static-cache-v17';
+const PAGES_CACHE = 'pages-cache-v17';
+const LOGOS_CACHE = 'logos-cache-v17';
+const WALLOS_CACHE_PREFIXES = ['static-cache-', 'pages-cache-', 'logos-cache-'];
 
 const staticAssets = [
     'manifest.json',
@@ -211,6 +212,26 @@ self.addEventListener('message', function (event) {
                 }).catch(() => {});
             });
         });
+    }
+
+    if (event.data && event.data.type === 'WALLOS_CLEAR_CACHES') {
+        const replyPort = event.ports && event.ports[0] ? event.ports[0] : null;
+        caches.keys()
+            .then(keys => Promise.all(
+                keys
+                    .filter(key => WALLOS_CACHE_PREFIXES.some(prefix => key.startsWith(prefix)))
+                    .map(key => caches.delete(key))
+            ))
+            .then(() => {
+                if (replyPort) {
+                    replyPort.postMessage({ success: true });
+                }
+            })
+            .catch(() => {
+                if (replyPort) {
+                    replyPort.postMessage({ success: false });
+                }
+            });
     }
 });
 
