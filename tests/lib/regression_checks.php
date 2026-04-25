@@ -205,6 +205,22 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected request_security/connect_endpoint to keep header-first API key handling and query stripping.'
     );
 
+    $subscriptionMediaPhp = wallos_regression_read_repo_file($config, 'includes/subscription_media.php');
+    $imagePassthroughValid = wallos_regression_text_has_all($subscriptionMediaPhp, array(
+        'move_uploaded_file($uploadedFile[\'tmp_name\'], $destination)',
+        '$writeResult = wallos_write_subscription_image_resource($imageToWrite, $destination, $metadata[\'mime\'], true);',
+        '$variantFileSize >= $sourceFileSize',
+        "'reused_original' => true",
+    ));
+    $results[] = wallos_regression_make_result(
+        $imagePassthroughValid ? 'PASS' : 'FAIL',
+        'static',
+        'subscription-image-original-passthrough-contract',
+        $imagePassthroughValid
+            ? 'Uncompressed originals are stored with move_uploaded_file and oversized same-dimension variants can reuse the original.'
+            : 'Expected uncompressed originals to be passed through and same-dimension oversized variants to reuse the original.'
+    );
+
     $subscriptionImageViewerJs = wallos_regression_read_repo_file($config, 'scripts/subscription-image-viewer.js');
     $imageSizeValid = wallos_regression_text_has_all($subscriptionsPhp, array(
         'id="subscription-image-viewer-size-thumbnail"',

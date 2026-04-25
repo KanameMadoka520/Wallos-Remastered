@@ -642,7 +642,9 @@ function wallos_generate_subscription_image_variant_from_resource(
     $sourceImage,
     $sourceWidth,
     $sourceHeight,
-    $variant
+    $variant,
+    $sourceRelativePath = '',
+    $sourceAbsolutePath = ''
 ) {
     $variantSettings = wallos_get_subscription_image_variant_settings($variant);
     $variantDimensions = wallos_calculate_subscription_image_dimensions(
@@ -687,11 +689,30 @@ function wallos_generate_subscription_image_variant_from_resource(
         throw new RuntimeException('Failed to write subscription image variant');
     }
 
+    $variantFileSize = (int) filesize($variantDestination);
+    $sourceFileSize = $sourceAbsolutePath !== '' && is_file($sourceAbsolutePath) ? (int) filesize($sourceAbsolutePath) : 0;
+    $canReuseSource = $sourceRelativePath !== ''
+        && $sourceFileSize > 0
+        && $variantDimensions['width'] === (int) $sourceWidth
+        && $variantDimensions['height'] === (int) $sourceHeight
+        && $variantFileSize >= $sourceFileSize;
+
+    if ($canReuseSource) {
+        @unlink($variantDestination);
+        return [
+            'path' => $sourceRelativePath,
+            'width' => (int) $sourceWidth,
+            'height' => (int) $sourceHeight,
+            'file_size' => $sourceFileSize,
+            'reused_original' => true,
+        ];
+    }
+
     return [
         'path' => $variantRelativePath,
         'width' => $variantDimensions['width'],
         'height' => $variantDimensions['height'],
-        'file_size' => (int) filesize($variantDestination),
+        'file_size' => $variantFileSize,
     ];
 }
 
@@ -702,7 +723,9 @@ function wallos_generate_subscription_image_variants_from_resource(
     $mimeType,
     $sourceImage,
     $sourceWidth,
-    $sourceHeight
+    $sourceHeight,
+    $sourceRelativePath = '',
+    $sourceAbsolutePath = ''
 ) {
     return [
         'preview' => wallos_generate_subscription_image_variant_from_resource(
@@ -713,7 +736,9 @@ function wallos_generate_subscription_image_variants_from_resource(
             $sourceImage,
             $sourceWidth,
             $sourceHeight,
-            'preview'
+            'preview',
+            $sourceRelativePath,
+            $sourceAbsolutePath
         ),
         'thumbnail' => wallos_generate_subscription_image_variant_from_resource(
             $basePath,
@@ -723,7 +748,9 @@ function wallos_generate_subscription_image_variants_from_resource(
             $sourceImage,
             $sourceWidth,
             $sourceHeight,
-            'thumbnail'
+            'thumbnail',
+            $sourceRelativePath,
+            $sourceAbsolutePath
         ),
     ];
 }
@@ -915,36 +942,6 @@ function wallos_store_subscription_uploaded_images(
 
                 $targetWidth = $metadata['width'];
                 $targetHeight = $metadata['height'];
-
-                if ($compressImage) {
-                    $scale = min(
-                        1,
-                        WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION / max($metadata['width'], 1),
-                        WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION / max($metadata['height'], 1)
-                    );
-
-                    $targetWidth = max(1, (int) floor($metadata['width'] * $scale));
-                    $targetHeight = max(1, (int) floor($metadata['height'] * $scale));
-                }
-
-                $imageToWrite = $sourceImage;
-                if ($targetWidth !== $metadata['width'] || $targetHeight !== $metadata['height']) {
-                    $resizedImage = wallos_prepare_subscription_image_canvas($targetWidth, $targetHeight, $metadata['mime']);
-                    imagecopyresampled(
-                        $resizedImage,
-                        $sourceImage,
-                        0,
-                        0,
-                        0,
-                        0,
-                        $targetWidth,
-                        $targetHeight,
-                        $metadata['width'],
-                        $metadata['height']
-                    );
-                    $imageToWrite = $resizedImage;
-                }
-
                 $directory = wallos_ensure_subscription_media_directory($basePath, $userId);
                 $fileName = wallos_generate_subscription_uploaded_image_name($username, $sequence, $metadata['extension']);
                 $destination = $directory . $fileName;
@@ -956,8 +953,43 @@ function wallos_store_subscription_uploaded_images(
                     'thumbnail_path' => wallos_get_subscription_media_variant_relative_path($userId, $fileName, 'thumbnail'),
                 ];
 
-                $writeResult = wallos_write_subscription_image_resource($imageToWrite, $destination, $metadata['mime'], $compressImage);
-                if (!$writeResult) {
+                $imageToWrite = $sourceImage;
+                if ($compressImage) {
+                    $scale = min(
+                        1,
+                        WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION / max($metadata['width'], 1),
+                        WALLOS_SUBSCRIPTION_IMAGE_COMPRESSED_MAX_DIMENSION / max($metadata['height'], 1)
+                    );
+
+                    $targetWidth = max(1, (int) floor($metadata['width'] * $scale));
+                    $targetHeight = max(1, (int) floor($metadata['height'] * $scale));
+
+                    if ($targetWidth !== $metadata['width'] || $targetHeight !== $metadata['height']) {
+                        $resizedImage = wallos_prepare_subscription_image_canvas($targetWidth, $targetHeight, $metadata['mime']);
+                        imagecopyresampled(
+                            $resizedImage,
+                            $sourceImage,
+                            0,
+                            0,
+                            0,
+                            0,
+                            $targetWidth,
+                            $targetHeight,
+                            $metadata['width'],
+                            $metadata['height']
+                        );
+                        $imageToWrite = $resizedImage;
+                    }
+
+                    $writeResult = wallos_write_subscription_image_resource($imageToWrite, $destination, $metadata['mime'], true);
+                    if (!$writeResult) {
+                        if ($imageToWrite !== $sourceImage) {
+                            imagedestroy($imageToWrite);
+                        }
+                        imagedestroy($sourceImage);
+                        throw new RuntimeException(translate('subscription_image_processing_failed', $i18n));
+                    }
+                } elseif (!move_uploaded_file($uploadedFile['tmp_name'], $destination)) {
                     if ($imageToWrite !== $sourceImage) {
                         imagedestroy($imageToWrite);
                     }
@@ -975,8 +1007,12 @@ function wallos_store_subscription_uploaded_images(
                     $metadata['mime'],
                     $masterResource,
                     $variantSourceWidth,
-                    $variantSourceHeight
+                    $variantSourceHeight,
+                    $relativePath,
+                    $destination
                 );
+                $pathsPendingCleanup['preview_path'] = $variants['preview']['path'];
+                $pathsPendingCleanup['thumbnail_path'] = $variants['thumbnail']['path'];
 
                 if ($imageToWrite !== $sourceImage) {
                     imagedestroy($imageToWrite);
@@ -1103,7 +1139,9 @@ function wallos_generate_subscription_image_variants_for_existing_image($basePat
             $mimeType,
             $sourceImage,
             $width,
-            $height
+            $height,
+            (string) ($imageRow['path'] ?? ''),
+            $masterPath
         );
     } finally {
         imagedestroy($sourceImage);
@@ -1402,6 +1440,7 @@ function wallos_clone_subscription_uploaded_images($db, $basePath, $fromSubscrip
         $fileName = wallos_generate_subscription_uploaded_image_name($username, $sequence, $extension);
         $destinationDirectory = wallos_ensure_subscription_media_directory($basePath, $userId);
         $destinationPath = $destinationDirectory . $fileName;
+        $relativePath = wallos_get_subscription_media_relative_dir() . 'user-' . (int) $userId . '/' . $fileName;
 
         if (!copy($sourcePath, $destinationPath)) {
             continue;
@@ -1426,7 +1465,9 @@ function wallos_clone_subscription_uploaded_images($db, $basePath, $fromSubscrip
                         $mimeType,
                         $clonedImage,
                         (int) imagesx($clonedImage),
-                        (int) imagesy($clonedImage)
+                        (int) imagesy($clonedImage),
+                        $relativePath,
+                        $destinationPath
                     );
                     $previewPath = $variants['preview']['path'];
                     $thumbnailPath = $variants['thumbnail']['path'];
@@ -1436,7 +1477,6 @@ function wallos_clone_subscription_uploaded_images($db, $basePath, $fromSubscrip
             }
         }
 
-        $relativePath = wallos_get_subscription_media_relative_dir() . 'user-' . (int) $userId . '/' . $fileName;
         $insertStmt = $db->prepare('
             INSERT INTO subscription_uploaded_images (
                 user_id, subscription_id, path, preview_path, thumbnail_path, file_name, original_name, mime_type, file_size, width, height, compressed, upload_sequence, sort_order
