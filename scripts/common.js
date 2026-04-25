@@ -15,7 +15,12 @@ const REQUEST_QUEUE_SUCCESS_HIDE_DELAY = 1400;
 const REQUEST_QUEUE_TRACKED_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const CLIENT_ANOMALY_ENDPOINT = "endpoints/client/loganomaly.php";
 const CLIENT_ANOMALY_DEDUPE_WINDOW_MS = 30000;
+const CSRF_BACKGROUND_STALE_MS = 30 * 60 * 1000;
+const CSRF_REMINDER_DEDUPE_MS = 60 * 1000;
 const recentClientAnomalyFingerprints = new Map();
+let csrfBackgroundHiddenAt = 0;
+let csrfRefreshReminderLastShownAt = 0;
+let csrfRefreshPromptOpen = false;
 
 function getPreferredUiLanguage() {
   const languageCookie = getCookie("language");
@@ -52,6 +57,82 @@ function translateWithFallback(key, fallback, localizedFallbacks = null) {
   }
 
   return fallback;
+}
+
+function isPublicAuthPage() {
+  const pathname = String(window.location.pathname || "").toLowerCase();
+  return pathname.endsWith("/login.php") || pathname.endsWith("/registration.php");
+}
+
+function getCsrfTokenRefreshReminderMessage() {
+  return translateWithFallback(
+    "csrf_token_refresh_reminder",
+    "【提醒】为防止跨站请求伪造，invalid CSRF token，请刷新本页面以重载页面安全令牌。",
+    {
+      en: "[Reminder] To prevent cross-site request forgery, the CSRF token may be invalid. Please refresh this page to reload the page security token.",
+      zh_cn: "【提醒】为防止跨站请求伪造，invalid CSRF token，请刷新本页面以重载页面安全令牌。",
+      zh_tw: "【提醒】為防止跨站請求偽造，invalid CSRF token，請重新整理本頁面以重新載入頁面安全令牌。",
+    }
+  );
+}
+
+function getCsrfTokenRefreshActionMessage() {
+  return translateWithFallback(
+    "csrf_token_refresh_action",
+    "点击“确定”立即刷新页面；点击“取消”后，请在继续编辑前手动刷新。",
+    {
+      en: "Click OK to refresh this page now. If you click Cancel, refresh manually before continuing to edit.",
+      zh_cn: "点击“确定”立即刷新页面；点击“取消”后，请在继续编辑前手动刷新。",
+      zh_tw: "點擊「確定」立即重新整理頁面；點擊「取消」後，請在繼續編輯前手動重新整理。",
+    }
+  );
+}
+
+function showCsrfTokenRefreshReminder() {
+  if (!window.csrfToken || isPublicAuthPage()) {
+    return false;
+  }
+
+  const now = Date.now();
+  if ((now - csrfRefreshReminderLastShownAt) < CSRF_REMINDER_DEDUPE_MS) {
+    return false;
+  }
+
+  csrfRefreshReminderLastShownAt = now;
+  const message = getCsrfTokenRefreshReminderMessage();
+  showErrorMessage(message);
+
+  if (csrfRefreshPromptOpen) {
+    return true;
+  }
+
+  window.setTimeout(() => {
+    if (csrfRefreshPromptOpen) {
+      return;
+    }
+
+    csrfRefreshPromptOpen = true;
+    const shouldReload = window.confirm(`${message}\n\n${getCsrfTokenRefreshActionMessage()}`);
+    csrfRefreshPromptOpen = false;
+    if (shouldReload) {
+      window.location.reload();
+    }
+  }, 80);
+
+  return true;
+}
+
+function maybeShowCsrfBackgroundReminder() {
+  if (!csrfBackgroundHiddenAt) {
+    return;
+  }
+
+  const hiddenDuration = Date.now() - csrfBackgroundHiddenAt;
+  csrfBackgroundHiddenAt = 0;
+
+  if (hiddenDuration >= CSRF_BACKGROUND_STALE_MS) {
+    showCsrfTokenRefreshReminder();
+  }
 }
 
 function getRequestQueueNoticeMessages(status, pendingCount = 0) {
@@ -524,6 +605,20 @@ function isWallosSessionFailurePayload(data) {
   );
 }
 
+function isWallosCsrfFailurePayload(data) {
+  if (!data || typeof data !== "object") {
+    return false;
+  }
+
+  const code = String(data.code || data.error || "").toLowerCase();
+  if (code === "invalid_csrf") {
+    return true;
+  }
+
+  const message = String(data.message || "").toLowerCase();
+  return message.includes("invalid csrf token");
+}
+
 function isWallosAccountTrashedPayload(data) {
   return Boolean(
     data
@@ -546,6 +641,7 @@ function createWallosRequestError(message, context = {}) {
     ? String(context.data.code || context.data.error || "")
     : "");
   error.sessionExpired = isWallosSessionFailurePayload(context.data);
+  error.csrfInvalid = isWallosCsrfFailurePayload(context.data);
   error.accountTrashed = isWallosAccountTrashedPayload(context.data);
   error.rateLimit = Boolean(context.data && typeof context.data === "object" && context.data.rate_limit === true);
   return error;
@@ -578,6 +674,38 @@ function dispatchWallosSessionFailure(error) {
   window.setTimeout(() => {
     wallosSessionFailureDispatched = false;
   }, 1200);
+}
+
+function isWallosCsrfFailureError(error) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  if (error.csrfInvalid === true) {
+    return true;
+  }
+
+  return isWallosCsrfFailurePayload(error.data);
+}
+
+function dispatchWallosCsrfFailure(error = null) {
+  const csrfError = error || createWallosRequestError(getCsrfTokenRefreshReminderMessage(), {
+    data: {
+      success: false,
+      code: "invalid_csrf",
+      message: "Invalid CSRF token",
+    },
+  });
+
+  if (!isWallosCsrfFailureError(csrfError)) {
+    return false;
+  }
+
+  window.dispatchEvent(new CustomEvent("wallos:csrf-invalid", {
+    detail: csrfError,
+  }));
+  showCsrfTokenRefreshReminder();
+  return true;
 }
 
 function handleWallosSessionFailure(error, callback = null) {
@@ -754,6 +882,18 @@ async function wallosRequest(url, options = {}) {
     const requestSucceeded = didWallosRequestSucceed(response, data);
     finalizeRequestQueueTracking(requestQueueTracker, requestSucceeded);
 
+    if (isWallosCsrfFailurePayload(data)) {
+      dispatchWallosCsrfFailure(createWallosRequestError(
+        getCsrfTokenRefreshReminderMessage(),
+        {
+          response,
+          status: response.status,
+          data,
+          rawBody,
+        }
+      ));
+    }
+
     if (requireOk && !response.ok) {
       const errorData = responseType === "text" ? (tryParseWallosJsonPayload(rawBody) || data) : data;
       const requestError = createWallosRequestError(
@@ -769,6 +909,7 @@ async function wallosRequest(url, options = {}) {
         }
       );
       dispatchWallosSessionFailure(requestError);
+      dispatchWallosCsrfFailure(requestError);
       maybeLogWallosRequestFailure(url, normalizedMethod, requestError);
       throw requestError;
     }
@@ -831,6 +972,14 @@ function wallosHandleJsonResult(data, options = {}) {
       showSuccessMessage(successMessage || data.message || translate("success"));
     }
     return true;
+  }
+
+  if (isWallosCsrfFailurePayload(data)) {
+    dispatchWallosCsrfFailure(createWallosRequestError(getCsrfTokenRefreshReminderMessage(), {
+      data,
+      status: 400,
+    }));
+    return false;
   }
 
   if (!silentError) {
@@ -951,6 +1100,9 @@ window.WallosHttp = {
   isSessionFailurePayload: isWallosSessionFailurePayload,
   isSessionFailureError: isWallosSessionFailureError,
   handleSessionFailure: handleWallosSessionFailure,
+  isCsrfFailurePayload: isWallosCsrfFailurePayload,
+  isCsrfFailureError: isWallosCsrfFailureError,
+  showCsrfTokenRefreshReminder,
 };
 
 window.WallosThemeColor = {
@@ -958,8 +1110,7 @@ window.WallosThemeColor = {
 };
 
 window.addEventListener("wallos:session-expired", () => {
-  const pathname = String(window.location.pathname || "").toLowerCase();
-  if (pathname.endsWith("/login.php") || pathname.endsWith("/registration.php")) {
+  if (isPublicAuthPage()) {
     return;
   }
 
@@ -967,6 +1118,25 @@ window.addEventListener("wallos:session-expired", () => {
   window.setTimeout(() => {
     window.location.reload();
   }, 180);
+});
+
+window.addEventListener("wallos:csrf-invalid", () => {
+  showCsrfTokenRefreshReminder();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    csrfBackgroundHiddenAt = Date.now();
+    return;
+  }
+
+  window.setTimeout(maybeShowCsrfBackgroundReminder, 250);
+});
+
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    window.setTimeout(maybeShowCsrfBackgroundReminder, 250);
+  }
 });
 
 window.addEventListener("error", (event) => {
