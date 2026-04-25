@@ -53,17 +53,26 @@
     }
 
     const itemButtons = Array.from(gallery.querySelectorAll("[data-viewer-src]"));
-    return itemButtons.map((button) => ({
-      src: button.dataset.viewerSrc || "",
-      originalUrl: button.dataset.viewerOriginal || button.dataset.viewerSrc || "",
-      downloadUrl: button.dataset.viewerDownload || button.dataset.viewerSrc || "",
-      label: button.dataset.viewerLabel || "",
-      sizeLabels: {
-        thumbnail: button.dataset.viewerSizeThumbnail || "",
-        preview: button.dataset.viewerSizePreview || "",
-        original: button.dataset.viewerSizeOriginal || "",
-      },
-    })).filter((item) => item.src !== "");
+    return itemButtons.map((button) => {
+      const reusedLabel = translate("subscription_image_variant_reused_original");
+      const thumbnailSize = button.dataset.viewerSizeThumbnail || "";
+      const previewSize = button.dataset.viewerSizePreview || "";
+      return {
+        src: button.dataset.viewerSrc || "",
+        originalUrl: button.dataset.viewerOriginal || button.dataset.viewerSrc || "",
+        downloadUrl: button.dataset.viewerDownload || button.dataset.viewerSrc || "",
+        label: button.dataset.viewerLabel || "",
+        sizeLabels: {
+          thumbnail: button.dataset.viewerThumbnailReusedOriginal === "1" && thumbnailSize
+            ? `${thumbnailSize} (${reusedLabel})`
+            : thumbnailSize,
+          preview: button.dataset.viewerPreviewReusedOriginal === "1" && previewSize
+            ? `${previewSize} (${reusedLabel})`
+            : previewSize,
+          original: button.dataset.viewerSizeOriginal || "",
+        },
+      };
+    }).filter((item) => item.src !== "");
   }
 
   function updateViewerMeta(item) {

@@ -92,6 +92,37 @@ docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-ur
 
 The runner checks public pages, default purple theme behavior, Service Worker cache contracts, unauthenticated endpoint `401` contracts, subscription page JSON/HTML contracts, subscription frontend static contracts, API key transport rules, subscription image size slots, and the existing PHP logic regressions.
 
+Authenticated smoke checks can log in with a dedicated test account:
+
+```bash
+docker exec wallos-local php /var/www/html/tests/regression_runner.php \
+  --base-url=http://127.0.0.1 \
+  --username=YOUR_TEST_USER \
+  --password=YOUR_TEST_PASSWORD
+```
+
+The optional mutating flow creates, edits, records a payment for, moves to trash, and permanently deletes a temporary subscription:
+
+```bash
+docker exec wallos-local php /var/www/html/tests/regression_runner.php \
+  --base-url=http://127.0.0.1 \
+  --username=YOUR_TEST_USER \
+  --password=YOUR_TEST_PASSWORD \
+  --mutating-auth-checks
+```
+
+For browser-level subscription-page checks, install Playwright locally and run:
+
+```bash
+npm install
+WALLOS_BASE_URL=http://127.0.0.1:18282 \
+WALLOS_TEST_USERNAME=YOUR_TEST_USER \
+WALLOS_TEST_PASSWORD=YOUR_TEST_PASSWORD \
+npm run e2e:subscriptions
+```
+
+The browser smoke opens the real page and clicks pagination, the three-dot action menu, edit modal, add-subscription save flow, payment history, image viewer hooks, display-column toggles, and the dynamic-wallpaper immersive button. It removes the temporary subscription it creates during the check.
+
 ## Highlights
 
 ### Admin
@@ -108,6 +139,9 @@ The runner checks public pages, default purple theme behavior, Service Worker ca
 - multiple server-hosted images per subscription
 - original / preview / thumbnail layering
 - when upload compression is disabled, the original file is stored byte-for-byte; when compression is enabled, the stored original is processed once
+- the form shows local file size before upload
+- the image viewer shows thumbnail / preview / original server-side sizes
+- if a generated preview or thumbnail would be larger than the original, that derived layer can reuse the original instead of storing a wasteful larger file
 - protected media endpoint
 - drag-and-drop ordering
 - upload and processing progress
@@ -128,6 +162,30 @@ The runner checks public pages, default purple theme behavior, Service Worker ca
 - backup verification
 - cleanup of old backups
 - direct restore from the admin backup list
+
+### Security Tokens
+
+- CSRF tokens now have a server-enforced 30-minute TTL.
+- The footer shows only a short fingerprint of the current page token, not the full token.
+- Footer token times are displayed in the current account timezone.
+- Login sessions can still last up to 30 days when "stay logged in" is used; this is separate from the shorter CSRF form token lifetime.
+- If a page stays open for longer than 30 minutes, refresh the page before submitting forms or other sensitive actions.
+
+### Service Worker Cache Refresh
+
+- Static assets use stricter filemtime-based versions in the page shell.
+- `service-worker.js` exposes a client-cache clear message.
+- The admin page can clear the current browser cache and publish a refresh marker so other clients clear cached static assets on their next page load.
+
+### Maintenance Tools
+
+The admin page includes a maintenance area for long-running deployments:
+
+- retention-policy visibility for request logs, security anomalies, and rate-limit usage
+- subscription image storage audit for missing derived-image rows and orphan files
+- manual SQLite `PRAGMA optimize`, `ANALYZE`, and `VACUUM`
+
+`VACUUM` can briefly lock writes, so run it during a quiet maintenance window.
 
 ## Repository Publication Notes
 

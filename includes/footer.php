@@ -2,9 +2,16 @@
 
 <?php
 $csrfTokenFingerprint = function_exists('get_csrf_token_fingerprint') ? get_csrf_token_fingerprint() : '';
+$csrfTokenCreatedAt = function_exists('get_csrf_token_created_at') ? get_csrf_token_created_at() : 0;
 $csrfTokenExpiresAt = function_exists('get_csrf_token_expires_at') ? get_csrf_token_expires_at() : 0;
+$csrfPageLoadedAt = time();
+$csrfTokenCreatedDisplay = '';
+$csrfPageLoadedDisplay = '';
 $csrfTokenExpiresDisplay = '';
-if ($csrfTokenExpiresAt > 0) {
+$csrfTokenRemainingSeconds = max(0, $csrfTokenExpiresAt - $csrfPageLoadedAt);
+$csrfTokenRemainingMinutes = (int) ceil($csrfTokenRemainingSeconds / 60);
+$csrfTokenIsExpired = $csrfTokenExpiresAt > 0 && $csrfPageLoadedAt >= $csrfTokenExpiresAt;
+if ($csrfTokenExpiresAt > 0 || $csrfTokenCreatedAt > 0) {
   try {
     $csrfTokenDisplayTimezone = date_default_timezone_get();
     if (function_exists('wallos_normalize_timezone_identifier')) {
@@ -19,8 +26,18 @@ if ($csrfTokenExpiresAt > 0) {
     if (function_exists('wallos_get_timezone_offset_label')) {
       $csrfTokenTimezoneLabel .= ' (' . wallos_get_timezone_offset_label($csrfTokenDisplayTimezone, $csrfTokenExpiryDateTime) . ')';
     }
+    if ($csrfTokenCreatedAt > 0) {
+      $csrfTokenCreatedDisplay = (new DateTimeImmutable('@' . $csrfTokenCreatedAt))
+        ->setTimezone(new DateTimeZone($csrfTokenDisplayTimezone))
+        ->format('Y-m-d H:i:s') . ' ' . $csrfTokenTimezoneLabel;
+    }
+    $csrfPageLoadedDisplay = (new DateTimeImmutable('@' . $csrfPageLoadedAt))
+      ->setTimezone(new DateTimeZone($csrfTokenDisplayTimezone))
+      ->format('Y-m-d H:i:s') . ' ' . $csrfTokenTimezoneLabel;
     $csrfTokenExpiresDisplay = $csrfTokenExpiryDateTime->format('Y-m-d H:i:s') . ' ' . $csrfTokenTimezoneLabel;
   } catch (Throwable $throwable) {
+    $csrfTokenCreatedDisplay = $csrfTokenCreatedAt > 0 ? date('Y-m-d H:i:s P', $csrfTokenCreatedAt) : '';
+    $csrfPageLoadedDisplay = date('Y-m-d H:i:s P', $csrfPageLoadedAt);
     $csrfTokenExpiresDisplay = date('Y-m-d H:i:s P', $csrfTokenExpiresAt);
   }
 }
@@ -34,9 +51,28 @@ if ($csrfTokenExpiresAt > 0) {
       <span class="page-edition-security-token" title="<?= htmlspecialchars(translate('csrf_token_footer_note', $i18n), ENT_QUOTES, 'UTF-8') ?>">
         <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
         <span><?= translate('csrf_token_footer_label', $i18n) ?> <code><?= htmlspecialchars($csrfTokenFingerprint, ENT_QUOTES, 'UTF-8') ?></code></span>
+        <?php if ($csrfPageLoadedDisplay !== ''): ?>
+          <span><?= translate('csrf_token_footer_page_loaded', $i18n) ?> <?= htmlspecialchars($csrfPageLoadedDisplay, ENT_QUOTES, 'UTF-8') ?></span>
+        <?php endif; ?>
+        <?php if ($csrfTokenCreatedDisplay !== ''): ?>
+          <span><?= translate('csrf_token_footer_created', $i18n) ?> <?= htmlspecialchars($csrfTokenCreatedDisplay, ENT_QUOTES, 'UTF-8') ?></span>
+        <?php endif; ?>
         <?php if ($csrfTokenExpiresDisplay !== ''): ?>
           <span><?= translate('csrf_token_footer_expires', $i18n) ?> <?= htmlspecialchars($csrfTokenExpiresDisplay, ENT_QUOTES, 'UTF-8') ?></span>
         <?php endif; ?>
+        <span
+          id="csrf-token-footer-remaining"
+          data-csrf-token-remaining
+          data-expires-at="<?= (int) $csrfTokenExpiresAt ?>"
+          data-valid-label="<?= htmlspecialchars(translate('csrf_token_footer_status_valid', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+          data-expired-label="<?= htmlspecialchars(translate('csrf_token_footer_status_expired', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+          data-remaining-template="<?= htmlspecialchars(translate('csrf_token_footer_remaining_dynamic', $i18n), ENT_QUOTES, 'UTF-8') ?>">
+          <?= sprintf(
+            translate('csrf_token_footer_remaining_dynamic', $i18n),
+            max(0, $csrfTokenRemainingMinutes),
+            translate($csrfTokenIsExpired ? 'csrf_token_footer_status_expired' : 'csrf_token_footer_status_valid', $i18n)
+          ) ?>
+        </span>
       </span>
     <?php endif; ?>
   </div>

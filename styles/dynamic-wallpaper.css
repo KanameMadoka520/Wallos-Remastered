@@ -305,6 +305,14 @@ body.dynamic-wallpaper-enabled .page-edition-security-token code {
     border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
+body.dynamic-wallpaper-enabled .page-edition-security-token [data-csrf-token-remaining] {
+    color: rgba(130, 255, 194, 0.94);
+}
+
+body.dynamic-wallpaper-enabled .page-edition-security-token [data-csrf-token-remaining].is-expired {
+    color: rgba(255, 154, 154, 0.96);
+}
+
 body.dynamic-wallpaper-enabled .dropdown-content a {
     border: 1px solid transparent;
     border-radius: 10px;

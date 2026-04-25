@@ -16,6 +16,7 @@ require_once 'decorative_background.php';
 require_once 'dynamic_wallpaper.php';
 require_once 'page_transitions.php';
 require_once 'theme_color.php';
+require_once 'cache_refresh.php';
 
 require_once 'version.php';
 
@@ -32,6 +33,15 @@ $pageTransitionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/p
 $i18nJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/' . $lang . '.js');
 $i18nGetLangJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/getlang.js');
 $apiJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/api.js');
+$allJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/all.js');
+$commonJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/common.js');
+$themeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/theme.css');
+$darkThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/dark-theme.css');
+$redThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/themes/red.css');
+$greenThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/themes/green.css');
+$yellowThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/themes/yellow.css');
+$purpleThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/themes/purple.css');
+$cacheRefreshMarker = wallos_read_cache_refresh_marker(__DIR__ . '/..');
 
 if ($userCount == 0) {
   $db->close();
@@ -186,21 +196,21 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
   <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
-  <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
+  <link rel="stylesheet" href="styles/theme.css?<?= $themeCssVersion ?>">
   <link rel="stylesheet" href="styles/decorative-background.css?<?= $decorativeBackgroundCssVersion ?>">
   <link rel="stylesheet" href="styles/dynamic-wallpaper.css?<?= $dynamicWallpaperCssVersion ?>">
   <link rel="stylesheet" href="styles/page-transitions.css?<?= $pageTransitionsCssVersion ?>">
   <link rel="stylesheet" href="styles/styles.css?<?= $stylesCssVersion ?>">
-  <link rel="stylesheet" href="styles/dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme != "dark" ? "disabled" : "" ?>>
-  <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
-  <link rel="stylesheet" href="styles/themes/green.css?<?= $version ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
-  <link rel="stylesheet" href="styles/themes/yellow.css?<?= $version ?>" id="yellow-theme" <?= $colorTheme != "yellow" ? "disabled" : "" ?>>
-  <link rel="stylesheet" href="styles/themes/purple.css?<?= $version ?>" id="purple-theme" <?= $colorTheme != "purple" ? "disabled" : "" ?>>
+  <link rel="stylesheet" href="styles/dark-theme.css?<?= $darkThemeCssVersion ?>" id="dark-theme" <?= $theme != "dark" ? "disabled" : "" ?>>
+  <link rel="stylesheet" href="styles/themes/red.css?<?= $redThemeCssVersion ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
+  <link rel="stylesheet" href="styles/themes/green.css?<?= $greenThemeCssVersion ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
+  <link rel="stylesheet" href="styles/themes/yellow.css?<?= $yellowThemeCssVersion ?>" id="yellow-theme" <?= $colorTheme != "yellow" ? "disabled" : "" ?>>
+  <link rel="stylesheet" href="styles/themes/purple.css?<?= $purpleThemeCssVersion ?>" id="purple-theme" <?= $colorTheme != "purple" ? "disabled" : "" ?>>
   <link rel="stylesheet" href="styles/barlow.css">
   <link rel="stylesheet" href="styles/font-awesome.min.css">
   <link rel="stylesheet" href="styles/brands.css">
-  <script type="text/javascript" src="scripts/all.js?<?= $version ?>"></script>
-  <script type="text/javascript" src="scripts/common.js?<?= $version ?>"></script>
+  <script type="text/javascript" src="scripts/all.js?<?= $allJsVersion ?>"></script>
+  <script type="text/javascript" src="scripts/common.js?<?= $commonJsVersion ?>"></script>
   <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
   <script type="text/javascript" src="scripts/dynamic-wallpaper.js?<?= $dynamicWallpaperJsVersion ?>"></script>
   <script type="text/javascript" src="scripts/page-transitions.js?<?= $pageTransitionsJsVersion ?>"></script>
@@ -218,6 +228,7 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
       mobileIndex: 1,
       sources: <?= json_encode(wallos_get_dynamic_wallpaper_sources(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
     };
+    window.WallosCacheRefresh = <?= json_encode($cacheRefreshMarker, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     window.csrfToken = "<?= htmlspecialchars(generate_csrf_token()) ?>";
   </script>
   <style>

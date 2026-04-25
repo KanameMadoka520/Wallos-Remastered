@@ -8,6 +8,7 @@ require_once 'includes/backup_progress_messages.php';
 require_once 'includes/timezone_settings.php';
 require_once 'includes/security_rate_limit_presets.php';
 require_once 'includes/runtime_observability.php';
+require_once 'includes/system_maintenance.php';
 
 if ($isAdmin != 1) {
     header('Location: index.php');
@@ -184,6 +185,7 @@ $recentBackupCount = count($recentBackups);
 $latestBackup = $recentBackups[0] ?? null;
 $rateLimitPresets = wallos_get_rate_limit_presets($db);
 $rateLimitPresetsJson = json_encode($rateLimitPresets, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$maintenanceRetentionSummary = wallos_get_maintenance_retention_summary();
 $backupProgressLabels = wallos_get_backup_progress_labels($lang);
 $adminBackupsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-backups.js');
 $adminAccessLogsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-access-logs.js');
@@ -285,7 +287,10 @@ $pageSections = [
         data-waiting="<?= htmlspecialchars(translate('service_worker_waiting', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-installing="<?= htmlspecialchars(translate('service_worker_installing', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-controlled="<?= htmlspecialchars(translate('service_worker_controlled', $i18n), ENT_QUOTES, 'UTF-8') ?>"
-        data-uncontrolled="<?= htmlspecialchars(translate('service_worker_uncontrolled', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
+        data-uncontrolled="<?= htmlspecialchars(translate('service_worker_uncontrolled', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-cache-clear-success="<?= htmlspecialchars(translate('service_worker_cache_cleared', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-cache-refresh-success="<?= htmlspecialchars(translate('service_worker_cache_refresh_requested', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-cache-refresh-failed="<?= htmlspecialchars(translate('service_worker_cache_refresh_failed', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
     <div class="page-layout">
         <?php render_page_navigation(translate('admin', $i18n), $pageSections); ?>
         <div class="page-content">
@@ -1087,6 +1092,10 @@ $pageSections = [
         <div class="buttons">
             <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('open_security_anomaly_browser', $i18n) ?>"
                 onClick="window.WallosAdminAccessLogs?.openSecurityAnomaliesModal?.()" />
+            <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('service_worker_clear_client_cache', $i18n) ?>"
+                id="clearClientCacheButton" onClick="clearClientCacheButton(this)" />
+            <input type="button" class="button thin mobile-grow" value="<?= translate('service_worker_broadcast_refresh', $i18n) ?>"
+                id="requestClientCacheRefreshButton" onClick="requestClientCacheRefreshButton(this)" />
         </div>
     </div>
 </section>
@@ -1236,6 +1245,45 @@ $pageSections = [
                 <input type="checkbox" id="updateNotification" <?= $settings['update_notification'] ? 'checked' : '' ?>
                     onchange="toggleUpdateNotification()" />
                 <label for="updateNotification"><?= translate('show_update_notification', $i18n) ?></label>
+            </div>
+            <h3><?= translate('maintenance_retention_strategy', $i18n) ?></h3>
+            <div class="backup-summary-grid">
+                <div class="backup-summary-card">
+                    <span><?= translate('request_log_retention_days', $i18n) ?></span>
+                    <strong><?= (int) $maintenanceRetentionSummary['request_log_retention_days'] ?></strong>
+                </div>
+                <div class="backup-summary-card">
+                    <span><?= translate('security_anomaly_retention_days', $i18n) ?></span>
+                    <strong><?= (int) $maintenanceRetentionSummary['security_anomaly_retention_days'] ?></strong>
+                </div>
+                <div class="backup-summary-card">
+                    <span><?= translate('rate_limit_usage_retention_days', $i18n) ?></span>
+                    <strong><?= (int) $maintenanceRetentionSummary['rate_limit_usage_retention_days'] ?></strong>
+                </div>
+            </div>
+            <div class="settings-notes">
+                <p>
+                    <i class="fa-solid fa-circle-info"></i>
+                    <?= translate('maintenance_retention_strategy_info', $i18n) ?>
+                </p>
+            </div>
+            <h3><?= translate('subscription_image_audit', $i18n) ?></h3>
+            <div class="settings-notes">
+                <p>
+                    <i class="fa-solid fa-circle-info"></i>
+                    <?= translate('subscription_image_audit_info', $i18n) ?>
+                </p>
+            </div>
+            <div class="inline-row">
+                <input type="button" value="<?= translate('scan_subscription_images', $i18n) ?>" class="button tiny mobile-grow"
+                    onclick="runAdminMaintenanceAction('scan_subscription_images', this)">
+                <input type="button" value="<?= translate('run_sqlite_maintenance', $i18n) ?>" class="secondary-button tiny mobile-grow"
+                    onclick="runAdminMaintenanceAction('run_sqlite_maintenance', this)"
+                    data-confirm-message="<?= htmlspecialchars(translate('sqlite_maintenance_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>">
+            </div>
+            <div class="inline-row">
+                <textarea id="adminMaintenanceResult" class="thin" readonly
+                    placeholder="<?= htmlspecialchars(translate('maintenance_result', $i18n), ENT_QUOTES, 'UTF-8') ?>"></textarea>
             </div>
             <h3><?= translate('orphaned_logos', $i18n) ?></h3>
             <div class="form-group-inline">

@@ -1302,6 +1302,10 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
           }
           ?>
         </p>
+        <p>
+          <i class="fa-solid fa-circle-info"></i>
+          <?= translate('subscription_image_processing_strategy_info', $i18n) ?>
+        </p>
       </div>
     </div>
 

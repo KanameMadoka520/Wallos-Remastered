@@ -85,6 +85,10 @@ function wallos_append_subscription_uploaded_image_urls(array $image)
     $image['preview_size_label'] = $previewSize['label'];
     $image['thumbnail_size_bytes'] = $thumbnailSize['bytes'];
     $image['thumbnail_size_label'] = $thumbnailSize['label'];
+    $image['preview_reused_original'] = trim((string) ($image['preview_path'] ?? '')) !== ''
+        && trim((string) ($image['preview_path'] ?? '')) === trim((string) ($image['path'] ?? ''));
+    $image['thumbnail_reused_original'] = trim((string) ($image['thumbnail_path'] ?? '')) !== ''
+        && trim((string) ($image['thumbnail_path'] ?? '')) === trim((string) ($image['path'] ?? ''));
     $image['variant_sizes'] = [
         'thumbnail' => $thumbnailSize,
         'preview' => $previewSize,

@@ -121,6 +121,12 @@
     }
     if (selectedCount > 0) {
       parts.push(`${translate("subscription_image_selected_new")}: ${selectedCount}`);
+      const localFileSummary = selectedDetailImageFiles
+        .map((file) => `${file.name} ${formatClientFileSize(file.size)}`)
+        .join(" / ");
+      if (localFileSummary) {
+        parts.push((translate("subscription_image_local_files_dynamic") || "%1$s").replace("%1$s", localFileSummary));
+      }
     }
     meta.textContent = `${parts.join(" / ")}. ${translate("subscription_image_click_to_enlarge")}`;
   }
@@ -272,14 +278,24 @@
     return translate("subscription_image_size_unknown");
   }
 
+  function getUploadedImageVariantSizeLabel(image, variant) {
+    const label = getUploadedImageSizeLabel(image, variant);
+    const reusedKey = `${variant}_reused_original`;
+    if ((variant === "preview" || variant === "thumbnail") && image?.[reusedKey]) {
+      return `${label} (${translate("subscription_image_variant_reused_original")})`;
+    }
+
+    return label;
+  }
+
   function buildUploadedImageSizeSummary(image) {
     if (!image || !image.id) {
       return "";
     }
 
     return [
-      `${translate("subscription_image_variant_thumbnail")}: ${getUploadedImageSizeLabel(image, "thumbnail")}`,
-      `${translate("subscription_image_variant_preview")}: ${getUploadedImageSizeLabel(image, "preview")}`,
+      `${translate("subscription_image_variant_thumbnail")}: ${getUploadedImageVariantSizeLabel(image, "thumbnail")}`,
+      `${translate("subscription_image_variant_preview")}: ${getUploadedImageVariantSizeLabel(image, "preview")}`,
       `${translate("subscription_image_variant_original")}: ${getUploadedImageSizeLabel(image, "original")}`,
     ].join(" / ");
   }
@@ -319,8 +335,8 @@
         downloadUrl,
         label: getUploadedImageDisplayName(image),
         sizeLabels: {
-          thumbnail: getUploadedImageSizeLabel(image, "thumbnail"),
-          preview: getUploadedImageSizeLabel(image, "preview"),
+          thumbnail: getUploadedImageVariantSizeLabel(image, "thumbnail"),
+          preview: getUploadedImageVariantSizeLabel(image, "preview"),
           original: getUploadedImageSizeLabel(image, "original"),
         },
       });
@@ -388,7 +404,7 @@
           badgeText: translate("subscription_image_new_badge"),
           fileName: file.name,
           sourceText: translate("subscription_image_source_new"),
-          sizeSummary: "",
+          sizeSummary: `${translate("subscription_image_variant_original")}: ${formatClientFileSize(file.size)}`,
           extraClassName: "new",
           orderToken: `new:${ensureSelectedDetailImageFileToken(file)}`,
           onRemove: () => removeSelectedDetailImage(index),

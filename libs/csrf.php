@@ -22,10 +22,24 @@ function wallos_csrf_normalize_created_at(): int {
     return $createdAt;
 }
 
+function wallos_csrf_token_is_expired(): bool {
+    $createdAt = (int) ($_SESSION[WALLOS_CSRF_TOKEN_CREATED_AT_SESSION_KEY] ?? 0);
+    if ($createdAt <= 0) {
+        return false;
+    }
+
+    return time() >= ($createdAt + WALLOS_CSRF_REFRESH_RECOMMENDED_SECONDS);
+}
+
+function wallos_rotate_csrf_token(): string {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    $_SESSION[WALLOS_CSRF_TOKEN_CREATED_AT_SESSION_KEY] = time();
+    return $_SESSION['csrf_token'];
+}
+
 function generate_csrf_token(): string {
-    if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        $_SESSION[WALLOS_CSRF_TOKEN_CREATED_AT_SESSION_KEY] = time();
+    if (empty($_SESSION['csrf_token']) || wallos_csrf_token_is_expired()) {
+        return wallos_rotate_csrf_token();
     }
     wallos_csrf_normalize_created_at();
     return $_SESSION['csrf_token'];
@@ -37,8 +51,7 @@ function get_csrf_token_created_at(): int {
 }
 
 function get_csrf_token_expires_at(): int {
-    generate_csrf_token();
-    return time() + WALLOS_CSRF_REFRESH_RECOMMENDED_SECONDS;
+    return get_csrf_token_created_at() + WALLOS_CSRF_REFRESH_RECOMMENDED_SECONDS;
 }
 
 function get_csrf_token_fingerprint(): string {
@@ -47,6 +60,10 @@ function get_csrf_token_fingerprint(): string {
 
 function verify_csrf_token(?string $token): bool {
     if (empty($_SESSION['csrf_token']) || empty($token)) return false;
+    if (wallos_csrf_token_is_expired()) {
+        unset($_SESSION['csrf_token'], $_SESSION[WALLOS_CSRF_TOKEN_CREATED_AT_SESSION_KEY]);
+        return false;
+    }
     // Use hash_equals to avoid timing attacks
     return hash_equals($_SESSION['csrf_token'], $token);
 }

@@ -135,6 +135,116 @@ function maybeShowCsrfBackgroundReminder() {
   }
 }
 
+function initializeCsrfFooterStatus() {
+  const node = document.querySelector("[data-csrf-token-remaining]");
+  if (!node) {
+    return;
+  }
+
+  const expiresAtSeconds = Number.parseInt(node.dataset.expiresAt || "0", 10);
+  if (!Number.isFinite(expiresAtSeconds) || expiresAtSeconds <= 0) {
+    return;
+  }
+
+  const validLabel = node.dataset.validLabel || "valid";
+  const expiredLabel = node.dataset.expiredLabel || "expired";
+  const template = node.dataset.remainingTemplate || "Remaining: %1$d minutes | Status: %2$s";
+
+  const render = () => {
+    const remainingSeconds = Math.max(0, expiresAtSeconds - Math.floor(Date.now() / 1000));
+    const remainingMinutes = Math.ceil(remainingSeconds / 60);
+    const status = remainingSeconds > 0 ? validLabel : expiredLabel;
+    node.textContent = template
+      .replace("%1$d", String(remainingMinutes))
+      .replace("%2$s", status);
+
+    if (remainingSeconds <= 0) {
+      node.classList.add("is-expired");
+    } else {
+      node.classList.remove("is-expired");
+    }
+  };
+
+  render();
+  window.setInterval(render, 30000);
+}
+
+function clearWallosClientCaches() {
+  const cacheDeletePromise = ("caches" in window)
+    ? caches.keys()
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => /^(static-cache-|pages-cache-|logos-cache-)/.test(key))
+          .map((key) => caches.delete(key))
+      ))
+    : Promise.resolve([]);
+
+  const serviceWorkerPromise = ("serviceWorker" in navigator)
+    ? navigator.serviceWorker.getRegistration()
+      .then((registration) => {
+        const target = navigator.serviceWorker.controller || registration?.active || registration?.waiting || registration?.installing;
+        if (!target || typeof MessageChannel === "undefined") {
+          return null;
+        }
+
+        return new Promise((resolve) => {
+          const channel = new MessageChannel();
+          const timeout = window.setTimeout(() => resolve(null), 1500);
+          channel.port1.onmessage = (event) => {
+            window.clearTimeout(timeout);
+            resolve(event.data || null);
+          };
+          target.postMessage({ type: "WALLOS_CLEAR_CACHES" }, [channel.port2]);
+        });
+      })
+      .catch(() => null)
+    : Promise.resolve(null);
+
+  return Promise.allSettled([cacheDeletePromise, serviceWorkerPromise]);
+}
+
+function initializeCacheRefreshMarker() {
+  const marker = window.WallosCacheRefresh || {};
+  const token = String(marker.token || "").trim();
+  if (token === "" || !window.localStorage) {
+    return;
+  }
+
+  const storageKey = "wallos-client-cache-refresh-token";
+  let knownToken = "";
+  try {
+    knownToken = window.localStorage.getItem(storageKey) || "";
+  } catch (error) {
+    knownToken = "";
+  }
+
+  if (knownToken === token) {
+    return;
+  }
+
+  clearWallosClientCaches().finally(() => {
+    try {
+      window.localStorage.setItem(storageKey, token);
+    } catch (error) {
+      // Ignore storage failures; the user still receives the refresh prompt.
+    }
+
+    showSuccessMessage(translateWithFallback(
+      "client_cache_refresh_prompt",
+      "The administrator has published a static-resource refresh. Please reload this page if anything looks stale.",
+      {
+        en: "The administrator has published a static-resource refresh. Please reload this page if anything looks stale.",
+        zh_cn: "管理员已经发布静态资源刷新提示。如果页面显示异常，请刷新本页以应用最新脚本和样式。",
+        zh_tw: "管理員已發布靜態資源刷新提示。如果頁面顯示異常，請重新整理本頁以套用最新腳本與樣式。",
+      }
+    ));
+  });
+}
+
+window.WallosClientCache = {
+  clear: clearWallosClientCaches,
+};
+
 function getRequestQueueNoticeMessages(status, pendingCount = 0) {
   if (status === "success") {
     return {
@@ -988,107 +1098,6 @@ function wallosHandleJsonResult(data, options = {}) {
   return false;
 }
 
-function getRequestQueueNoticeMessages(status, pendingCount = 0) {
-  if (status === "success") {
-    return {
-      title: translateWithFallback("request_queue_success_title", "处理完成", {
-        en: "Processing complete",
-        zh_cn: "处理完成",
-        zh_tw: "處理完成",
-      }),
-      body: translateWithFallback("request_queue_success_body", "排队中的后台写入已经处理完成。", {
-        en: "Queued backend writes have finished.",
-        zh_cn: "排队中的后台写入已经处理完成。",
-        zh_tw: "排隊中的後台寫入已經處理完成。",
-      }),
-    };
-  }
-
-  const multipleFallback = `当前仍有 ${pendingCount} 个写入请求等待完成。`;
-  const body = pendingCount > 1
-    ? translateWithFallback("request_queue_pending_body_multiple", multipleFallback, {
-      en: `%1$d write requests are still waiting to finish.`,
-      zh_cn: "当前仍有 %1$d 个写入请求等待完成。",
-      zh_tw: "目前仍有 %1$d 個寫入請求等待完成。",
-    }).replace("%1$d", String(pendingCount))
-    : translateWithFallback("request_queue_pending_body", "后台写入较忙，当前请求正在排队处理，请稍候。", {
-      en: "The server is busy writing data. Your request is queued and will finish shortly.",
-      zh_cn: "后台写入较忙，当前请求正在排队处理，请稍候。",
-      zh_tw: "後台寫入較忙，目前請求正在排隊處理，請稍候。",
-    });
-
-  return {
-    title: translateWithFallback("request_queue_pending_title", "后台操作排队处理中", {
-      en: "Backend queue in progress",
-      zh_cn: "后台操作排队处理中",
-      zh_tw: "後台操作排隊處理中",
-    }),
-    body,
-  };
-}
-
-function normalizeToastContent(type, message) {
-  const fallbackTitle = type === "error" ? translate("error") : translate("success");
-  const fallbackBody = type === "error" ? translate("toast_error_generic") : translate("toast_success_generic");
-  const rawMessage = message instanceof Error
-    ? String(message.message || "").trim()
-    : String(message ?? "").trim();
-
-  if (!rawMessage) {
-    return {
-      title: fallbackTitle,
-      body: fallbackBody,
-      shouldDisplay: false,
-    };
-  }
-
-  const genericCandidates = new Set([
-    fallbackTitle,
-    type === "error" ? "Error" : "Success",
-    type === "error" ? "error" : "success",
-  ]);
-
-  if (genericCandidates.has(rawMessage)) {
-    return {
-      title: fallbackTitle,
-      body: fallbackBody,
-      shouldDisplay: false,
-    };
-  }
-
-  const separatorMatch = rawMessage.match(/^([^:\n：]{1,60})[:：]\s*([\s\S]+)$/u);
-  if (separatorMatch) {
-    return {
-      title: separatorMatch[1].trim(),
-      body: separatorMatch[2].trim(),
-      shouldDisplay: true,
-    };
-  }
-
-  const lineMatch = rawMessage.match(/^([^\n]{1,70})\n+([\s\S]+)$/);
-  if (lineMatch) {
-    return {
-      title: lineMatch[1].trim(),
-      body: lineMatch[2].trim(),
-      shouldDisplay: true,
-    };
-  }
-
-  if (rawMessage.length <= 80) {
-    return {
-      title: rawMessage,
-      body: "",
-      shouldDisplay: true,
-    };
-  }
-
-  return {
-    title: fallbackTitle,
-    body: rawMessage,
-    shouldDisplay: true,
-  };
-}
-
 window.WallosHttp = {
   request: wallosRequest,
   requestJson: wallosRequestJson,
@@ -1348,6 +1357,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   setupPageNavigation();
   initializePageImmersiveToggle();
+  initializeCsrfFooterStatus();
+  initializeCacheRefreshMarker();
   consumeRateLimitNoticeCookie();
   window.setInterval(consumeRateLimitNoticeCookie, 1500);
 });

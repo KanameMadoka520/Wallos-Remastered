@@ -76,6 +76,29 @@ docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-ur
 
 这套 runner 当前包含公共页面、登录态 endpoint、静态契约和既有 PHP 逻辑回归。静态契约会检查主题默认值、订阅页关键 DOM、订阅页脚本加载顺序、共享请求层、API key 传输约定和订阅图片大小显示槽位，目的是提前发现“按钮事件漂移”“局部刷新返回格式漂移”“主题默认值被改回蓝色”等问题。
 
+如需覆盖登录态页面，请提供专用测试账号：
+
+```bash
+docker exec wallos-local php /var/www/html/tests/regression_runner.php \
+  --base-url=http://127.0.0.1 \
+  --username=你的测试账号 \
+  --password=你的测试密码
+```
+
+如需验证真实写入链路，可以追加 `--mutating-auth-checks`。该模式会创建临时订阅并自动清理，不应用真实重要账号运行不可控测试。
+
+订阅页 UI 变动后，建议额外运行浏览器级 E2E：
+
+```bash
+npm install
+WALLOS_BASE_URL=http://127.0.0.1:18282 \
+WALLOS_TEST_USERNAME=你的测试账号 \
+WALLOS_TEST_PASSWORD=你的测试密码 \
+npm run e2e:subscriptions
+```
+
+该脚本会真实点击订阅分页、三点菜单、编辑弹窗、新增保存、实际支付记录、图片预览、单/双/三列切换和动态壁纸相关按钮。
+
 详细说明请继续阅读：
 
 - `docs/共享请求层与稳定性契约.md`
@@ -88,4 +111,8 @@ docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-ur
 - 不要重新允许空实例通过公网域名执行首次数据库恢复
 - 不要重新把永久 API key 设计成通过 URL 查询参数传递
 - 不要在支付图标或其他外链抓取逻辑中恢复无约束的自动重定向
+- 不要把页脚显示的 CSRF 短指纹改成完整 token
+- 不要绕过 CSRF 30 分钟服务端 TTL，除非同步调整安全文档并明确用户体验影响
+- 不要让 Service Worker 模糊缓存 endpoint、带查询参数的接口响应或私有媒体资源
+- 不要让订阅图片维护工具自动删除文件；孤儿文件扫描应先报告，由管理员确认后再处理
 
