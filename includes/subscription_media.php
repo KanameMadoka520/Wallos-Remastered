@@ -697,8 +697,6 @@ function wallos_generate_subscription_image_variant_from_resource(
     $sourceFileSize = $sourceAbsolutePath !== '' && is_file($sourceAbsolutePath) ? (int) filesize($sourceAbsolutePath) : 0;
     $canReuseSource = $sourceRelativePath !== ''
         && $sourceFileSize > 0
-        && $variantDimensions['width'] === (int) $sourceWidth
-        && $variantDimensions['height'] === (int) $sourceHeight
         && $variantFileSize >= $sourceFileSize;
 
     if ($canReuseSource) {
@@ -1198,6 +1196,127 @@ function wallos_delete_subscription_image_related_files($basePath, array $imageR
     foreach ($paths as $relativePath) {
         wallos_delete_subscription_image_file($basePath, $relativePath);
     }
+}
+
+function wallos_subscription_image_path_is_referenced($db, $relativePath)
+{
+    $relativePath = trim((string) $relativePath);
+    if ($relativePath === '') {
+        return false;
+    }
+
+    $stmt = $db->prepare('
+        SELECT COUNT(*) AS reference_count
+        FROM subscription_uploaded_images
+        WHERE path = :path OR preview_path = :path OR thumbnail_path = :path
+    ');
+    $stmt->bindValue(':path', $relativePath, SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $row = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+
+    return (int) ($row['reference_count'] ?? 0) > 0;
+}
+
+function wallos_reuse_oversized_subscription_image_variants($db, $basePath, $userId = null)
+{
+    $query = '
+        SELECT id, user_id, path, preview_path, thumbnail_path
+        FROM subscription_uploaded_images
+    ';
+    if ($userId !== null) {
+        $query .= ' WHERE user_id = :user_id';
+    }
+    $query .= ' ORDER BY user_id ASC, subscription_id ASC, sort_order ASC, id ASC';
+
+    $stmt = $db->prepare($query);
+    if ($userId !== null) {
+        $stmt->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
+    }
+    $result = $stmt->execute();
+
+    $checkedRows = 0;
+    $reusedVariants = 0;
+    $deletedFiles = 0;
+    $missingOriginals = 0;
+    $updatedRows = 0;
+
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $checkedRows++;
+        $originalPath = trim((string) ($row['path'] ?? ''));
+        $originalAbsolutePath = wallos_resolve_subscription_image_absolute_path($basePath, $originalPath);
+        if ($originalAbsolutePath === '') {
+            $missingOriginals++;
+            continue;
+        }
+
+        $originalSize = (int) @filesize($originalAbsolutePath);
+        if ($originalSize <= 0) {
+            continue;
+        }
+
+        $nextPreviewPath = trim((string) ($row['preview_path'] ?? ''));
+        $nextThumbnailPath = trim((string) ($row['thumbnail_path'] ?? ''));
+        $pathsToDelete = [];
+
+        foreach (['preview_path', 'thumbnail_path'] as $column) {
+            $variantPath = trim((string) ($row[$column] ?? ''));
+            if ($variantPath === '' || $variantPath === $originalPath) {
+                continue;
+            }
+
+            $variantAbsolutePath = wallos_resolve_subscription_image_absolute_path($basePath, $variantPath);
+            if ($variantAbsolutePath === '') {
+                continue;
+            }
+
+            $variantSize = (int) @filesize($variantAbsolutePath);
+            if ($variantSize < $originalSize) {
+                continue;
+            }
+
+            if ($column === 'preview_path') {
+                $nextPreviewPath = $originalPath;
+            } else {
+                $nextThumbnailPath = $originalPath;
+            }
+            $pathsToDelete[] = $variantPath;
+            $reusedVariants++;
+        }
+
+        if ($nextPreviewPath === trim((string) ($row['preview_path'] ?? ''))
+            && $nextThumbnailPath === trim((string) ($row['thumbnail_path'] ?? ''))
+        ) {
+            continue;
+        }
+
+        $updateStmt = $db->prepare('
+            UPDATE subscription_uploaded_images
+            SET preview_path = :preview_path,
+                thumbnail_path = :thumbnail_path
+            WHERE id = :id AND user_id = :user_id
+        ');
+        $updateStmt->bindValue(':preview_path', $nextPreviewPath, SQLITE3_TEXT);
+        $updateStmt->bindValue(':thumbnail_path', $nextThumbnailPath, SQLITE3_TEXT);
+        $updateStmt->bindValue(':id', (int) $row['id'], SQLITE3_INTEGER);
+        $updateStmt->bindValue(':user_id', (int) $row['user_id'], SQLITE3_INTEGER);
+        $updateStmt->execute();
+        $updatedRows++;
+
+        foreach (array_values(array_unique($pathsToDelete)) as $pathToDelete) {
+            if (!wallos_subscription_image_path_is_referenced($db, $pathToDelete)) {
+                wallos_delete_subscription_image_file($basePath, $pathToDelete);
+                $deletedFiles++;
+            }
+        }
+    }
+
+    return [
+        'checked_rows' => $checkedRows,
+        'updated_rows' => $updatedRows,
+        'reused_variants' => $reusedVariants,
+        'deleted_files' => $deletedFiles,
+        'missing_originals' => $missingOriginals,
+    ];
 }
 
 function wallos_delete_uploaded_image_records_and_files($db, $basePath, array $imageIds, $userId, $subscriptionId = null)

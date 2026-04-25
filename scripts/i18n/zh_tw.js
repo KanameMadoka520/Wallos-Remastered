@@ -162,4 +162,9 @@ let i18n = {
     subscription_image_disk_files: "\u78c1\u789f\u6a94\u6848\u6578",
     subscription_image_orphan_files: "\u5b64\u5152\u6a94\u6848\u6578",
     subscription_image_missing_variants: "\u7f3a\u5c11\u884d\u751f\u5716\u8a18\u9304\u6578",
+    subscription_image_checked_rows: "\u5df2\u6aa2\u67e5\u5716\u7247\u8a18\u9304\u6578",
+    subscription_image_updated_rows: "\u5df2\u66f4\u65b0\u5716\u7247\u8a18\u9304\u6578",
+    subscription_image_reused_variants: "\u5df2\u8907\u7528\u884d\u751f\u5716\u6578",
+    subscription_image_deleted_oversized_files: "\u5df2\u522a\u9664\u904e\u5927\u884d\u751f\u6a94\u6848\u6578",
+    subscription_image_missing_originals: "\u7f3a\u5931\u539f\u5716\u8a18\u9304\u6578",
 };

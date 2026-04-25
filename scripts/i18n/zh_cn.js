@@ -160,6 +160,11 @@ let i18n = {
     subscription_image_disk_files: "\u78c1\u76d8\u6587\u4ef6\u6570",
     subscription_image_orphan_files: "\u5b64\u513f\u6587\u4ef6\u6570",
     subscription_image_missing_variants: "\u7f3a\u5c11\u884d\u751f\u56fe\u8bb0\u5f55\u6570",
+    subscription_image_checked_rows: "\u5df2\u68c0\u67e5\u56fe\u7247\u8bb0\u5f55\u6570",
+    subscription_image_updated_rows: "\u5df2\u66f4\u65b0\u56fe\u7247\u8bb0\u5f55\u6570",
+    subscription_image_reused_variants: "\u5df2\u590d\u7528\u6d3e\u751f\u56fe\u6570",
+    subscription_image_deleted_oversized_files: "\u5df2\u5220\u9664\u8fc7\u5927\u6d3e\u751f\u6587\u4ef6\u6570",
+    subscription_image_missing_originals: "\u7f3a\u5931\u539f\u56fe\u8bb0\u5f55\u6570",
     subscription_reorder_handle_title: "按住并拖动可调整订阅顺序",
     subscription_reorder_unavailable: "仅在没有搜索词和筛选条件时可手动排序",
 };
