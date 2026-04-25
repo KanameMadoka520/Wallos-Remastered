@@ -211,6 +211,37 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected common/api/subscription scripts and subscriptionpages.php to keep invalid CSRF refresh reminder hooks.'
     );
 
+    $csrfPhp = wallos_regression_read_repo_file($config, 'libs/csrf.php');
+    $footerPhp = wallos_regression_read_repo_file($config, 'includes/footer.php');
+    $stylesCss = wallos_regression_read_repo_file($config, 'styles/styles.css');
+    $dynamicWallpaperCss = wallos_regression_read_repo_file($config, 'styles/dynamic-wallpaper.css');
+    $csrfFooterValid = wallos_regression_text_has_all($csrfPhp, array(
+        'csrf_token_created_at',
+        'get_csrf_token_fingerprint',
+        'get_csrf_token_expires_at',
+        "substr(hash('sha256', generate_csrf_token()), 0, 12)",
+    )) && wallos_regression_text_has_all($footerPhp, array(
+        'page-edition-security-token',
+        'get_csrf_token_fingerprint',
+        'get_csrf_token_expires_at',
+        'csrf_token_footer_label',
+        'csrf_token_footer_expires',
+    )) && wallos_regression_text_has_all($stylesCss, array(
+        '.page-edition-security-token',
+        '.page-edition-security-token code',
+    )) && wallos_regression_text_has_all($dynamicWallpaperCss, array(
+        'body.dynamic-wallpaper-enabled .page-edition-security-token',
+        'body.dynamic-wallpaper-enabled .page-edition-security-token code',
+    ));
+    $results[] = wallos_regression_make_result(
+        $csrfFooterValid ? 'PASS' : 'FAIL',
+        'static',
+        'csrf-footer-fingerprint-contract',
+        $csrfFooterValid
+            ? 'Footer shows a CSRF fingerprint and estimated expiry without exposing the raw token.'
+            : 'Expected CSRF helpers, footer markup, and theme styles for the footer security token fingerprint.'
+    );
+
     $requestSecurity = wallos_regression_read_repo_file($config, 'includes/request_security.php');
     $connectEndpoint = wallos_regression_read_repo_file($config, 'includes/connect_endpoint.php');
     $apiTransportValid = wallos_regression_text_has_all($requestSecurity, array(
