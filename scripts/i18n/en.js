@@ -163,6 +163,11 @@ let i18n = {
   subscription_image_disk_files: "Files On Disk",
   subscription_image_orphan_files: "Orphan Files",
   subscription_image_missing_variants: "Rows Missing Variants",
+  subscription_image_checked_rows: "Checked Image Rows",
+  subscription_image_updated_rows: "Updated Image Rows",
+  subscription_image_reused_variants: "Reused Variants",
+  subscription_image_deleted_oversized_files: "Deleted Oversized Files",
+  subscription_image_missing_originals: "Missing Originals",
   subscription_reorder_handle_title: "Hold and drag to reorder subscriptions",
   subscription_reorder_unavailable: "Manual reorder is available only with no search or filters applied",
 };

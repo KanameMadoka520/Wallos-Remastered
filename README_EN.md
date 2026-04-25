@@ -183,6 +183,7 @@ The admin page includes a maintenance area for long-running deployments:
 
 - retention-policy visibility for request logs, security anomalies, and rate-limit usage
 - subscription image storage audit for missing derived-image rows and orphan files
+- one-click reuse of originals for preview/thumbnail variants that are larger than the original, with cleanup of unreferenced oversized derived files
 - manual SQLite `PRAGMA optimize`, `ANALYZE`, and `VACUUM`
 
 `VACUUM` can briefly lock writes, so run it during a quiet maintenance window.

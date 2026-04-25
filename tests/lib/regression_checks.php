@@ -320,14 +320,14 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         '$writeResult = wallos_write_subscription_image_resource($imageToWrite, $destination, $metadata[\'mime\'], true);',
         '$variantFileSize >= $sourceFileSize',
         "'reused_original' => true",
-    ));
+    )) && strpos($subscriptionMediaPhp, '$variantDimensions[\'width\'] === (int) $sourceWidth') === false;
     $results[] = wallos_regression_make_result(
         $imagePassthroughValid ? 'PASS' : 'FAIL',
         'static',
         'subscription-image-original-passthrough-contract',
         $imagePassthroughValid
-            ? 'Uncompressed originals are stored with move_uploaded_file and oversized same-dimension variants can reuse the original.'
-            : 'Expected uncompressed originals to be passed through and same-dimension oversized variants to reuse the original.'
+            ? 'Uncompressed originals are stored with move_uploaded_file and any oversized variants can reuse the original.'
+            : 'Expected uncompressed originals to be passed through and oversized variants to reuse the original without requiring identical dimensions.'
     );
 
     $subscriptionImageViewerJs = wallos_regression_read_repo_file($config, 'scripts/subscription-image-viewer.js');
@@ -362,15 +362,21 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'WALLOS_REQUEST_LOG_RETENTION_DAYS',
         'VACUUM',
         'ANALYZE',
+    )) && wallos_regression_text_has_all($subscriptionMediaPhp, array(
+        'wallos_reuse_oversized_subscription_image_variants',
+        'wallos_subscription_image_path_is_referenced',
     )) && wallos_regression_text_has_all($systemMaintenanceEndpoint, array(
         'scan_subscription_images',
+        'reuse_oversized_subscription_image_variants',
         'run_sqlite_maintenance',
         'validate_endpoint_admin.php',
     )) && wallos_regression_text_has_all($adminPhp, array(
         'maintenance_retention_strategy',
+        'reuse_oversized_subscription_image_variants',
         'adminMaintenanceResult',
     )) && wallos_regression_text_has_all($adminJs, array(
         'runAdminMaintenanceAction',
+        'formatAdminOversizedVariantResult',
         'endpoints/admin/systemmaintenance.php',
     ));
     $results[] = wallos_regression_make_result(

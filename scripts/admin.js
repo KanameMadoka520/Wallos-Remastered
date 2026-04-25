@@ -486,6 +486,20 @@ function formatAdminMaintenanceAudit(audit) {
   return lines.join("\n");
 }
 
+function formatAdminOversizedVariantResult(result) {
+  if (!result || typeof result !== "object") {
+    return translate("success");
+  }
+
+  return [
+    `${adminTranslateWithFallback("subscription_image_checked_rows", "Checked Image Rows")}: ${result.checked_rows ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_updated_rows", "Updated Image Rows")}: ${result.updated_rows ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_reused_variants", "Reused Variants")}: ${result.reused_variants ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_deleted_oversized_files", "Deleted Oversized Files")}: ${result.deleted_files ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_missing_originals", "Missing Originals")}: ${result.missing_originals ?? 0}`,
+  ].join("\n");
+}
+
 function runAdminMaintenanceAction(action, button) {
   const resultTextArea = document.getElementById('adminMaintenanceResult');
   if (button?.dataset.confirmMessage && !confirm(button.dataset.confirmMessage)) {
@@ -509,6 +523,8 @@ function runAdminMaintenanceAction(action, button) {
       if (resultTextArea) {
         if (data.audit) {
           resultTextArea.value = formatAdminMaintenanceAudit(data.audit);
+        } else if (data.oversized_variant_result) {
+          resultTextArea.value = formatAdminOversizedVariantResult(data.oversized_variant_result);
         } else if (data.result) {
           resultTextArea.value = `${data.message || translate("success")}\nDuration: ${data.result.duration_ms || 0} ms`;
         } else {

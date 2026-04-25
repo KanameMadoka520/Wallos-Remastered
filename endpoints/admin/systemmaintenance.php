@@ -17,6 +17,16 @@ try {
         exit;
     }
 
+    if ($action === 'reuse_oversized_subscription_image_variants') {
+        $result = wallos_reuse_oversized_subscription_image_variants($db, __DIR__ . '/../..');
+        echo json_encode([
+            'success' => true,
+            'message' => translate('subscription_image_oversized_variants_reused', $i18n),
+            'oversized_variant_result' => $result,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     if ($action === 'run_sqlite_maintenance') {
         $result = wallos_run_sqlite_maintenance($db);
         echo json_encode([
@@ -40,4 +50,3 @@ try {
 }
 
 $db->close();
-
