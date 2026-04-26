@@ -238,6 +238,31 @@ try {
     }
   });
 
+  await step("client cache refresh prompt stays visible until closed", async () => {
+    const previousMarker = await page.evaluate(() => window.WallosCacheRefresh ? { ...window.WallosCacheRefresh } : null);
+    await page.evaluate(() => {
+      window.localStorage?.removeItem("wallos-client-cache-refresh-token");
+      window.WallosCacheRefresh = {
+        token: `e2e-${Date.now()}`,
+        requested_at: new Date().toISOString(),
+      };
+      window.initializeCacheRefreshMarker?.();
+    });
+
+    const toast = page.locator("#successToast.toast-persistent.active");
+    await toast.waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForTimeout(5500);
+    if (!await toast.isVisible()) {
+      throw new Error("client cache refresh prompt auto-hidden before manual close");
+    }
+
+    await page.locator("#successToast .close-success").click();
+    await toast.waitFor({ state: "hidden", timeout: 10000 }).catch(() => null);
+    await page.evaluate((marker) => {
+      window.WallosCacheRefresh = marker;
+    }, previousMarker);
+  });
+
   await step("access log modal opens, searches, and closes", async () => {
     await page.locator("#openAccessLogsButton").click();
     await expectVisible("#admin-access-log-backdrop .access-log-modal", "access log modal");

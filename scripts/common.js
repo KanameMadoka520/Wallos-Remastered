@@ -288,7 +288,7 @@ function initializeCacheRefreshMarker() {
         zh_cn: "管理员已经发布静态资源刷新提示。如果页面显示异常，请刷新本页以应用最新脚本和样式。",
         zh_tw: "管理員已發布靜態資源刷新提示。如果頁面顯示異常，請重新整理本頁以套用最新腳本與樣式。",
       }
-    ));
+    ), { persistent: true });
   });
 }
 
