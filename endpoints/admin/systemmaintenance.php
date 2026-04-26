@@ -8,6 +8,15 @@ $payload = json_decode(file_get_contents('php://input'), true);
 $action = is_array($payload) ? trim((string) ($payload['action'] ?? '')) : '';
 
 try {
+    if ($action === 'get_storage_usage') {
+        echo json_encode([
+            'success' => true,
+            'message' => translate('storage_usage_refreshed', $i18n),
+            'storage' => wallos_get_storage_usage_summary($db, __DIR__ . '/../..'),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     if ($action === 'scan_subscription_images') {
         echo json_encode([
             'success' => true,

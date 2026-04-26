@@ -193,6 +193,8 @@ $latestBackup = $recentBackups[0] ?? null;
 $rateLimitPresets = wallos_get_rate_limit_presets($db);
 $rateLimitPresetsJson = json_encode($rateLimitPresets, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $maintenanceRetentionSummary = wallos_get_maintenance_retention_summary();
+$maintenanceStorageSummary = wallos_get_storage_usage_summary($db, __DIR__);
+$maintenanceStorageSummaryJson = json_encode($maintenanceStorageSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $backupProgressLabels = wallos_get_backup_progress_labels($lang);
 $adminBackupsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-backups.js');
 $adminAccessLogsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-access-logs.js');
@@ -1334,6 +1336,24 @@ $pageSections = [
                     <?= translate('maintenance_retention_strategy_info', $i18n) ?>
                 </p>
             </div>
+            <h3><?= translate('storage_usage_summary', $i18n) ?></h3>
+            <div id="adminMaintenanceStorageSummary" class="backup-summary-grid"
+                data-storage-summary="<?= htmlspecialchars($maintenanceStorageSummaryJson ?: '{}', ENT_QUOTES, 'UTF-8') ?>">
+            </div>
+            <div class="settings-notes">
+                <p>
+                    <i class="fa-solid fa-circle-info"></i>
+                    <?= translate('storage_usage_info', $i18n) ?>
+                </p>
+                <p>
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <?= translate('log_growth_risk_info', $i18n) ?>
+                </p>
+            </div>
+            <div class="inline-row">
+                <input type="button" value="<?= translate('refresh_storage_usage', $i18n) ?>" class="button tiny mobile-grow"
+                    onclick="runAdminMaintenanceAction('get_storage_usage', this)">
+            </div>
             <h3><?= translate('subscription_image_audit', $i18n) ?></h3>
             <div class="settings-notes">
                 <p>
@@ -1344,6 +1364,8 @@ $pageSections = [
             <div class="inline-row">
                 <input type="button" value="<?= translate('scan_subscription_images', $i18n) ?>" class="button tiny mobile-grow"
                     onclick="runAdminMaintenanceAction('scan_subscription_images', this)">
+                <input type="button" value="<?= translate('export_subscription_image_audit', $i18n) ?>" class="secondary-button tiny mobile-grow"
+                    onclick="exportAdminSubscriptionImageAuditCsv()">
                 <input type="button" value="<?= translate('reuse_oversized_subscription_image_variants', $i18n) ?>" class="secondary-button tiny mobile-grow"
                     onclick="runAdminMaintenanceAction('reuse_oversized_subscription_image_variants', this)"
                     data-confirm-message="<?= htmlspecialchars(translate('reuse_oversized_subscription_image_variants_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>">
