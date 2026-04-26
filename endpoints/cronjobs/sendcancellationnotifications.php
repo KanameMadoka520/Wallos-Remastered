@@ -276,7 +276,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Discord notifications if enabled
             if ($discordNotificationsEnabled) {
-                $ssrf = is_url_safe_for_ssrf($discord['webhook_url'], $db);
+                $ssrf = is_url_safe_for_ssrf($discord['webhook_url'], $db, $userId);
                 if (!$ssrf) {
                     echo "Discord notification skipped: URL failed SSRF validation.<br />";
                 } else {
@@ -336,7 +336,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Gotify notifications if enabled
             if ($gotifyNotificationsEnabled) {
-                $ssrf = is_url_safe_for_ssrf($gotify['serverUrl'], $db);
+                $ssrf = is_url_safe_for_ssrf($gotify['serverUrl'], $db, $userId);
                 if (!$ssrf) {
                     echo "Gotify notification skipped: URL failed SSRF validation.<br />";
                 } else {
@@ -483,7 +483,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Ntfy notifications if enabled
             if ($ntfyNotificationsEnabled) {
-                $ssrf = is_url_safe_for_ssrf($ntfy['host'], $db);
+                $ssrf = is_url_safe_for_ssrf($ntfy['host'], $db, $userId);
                 if (!$ssrf) {
                     echo "Ntfy notification skipped: URL failed SSRF validation.<br />";
                 } else {
@@ -540,7 +540,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Webhook notifications if enabled
             if ($webhookNotificationsEnabled) {
-                $ssrf = is_url_safe_for_ssrf($webhook['url'], $db);
+                $ssrf = is_url_safe_for_ssrf($webhook['url'], $db, $userId);
                 if (!$ssrf) {
                     echo "Webhook notification skipped: URL failed SSRF validation.<br />";
                 } else {

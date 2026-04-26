@@ -1,4 +1,4 @@
-﻿# Wallos-Remastered 变更记录
+# Wallos-Remastered 变更记录
 
 ## 说明
 

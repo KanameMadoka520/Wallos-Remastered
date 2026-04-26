@@ -379,7 +379,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Discord notifications if enabled
             if ($discordNotificationsEnabled) {
-                $ssrf = is_url_safe_for_ssrf($discord['webhook_url'], $db);
+                $ssrf = is_url_safe_for_ssrf($discord['webhook_url'], $db, $userId);
                 if (!$ssrf) {
                     echo "SSRF attempt detected for Discord webhook URL. Notifications not sent.<br />";
                 } else {
@@ -440,7 +440,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Gotify notifications if enabled
             if ($gotifyNotificationsEnabled) {
-                $ssrf = is_url_safe_for_ssrf($gotify['serverUrl'], $db);
+                $ssrf = is_url_safe_for_ssrf($gotify['serverUrl'], $db, $userId);
                 if (!$ssrf) {
                     echo "SSRF attempt detected for Gotify server URL. Notifications not sent.<br />";
                 } else {
@@ -611,7 +611,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Mattermost notifications if enabled
             if ($mattermostNotificationsEnabled) {
-                $ssrf = is_url_safe_for_ssrf($mattermost['webhook_url'], $db);
+                $ssrf = is_url_safe_for_ssrf($mattermost['webhook_url'], $db, $userId);
                 if (!$ssrf) {
                     echo "SSRF attempt detected for Mattermost webhook URL. Notifications not sent.<br />";
                 } else {
@@ -721,7 +721,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Ntfy notifications if enabled
             if ($ntfyNotificationsEnabled) {
-                $ssrf = is_url_safe_for_ssrf($ntfy['host'], $db);
+                $ssrf = is_url_safe_for_ssrf($ntfy['host'], $db, $userId);
                 if (!$ssrf) {
                     echo "SSRF attempt detected for Ntfy host URL. Notifications not sent.<br />";
                 } else {
@@ -783,7 +783,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Webhook notifications if enabled
             if ($webhookNotificationsEnabled) {
-                $ssrf = is_url_safe_for_ssrf($webhook['url'], $db);
+                $ssrf = is_url_safe_for_ssrf($webhook['url'], $db, $userId);
                 if (!$ssrf) {
                     echo "SSRF attempt detected for webhook URL. Notifications not sent.<br />";;
                 } else {

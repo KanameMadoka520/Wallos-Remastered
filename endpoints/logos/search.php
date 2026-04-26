@@ -1,4 +1,5 @@
 <?php
+require_once '../../includes/ssrf_helper.php';
 if (isset($_GET['search'])) {
     $searchTerm = urlencode($_GET['search'] . " logo");
 
@@ -17,13 +18,21 @@ if (isset($_GET['search'])) {
 
     function curlGet($url, $headers = []) {
         $allowedHosts = ['duckduckgo.com', 'search.brave.com'];
-        $host = parse_url($url, PHP_URL_HOST);
+        $parsedUrl = parse_url($url);
+        $host = $parsedUrl['host'] ?? '';
+        $port = $parsedUrl['port'] ?? (($parsedUrl['scheme'] ?? 'http') === 'https' ? 443 : 80);
         if (!in_array($host, $allowedHosts)) return null;
+
+        $ip = gethostbyname($host);
+        $is_private = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false || is_cgnat_ip($ip);
+        if ($is_private) return null;
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+        curl_setopt($ch, CURLOPT_RESOLVE, ["{$host}:{$port}:{$ip}"]);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
         
         // Explicitly disable proxy by default, then re-apply only from env (not $_SERVER)
