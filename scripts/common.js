@@ -2,8 +2,8 @@ let isDropdownOpen = false;
 let hasUserInteractedWithPage = false;
 let lastRateLimitNoticeId = null;
 const toastState = {
-  error: { hideTimer: null, progressTimer: null },
-  success: { hideTimer: null, progressTimer: null },
+  error: { hideTimer: null, progressTimer: null, persistent: false },
+  success: { hideTimer: null, progressTimer: null, persistent: false },
 };
 const requestQueueNoticeState = {
   nextRequestId: 0,
@@ -100,7 +100,7 @@ function showCsrfTokenRefreshReminder() {
 
   csrfRefreshReminderLastShownAt = now;
   const message = getCsrfTokenRefreshReminderMessage();
-  showErrorMessage(message);
+  showErrorMessage(message, { persistent: true });
 
   if (csrfRefreshPromptOpen) {
     return true;
@@ -1195,10 +1195,12 @@ function closeToast(type) {
   }
 
   toast.classList.remove("active");
+  toast.classList.remove("toast-persistent");
   window.clearTimeout(toastState[type].hideTimer);
   window.clearTimeout(toastState[type].progressTimer);
   toastState[type].hideTimer = null;
   toastState[type].progressTimer = null;
+  toastState[type].persistent = false;
 
   window.setTimeout(() => {
     progress.classList.remove("active");
@@ -1267,7 +1269,23 @@ function normalizeToastContent(type, message) {
   };
 }
 
-function showToast(type, message) {
+function shouldPersistToast(type, message, options = {}) {
+  if (options.persistent === true) {
+    return true;
+  }
+
+  if (type !== "error") {
+    return false;
+  }
+
+  const rawMessage = message instanceof Error
+    ? String(message.message || "")
+    : String(message ?? "");
+
+  return /\bCSRF\b/i.test(rawMessage) && /\b(token|invalid|refresh)\b/i.test(rawMessage);
+}
+
+function showToast(type, message, options = {}) {
   const toast = document.querySelector(type === "error" ? ".toast#errorToast" : ".toast#successToast");
   const closeIcon = document.querySelector(type === "error" ? ".close-error" : ".close-success");
   const titleNode = document.querySelector(type === "error" ? "#errorToast .text-1" : "#successToast .text-1");
@@ -1288,26 +1306,34 @@ function showToast(type, message) {
   bodyNode.classList.toggle("is-empty", normalized.body === "");
 
   closeToast(type);
+  const persistent = shouldPersistToast(type, message, options);
+  toastState[type].persistent = persistent;
+  toast.classList.toggle("toast-persistent", persistent);
   toast.classList.add("active");
-  progress.classList.add("active");
 
-  toastState[type].hideTimer = window.setTimeout(() => {
-    closeToast(type);
-  }, 5000);
+  if (!persistent) {
+    progress.classList.add("active");
 
-  toastState[type].progressTimer = window.setTimeout(() => {
+    toastState[type].hideTimer = window.setTimeout(() => {
+      closeToast(type);
+    }, 5000);
+
+    toastState[type].progressTimer = window.setTimeout(() => {
+      progress.classList.remove("active");
+    }, 5300);
+  } else {
     progress.classList.remove("active");
-  }, 5300);
+  }
 
   closeIcon.onclick = () => closeToast(type);
 }
 
-function showErrorMessage(message) {
-  showToast("error", message);
+function showErrorMessage(message, options = {}) {
+  showToast("error", message, options);
 }
 
-function showSuccessMessage(message) {
-  showToast("success", message);
+function showSuccessMessage(message, options = {}) {
+  showToast("success", message, options);
 }
 
 function markUserInteraction() {
