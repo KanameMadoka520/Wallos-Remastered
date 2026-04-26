@@ -121,7 +121,15 @@ WALLOS_TEST_PASSWORD=YOUR_TEST_PASSWORD \
 npm run e2e:subscriptions
 ```
 
-The browser smoke opens the real page and clicks pagination, the three-dot action menu, edit modal, add-subscription save flow, payment history, image viewer hooks, display-column toggles, and the dynamic-wallpaper immersive button. It removes the temporary subscription it creates during the check.
+The browser smoke opens the real page and clicks pagination, the three-dot action menu, edit modal, add-subscription save flow, payment history, record-payment modal, image viewer hooks, display-column toggles, cost/value visibility toggles, the dynamic-wallpaper immersive button, and the persistent CSRF refresh reminder. It removes the temporary subscription it creates during the check and restores the subscription-page display preferences that existed before the run.
+
+When the browser smoke fails, it writes a screenshot, current HTML, and diagnostics JSON to `screenshots/e2e/`. The diagnostics collect frontend `console.error` messages, page runtime exceptions, failed requests, and abnormal endpoint responses.
+
+You can also run the full browser E2E entrypoint:
+
+```bash
+npm run e2e
+```
 
 ## Highlights
 
