@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "e2e": "npm run e2e:subscriptions",
-    "e2e:subscriptions": "node tests/e2e/subscriptions_smoke.mjs"
+    "e2e": "npm run e2e:subscriptions && npm run e2e:admin",
+    "e2e:subscriptions": "node tests/e2e/subscriptions_smoke.mjs",
+    "e2e:admin": "node tests/e2e/admin_smoke.mjs"
   },
   "devDependencies": {
     "playwright": "^1.59.1"

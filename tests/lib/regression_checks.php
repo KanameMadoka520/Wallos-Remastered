@@ -425,6 +425,28 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected tests/e2e/subscriptions_smoke.mjs to keep critical UI-flow coverage and failure artifacts.'
     );
 
+    $adminE2e = wallos_regression_read_repo_file($config, 'tests/e2e/admin_smoke.mjs');
+    $adminE2eValid = wallos_regression_text_has_all($adminE2e, array(
+        'administrator shell opens cleanly',
+        'runtime observability refreshes cleanly',
+        'service worker cache refresh request updates observability marker',
+        'access log modal opens, searches, and closes',
+        'security anomaly modal opens with scoped filter and closes',
+        'storage usage refresh repaints maintenance summary',
+        'backup settings save and manual backup flow complete',
+        'backup verification updates card state',
+        'writeFailureArtifacts',
+        'assertNoBrowserRuntimeErrors',
+    ));
+    $results[] = wallos_regression_make_result(
+        $adminE2eValid ? 'PASS' : 'FAIL',
+        'static',
+        'admin-browser-e2e-contract',
+        $adminE2eValid
+            ? 'Admin browser E2E keeps maintenance, observability, logs, cache, and backup flows covered.'
+            : 'Expected tests/e2e/admin_smoke.mjs to keep admin UI flow coverage and diagnostic artifacts.'
+    );
+
     $runtimeObservabilityEndpoint = wallos_regression_read_repo_file($config, 'endpoints/admin/runtimeobservability.php');
     $runtimeObservability = wallos_regression_read_repo_file($config, 'includes/runtime_observability.php');
     $adminAccessLogsJs = wallos_regression_read_repo_file($config, 'scripts/admin-access-logs.js');
