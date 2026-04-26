@@ -8,18 +8,44 @@ try {
   ({ chromium } = await import("playwright"));
 } catch (error) {
   console.error("SKIP: Playwright is not installed. Run `npm install` before this E2E check.");
-  process.exit(77);
+  process.exit(0);
 }
 
 const baseUrl = (process.env.WALLOS_BASE_URL || "http://127.0.0.1:18282").replace(/\/$/, "");
-const username = process.env.WALLOS_ADMIN_USERNAME || process.env.WALLOS_TEST_USERNAME || "";
-const password = process.env.WALLOS_ADMIN_PASSWORD || process.env.WALLOS_TEST_PASSWORD || "";
+const username = process.env.WALLOS_ADMIN_USERNAME || "";
+const password = process.env.WALLOS_ADMIN_PASSWORD || "";
+const adminCookie = process.env.WALLOS_ADMIN_COOKIE || "";
+const adminAuthExpiresAt = process.env.WALLOS_ADMIN_AUTH_EXPIRES_AT || "";
 const headless = process.env.WALLOS_E2E_HEADLESS !== "0";
 const artifactRoot = path.resolve(process.env.WALLOS_E2E_ARTIFACT_DIR || "screenshots/e2e");
 
-if (!username || !password) {
-  console.error("FAIL: WALLOS_ADMIN_USERNAME/WALLOS_ADMIN_PASSWORD or WALLOS_TEST_USERNAME/WALLOS_TEST_PASSWORD are required.");
-  process.exit(1);
+function parseAdminAuthExpiry(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  if (/^\d+$/.test(raw)) {
+    const numeric = Number(raw);
+    return new Date(numeric < 10_000_000_000 ? numeric * 1000 : numeric);
+  }
+
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+const adminAuthExpiry = parseAdminAuthExpiry(adminAuthExpiresAt);
+if (!adminCookie && (!username || !password)) {
+  console.error("SKIP: Admin E2E requires WALLOS_ADMIN_COOKIE or WALLOS_ADMIN_USERNAME/WALLOS_ADMIN_PASSWORD.");
+  process.exit(0);
+}
+if (!adminAuthExpiry) {
+  console.error("SKIP: WALLOS_ADMIN_AUTH_EXPIRES_AT is required for admin E2E credentials.");
+  process.exit(0);
+}
+if (adminAuthExpiry.getTime() <= Date.now()) {
+  console.error(`SKIP: Admin E2E credentials expired at ${adminAuthExpiry.toISOString()}.`);
+  process.exit(0);
 }
 
 const diagnostics = {
@@ -48,6 +74,44 @@ function shouldIgnoreConsoleError(message) {
     || normalizedMessage.includes("failed to load resource: the server responded with a status of 404");
 }
 
+function parseCookieHeader(cookieHeader) {
+  const parsedBaseUrl = new URL(baseUrl);
+  return String(cookieHeader || "")
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const separatorIndex = part.indexOf("=");
+      if (separatorIndex <= 0) {
+        return null;
+      }
+
+      return {
+        name: part.slice(0, separatorIndex),
+        value: part.slice(separatorIndex + 1),
+        domain: parsedBaseUrl.hostname,
+        path: "/",
+        httpOnly: false,
+        secure: parsedBaseUrl.protocol === "https:",
+        sameSite: "Lax",
+      };
+    })
+    .filter(Boolean);
+}
+
+async function installAdminCookie(targetContext) {
+  if (!adminCookie) {
+    return false;
+  }
+
+  const cookies = parseCookieHeader(adminCookie);
+  if (cookies.length === 0) {
+    throw new Error("WALLOS_ADMIN_COOKIE did not contain any valid cookie pairs");
+  }
+
+  await targetContext.addCookies(cookies);
+  return true;
+}
 function attachDiagnostics(targetPage) {
   targetPage.on("console", (message) => {
     if (message.type() !== "error") {
@@ -187,7 +251,13 @@ function assertNoBrowserRuntimeErrors() {
 attachDiagnostics(page);
 
 try {
-  await step("login with administrator account", async () => {
+  await step("establish administrator session", async () => {
+    const usedCookie = await installAdminCookie(context);
+    if (usedCookie) {
+      await page.goto(`${baseUrl}/admin.php`, { waitUntil: "domcontentloaded" });
+      return;
+    }
+
     await page.goto(`${baseUrl}/login.php`, { waitUntil: "domcontentloaded" });
     await page.locator("#username").fill(username);
     await page.locator("#password").fill(password);

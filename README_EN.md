@@ -1,4 +1,4 @@
-﻿# Wallos-Remastered
+# Wallos-Remastered
 
 [简体中文 README](README.md)
 
@@ -125,7 +125,19 @@ The browser smoke opens the real page and clicks pagination, the three-dot actio
 
 When the browser smoke fails, it writes a screenshot, current HTML, and diagnostics JSON to `screenshots/e2e/`. The diagnostics collect frontend `console.error` messages, page runtime exceptions, failed requests, and abnormal endpoint responses.
 
-You can also run the full browser E2E entrypoint:
+Admin browser E2E does not create an extra administrator account and does not reuse the normal test user. To reduce credential exposure, provide explicit admin credentials and an expiry; missing or expired credentials make the admin smoke skip safely:
+
+```bash
+WALLOS_BASE_URL=http://127.0.0.1:18282 \
+WALLOS_ADMIN_USERNAME=YOUR_ID_1_ADMIN \
+WALLOS_ADMIN_PASSWORD=YOUR_ADMIN_PASSWORD \
+WALLOS_ADMIN_AUTH_EXPIRES_AT=$(date -u -d "+30 minutes" +%Y-%m-%dT%H:%M:%SZ) \
+npm run e2e:admin
+```
+
+A short-lived cookie is also supported through `WALLOS_ADMIN_COOKIE="PHPSESSID=..."`, but `WALLOS_ADMIN_AUTH_EXPIRES_AT` is still required. Do not store administrator passwords or cookies in the repository, CI settings, or long-lived scripts.
+
+You can also run the full browser E2E entrypoint. If unexpired admin credentials are not supplied, the admin smoke skips while the subscription smoke still uses the normal test account:
 
 ```bash
 npm run e2e

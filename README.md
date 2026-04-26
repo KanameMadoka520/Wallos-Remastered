@@ -1,4 +1,4 @@
-﻿# Wallos-Remastered
+# Wallos-Remastered
 
 [English README](README_EN.md)
 
@@ -406,7 +406,20 @@ npm run e2e:subscriptions
 
 如果浏览器级 E2E 失败，脚本会把截图、当前 HTML 和诊断 JSON 写入 `screenshots/e2e/`。诊断内容包含前端 `console.error`、页面运行时异常、失败请求和 endpoint 异常响应，便于定位“按钮点不了”“分页只转圈”“弹窗打不开”这类回归。
 
-也可以直接运行全部浏览器级检查：
+管理员后台浏览器级 E2E 不会创建额外管理员账号，也不会复用普通测试账号。为了降低凭据泄露风险，必须显式提供管理员凭据和过期时间；缺失或过期时脚本会安全跳过：
+
+```bash
+$env:WALLOS_BASE_URL="http://127.0.0.1:18282"
+$env:WALLOS_ADMIN_USERNAME="你的 id=1 管理员账号"
+$env:WALLOS_ADMIN_PASSWORD="你的管理员密码"
+$env:WALLOS_ADMIN_AUTH_EXPIRES_AT=(Get-Date).AddMinutes(30).ToUniversalTime().ToString("o")
+npm run e2e:admin
+Remove-Item Env:\WALLOS_ADMIN_USERNAME, Env:\WALLOS_ADMIN_PASSWORD, Env:\WALLOS_ADMIN_AUTH_EXPIRES_AT -ErrorAction SilentlyContinue
+```
+
+也可以使用短期 Cookie：设置 `WALLOS_ADMIN_COOKIE="PHPSESSID=..."`，并同样设置 `WALLOS_ADMIN_AUTH_EXPIRES_AT`。不要把管理员密码或 Cookie 写入仓库、CI 配置或长期脚本。
+
+也可以直接运行全部浏览器级检查；如果未提供未过期的管理员凭据，管理员后台 E2E 会跳过，订阅页 E2E 仍会按普通测试账号运行：
 
 ```bash
 npm run e2e

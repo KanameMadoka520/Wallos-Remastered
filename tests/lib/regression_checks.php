@@ -435,6 +435,10 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
 
     $adminE2e = wallos_regression_read_repo_file($config, 'tests/e2e/admin_smoke.mjs');
     $adminE2eValid = wallos_regression_text_has_all($adminE2e, array(
+        'WALLOS_ADMIN_AUTH_EXPIRES_AT',
+        'parseAdminAuthExpiry',
+        'installAdminCookie',
+        'establish administrator session',
         'administrator shell opens cleanly',
         'runtime observability refreshes cleanly',
         'service worker cache refresh request updates observability marker',
