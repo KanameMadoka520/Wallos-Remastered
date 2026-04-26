@@ -281,6 +281,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'clearWallosClientCaches',
         'getWallosClientCacheStatus',
         'status: getWallosClientCacheStatus',
+        'client_cache_refresh_prompt',
+        'persistent: true',
         'wallos-client-cache-refresh-token',
     )) && wallos_regression_text_has_all($adminPhp, array(
         'service_worker_broadcast_refresh',
@@ -436,6 +438,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'administrator shell opens cleanly',
         'runtime observability refreshes cleanly',
         'service worker cache refresh request updates observability marker',
+        'client cache refresh prompt stays visible until closed',
         'access log modal opens, searches, and closes',
         'security anomaly modal opens with scoped filter and closes',
         'storage usage refresh repaints maintenance summary',
