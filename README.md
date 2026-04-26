@@ -366,6 +366,7 @@ docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-ur
 - 订阅页共享请求层、会话失效处理和事件重绑契约
 - API key Header / POST 优先传输契约
 - 订阅图片缩略图、预览图、原图大小显示契约
+- 管理后台运行可观测性、异常快捷筛选和日志内容安全渲染契约
 - 既有预算、账本、偏好逻辑回归
 
 登录态回归可以使用专用测试账号运行：

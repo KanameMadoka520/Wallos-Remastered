@@ -416,6 +416,51 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected tests/e2e/subscriptions_smoke.mjs to keep critical UI-flow coverage and failure artifacts.'
     );
 
+    $runtimeObservabilityEndpoint = wallos_regression_read_repo_file($config, 'endpoints/admin/runtimeobservability.php');
+    $runtimeObservability = wallos_regression_read_repo_file($config, 'includes/runtime_observability.php');
+    $adminAccessLogsJs = wallos_regression_read_repo_file($config, 'scripts/admin-access-logs.js');
+    $dynamicWallpaperCss = wallos_regression_read_repo_file($config, 'styles/dynamic-wallpaper.css');
+    $adminObservabilityValid = wallos_regression_text_has_all($runtimeObservability, array(
+        'wallos_get_recent_security_anomalies',
+        'wallos_get_security_anomaly_type_counts',
+        'wallos_format_observability_timestamp',
+    )) && wallos_regression_text_has_all($runtimeObservabilityEndpoint, array(
+        'validate_endpoint_admin.php',
+        'recent_anomalies',
+        'cache_refresh',
+        'service_worker_versions',
+    )) && wallos_regression_text_has_all($adminPhp, array(
+        'admin-runtime-observability-ui',
+        'runtime-observability-panel',
+        'data-observability-feed',
+        'refreshRuntimeObservabilityButton',
+        "openSecurityAnomaliesModal?.({ anomaly_type: 'client_runtime' })",
+        "openSecurityAnomaliesModal?.({ anomaly_type: 'request_failure' })",
+    )) && wallos_regression_text_has_all($adminJs, array(
+        'refreshRuntimeObservabilityButton',
+        'WallosApi.postJson("endpoints/admin/runtimeobservability.php", {}',
+        'endpoints/admin/runtimeobservability.php',
+        'renderRuntimeObservabilityFeed',
+    )) && wallos_regression_text_has_all($adminAccessLogsJs, array(
+        'function escapeHtml',
+        'openSecurityAnomaliesModal(initialFilters = {})',
+        'ui.dataset.detailsLabel',
+    )) && wallos_regression_text_has_all($stylesCss, array(
+        '.runtime-observability-panel',
+        '.runtime-anomaly-card',
+    )) && wallos_regression_text_has_all($dynamicWallpaperCss, array(
+        '.runtime-observability-panel',
+        '.runtime-anomaly-card',
+    ));
+    $results[] = wallos_regression_make_result(
+        $adminObservabilityValid ? 'PASS' : 'FAIL',
+        'static',
+        'admin-observability-contract',
+        $adminObservabilityValid
+            ? 'Admin observability keeps runtime summaries, filtered anomaly shortcuts, and safe log rendering.'
+            : 'Expected admin runtime observability endpoint, UI, styling, filtered anomaly browser, and HTML escaping.'
+    );
+
     return $results;
 }
 

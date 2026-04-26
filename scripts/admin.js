@@ -756,3 +756,113 @@ function requestClientCacheRefreshButton(button) {
     });
 }
 
+function createRuntimeAnomalyCard(item, ui) {
+  const card = document.createElement("article");
+  card.className = "runtime-anomaly-card";
+
+  const header = document.createElement("div");
+  header.className = "runtime-anomaly-card-header";
+
+  const idBadge = document.createElement("span");
+  idBadge.className = "access-log-id-badge";
+  idBadge.textContent = `#${String(item?.id || "-")}`;
+
+  const typeNode = document.createElement("strong");
+  typeNode.textContent = String(item?.anomaly_type || "-");
+
+  const codeNode = document.createElement("span");
+  codeNode.textContent = String(item?.anomaly_code || "-");
+
+  header.append(idBadge, typeNode, codeNode);
+
+  const message = document.createElement("p");
+  message.textContent = String(item?.message || "-");
+
+  const meta = document.createElement("small");
+  const user = String(item?.username || "-");
+  const ip = String(item?.ip_address || "-");
+  const path = String(item?.path || "");
+  const time = String(item?.created_at_display || item?.created_at || "-");
+  meta.textContent = path
+    ? `${user} · ${ip} · ${ui?.dataset.pathLabel || "Path"}: ${path} · ${time}`
+    : `${user} · ${ip} · ${time}`;
+
+  card.append(header, message, meta);
+  return card;
+}
+
+function renderRuntimeObservabilityFeed(items) {
+  const ui = document.getElementById("admin-runtime-observability-ui");
+  const feed = document.querySelector("[data-observability-feed]");
+  if (!feed) {
+    return;
+  }
+
+  feed.innerHTML = "";
+  if (!Array.isArray(items) || items.length === 0) {
+    const emptyState = document.createElement("div");
+    emptyState.className = "settings-notes access-log-empty";
+    const paragraph = document.createElement("p");
+    const icon = document.createElement("i");
+    icon.className = "fa-solid fa-circle-info";
+    paragraph.append(icon, document.createTextNode(ui?.dataset.emptyLabel || "No recent anomalies."));
+    emptyState.appendChild(paragraph);
+    feed.appendChild(emptyState);
+    return;
+  }
+
+  items.forEach((item) => {
+    feed.appendChild(createRuntimeAnomalyCard(item, ui));
+  });
+}
+
+function updateRuntimeObservabilitySummary(data) {
+  const counts = data?.counts || {};
+  document.querySelectorAll("[data-observability-count]").forEach((node) => {
+    const key = node.getAttribute("data-observability-count");
+    if (key && Object.prototype.hasOwnProperty.call(counts, key)) {
+      node.textContent = String(counts[key] || 0);
+    }
+  });
+
+  const typeSummary = document.querySelector("[data-observability-type-summary]");
+  if (typeSummary) {
+    typeSummary.textContent = data?.type_summary || "-";
+  }
+
+  const cacheRefresh = document.querySelector("[data-observability-cache-refresh]");
+  if (cacheRefresh) {
+    const ui = document.getElementById("admin-runtime-observability-ui");
+    cacheRefresh.textContent = data?.cache_refresh?.token_short
+      ? (data?.cache_refresh?.requested_at_display || "-")
+      : (ui?.dataset.cacheEmptyLabel || "-");
+  }
+
+  renderRuntimeObservabilityFeed(data?.recent_anomalies || []);
+}
+
+function refreshRuntimeObservabilityButton(button) {
+  const ui = document.getElementById("admin-runtime-observability-ui");
+  if (button) {
+    button.disabled = true;
+  }
+
+  window.WallosApi.postJson("endpoints/admin/runtimeobservability.php", {}, {
+    fallbackErrorMessage: ui?.dataset.refreshFailed || translate("error"),
+  })
+    .then((data) => {
+      if (!data.success) {
+        throw new Error(data.message || ui?.dataset.refreshFailed || translate("error"));
+      }
+
+      updateRuntimeObservabilitySummary(data);
+      showSuccessMessage(ui?.dataset.refreshSuccess || translate("success"));
+      initializeAdminServiceWorkerStatus();
+    })
+    .catch((error) => showErrorMessage(window.WallosApi?.normalizeError?.(error, ui?.dataset.refreshFailed || translate("error")) || translate("error")))
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+      }
+    });
+}

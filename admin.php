@@ -165,9 +165,9 @@ $activeInviteCodeCount = count($activeInviteCodes);
 $deletedInviteCodeCount = count($deletedInviteCodes);
 $recentRequestLogCount = count($recentRequestLogs);
 $totalRequestLogCount = (int) $db->querySingle('SELECT COUNT(*) FROM request_logs');
-$securityAnomaliesTableExists = (bool) $db->querySingle("SELECT name FROM sqlite_master WHERE type='table' AND name='security_anomalies'");
-$securityAnomalyCount = $securityAnomaliesTableExists ? (int) $db->querySingle('SELECT COUNT(*) FROM security_anomalies') : 0;
-$securityAnomalyRecentCount = $securityAnomaliesTableExists ? (int) $db->querySingle("SELECT COUNT(*) FROM security_anomalies WHERE created_at >= datetime('now', '-1 day')") : 0;
+$securityAnomaliesTableExists = wallos_security_anomalies_table_exists($db);
+$securityAnomalyCount = $securityAnomaliesTableExists ? wallos_count_security_anomalies($db) : 0;
+$securityAnomalyRecentCount = $securityAnomaliesTableExists ? wallos_count_security_anomalies($db, 24) : 0;
 $clientRuntimeRecentCount = $securityAnomaliesTableExists ? wallos_count_security_anomalies_by_type($db, 'client_runtime', 24) : 0;
 $requestFailureRecentCount = $securityAnomaliesTableExists ? wallos_count_security_anomalies_by_type($db, 'request_failure', 24) : 0;
 $serviceWorkerVersions = wallos_parse_service_worker_cache_versions(__DIR__ . '/service-worker.js');
@@ -180,6 +180,13 @@ $serviceWorkerVersionSummary = $serviceWorkerVersionSummary !== '' ? $serviceWor
 $backupRetentionDays = wallos_get_backup_retention_days($db);
 $backupTimezone = wallos_normalize_timezone_identifier($settings['backup_timezone'] ?? '', wallos_get_default_backup_timezone());
 $timezoneOptions = wallos_get_timezone_options($backupTimezone);
+$securityAnomalyTypeCounts = $securityAnomaliesTableExists ? wallos_get_security_anomaly_type_counts($db, 24) : [];
+$securityAnomalyTypeSummary = wallos_summarize_security_anomaly_type_counts($securityAnomalyTypeCounts);
+$recentSecurityAnomalies = $securityAnomaliesTableExists ? wallos_get_recent_security_anomalies($db, 6, 24) : [];
+$adminCacheRefreshMarker = wallos_read_cache_refresh_marker(__DIR__);
+$adminCacheRefreshRequestedAt = trim((string) ($adminCacheRefreshMarker['token'] ?? '')) !== ''
+    ? wallos_format_observability_timestamp($adminCacheRefreshMarker['requested_at'] ?? '', $backupTimezone)
+    : translate('never_requested', $i18n);
 $recentBackups = wallos_list_backups($db, 20, __DIR__);
 $recentBackupCount = count($recentBackups);
 $latestBackup = $recentBackups[0] ?? null;
@@ -269,7 +276,17 @@ $pageSections = [
         data-forwarded-label="<?= htmlspecialchars(translate('forwarded_for', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-agent-label="<?= htmlspecialchars(translate('user_agent', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-message-label="<?= htmlspecialchars(translate('message', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-details-label="<?= htmlspecialchars(translate('details', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-error-label="<?= htmlspecialchars(translate('error', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
+    <div id="admin-runtime-observability-ui" style="display:none;"
+        data-empty-label="<?= htmlspecialchars(translate('no_recent_anomalies', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-message-label="<?= htmlspecialchars(translate('message', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-user-label="<?= htmlspecialchars(translate('username', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-path-label="<?= htmlspecialchars(translate('anomaly_path', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-time-label="<?= htmlspecialchars(translate('time', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-cache-empty-label="<?= htmlspecialchars(translate('never_requested', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-refresh-success="<?= htmlspecialchars(translate('runtime_observability_refreshed', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-refresh-failed="<?= htmlspecialchars(translate('runtime_observability_refresh_failed', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
     <div id="admin-rate-limit-preset-ui" style="display:none;"
         data-add-label="<?= htmlspecialchars(translate('add_preset', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-save-label="<?= htmlspecialchars(translate('save_preset', $i18n), ENT_QUOTES, 'UTF-8') ?>"
@@ -1062,19 +1079,19 @@ $pageSections = [
         <div class="access-log-summary-grid">
             <div class="backup-summary-card">
                 <span><?= translate('security_anomalies', $i18n) ?></span>
-                <strong><?= (int) $securityAnomalyCount ?></strong>
+                <strong data-observability-count="security_total"><?= (int) $securityAnomalyCount ?></strong>
             </div>
             <div class="backup-summary-card">
                 <span><?= translate('recent_security_anomalies', $i18n) ?></span>
-                <strong><?= (int) $securityAnomalyRecentCount ?></strong>
+                <strong data-observability-count="security_recent_24h"><?= (int) $securityAnomalyRecentCount ?></strong>
             </div>
             <div class="backup-summary-card">
                 <span><?= translate('recent_client_runtime_errors', $i18n) ?></span>
-                <strong><?= (int) $clientRuntimeRecentCount ?></strong>
+                <strong data-observability-count="client_runtime_24h"><?= (int) $clientRuntimeRecentCount ?></strong>
             </div>
             <div class="backup-summary-card">
                 <span><?= translate('recent_request_failures', $i18n) ?></span>
-                <strong><?= (int) $requestFailureRecentCount ?></strong>
+                <strong data-observability-count="request_failure_24h"><?= (int) $requestFailureRecentCount ?></strong>
             </div>
             <div class="backup-summary-card">
                 <span><?= translate('service_worker_versions', $i18n) ?></span>
@@ -1087,6 +1104,56 @@ $pageSections = [
             <div class="backup-summary-card">
                 <span><?= translate('service_worker_controller_state', $i18n) ?></span>
                 <strong id="admin-sw-controller-state">-</strong>
+            </div>
+            <div class="backup-summary-card">
+                <span><?= translate('recent_anomaly_type_breakdown', $i18n) ?></span>
+                <strong class="compact-summary-text" data-observability-type-summary><?= htmlspecialchars($securityAnomalyTypeSummary, ENT_QUOTES, 'UTF-8') ?></strong>
+            </div>
+            <div class="backup-summary-card">
+                <span><?= translate('service_worker_last_refresh_request', $i18n) ?></span>
+                <strong class="compact-summary-text" data-observability-cache-refresh><?= htmlspecialchars($adminCacheRefreshRequestedAt, ENT_QUOTES, 'UTF-8') ?></strong>
+            </div>
+        </div>
+        <div class="runtime-observability-panel">
+            <div class="runtime-observability-header">
+                <div>
+                    <h3><?= translate('runtime_observability', $i18n) ?></h3>
+                    <p><?= translate('runtime_observability_info', $i18n) ?></p>
+                </div>
+                <div class="runtime-observability-actions">
+                    <button type="button" class="secondary-button thin" onClick="window.WallosAdminAccessLogs?.openSecurityAnomaliesModal?.({ anomaly_type: 'client_runtime' })">
+                        <?= translate('open_frontend_errors', $i18n) ?>
+                    </button>
+                    <button type="button" class="secondary-button thin" onClick="window.WallosAdminAccessLogs?.openSecurityAnomaliesModal?.({ anomaly_type: 'request_failure' })">
+                        <?= translate('open_request_failures', $i18n) ?>
+                    </button>
+                    <button type="button" class="button thin" id="refreshRuntimeObservabilityButton" onClick="refreshRuntimeObservabilityButton(this)">
+                        <?= translate('refresh_runtime_observability', $i18n) ?>
+                    </button>
+                </div>
+            </div>
+            <div class="runtime-observability-feed" data-observability-feed>
+                <?php if (empty($recentSecurityAnomalies)) : ?>
+                    <div class="settings-notes access-log-empty">
+                        <p><i class="fa-solid fa-circle-info"></i><?= translate('no_recent_anomalies', $i18n) ?></p>
+                    </div>
+                <?php else : ?>
+                    <?php foreach ($recentSecurityAnomalies as $anomaly) : ?>
+                        <article class="runtime-anomaly-card">
+                            <div class="runtime-anomaly-card-header">
+                                <span class="access-log-id-badge">#<?= (int) ($anomaly['id'] ?? 0) ?></span>
+                                <strong><?= htmlspecialchars((string) ($anomaly['anomaly_type'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong>
+                                <span><?= htmlspecialchars((string) ($anomaly['anomaly_code'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                            <p><?= htmlspecialchars((string) ($anomaly['message'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <small>
+                                <?= htmlspecialchars((string) ($anomaly['username'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
+                                · <?= htmlspecialchars((string) ($anomaly['ip_address'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
+                                · <?= htmlspecialchars(wallos_format_observability_timestamp($anomaly['created_at'] ?? '', $backupTimezone), ENT_QUOTES, 'UTF-8') ?>
+                            </small>
+                        </article>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
         <div class="buttons">
