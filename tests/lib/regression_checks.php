@@ -363,6 +363,9 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $systemMaintenanceEndpoint = wallos_regression_read_repo_file($config, 'endpoints/admin/systemmaintenance.php');
     $maintenanceValid = wallos_regression_text_has_all($systemMaintenancePhp, array(
         'wallos_audit_subscription_image_storage',
+        'wallos_get_storage_usage_summary',
+        'wallos_collect_directory_usage',
+        'orphan_details',
         'wallos_run_sqlite_maintenance',
         'WALLOS_REQUEST_LOG_RETENTION_DAYS',
         'VACUUM',
@@ -371,16 +374,22 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'wallos_reuse_oversized_subscription_image_variants',
         'wallos_subscription_image_path_is_referenced',
     )) && wallos_regression_text_has_all($systemMaintenanceEndpoint, array(
+        'get_storage_usage',
         'scan_subscription_images',
         'reuse_oversized_subscription_image_variants',
         'run_sqlite_maintenance',
         'validate_endpoint_admin.php',
     )) && wallos_regression_text_has_all($adminPhp, array(
         'maintenance_retention_strategy',
+        'adminMaintenanceStorageSummary',
+        'export_subscription_image_audit',
         'reuse_oversized_subscription_image_variants',
         'adminMaintenanceResult',
     )) && wallos_regression_text_has_all($adminJs, array(
         'runAdminMaintenanceAction',
+        'renderAdminMaintenanceStorageSummary',
+        'exportAdminSubscriptionImageAuditCsv',
+        'formatAdminSqliteMaintenanceResult',
         'formatAdminOversizedVariantResult',
         'endpoints/admin/systemmaintenance.php',
     ));

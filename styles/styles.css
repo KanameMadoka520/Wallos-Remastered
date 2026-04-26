@@ -5335,6 +5335,14 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   font-size: 16px;
 }
 
+.backup-summary-card small {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  opacity: 0.72;
+}
+
 .backup-action-row {
   align-items: stretch;
   flex-wrap: wrap;

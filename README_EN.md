@@ -190,9 +190,12 @@ npm run e2e
 The admin page includes a maintenance area for long-running deployments:
 
 - retention-policy visibility for request logs, security anomalies, and rate-limit usage
+- storage usage cards for the database, upload root, subscription media, and backup directory
+- log growth risk indicators for request logs, security anomalies, and rate-limit usage
 - subscription image storage audit for missing derived-image rows and orphan files
+- CSV export for the latest subscription image audit, including orphan-file size details
 - one-click reuse of originals for preview/thumbnail variants that are larger than the original, with cleanup of unreferenced oversized derived files
-- manual SQLite `PRAGMA optimize`, `ANALYZE`, and `VACUUM`
+- manual SQLite `PRAGMA optimize`, `ANALYZE`, and `VACUUM`, with before/after database size, page-count, and free-page metrics
 
 `VACUUM` can briefly lock writes, so run it during a quiet maintenance window.
 

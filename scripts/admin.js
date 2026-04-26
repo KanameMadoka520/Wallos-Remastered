@@ -48,6 +48,239 @@ function adminTranslateWithFallback(key, fallback) {
   return fallback;
 }
 
+let latestAdminSubscriptionImageAudit = null;
+
+function escapeAdminHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatAdminNumber(value) {
+  const numericValue = Number(value ?? 0);
+  if (!Number.isFinite(numericValue)) {
+    return "0";
+  }
+
+  return numericValue.toLocaleString();
+}
+
+function getAdminLogRiskLabel(risk) {
+  const normalizedRisk = String(risk || "normal");
+  const labels = {
+    normal: adminTranslateWithFallback("log_growth_risk_normal", "Normal"),
+    watch: adminTranslateWithFallback("log_growth_risk_watch", "Watch"),
+    high: adminTranslateWithFallback("log_growth_risk_high", "High"),
+  };
+
+  return labels[normalizedRisk] || labels.normal;
+}
+
+function renderAdminMaintenanceStorageCard(label, value, detail, iconClass = "fa-solid fa-hard-drive") {
+  return `
+    <div class="backup-summary-card maintenance-storage-card">
+      <span><i class="${escapeAdminHtml(iconClass)}"></i> ${escapeAdminHtml(label)}</span>
+      <strong>${escapeAdminHtml(value)}</strong>
+      ${detail ? `<small>${escapeAdminHtml(detail)}</small>` : ""}
+    </div>
+  `;
+}
+
+function buildAdminDirectoryStorageDetail(directory) {
+  const fileCount = formatAdminNumber(directory?.file_count ?? 0);
+  const directoryCount = formatAdminNumber(directory?.directory_count ?? 0);
+  const scanErrors = Number(directory?.scan_errors ?? 0);
+  const detail = `${adminTranslateWithFallback("file_count", "Files")}: ${fileCount} · ${adminTranslateWithFallback("directory_count", "Directories")}: ${directoryCount}`;
+
+  if (scanErrors > 0) {
+    return `${detail} · ${adminTranslateWithFallback("scan_errors", "Scan Errors")}: ${formatAdminNumber(scanErrors)}`;
+  }
+
+  return detail;
+}
+
+function buildAdminLogStorageDetail(logInfo) {
+  const retentionDays = Number(logInfo?.retention_days ?? 0);
+  const riskLabel = getAdminLogRiskLabel(logInfo?.risk);
+
+  return `${adminTranslateWithFallback("retention_days", "Retention Days")}: ${formatAdminNumber(retentionDays)} · ${adminTranslateWithFallback("log_growth_risk", "Log Growth Risk")}: ${riskLabel}`;
+}
+
+function renderAdminMaintenanceStorageSummary(storage) {
+  const container = document.getElementById("adminMaintenanceStorageSummary");
+  if (!container || !storage || typeof storage !== "object") {
+    return;
+  }
+
+  const database = storage.database || {};
+  const directories = storage.directories || {};
+  const logs = storage.logs || {};
+  const databaseDetail = [
+    `${adminTranslateWithFallback("sqlite_page_count", "SQLite Pages")}: ${formatAdminNumber(database.page_count ?? 0)}`,
+    `${adminTranslateWithFallback("sqlite_free_pages", "Free Pages")}: ${formatAdminNumber(database.freelist_count ?? 0)}`,
+    `${adminTranslateWithFallback("sqlite_free_size", "Free Size")}: ${database.free_size_label || "0 B"}`,
+  ].join(" · ");
+
+  const cards = [
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("database_file_size", "Database File Size"),
+      database.size_label || "0 B",
+      databaseDetail,
+      "fa-solid fa-database"
+    ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("logos_storage_size", "Upload Root Storage"),
+      directories.logos?.size_label || "0 B",
+      buildAdminDirectoryStorageDetail(directories.logos),
+      "fa-solid fa-folder-open"
+    ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("subscription_media_storage_size", "Subscription Media Storage"),
+      directories.subscription_media?.size_label || "0 B",
+      buildAdminDirectoryStorageDetail(directories.subscription_media),
+      "fa-solid fa-images"
+    ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("backup_storage_size", "Backup Storage"),
+      directories.backups?.size_label || "0 B",
+      buildAdminDirectoryStorageDetail(directories.backups),
+      "fa-solid fa-box-archive"
+    ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("request_log_rows", "Request Log Rows"),
+      logs.request_logs?.rows_label || formatAdminNumber(logs.request_logs?.rows ?? 0),
+      buildAdminLogStorageDetail(logs.request_logs),
+      "fa-solid fa-list"
+    ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("security_anomaly_rows", "Security Anomaly Rows"),
+      logs.security_anomalies?.rows_label || formatAdminNumber(logs.security_anomalies?.rows ?? 0),
+      buildAdminLogStorageDetail(logs.security_anomalies),
+      "fa-solid fa-shield-halved"
+    ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("rate_limit_usage_rows", "Rate-Limit Usage Rows"),
+      logs.rate_limit_usage?.rows_label || formatAdminNumber(logs.rate_limit_usage?.rows ?? 0),
+      buildAdminLogStorageDetail(logs.rate_limit_usage),
+      "fa-solid fa-gauge-high"
+    ),
+  ];
+
+  container.innerHTML = cards.join("");
+}
+
+function formatAdminStorageSummary(storage) {
+  if (!storage || typeof storage !== "object") {
+    return translate("success");
+  }
+
+  const directories = storage.directories || {};
+  const logs = storage.logs || {};
+
+  return [
+    `${adminTranslateWithFallback("generated_at", "Generated At")}: ${storage.generated_at || "-"}`,
+    `${adminTranslateWithFallback("database_file_size", "Database File Size")}: ${storage.database?.size_label || "0 B"}`,
+    `${adminTranslateWithFallback("sqlite_page_count", "SQLite Pages")}: ${formatAdminNumber(storage.database?.page_count ?? 0)}`,
+    `${adminTranslateWithFallback("sqlite_free_pages", "Free Pages")}: ${formatAdminNumber(storage.database?.freelist_count ?? 0)}`,
+    `${adminTranslateWithFallback("logos_storage_size", "Upload Root Storage")}: ${directories.logos?.size_label || "0 B"}`,
+    `${adminTranslateWithFallback("subscription_media_storage_size", "Subscription Media Storage")}: ${directories.subscription_media?.size_label || "0 B"}`,
+    `${adminTranslateWithFallback("backup_storage_size", "Backup Storage")}: ${directories.backups?.size_label || "0 B"}`,
+    `${adminTranslateWithFallback("request_log_rows", "Request Log Rows")}: ${logs.request_logs?.rows_label || "0"} (${getAdminLogRiskLabel(logs.request_logs?.risk)})`,
+    `${adminTranslateWithFallback("security_anomaly_rows", "Security Anomaly Rows")}: ${logs.security_anomalies?.rows_label || "0"} (${getAdminLogRiskLabel(logs.security_anomalies?.risk)})`,
+    `${adminTranslateWithFallback("rate_limit_usage_rows", "Rate-Limit Usage Rows")}: ${logs.rate_limit_usage?.rows_label || "0"} (${getAdminLogRiskLabel(logs.rate_limit_usage?.risk)})`,
+  ].join("\n");
+}
+
+function formatAdminSqliteMaintenanceResult(result) {
+  if (!result || typeof result !== "object") {
+    return translate("success");
+  }
+
+  const before = result.before || {};
+  const after = result.after || {};
+
+  return [
+    adminTranslateWithFallback("sqlite_maintenance_completed", "SQLite maintenance completed."),
+    `${adminTranslateWithFallback("sqlite_before_size", "Before Size")}: ${before.size_label || "0 B"}`,
+    `${adminTranslateWithFallback("sqlite_after_size", "After Size")}: ${after.size_label || "0 B"}`,
+    `${adminTranslateWithFallback("sqlite_before_free_pages", "Before Free Pages")}: ${formatAdminNumber(before.freelist_count ?? 0)} (${before.free_size_label || "0 B"})`,
+    `${adminTranslateWithFallback("sqlite_after_free_pages", "After Free Pages")}: ${formatAdminNumber(after.freelist_count ?? 0)} (${after.free_size_label || "0 B"})`,
+    `${adminTranslateWithFallback("sqlite_page_count", "SQLite Pages")}: ${formatAdminNumber(before.page_count ?? 0)} -> ${formatAdminNumber(after.page_count ?? 0)}`,
+    `${adminTranslateWithFallback("duration", "Duration")}: ${formatAdminNumber(result.duration_ms ?? 0)} ms`,
+  ].join("\n");
+}
+
+function escapeAdminCsvCell(value) {
+  const text = String(value ?? "");
+  if (/[",\r\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  return text;
+}
+
+function downloadAdminCsvFile(fileName, rows) {
+  const csvContent = "\uFEFF" + rows.map((row) => row.map(escapeAdminCsvCell).join(",")).join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function exportAdminSubscriptionImageAuditCsv() {
+  const audit = latestAdminSubscriptionImageAudit;
+  if (!audit || typeof audit !== "object") {
+    showErrorMessage(adminTranslateWithFallback("subscription_image_audit_export_empty", "Run an image audit before exporting CSV."));
+    return;
+  }
+
+  const rows = [
+    ["section", "key", "value", "size_bytes", "size_label", "path"],
+    ["summary", "indexed_rows", audit.indexed_rows ?? 0, "", "", ""],
+    ["summary", "indexed_files", audit.indexed_files ?? 0, "", "", ""],
+    ["summary", "disk_files", audit.disk_files ?? 0, "", "", ""],
+    ["summary", "orphan_files", audit.orphan_files ?? 0, audit.orphan_bytes ?? 0, audit.orphan_size_label || "", ""],
+    ["summary", "missing_variant_rows", audit.missing_variant_rows ?? 0, "", "", ""],
+  ];
+
+  if (Array.isArray(audit.orphan_details)) {
+    audit.orphan_details.forEach((item) => {
+      rows.push([
+        "orphan_file",
+        "path",
+        "",
+        item?.size_bytes ?? 0,
+        item?.size_label || "",
+        item?.path || "",
+      ]);
+    });
+  }
+
+  downloadAdminCsvFile(`wallos-subscription-image-audit-${Date.now()}.csv`, rows);
+  showSuccessMessage(adminTranslateWithFallback("subscription_image_audit_exported", "Subscription image audit CSV exported."));
+}
+
+function initializeAdminMaintenanceStorageSummary() {
+  const container = document.getElementById("adminMaintenanceStorageSummary");
+  if (!container?.dataset.storageSummary) {
+    return;
+  }
+
+  try {
+    renderAdminMaintenanceStorageSummary(JSON.parse(container.dataset.storageSummary));
+  } catch (error) {
+    console.warn("Unable to render maintenance storage summary:", error);
+  }
+}
+
 function testSmtpSettingsButton() {
   const button = document.getElementById("testSmtpSettingsButton");
   button.disabled = true;
@@ -474,6 +707,7 @@ function formatAdminMaintenanceAudit(audit) {
     `${adminTranslateWithFallback("subscription_image_indexed_files", "Indexed Image Files")}: ${audit.indexed_files ?? 0}`,
     `${adminTranslateWithFallback("subscription_image_disk_files", "Files On Disk")}: ${audit.disk_files ?? 0}`,
     `${adminTranslateWithFallback("subscription_image_orphan_files", "Orphan Files")}: ${audit.orphan_files ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_orphan_bytes", "Orphan File Size")}: ${audit.orphan_size_label || "0 B"}`,
     `${adminTranslateWithFallback("subscription_image_missing_variants", "Rows Missing Variants")}: ${audit.missing_variant_rows ?? 0}`,
   ];
 
@@ -521,12 +755,16 @@ function runAdminMaintenanceAction(action, button) {
 
       showSuccessMessage(data.message || translate("success"));
       if (resultTextArea) {
-        if (data.audit) {
+        if (data.storage) {
+          renderAdminMaintenanceStorageSummary(data.storage);
+          resultTextArea.value = formatAdminStorageSummary(data.storage);
+        } else if (data.audit) {
+          latestAdminSubscriptionImageAudit = data.audit;
           resultTextArea.value = formatAdminMaintenanceAudit(data.audit);
         } else if (data.oversized_variant_result) {
           resultTextArea.value = formatAdminOversizedVariantResult(data.oversized_variant_result);
         } else if (data.result) {
-          resultTextArea.value = `${data.message || translate("success")}\nDuration: ${data.result.duration_ms || 0} ms`;
+          resultTextArea.value = formatAdminSqliteMaintenanceResult(data.result);
         } else {
           resultTextArea.value = data.message || translate("success");
         }
@@ -865,4 +1103,10 @@ function refreshRuntimeObservabilityButton(button) {
         button.disabled = false;
       }
     });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeAdminMaintenanceStorageSummary);
+} else {
+  initializeAdminMaintenanceStorageSummary();
 }

@@ -169,6 +169,7 @@ body.dynamic-wallpaper-enabled .invite-code-card,
 body.dynamic-wallpaper-enabled .access-log-modal,
 body.dynamic-wallpaper-enabled .generated-password-modal,
 body.dynamic-wallpaper-enabled .access-log-card,
+body.dynamic-wallpaper-enabled .backup-summary-card,
 body.dynamic-wallpaper-enabled .runtime-observability-panel,
 body.dynamic-wallpaper-enabled .runtime-anomaly-card {
     --text-color: var(--wallos-dynamic-text-color);
@@ -221,6 +222,7 @@ body.dark.dynamic-wallpaper-enabled .invite-code-card,
 body.dark.dynamic-wallpaper-enabled .access-log-modal,
 body.dark.dynamic-wallpaper-enabled .generated-password-modal,
 body.dark.dynamic-wallpaper-enabled .access-log-card,
+body.dark.dynamic-wallpaper-enabled .backup-summary-card,
 body.dark.dynamic-wallpaper-enabled .runtime-observability-panel,
 body.dark.dynamic-wallpaper-enabled .runtime-anomaly-card {
     background-color: rgba(14, 18, 24, 0.88);
