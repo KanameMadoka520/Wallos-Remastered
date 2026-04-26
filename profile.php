@@ -75,8 +75,8 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                             <div class="avatar-list">
                                 <?php foreach (scandir('images/avatars') as $image): ?>
                                     <?php if (!str_starts_with($image, '.')): ?>
-                                        <img src="images/avatars/<?= $image ?>" alt="<?= $image ?>" class="avatar-option"
-                                            data-src="images/avatars/<?= $image ?>">
+                                        <img src="images/avatars/<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" class="avatar-option"
+                                            data-src="images/avatars/<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>">
                                     <?php endif ?>
                                 <?php endforeach ?>
 
@@ -84,11 +84,11 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                                     <?php 
                                         $filename = basename($path); 
                                     ?>
-                                    <div class="avatar-container" data-src="<?= $filename ?>">
-                                        <img src="<?= $path ?>" alt="<?= $filename ?>"
-                                            class="avatar-option" data-src="<?= $path ?>">
+                                    <div class="avatar-container" data-src="<?= htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') ?>">
+                                        <img src="<?= htmlspecialchars($path, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') ?>"
+                                            class="avatar-option" data-src="<?= htmlspecialchars($path, ENT_QUOTES, 'UTF-8') ?>">
                                         
-                                        <div class="remove-avatar" onclick="deleteAvatar('<?= $filename ?>')"
+                                        <div class="remove-avatar" onclick="deleteAvatar('<?= htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') ?>')"
                                             title="<?= translate('delete_avatar', $i18n) ?>">
                                             <i class="fa-solid fa-xmark"></i>
                                         </div>
@@ -109,23 +109,23 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                     <div class="grow">
                         <div class="form-group">
                             <label for="username"><?= translate('username', $i18n) ?>:</label>
-                            <input type="text" id="username" name="username" value="<?= $userData['username'] ?>"
+                            <input type="text" id="username" name="username" value="<?= htmlspecialchars($userData['username'], ENT_QUOTES, 'UTF-8') ?>"
                                 disabled>
                         </div>
                         <div class="form-group">
                             <label for="firstname"><?= translate('firstname', $i18n) ?>:</label>
                             <input type="text" id="firstname" name="firstname" autocomplete="given-name"
-                                value="<?= $userData['firstname'] ?>">
+                                value="<?= htmlspecialchars($userData['firstname'], ENT_QUOTES, 'UTF-8') ?>">
                         </div>
                         <div class="form-group">
                             <label for="lastname"><?= translate('lastname', $i18n) ?>:</label>
                             <input type="text" id="lastname" name="lastname" autocomplete="family-name"
-                                value="<?= $userData['lastname'] ?>">
+                                value="<?= htmlspecialchars($userData['lastname'], ENT_QUOTES, 'UTF-8') ?>">
                         </div>
                         <div class="form-group">
                             <label for="email"><?= translate('email', $i18n) ?>:</label>
                             <input type="email" id="email" name="email" autocomplete="email"
-                                value="<?= $userData['email'] ?>" required>
+                                value="<?= htmlspecialchars($userData['email'], ENT_QUOTES, 'UTF-8') ?>" required>
                         </div>
                         <div class="form-group">
                             <label for="password"><?= translate('password', $i18n) ?>:</label>
@@ -160,7 +160,7 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                                         $userData['currency_symbol'] = $currency['symbol'];
                                     }
                                     ?>
-                                    <option value="<?= $currency['id'] ?>" <?= $selected ?>><?= $currency['name'] ?></option>
+                                    <option value="<?= $currency['id'] ?>" <?= $selected ?>><?= htmlspecialchars($currency['name'], ENT_QUOTES, 'UTF-8') ?></option>
                                     <?php
                                 }
                                 ?>
@@ -324,7 +324,7 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
         </header>
         <div class="account-api-key">
             <div class="form-group-inline">
-                <input type="text" id="apikey" name="apikey" value="<?= $userData['api_key'] ?>" placeholder="<?= translate('api_key', $i18n) ?>" readonly>
+                <input type="text" id="apikey" name="apikey" value="<?= htmlspecialchars($userData['api_key'], ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= translate('api_key', $i18n) ?>" readonly>
                 <input type="submit" value="<?= translate('regenerate', $i18n) ?>" id="regenerateApiKey" onClick="regenerateApiKey()" />
             </div>
             <div class="settings-notes">

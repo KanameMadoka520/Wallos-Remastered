@@ -501,6 +501,78 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected admin runtime observability endpoint, UI, styling, filtered anomaly browser, and HTML escaping.'
     );
 
+    $ssrfHelperPhp = wallos_regression_read_repo_file($config, 'includes/ssrf_helper.php');
+    $logoSearchPhp = wallos_regression_read_repo_file($config, 'endpoints/logos/search.php');
+    $paymentSearchPhp = wallos_regression_read_repo_file($config, 'endpoints/payments/search.php');
+    $subscriptionAddPhp = wallos_regression_read_repo_file($config, 'endpoints/subscription/add.php');
+    $paymentAddPhp = wallos_regression_read_repo_file($config, 'endpoints/payments/add.php');
+    $aiFetchModelsPhp = wallos_regression_read_repo_file($config, 'endpoints/ai/fetch_models.php');
+    $ssrfHardeningValid = wallos_regression_text_has_all($ssrfHelperPhp, array(
+        'function is_cgnat_ip($ip)',
+        "str_replace('::ffff:', '', \$ip)",
+        'function validate_webhook_url_for_ssrf($url, $db, $i18n, $userId = null)',
+        'Standard users are not permitted to use internal network addresses',
+        'function is_url_safe_for_ssrf($url, $db, $userId = null)',
+    )) && wallos_regression_text_has_all($logoSearchPhp, array(
+        "require_once '../../includes/ssrf_helper.php';",
+        'is_cgnat_ip($ip)',
+        'CURLOPT_RESOLVE',
+        'CURLOPT_MAXREDIRS',
+    )) && wallos_regression_text_has_all($paymentSearchPhp, array(
+        "require_once '../../includes/ssrf_helper.php';",
+        'is_cgnat_ip($ip)',
+        'CURLOPT_RESOLVE',
+        'CURLOPT_MAXREDIRS',
+    )) && wallos_regression_text_has_all($subscriptionAddPhp, array(
+        "require_once '../../includes/ssrf_helper.php';",
+        'is_cgnat_ip($ip)',
+        'CURLOPT_FOLLOWLOCATION, false',
+        'CURLOPT_RESOLVE',
+    )) && wallos_regression_text_has_all($paymentAddPhp, array(
+        "require_once '../../includes/ssrf_helper.php';",
+        'is_cgnat_ip($ip)',
+        'CURLOPT_FOLLOWLOCATION, false',
+        'CURLOPT_RESOLVE',
+    )) && wallos_regression_text_has_all($aiFetchModelsPhp, array(
+        '$ssrf = null;',
+        'validate_webhook_url_for_ssrf($aiOllamaHost, $db, $i18n, $userId)',
+        'CURLOPT_RESOLVE',
+    ));
+    $results[] = wallos_regression_make_result(
+        $ssrfHardeningValid ? 'PASS' : 'FAIL',
+        'static',
+        'upstream-4-8-3-ssrf-hardening-contract',
+        $ssrfHardeningValid
+            ? 'Upstream 4.8.1 SSRF and DNS rebinding hardening is preserved in Remastered endpoints.'
+            : 'Expected SSRF helper, logo/payment fetchers, subscription/payment adders, and AI endpoint to keep upstream-style SSRF hardening.'
+    );
+
+    $profilePhp = wallos_regression_read_repo_file($config, 'profile.php');
+    $settingsPhp = wallos_regression_read_repo_file($config, 'settings.php');
+    $selfXssEscapingValid = wallos_regression_text_has_all($adminPhp, array(
+        "htmlspecialchars(\$settings['server_url'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(\$user['email'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(\$oidcSettings['client_secret'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(\$settings['smtp_password'], ENT_QUOTES, 'UTF-8')",
+    )) && wallos_regression_text_has_all($profilePhp, array(
+        "htmlspecialchars(\$userData['username'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(\$userData['email'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(\$userData['api_key'], ENT_QUOTES, 'UTF-8')",
+    )) && wallos_regression_text_has_all($settingsPhp, array(
+        "htmlspecialchars(\$notificationsEmail['smtp_password'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(\$notificationsDiscord['webhook_url'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(\$notificationsWebhook['payload'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(\$category['name'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(\$payment['name'], ENT_QUOTES, 'UTF-8')",
+    ));
+    $results[] = wallos_regression_make_result(
+        $selfXssEscapingValid ? 'PASS' : 'FAIL',
+        'static',
+        'upstream-4-8-3-self-xss-escaping-contract',
+        $selfXssEscapingValid
+            ? 'Private admin/profile/settings outputs keep upstream-style self-XSS escaping.'
+            : 'Expected admin/profile/settings private fields to keep htmlspecialchars escaping on user-controlled values.'
+    );
     return $results;
 }
 

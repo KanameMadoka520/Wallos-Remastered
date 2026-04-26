@@ -3,6 +3,7 @@ error_reporting(E_ERROR | E_PARSE);
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/inputvalidation.php';
 require_once '../../includes/getsettings.php';
+require_once '../../includes/ssrf_helper.php';
 require_once '../../includes/validate_endpoint.php';
 
 if (!file_exists('../../images/uploads/logos')) {
@@ -90,7 +91,7 @@ function getLogoFromUrl($url, $uploadDir, $name, $i18n, $settings)
         $host = (string) $urlParts['host'];
         $port = isset($urlParts['port']) ? (int) $urlParts['port'] : ($urlParts['scheme'] === 'https' ? 443 : 80);
         $ip = gethostbyname($host);
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false || is_cgnat_ip($ip)) {
             emitPaymentAddJsonError($i18n, 'Invalid IP Address.');
         }
 

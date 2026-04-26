@@ -368,7 +368,7 @@ $pageSections = [
             ?>
             <div class="form-group">
                 <label for="serverUrl"><?= translate('server_url', $i18n) ?></label>
-                <input type="text" id="serverUrl" autocomplete="off" value="<?= $settings['server_url'] ?>" />
+                <input type="text" id="serverUrl" autocomplete="off" value="<?= htmlspecialchars($settings['server_url'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <label for="customEditionTitle"><?= translate('custom_edition_title', $i18n) ?></label>
@@ -481,7 +481,7 @@ $pageSections = [
                             </div>
                             <div title="<?= translate('email', $i18n) ?>">
                                 <span class="user-card-label"><?= translate('email', $i18n) ?></span>
-                                <a href="mailto:<?= $user['email'] ?>"><?= $user['email'] ?></a>
+                                <a href="mailto:<?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?></a>
                             </div>
                         </div>
                         <div class="user-list-actions">
@@ -838,47 +838,47 @@ $pageSections = [
             </div>
             <div class="form-group">
                 <input type="text" id="oidcName" placeholder="<?= translate('provider_name', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['name'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['name'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcClientId" placeholder="<?= translate('client_id', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['client_id'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['client_id'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcClientSecret" placeholder="<?= translate('client_secret', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['client_secret'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['client_secret'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcAuthUrl" placeholder="<?= translate('auth_url', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['authorization_url'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['authorization_url'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcTokenUrl" placeholder="<?= translate('token_url', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['token_url'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['token_url'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcUserInfoUrl" placeholder="<?= translate('user_info_url', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['user_info_url'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['user_info_url'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcRedirectUrl" placeholder="<?= translate('redirect_url', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['redirect_url'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['redirect_url'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcLogoutUrl" placeholder="<?= translate('logout_url', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['logout_url'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['logout_url'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcUserIdentifierField" placeholder="<?= translate('user_identifier_field', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['user_identifier_field'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['user_identifier_field'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcScopes" placeholder="<?= translate('scopes', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['scopes'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['scopes'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <input type="hidden" id="oidcAuthStyle" placeholder="<?= translate('auth_style', $i18n) ?>" autocomplete="off"
-                    value="<?= $oidcSettings['auth_style'] ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['auth_style'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group-inline">
                 <input type="checkbox" id="oidcAutoCreateUser" <?= $oidcSettings['auto_create_user'] ? 'checked' : '' ?> />
@@ -904,9 +904,9 @@ $pageSections = [
         <div class="admin-form">
             <div class="form-group-inline">
                 <input type="text" name="smtpaddress" id="smtpaddress" autocomplete="off"
-                    placeholder="<?= translate('smtp_address', $i18n) ?>" value="<?= $settings['smtp_address'] ?>" />
+                    placeholder="<?= translate('smtp_address', $i18n) ?>" value="<?= htmlspecialchars($settings['smtp_address'], ENT_QUOTES, 'UTF-8') ?>" />
                 <input type="text" name="smtpport" id="smtpport" autocomplete="off"
-                    placeholder="<?= translate('port', $i18n) ?>" class="one-third" value="<?= $settings['smtp_port'] ?>" />
+                    placeholder="<?= translate('port', $i18n) ?>" class="one-third" value="<?= htmlspecialchars($settings['smtp_port'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group-inline">
                 <div>
@@ -927,15 +927,15 @@ $pageSections = [
             </div>
             <div class="form-group-inline">
                 <input type="text" name="smtpusername" id="smtpusername" autocomplete="off"
-                    placeholder="<?= translate('smtp_username', $i18n) ?>" value="<?= $settings['smtp_username'] ?>" />
+                    placeholder="<?= translate('smtp_username', $i18n) ?>" value="<?= htmlspecialchars($settings['smtp_username'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group-inline">
                 <input type="password" name="smtppassword" id="smtppassword" autocomplete="off"
-                    placeholder="<?= translate('smtp_password', $i18n) ?>" value="<?= $settings['smtp_password'] ?>" />
+                    placeholder="<?= translate('smtp_password', $i18n) ?>" value="<?= htmlspecialchars($settings['smtp_password'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group-inline">
                 <input type="text" name="fromemail" id="fromemail" autocomplete="off"
-                    placeholder="<?= translate('from_email', $i18n) ?>" value="<?= $settings['from_email'] ?>" />
+                    placeholder="<?= translate('from_email', $i18n) ?>" value="<?= htmlspecialchars($settings['from_email'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="buttons">
                 <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('test', $i18n) ?>"

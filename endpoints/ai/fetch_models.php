@@ -15,6 +15,8 @@ $aiType = isset($data["type"]) ? trim($data["type"]) : '';
 $aiApiKey = isset($data["api_key"]) ? trim($data["api_key"]) : '';
 $aiOllamaHost = isset($data["ollama_host"]) ? trim($data["ollama_host"]) : '';
 
+$ssrf = null;
+
 // Validate ai-type
 if (!in_array($aiType, ['chatgpt', 'gemini', 'openrouter', 'ollama', 'openai-compatible'])) {
     echo json_encode(["success" => false, "message" => translate('error', $i18n)]);
@@ -56,7 +58,7 @@ if ($aiType === 'chatgpt') {
         exit;
     }
 
-    $ssrf = validate_webhook_url_for_ssrf($aiOllamaHost, $db, $i18n);
+    $ssrf = validate_webhook_url_for_ssrf($aiOllamaHost, $db, $i18n, $userId);
 
     // API key is optional — local instances don't need one
     if (!empty($aiApiKey)) {
@@ -82,7 +84,7 @@ if ($aiType === 'chatgpt') {
         exit;
     }
 
-    $ssrf = validate_webhook_url_for_ssrf($aiOllamaHost, $db, $i18n);
+    $ssrf = validate_webhook_url_for_ssrf($aiOllamaHost, $db, $i18n, $userId);
 
     $apiUrl = rtrim($aiOllamaHost, '/') . '/api/tags';
 }
@@ -92,6 +94,9 @@ $ch = curl_init($apiUrl);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+if ($ssrf) {
+    curl_setopt($ch, CURLOPT_RESOLVE, ["{$ssrf['host']}:{$ssrf['port']}:{$ssrf['ip']}"]);
+}
 $response = curl_exec($ch);
 
 if (curl_errno($ch)) {
