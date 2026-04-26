@@ -51,6 +51,7 @@ function wallos_regression_build_suite_catalog()
                 'subscription-image-size-contract' => 'subscription image viewer keeps thumbnail/preview/original size slots',
                 'maintenance-tools-contract' => 'admin maintenance tools expose retention strategy, image audit, and SQLite maintenance',
                 'subscription-browser-e2e-contract' => 'browser E2E script keeps high-risk subscription interactions and diagnostic artifacts',
+                'admin-observability-contract' => 'admin runtime observability keeps anomaly summaries, filtered browsers, and safe log rendering',
             ),
         ),
         'legacy' => array(

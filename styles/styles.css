@@ -5665,6 +5665,78 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   margin-bottom: 18px;
 }
 
+.runtime-observability-panel {
+  border: 1px solid rgba(var(--main-color-rgb), 0.16);
+  border-radius: 18px;
+  padding: 16px;
+  margin: 8px 0 18px;
+  background:
+    radial-gradient(circle at top left, rgba(var(--main-color-rgb), 0.08), transparent 38%),
+    rgba(var(--main-color-rgb), 0.03);
+}
+
+.runtime-observability-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.runtime-observability-header h3 {
+  margin: 0 0 6px;
+}
+
+.runtime-observability-header p {
+  margin: 0;
+  opacity: 0.78;
+  line-height: 1.55;
+}
+
+.runtime-observability-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.runtime-observability-feed {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.runtime-anomaly-card {
+  border: 1px solid rgba(var(--main-color-rgb), 0.14);
+  border-radius: 14px;
+  padding: 13px 14px;
+  background-color: rgba(var(--box-background-color-rgb), 0.78);
+}
+
+.runtime-anomaly-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.runtime-anomaly-card-header strong {
+  color: var(--main-color);
+}
+
+.runtime-anomaly-card p {
+  margin: 0 0 8px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.runtime-anomaly-card small {
+  display: block;
+  opacity: 0.72;
+  line-height: 1.45;
+}
+
 .access-log-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -5752,6 +5824,20 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
 }
 
 @media (max-width: 900px) {
+  .runtime-observability-header {
+    flex-direction: column;
+  }
+
+  .runtime-observability-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .runtime-observability-actions .button,
+  .runtime-observability-actions .secondary-button {
+    flex: 1 1 180px;
+  }
+
   .access-log-filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

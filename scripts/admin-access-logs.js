@@ -1,4 +1,13 @@
 ﻿(function () {
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   function removeSecurityAnomaliesModal() {
     const existingModal = document.getElementById('admin-security-anomaly-backdrop');
     if (existingModal) existingModal.remove();
@@ -20,9 +29,9 @@
       card.className = 'access-log-card';
       const header = document.createElement('div');
       header.className = 'access-log-header';
-      header.innerHTML = `<div class="access-log-card-title"><span class="access-log-id-badge">#${String(item.id || '-')}</span><strong>${String(item.anomaly_type || '-')}</strong></div><span>${String(item.anomaly_code || '-')}</span>`;
+      header.innerHTML = `<div class="access-log-card-title"><span class="access-log-id-badge">#${escapeHtml(item.id || '-')}</span><strong>${escapeHtml(item.anomaly_type || '-')}</strong></div><span>${escapeHtml(item.anomaly_code || '-')}</span>`;
       card.appendChild(header);
-      card.innerHTML += `<p>${ui.dataset.messageLabel}: ${String(item.message || '-')}</p><p>${ui.dataset.userLabel}: ${String(item.username || '-')}</p><p>${ui.dataset.ipLabel}: ${String(item.ip_address || '-')}</p><p>${ui.dataset.forwardedLabel}: ${String(item.forwarded_for || '-')}</p><p>${ui.dataset.agentLabel}: ${String(item.user_agent || '-')}</p><p>${ui.dataset.timeLabel}: ${String(item.created_at || '-')}</p>`;
+      card.innerHTML += `<p>${escapeHtml(ui.dataset.messageLabel)}: ${escapeHtml(item.message || '-')}</p><p>${escapeHtml(ui.dataset.userLabel)}: ${escapeHtml(item.username || '-')}</p><p>${escapeHtml(ui.dataset.ipLabel)}: ${escapeHtml(item.ip_address || '-')}</p><p>${escapeHtml(ui.dataset.forwardedLabel)}: ${escapeHtml(item.forwarded_for || '-')}</p><p>${escapeHtml(ui.dataset.agentLabel)}: ${escapeHtml(item.user_agent || '-')}</p><p>${escapeHtml(ui.dataset.timeLabel)}: ${escapeHtml(item.created_at || '-')}</p>`;
       const headersJson = String(item.headers_json || '').trim();
       if (headersJson !== '') {
         const details = document.createElement('details');
@@ -38,7 +47,7 @@
       if (detailsJson !== '') {
         const details = document.createElement('details');
         const summary = document.createElement('summary');
-        summary.textContent = 'Details';
+        summary.textContent = ui.dataset.detailsLabel || 'Details';
         const pre = document.createElement('pre');
         pre.textContent = detailsJson;
         details.appendChild(summary);
@@ -68,10 +77,11 @@
       .finally(() => { searchButton.disabled = false; });
   }
 
-  function openSecurityAnomaliesModal() {
+  function openSecurityAnomaliesModal(initialFilters = {}) {
     removeSecurityAnomaliesModal();
     const ui = document.getElementById('admin-security-anomaly-ui');
     if (!ui) { showErrorMessage(translate('error')); return; }
+    const defaults = initialFilters && typeof initialFilters === 'object' ? initialFilters : {};
     const backdrop = document.createElement('div');
     backdrop.id = 'admin-security-anomaly-backdrop';
     backdrop.className = 'access-log-modal-backdrop';
@@ -97,6 +107,11 @@
     [typeField, keywordField, startField, endField, limitField, actionField].forEach((node) => filterGrid.appendChild(node));
     const resultSummary = document.createElement('p'); resultSummary.className = 'access-log-results-summary';
     const resultContainer = document.createElement('div');
+    typeField.querySelector('select').value = String(defaults.anomaly_type || '');
+    keywordField.querySelector('input').value = String(defaults.keyword || '');
+    startField.querySelector('input').value = String(defaults.start_at || '');
+    endField.querySelector('input').value = String(defaults.end_at || '');
+    limitField.querySelector('select').value = String(defaults.limit || '100');
     const runSearch = () => {
       fetchSecurityAnomalies({ anomaly_type: document.getElementById('securityAnomalyType')?.value || '', keyword: document.getElementById('securityAnomalyKeyword')?.value || '', start_at: document.getElementById('securityAnomalyStart')?.value || '', end_at: document.getElementById('securityAnomalyEnd')?.value || '', limit: document.getElementById('securityAnomalyLimit')?.value || '100' }, resultSummary, resultContainer, searchButton, ui);
     };
@@ -139,10 +154,10 @@
       card.className = 'access-log-card';
       const header = document.createElement('div');
       header.className = 'access-log-header';
-      header.innerHTML = `<div class="access-log-card-title"><span class="access-log-id-badge">#${String(log.id || '-')}</span><strong>${String(log.method || '-')}</strong></div><span>${String(log.path || '-')}</span>`;
+      header.innerHTML = `<div class="access-log-card-title"><span class="access-log-id-badge">#${escapeHtml(log.id || '-')}</span><strong>${escapeHtml(log.method || '-')}</strong></div><span>${escapeHtml(log.path || '-')}</span>`;
       const headerJson = String(log.headers_json || '').trim();
       card.appendChild(header);
-      card.innerHTML += `<p>${ui.dataset.userLabel}: ${String(log.username || '-')}</p><p>${ui.dataset.ipLabel}: ${String(log.ip_address || '-')}</p><p>${ui.dataset.forwardedLabel}: ${String(log.forwarded_for || '-')}</p><p>${ui.dataset.agentLabel}: ${String(log.user_agent || '-')}</p><p>${ui.dataset.timeLabel}: ${String(log.created_at || '-')}</p>`;
+      card.innerHTML += `<p>${escapeHtml(ui.dataset.userLabel)}: ${escapeHtml(log.username || '-')}</p><p>${escapeHtml(ui.dataset.ipLabel)}: ${escapeHtml(log.ip_address || '-')}</p><p>${escapeHtml(ui.dataset.forwardedLabel)}: ${escapeHtml(log.forwarded_for || '-')}</p><p>${escapeHtml(ui.dataset.agentLabel)}: ${escapeHtml(log.user_agent || '-')}</p><p>${escapeHtml(ui.dataset.timeLabel)}: ${escapeHtml(log.created_at || '-')}</p>`;
       if (headerJson !== '') {
         const details = document.createElement('details');
         const summary = document.createElement('summary');
