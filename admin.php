@@ -1123,10 +1123,12 @@ $pageSections = [
                     <p><?= translate('runtime_observability_info', $i18n) ?></p>
                 </div>
                 <div class="runtime-observability-actions">
-                    <button type="button" class="secondary-button thin" onClick="window.WallosAdminAccessLogs?.openSecurityAnomaliesModal?.({ anomaly_type: 'client_runtime' })">
+                    <button type="button" class="secondary-button thin" id="openClientRuntimeAnomaliesButton"
+                        onClick="window.WallosAdminAccessLogs?.openSecurityAnomaliesModal?.({ anomaly_type: 'client_runtime' })">
                         <?= translate('open_frontend_errors', $i18n) ?>
                     </button>
-                    <button type="button" class="secondary-button thin" onClick="window.WallosAdminAccessLogs?.openSecurityAnomaliesModal?.({ anomaly_type: 'request_failure' })">
+                    <button type="button" class="secondary-button thin" id="openRequestFailureAnomaliesButton"
+                        onClick="window.WallosAdminAccessLogs?.openSecurityAnomaliesModal?.({ anomaly_type: 'request_failure' })">
                         <?= translate('open_request_failures', $i18n) ?>
                     </button>
                     <button type="button" class="button thin" id="refreshRuntimeObservabilityButton" onClick="refreshRuntimeObservabilityButton(this)">
@@ -1159,7 +1161,8 @@ $pageSections = [
             </div>
         </div>
         <div class="buttons">
-            <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('open_security_anomaly_browser', $i18n) ?>"
+            <input type="button" class="secondary-button thin mobile-grow" id="openSecurityAnomaliesButton"
+                value="<?= translate('open_security_anomaly_browser', $i18n) ?>"
                 onClick="window.WallosAdminAccessLogs?.openSecurityAnomaliesModal?.()" />
             <input type="button" class="secondary-button thin mobile-grow" value="<?= translate('service_worker_clear_client_cache', $i18n) ?>"
                 id="clearClientCacheButton" onClick="clearClientCacheButton(this)" />
@@ -1262,7 +1265,8 @@ $pageSections = [
                 </p>
             </div>
             <div class="buttons">
-                <input type="button" class="button thin mobile-grow" value="<?= translate('access_logs_open_modal', $i18n) ?>"
+                <input type="button" class="button thin mobile-grow" id="openAccessLogsButton"
+                    value="<?= translate('access_logs_open_modal', $i18n) ?>"
                     onClick="window.WallosAdminAccessLogs?.openAccessLogsModal?.()" />
             </div>
         </div>
@@ -1352,6 +1356,7 @@ $pageSections = [
             </div>
             <div class="inline-row">
                 <input type="button" value="<?= translate('refresh_storage_usage', $i18n) ?>" class="button tiny mobile-grow"
+                    id="refreshStorageUsageButton"
                     onclick="runAdminMaintenanceAction('get_storage_usage', this)">
             </div>
             <h3><?= translate('subscription_image_audit', $i18n) ?></h3>

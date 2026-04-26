@@ -2,22 +2,26 @@
 
 ## Active
 
-- None
+### v1.3 后台稳定性闭环与缓存治理
+- **Status:** In Progress
+- **Started:** 2026-04-26
+- **Goal:** 补齐后台高风险运维链路的浏览器回归、缓存治理与会话恢复闭环，在不改变现有视觉效果的前提下继续降低回归风险。
+- **Planned phases:** 4
+- **Requirements:** 8
+- **Progress:** Phase 9 / 12 in progress
 
 ## Completed
 
-### v1.2 残余特殊流收口与订阅页第二轮减耦
-
+### v1.2 剩余特殊流收口与订阅页第二轮减耦
 - **Status:** Complete
 - **Started:** 2026-04-21
 - **Completed:** 2026-04-21
-- **Goal:** 继续收掉残余特殊请求流，并对订阅页剩余复杂区做第二轮低风险减耦。
+- **Goal:** 继续收掉剩余特殊请求流，并对订阅页剩余复杂区做第二轮低风险减耦。
 - **Phases:** 2
 - **Requirements:** 4
 - **Progress:** Phase 8 / 8 completed
 
 ### v1.1 结构收敛与低耦合重构
-
 - **Status:** Complete
 - **Started:** 2026-04-20
 - **Completed:** 2026-04-21
@@ -27,7 +31,6 @@
 - **Progress:** Phase 6 / 6 completed
 
 ### v1.0 稳定性工程
-
 - **Status:** Complete
 - **Started:** 2026-04-20
 - **Completed:** 2026-04-20
@@ -37,4 +40,4 @@
 - **Progress:** Phase 3 / 3 completed
 
 ---
-*Last updated: 2026-04-21 after milestone v1.2 completion*
+*Last updated: 2026-04-26 after milestone v1.3 start*
