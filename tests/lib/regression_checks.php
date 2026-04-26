@@ -273,18 +273,24 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     )) && wallos_regression_text_has_all($serviceWorkerJs, array(
         "static-cache-v17",
         "WALLOS_CLEAR_CACHES",
+        "WALLOS_CACHE_STATUS",
+        "currentCaches",
         "WALLOS_CACHE_PREFIXES",
     )) && wallos_regression_text_has_all($commonJs, array(
         'initializeCacheRefreshMarker',
         'clearWallosClientCaches',
+        'getWallosClientCacheStatus',
+        'status: getWallosClientCacheStatus',
         'wallos-client-cache-refresh-token',
     )) && wallos_regression_text_has_all($adminPhp, array(
         'service_worker_broadcast_refresh',
         'requestClientCacheRefreshButton',
+        'admin-client-cache-state',
     )) && wallos_regression_text_has_all($adminJs, array(
         'requestClientCacheRefreshButton',
         'endpoints/admin/requestcacherefresh.php',
         'WallosClientCache',
+        'WallosClientCache.status',
     )) && wallos_regression_text_has_all($cacheRefreshEndpoint, array(
         'wallos_write_cache_refresh_marker',
         'validate_endpoint_admin.php',

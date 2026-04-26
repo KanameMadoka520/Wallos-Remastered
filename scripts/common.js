@@ -203,6 +203,57 @@ function clearWallosClientCaches() {
   return Promise.allSettled([cacheDeletePromise, serviceWorkerPromise]);
 }
 
+function getWallosClientCacheStatus() {
+  const emptyStatus = {
+    supported: false,
+    cacheNames: [],
+    wallosCacheNames: [],
+    wallosCacheCount: 0,
+    serviceWorkerResponse: null,
+  };
+
+  if (!("caches" in window)) {
+    return Promise.resolve(emptyStatus);
+  }
+
+  const serviceWorkerStatusPromise = ("serviceWorker" in navigator)
+    ? navigator.serviceWorker.getRegistration()
+      .then((registration) => {
+        const target = navigator.serviceWorker.controller || registration?.active || registration?.waiting || registration?.installing;
+        if (!target || typeof MessageChannel === "undefined") {
+          return null;
+        }
+
+        return new Promise((resolve) => {
+          const channel = new MessageChannel();
+          const timeout = window.setTimeout(() => resolve(null), 1500);
+          channel.port1.onmessage = (event) => {
+            window.clearTimeout(timeout);
+            resolve(event.data || null);
+          };
+          target.postMessage({ type: "WALLOS_CACHE_STATUS" }, [channel.port2]);
+        });
+      })
+      .catch(() => null)
+    : Promise.resolve(null);
+
+  return Promise.all([
+    caches.keys().catch(() => []),
+    serviceWorkerStatusPromise,
+  ]).then(([cacheNames, serviceWorkerResponse]) => {
+    const normalizedCacheNames = Array.isArray(cacheNames) ? cacheNames : [];
+    const wallosCacheNames = normalizedCacheNames.filter((key) => /^(static-cache-|pages-cache-|logos-cache-)/.test(key));
+
+    return {
+      supported: true,
+      cacheNames: normalizedCacheNames,
+      wallosCacheNames,
+      wallosCacheCount: wallosCacheNames.length,
+      serviceWorkerResponse,
+    };
+  });
+}
+
 function initializeCacheRefreshMarker() {
   const marker = window.WallosCacheRefresh || {};
   const token = String(marker.token || "").trim();
@@ -243,6 +294,7 @@ function initializeCacheRefreshMarker() {
 
 window.WallosClientCache = {
   clear: clearWallosClientCaches,
+  status: getWallosClientCacheStatus,
 };
 
 function getRequestQueueNoticeMessages(status, pendingCount = 0) {

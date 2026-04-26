@@ -307,6 +307,8 @@ $pageSections = [
         data-installing="<?= htmlspecialchars(translate('service_worker_installing', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-controlled="<?= htmlspecialchars(translate('service_worker_controlled', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-uncontrolled="<?= htmlspecialchars(translate('service_worker_uncontrolled', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-client-cache-status-unavailable="<?= htmlspecialchars(translate('client_cache_status_unavailable', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-client-cache-status-template="<?= htmlspecialchars(translate('client_cache_status_template', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-cache-clear-success="<?= htmlspecialchars(translate('service_worker_cache_cleared', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-cache-refresh-success="<?= htmlspecialchars(translate('service_worker_cache_refresh_requested', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-cache-refresh-failed="<?= htmlspecialchars(translate('service_worker_cache_refresh_failed', $i18n), ENT_QUOTES, 'UTF-8') ?>"></div>
@@ -1106,6 +1108,10 @@ $pageSections = [
             <div class="backup-summary-card">
                 <span><?= translate('service_worker_controller_state', $i18n) ?></span>
                 <strong id="admin-sw-controller-state">-</strong>
+            </div>
+            <div class="backup-summary-card">
+                <span><?= translate('client_cache_status', $i18n) ?></span>
+                <strong class="compact-summary-text" id="admin-client-cache-state">-</strong>
             </div>
             <div class="backup-summary-card">
                 <span><?= translate('recent_anomaly_type_breakdown', $i18n) ?></span>

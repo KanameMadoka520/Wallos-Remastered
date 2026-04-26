@@ -153,6 +153,8 @@ let i18n = {
     subscription_image_local_files_dynamic: "\u672c\u5730\u6a94\u6848\uff1a%1$s",
     subscription_image_variant_reused_original: "\u8907\u7528\u539f\u5716",
     service_worker_cache_cleared: "\u672c\u700f\u89bd\u5668\u5feb\u53d6\u5df2\u6e05\u7406\u3002",
+    client_cache_status_unavailable: "\u76ee\u524d\u700f\u89bd\u5668\u4e0d\u53ef\u7528",
+    client_cache_status_template: "%1$d \u500b\u5feb\u53d6\uff1a%2$s",
     service_worker_cache_refresh_requested: "\u5ba2\u6236\u7aef\u5feb\u53d6\u5237\u65b0\u63d0\u793a\u5df2\u767c\u5e03\u3002",
     service_worker_cache_refresh_failed: "\u767c\u5e03\u5ba2\u6236\u7aef\u5feb\u53d6\u5237\u65b0\u63d0\u793a\u5931\u6557\u3002",
     client_cache_refresh_prompt: "\u7ba1\u7406\u54e1\u5df2\u767c\u5e03\u975c\u614b\u8cc7\u6e90\u5237\u65b0\u63d0\u793a\u3002\u5982\u679c\u9801\u9762\u986f\u793a\u7570\u5e38\uff0c\u8acb\u91cd\u65b0\u6574\u7406\u672c\u9801\u4ee5\u5957\u7528\u6700\u65b0\u8173\u672c\u8207\u6a23\u5f0f\u3002",
