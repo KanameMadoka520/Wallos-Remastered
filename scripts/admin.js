@@ -904,6 +904,7 @@ function initializeAdminServiceWorkerStatus() {
   const ui = document.getElementById("admin-service-worker-ui");
   const registrationNode = document.getElementById("admin-sw-registration-state");
   const controllerNode = document.getElementById("admin-sw-controller-state");
+  const clientCacheNode = document.getElementById("admin-client-cache-state");
 
   if (!ui || !registrationNode || !controllerNode) {
     return;
@@ -947,6 +948,26 @@ function initializeAdminServiceWorkerStatus() {
     .catch(() => {
       registrationNode.textContent = ui.dataset.noRegistration || "No registration";
     });
+
+  if (clientCacheNode && window.WallosClientCache?.status) {
+    Promise.resolve(window.WallosClientCache.status())
+      .then((status) => {
+        if (!status?.supported) {
+          clientCacheNode.textContent = ui.dataset.clientCacheStatusUnavailable || "Unavailable";
+          return;
+        }
+
+        const cacheNames = Array.isArray(status.wallosCacheNames) ? status.wallosCacheNames : [];
+        const cacheSummary = cacheNames.length > 0 ? cacheNames.join(" | ") : "-";
+        const template = ui.dataset.clientCacheStatusTemplate || "%1$d caches: %2$s";
+        clientCacheNode.textContent = template
+          .replace("%1$d", String(status.wallosCacheCount || cacheNames.length || 0))
+          .replace("%2$s", cacheSummary);
+      })
+      .catch(() => {
+        clientCacheNode.textContent = ui.dataset.clientCacheStatusUnavailable || "Unavailable";
+      });
+  }
 }
 
 document.addEventListener("DOMContentLoaded", initializeAdminServiceWorkerStatus);

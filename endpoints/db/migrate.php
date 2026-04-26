@@ -6,11 +6,13 @@ function errorHandler($severity, $message, $file, $line)
 
 // Set the custom error handler
 set_error_handler('errorHandler');
+$projectRoot = dirname(__DIR__, 2);
+chdir($projectRoot);
 /** @var \SQLite3 $db */
 try {
-    require_once 'includes/connect_endpoint_crontabs.php';
+    require_once $projectRoot . '/includes/connect_endpoint_crontabs.php';
 } catch (Exception $e) {
-    require_once '../../includes/connect_endpoint.php';
+    require_once $projectRoot . '/includes/connect_endpoint.php';
 } finally {
     // Restore the default error handler
     restore_error_handler();
@@ -30,13 +32,10 @@ if ($migrationTableExists) {
     }
 }
 
-$allMigrations = glob('migrations/*.php');
-if (count($allMigrations) == 0) {
-    $allMigrations = glob('../../migrations/*.php');
-}
+$allMigrations = glob($projectRoot . '/migrations/*.php');
 
 $allMigrations = array_map(function ($migration) {
-    return str_replace('../../', '', $migration);
+    return 'migrations/' . basename($migration);
 }, $allMigrations);
 
 $completedMigrations = array_map(function ($migration) {
@@ -50,10 +49,11 @@ if (count($requiredMigrations) === 0) {
 }
 
 foreach ($requiredMigrations as $migration) {
-    if (!file_exists($migration)) {
-        $migration = '../../' . $migration;
+    $migrationPath = $projectRoot . '/' . $migration;
+    if (!file_exists($migrationPath)) {
+        continue;
     }
-    require_once $migration;
+    require_once $migrationPath;
 
     $stmtInsert = $db->prepare('INSERT INTO migrations (migration) VALUES (:migration)');
     $stmtInsert->bindParam(':migration', $migration, SQLITE3_TEXT);

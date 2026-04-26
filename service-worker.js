@@ -233,6 +233,31 @@ self.addEventListener('message', function (event) {
                 }
             });
     }
+
+    if (event.data && event.data.type === 'WALLOS_CACHE_STATUS') {
+        const replyPort = event.ports && event.ports[0] ? event.ports[0] : null;
+        if (!replyPort) {
+            return;
+        }
+
+        caches.keys()
+            .then(keys => {
+                const wallosCaches = keys.filter(key => WALLOS_CACHE_PREFIXES.some(prefix => key.startsWith(prefix)));
+                replyPort.postMessage({
+                    success: true,
+                    currentCaches: {
+                        static: STATIC_CACHE,
+                        pages: PAGES_CACHE,
+                        logos: LOGOS_CACHE,
+                    },
+                    wallosCacheNames: wallosCaches,
+                    wallosCacheCount: wallosCaches.length,
+                });
+            })
+            .catch(() => {
+                replyPort.postMessage({ success: false });
+            });
+    }
 });
 
 // Fetch: single handler for all requests

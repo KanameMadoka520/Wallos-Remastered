@@ -151,6 +151,8 @@ let i18n = {
     subscription_image_upload_progress_processing: "服务器正在生成压缩预览图和缩略图",
     subscription_image_original_loading: "正在加载原图",
     service_worker_cache_cleared: "\u672c\u6d4f\u89c8\u5668\u7f13\u5b58\u5df2\u6e05\u7406\u3002",
+    client_cache_status_unavailable: "\u5f53\u524d\u6d4f\u89c8\u5668\u4e0d\u53ef\u7528",
+    client_cache_status_template: "%1$d \u4e2a\u7f13\u5b58\uff1a%2$s",
     service_worker_cache_refresh_requested: "\u5ba2\u6237\u7aef\u7f13\u5b58\u5237\u65b0\u63d0\u793a\u5df2\u53d1\u5e03\u3002",
     service_worker_cache_refresh_failed: "\u53d1\u5e03\u5ba2\u6237\u7aef\u7f13\u5b58\u5237\u65b0\u63d0\u793a\u5931\u8d25\u3002",
     client_cache_refresh_prompt: "\u7ba1\u7406\u5458\u5df2\u7ecf\u53d1\u5e03\u9759\u6001\u8d44\u6e90\u5237\u65b0\u63d0\u793a\u3002\u5982\u679c\u9875\u9762\u663e\u793a\u5f02\u5e38\uff0c\u8bf7\u5237\u65b0\u672c\u9875\u4ee5\u5e94\u7528\u6700\u65b0\u811a\u672c\u548c\u6837\u5f0f\u3002",

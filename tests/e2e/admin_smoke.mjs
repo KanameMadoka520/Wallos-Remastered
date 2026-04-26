@@ -204,6 +204,11 @@ try {
   await step("administrator shell opens cleanly", async () => {
     await page.goto(`${baseUrl}/admin.php`, { waitUntil: "domcontentloaded" });
     await waitForAdminShell();
+    await expectVisible("#admin-client-cache-state", "client cache status card");
+    await page.waitForFunction(() => {
+      const node = document.getElementById("admin-client-cache-state");
+      return !!node && node.textContent.trim().length > 1;
+    }, null, { timeout: 15000 });
   });
 
   await step("runtime observability refreshes cleanly", async () => {

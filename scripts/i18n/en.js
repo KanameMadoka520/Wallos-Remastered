@@ -154,6 +154,8 @@ let i18n = {
   subscription_image_upload_progress_processing: "Generating compressed previews and thumbnails on the server",
   subscription_image_original_loading: "Loading the original image",
   service_worker_cache_cleared: "This browser cache has been cleared.",
+  client_cache_status_unavailable: "Unavailable in this browser",
+  client_cache_status_template: "%1$d caches: %2$s",
   service_worker_cache_refresh_requested: "Client cache refresh notice has been published.",
   service_worker_cache_refresh_failed: "Failed to publish the client cache refresh notice.",
   client_cache_refresh_prompt: "The administrator has published a static-resource refresh. Please reload this page if anything looks stale.",
