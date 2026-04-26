@@ -393,6 +393,29 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected system maintenance helper, admin endpoint, and admin UI wiring.'
     );
 
+    $subscriptionsE2e = wallos_regression_read_repo_file($config, 'tests/e2e/subscriptions_smoke.mjs');
+    $subscriptionsE2eValid = wallos_regression_text_has_all($subscriptionsE2e, array(
+        'attachDiagnostics',
+        'writeFailureArtifacts',
+        'subscription page tabs navigate and reload cleanly',
+        'add subscription saves, closes modal, and refreshes card list',
+        'three-dot menu opens edit modal',
+        'payment history and record-payment modal open',
+        'display and value preference toggles persist by reload instead of half-rendering',
+        'dynamic wallpaper mode keeps immersive toggle clickable',
+        'CSRF refresh warning stays visible until manually closed',
+        'restorePreferences(originalPreferences)',
+        'cleanupCreatedSubscription',
+    ));
+    $results[] = wallos_regression_make_result(
+        $subscriptionsE2eValid ? 'PASS' : 'FAIL',
+        'static',
+        'subscription-browser-e2e-contract',
+        $subscriptionsE2eValid
+            ? 'Subscription browser E2E keeps critical UI flows, diagnostics, and cleanup coverage.'
+            : 'Expected tests/e2e/subscriptions_smoke.mjs to keep critical UI-flow coverage and failure artifacts.'
+    );
+
     return $results;
 }
 

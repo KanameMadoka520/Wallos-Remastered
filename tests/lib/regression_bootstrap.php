@@ -50,6 +50,7 @@ function wallos_regression_build_suite_catalog()
                 'subscription-image-original-passthrough-contract' => 'Uncompressed subscription image uploads keep original bytes instead of re-encoding originals',
                 'subscription-image-size-contract' => 'subscription image viewer keeps thumbnail/preview/original size slots',
                 'maintenance-tools-contract' => 'admin maintenance tools expose retention strategy, image audit, and SQLite maintenance',
+                'subscription-browser-e2e-contract' => 'browser E2E script keeps high-risk subscription interactions and diagnostic artifacts',
             ),
         ),
         'legacy' => array(

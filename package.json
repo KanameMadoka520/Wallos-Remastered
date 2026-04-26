@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "e2e": "npm run e2e:subscriptions",
     "e2e:subscriptions": "node tests/e2e/subscriptions_smoke.mjs"
   },
   "devDependencies": {
