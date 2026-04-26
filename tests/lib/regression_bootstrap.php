@@ -43,7 +43,7 @@ function wallos_regression_build_suite_catalog()
                 'subscription-page-dom-contract' => 'subscriptions.php keeps the critical controls and modal anchors',
                 'subscription-module-load-order' => 'subscriptions.php loads subscription modules in dependency order',
                 'subscription-frontend-lifecycle-contract' => 'subscription page scripts keep shared request and rebind lifecycle hooks',
-                'csrf-refresh-reminder-contract' => 'Long-idle pages and invalid CSRF responses show a refresh reminder instead of a generic error',
+                'csrf-refresh-reminder-contract' => 'Long-idle pages and invalid CSRF responses show a persistent refresh reminder instead of a generic error',
                 'csrf-footer-fingerprint-contract' => 'page footer shows a short CSRF token fingerprint and estimated expiry without exposing the raw token',
                 'service-worker-refresh-contract' => 'admin can publish client cache refresh notices and static assets use stricter versioning',
                 'api-key-transport-contract' => 'API credentials still prefer headers/POST and strip query-string api_key',

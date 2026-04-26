@@ -186,6 +186,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
 
     $commonJs = wallos_regression_read_repo_file($config, 'scripts/common.js');
     $apiJs = wallos_regression_read_repo_file($config, 'scripts/api.js');
+    $stylesCss = wallos_regression_read_repo_file($config, 'styles/styles.css');
     $subscriptionPagesEndpoint = wallos_regression_read_repo_file($config, 'endpoints/subscriptionpages.php');
     $csrfRefreshReminderValid = wallos_regression_text_has_all($commonJs, array(
         'CSRF_BACKGROUND_STALE_MS',
@@ -193,6 +194,9 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'isWallosCsrfFailurePayload',
         'wallos:csrf-invalid',
         'visibilitychange',
+        'showErrorMessage(message, { persistent: true })',
+        'function shouldPersistToast',
+        'toast-persistent',
     )) && wallos_regression_text_has_all($apiJs, array(
         'isCsrfFailurePayload',
         'csrfInvalid',
@@ -201,6 +205,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     )) && wallos_regression_text_has_all($subscriptionPagesEndpoint, array(
         "'code' => 'invalid_csrf'",
         "'error' => 'invalid_csrf'",
+    )) && wallos_regression_text_has_all($stylesCss, array(
+        '.toast.toast-persistent .progress',
     ));
     $results[] = wallos_regression_make_result(
         $csrfRefreshReminderValid ? 'PASS' : 'FAIL',
@@ -213,7 +219,6 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
 
     $csrfPhp = wallos_regression_read_repo_file($config, 'libs/csrf.php');
     $footerPhp = wallos_regression_read_repo_file($config, 'includes/footer.php');
-    $stylesCss = wallos_regression_read_repo_file($config, 'styles/styles.css');
     $dynamicWallpaperCss = wallos_regression_read_repo_file($config, 'styles/dynamic-wallpaper.css');
     $csrfFooterValid = wallos_regression_text_has_all($csrfPhp, array(
         'csrf_token_created_at',

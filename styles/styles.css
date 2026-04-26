@@ -4361,6 +4361,10 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
 
 }
 
+.toast.toast-persistent .progress {
+  display: none;
+}
+
 .toast .progress:before {
   content: "";
   position: absolute;
