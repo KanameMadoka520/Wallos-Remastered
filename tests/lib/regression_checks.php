@@ -374,6 +374,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'wallos_get_storage_usage_summary',
         'wallos_collect_directory_usage',
         'orphan_details',
+        'wallos_cleanup_subscription_image_orphans',
         'wallos_run_sqlite_maintenance',
         'WALLOS_REQUEST_LOG_RETENTION_DAYS',
         'VACUUM',
@@ -385,6 +386,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'get_storage_usage',
         'scan_subscription_images',
         'reuse_oversized_subscription_image_variants',
+        'cleanup_subscription_image_orphans',
         'run_sqlite_maintenance',
         'validate_endpoint_admin.php',
     )) && wallos_regression_text_has_all($adminPhp, array(
@@ -392,11 +394,13 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'adminMaintenanceStorageSummary',
         'export_subscription_image_audit',
         'reuse_oversized_subscription_image_variants',
+        'cleanup_subscription_image_orphans',
         'adminMaintenanceResult',
     )) && wallos_regression_text_has_all($adminJs, array(
         'runAdminMaintenanceAction',
         'renderAdminMaintenanceStorageSummary',
         'exportAdminSubscriptionImageAuditCsv',
+        'formatAdminOrphanCleanupResult',
         'formatAdminSqliteMaintenanceResult',
         'formatAdminOversizedVariantResult',
         'endpoints/admin/systemmaintenance.php',
@@ -431,6 +435,27 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         $subscriptionsE2eValid
             ? 'Subscription browser E2E keeps critical UI flows, diagnostics, and cleanup coverage.'
             : 'Expected tests/e2e/subscriptions_smoke.mjs to keep critical UI-flow coverage and failure artifacts.'
+    );
+
+    $subscriptionImagesE2e = wallos_regression_read_repo_file($config, 'tests/e2e/subscription_images_smoke.mjs');
+    $subscriptionImagesE2eValid = wallos_regression_text_has_all($subscriptionImagesE2e, array(
+        'upload image and save with original passthrough enabled',
+        'uploaded image appears in card and opens viewer with size metadata',
+        'media endpoints preserve original bytes and avoid oversized derivatives',
+        'anonymous users cannot access uploaded subscription media',
+        'permanent deletion removes image record access',
+        'cleanupCreatedSubscription',
+        'originalBytes.equals(originalImageBuffer)',
+        'previewResponse.body.length > originalBytes.length',
+        'thumbnailResponse.body.length > originalBytes.length',
+    ));
+    $results[] = wallos_regression_make_result(
+        $subscriptionImagesE2eValid ? 'PASS' : 'FAIL',
+        'static',
+        'subscription-image-browser-e2e-contract',
+        $subscriptionImagesE2eValid
+            ? 'Subscription image browser E2E covers upload, passthrough, size metadata, access denial, and cleanup.'
+            : 'Expected tests/e2e/subscription_images_smoke.mjs to cover image upload and media access contracts.'
     );
 
     $adminE2e = wallos_regression_read_repo_file($config, 'tests/e2e/admin_smoke.mjs');

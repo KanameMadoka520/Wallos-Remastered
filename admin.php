@@ -1380,6 +1380,9 @@ $pageSections = [
                 <input type="button" value="<?= translate('reuse_oversized_subscription_image_variants', $i18n) ?>" class="secondary-button tiny mobile-grow"
                     onclick="runAdminMaintenanceAction('reuse_oversized_subscription_image_variants', this)"
                     data-confirm-message="<?= htmlspecialchars(translate('reuse_oversized_subscription_image_variants_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>">
+                <input type="button" value="<?= translate('cleanup_subscription_image_orphans', $i18n) ?>" class="secondary-button tiny mobile-grow"
+                    onclick="runAdminMaintenanceAction('cleanup_subscription_image_orphans', this)"
+                    data-confirm-message="<?= htmlspecialchars(translate('cleanup_subscription_image_orphans_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>">
                 <input type="button" value="<?= translate('run_sqlite_maintenance', $i18n) ?>" class="secondary-button tiny mobile-grow"
                     onclick="runAdminMaintenanceAction('run_sqlite_maintenance', this)"
                     data-confirm-message="<?= htmlspecialchars(translate('sqlite_maintenance_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>">

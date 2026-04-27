@@ -123,6 +123,17 @@ npm run e2e:subscriptions
 
 The browser smoke opens the real page and clicks pagination, the three-dot action menu, edit modal, add-subscription save flow, payment history, record-payment modal, image viewer hooks, display-column toggles, cost/value visibility toggles, the dynamic-wallpaper immersive button, and the persistent CSRF refresh reminder. It removes the temporary subscription it creates during the check and restores the subscription-page display preferences that existed before the run.
 
+Subscription media has a separate browser E2E smoke for upload, preview, and access-control behavior:
+
+```bash
+WALLOS_BASE_URL=http://127.0.0.1:18282 \
+WALLOS_TEST_USERNAME=YOUR_TEST_USER \
+WALLOS_TEST_PASSWORD=YOUR_TEST_PASSWORD \
+npm run e2e:images
+```
+
+This smoke uploads a generated PNG through the real add-subscription form, verifies byte-for-byte original passthrough when upload compression is disabled, checks that preview/thumbnail responses are not larger than the original, checks that size metadata has no missing translation marker, verifies anonymous media access is denied, and confirms the media record is no longer readable after the temporary subscription is permanently deleted.
+
 When the browser smoke fails, it writes a screenshot, current HTML, and diagnostics JSON to `screenshots/e2e/`. The diagnostics collect frontend `console.error` messages, page runtime exceptions, failed requests, and abnormal endpoint responses.
 
 Admin browser E2E does not create an extra administrator account and does not reuse the normal test user. To reduce credential exposure, provide explicit admin credentials and an expiry; missing or expired credentials make the admin smoke skip safely:
@@ -206,6 +217,7 @@ The admin page includes a maintenance area for long-running deployments:
 - log growth risk indicators for request logs, security anomalies, and rate-limit usage
 - subscription image storage audit for missing derived-image rows and orphan files
 - CSV export for the latest subscription image audit, including orphan-file size details
+- one-click cleanup for database-unreferenced orphan subscription image files, limited to the subscription media directory
 - one-click reuse of originals for preview/thumbnail variants that are larger than the original, with cleanup of unreferenced oversized derived files
 - manual SQLite `PRAGMA optimize`, `ANALYZE`, and `VACUUM`, with before/after database size, page-count, and free-page metrics
 

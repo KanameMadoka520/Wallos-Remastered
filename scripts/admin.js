@@ -734,6 +734,31 @@ function formatAdminOversizedVariantResult(result) {
   ].join("\n");
 }
 
+function formatAdminOrphanCleanupResult(result) {
+  if (!result || typeof result !== "object") {
+    return translate("success");
+  }
+
+  const lines = [
+    `${adminTranslateWithFallback("subscription_image_deleted_orphan_files", "Deleted Orphan Files")}: ${result.deleted_files ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_deleted_orphan_bytes", "Deleted Orphan Size")}: ${result.deleted_size_label || "0 B"}`,
+    `${adminTranslateWithFallback("subscription_image_failed_orphan_files", "Failed Orphan Files")}: ${result.failed_files ?? 0}`,
+  ];
+
+  if (Array.isArray(result.failed_samples) && result.failed_samples.length > 0) {
+    lines.push("");
+    lines.push("Failed samples:");
+    result.failed_samples.forEach((item) => lines.push(`- ${item}`));
+  }
+
+  if (result.after) {
+    lines.push("");
+    lines.push(formatAdminMaintenanceAudit(result.after));
+  }
+
+  return lines.join("\n");
+}
+
 function runAdminMaintenanceAction(action, button) {
   const resultTextArea = document.getElementById('adminMaintenanceResult');
   if (button?.dataset.confirmMessage && !confirm(button.dataset.confirmMessage)) {
@@ -758,6 +783,11 @@ function runAdminMaintenanceAction(action, button) {
         if (data.storage) {
           renderAdminMaintenanceStorageSummary(data.storage);
           resultTextArea.value = formatAdminStorageSummary(data.storage);
+        } else if (data.orphan_cleanup_result) {
+          if (data.audit) {
+            latestAdminSubscriptionImageAudit = data.audit;
+          }
+          resultTextArea.value = formatAdminOrphanCleanupResult(data.orphan_cleanup_result);
         } else if (data.audit) {
           latestAdminSubscriptionImageAudit = data.audit;
           resultTextArea.value = formatAdminMaintenanceAudit(data.audit);
