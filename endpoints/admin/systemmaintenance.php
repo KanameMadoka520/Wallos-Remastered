@@ -36,6 +36,17 @@ try {
         exit;
     }
 
+    if ($action === 'cleanup_subscription_image_orphans') {
+        $result = wallos_cleanup_subscription_image_orphans($db, __DIR__ . '/../..');
+        echo json_encode([
+            'success' => true,
+            'message' => translate('subscription_image_orphans_cleaned', $i18n),
+            'orphan_cleanup_result' => $result,
+            'audit' => $result['after'] ?? null,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     if ($action === 'run_sqlite_maintenance') {
         $result = wallos_run_sqlite_maintenance($db);
         echo json_encode([

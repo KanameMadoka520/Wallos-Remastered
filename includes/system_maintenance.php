@@ -271,6 +271,53 @@ function wallos_audit_subscription_image_storage($db, $basePath)
     ];
 }
 
+function wallos_cleanup_subscription_image_orphans($db, $basePath)
+{
+    $audit = wallos_audit_subscription_image_storage($db, $basePath);
+    $deletedFiles = 0;
+    $deletedBytes = 0;
+    $failedFiles = [];
+
+    foreach (($audit['orphan_details'] ?? []) as $file) {
+        $relativePath = trim((string) ($file['path'] ?? ''));
+        if ($relativePath === '' || !wallos_subscription_image_path_is_within_media_dir($relativePath)) {
+            $failedFiles[] = $relativePath;
+            continue;
+        }
+
+        $absolutePath = wallos_resolve_subscription_image_absolute_path($basePath, $relativePath);
+        if ($absolutePath === '') {
+            continue;
+        }
+
+        $fileSize = isset($file['size_bytes']) ? (int) $file['size_bytes'] : 0;
+        if ($fileSize <= 0) {
+            $detectedFileSize = @filesize($absolutePath);
+            $fileSize = $detectedFileSize === false ? 0 : (int) $detectedFileSize;
+        }
+        wallos_delete_subscription_image_file($basePath, $relativePath);
+
+        if (wallos_resolve_subscription_image_absolute_path($basePath, $relativePath) === '') {
+            $deletedFiles++;
+            $deletedBytes += $fileSize;
+            continue;
+        }
+
+        $failedFiles[] = $relativePath;
+    }
+
+    return [
+        'success' => empty($failedFiles),
+        'deleted_files' => $deletedFiles,
+        'deleted_bytes' => $deletedBytes,
+        'deleted_size_label' => wallos_format_maintenance_size($deletedBytes),
+        'failed_files' => count($failedFiles),
+        'failed_samples' => array_slice($failedFiles, 0, 10),
+        'before' => $audit,
+        'after' => wallos_audit_subscription_image_storage($db, $basePath),
+    ];
+}
+
 function wallos_run_sqlite_maintenance($db)
 {
     $startedAt = microtime(true);
