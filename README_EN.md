@@ -134,6 +134,17 @@ npm run e2e:images
 
 This smoke uploads a generated PNG through the real add-subscription form, verifies byte-for-byte original passthrough when upload compression is disabled, checks that preview/thumbnail responses are not larger than the original, checks that size metadata has no missing translation marker, verifies anonymous media access is denied, and confirms the media record is no longer readable after the temporary subscription is permanently deleted.
 
+Client cache refresh behavior has its own browser E2E smoke for Service Worker, static-resource versioning, and toast-layout changes:
+
+```bash
+WALLOS_BASE_URL=http://127.0.0.1:18282 \
+WALLOS_TEST_USERNAME=YOUR_TEST_USER \
+WALLOS_TEST_PASSWORD=YOUR_TEST_PASSWORD \
+npm run e2e:cache
+```
+
+This smoke logs in as a normal test user, checks the `WallosClientCache` status helper, simulates an administrator cache-refresh marker, and verifies that the refresh notice stays visible until manually closed without missing translations or page-width expansion.
+
 When the browser smoke fails, it writes a screenshot, current HTML, and diagnostics JSON to `screenshots/e2e/`. The diagnostics collect frontend `console.error` messages, page runtime exceptions, failed requests, and abnormal endpoint responses.
 
 Admin browser E2E does not create an extra administrator account and does not reuse the normal test user. To reduce credential exposure, provide explicit admin credentials and an expiry; missing or expired credentials make the admin smoke skip safely:
@@ -205,6 +216,9 @@ npm run e2e
 ### Service Worker Cache Refresh
 
 - Static assets use stricter filemtime-based versions in the page shell.
+- The registered Service Worker URL also carries the `service-worker.js` file version and checks for updates when a page becomes visible again.
+- Versioned CSS/JS requests are network-first with an exact-cache fallback, reducing stale-resource drift after deployments.
+- Private subscription media under `images/uploads/logos/subscription-media/` is explicitly excluded from Service Worker image caching and remains access-controlled by PHP/nginx rules.
 - `service-worker.js` exposes a client-cache clear message.
 - The admin page can clear the current browser cache and publish a refresh marker so other clients clear cached static assets on their next page load.
 

@@ -35,6 +35,7 @@ $i18nGetLangJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/
 $apiJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/api.js');
 $allJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/all.js');
 $commonJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/common.js');
+$serviceWorkerJsVersion = $version . '.' . @filemtime(__DIR__ . '/../service-worker.js');
 $themeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/theme.css');
 $darkThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/dark-theme.css');
 $redThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/themes/red.css');
@@ -209,6 +210,9 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   <link rel="stylesheet" href="styles/barlow.css">
   <link rel="stylesheet" href="styles/font-awesome.min.css">
   <link rel="stylesheet" href="styles/brands.css">
+  <script>
+    window.WallosServiceWorkerUrl = "service-worker.js?<?= $serviceWorkerJsVersion ?>";
+  </script>
   <script type="text/javascript" src="scripts/all.js?<?= $allJsVersion ?>"></script>
   <script type="text/javascript" src="scripts/common.js?<?= $commonJsVersion ?>"></script>
   <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
