@@ -1,6 +1,6 @@
-const STATIC_CACHE = 'static-cache-v17';
-const PAGES_CACHE = 'pages-cache-v17';
-const LOGOS_CACHE = 'logos-cache-v17';
+const STATIC_CACHE = 'static-cache-v18';
+const PAGES_CACHE = 'pages-cache-v18';
+const LOGOS_CACHE = 'logos-cache-v18';
 const WALLOS_CACHE_PREFIXES = ['static-cache-', 'pages-cache-', 'logos-cache-'];
 
 const staticAssets = [
@@ -169,6 +169,30 @@ const pagesToPrefetch = [
     'admin.php',
 ];
 
+function normalizePathname(pathname) {
+    return String(pathname || '').replace(/^\/+/, '');
+}
+
+function isStaticAssetPath(pathname) {
+    const normalizedPath = normalizePathname(pathname);
+    return staticAssets.some(asset => normalizedPath === asset || normalizedPath.endsWith('/' + asset));
+}
+
+function pathMatchesPrefix(pathname, prefix) {
+    const normalizedPath = normalizePathname(pathname);
+    return normalizedPath.startsWith(prefix) || normalizedPath.includes('/' + prefix);
+}
+
+function cacheOkResponse(cacheName, cacheKey, response) {
+    if (!response || !response.ok) {
+        return;
+    }
+
+    caches.open(cacheName).then(cache => {
+        cache.put(cacheKey, response.clone()).catch(() => {});
+    }).catch(() => {});
+}
+
 // Install: cache static assets only
 self.addEventListener('install', function (event) {
     event.waitUntil(
@@ -266,30 +290,57 @@ self.addEventListener('fetch', function (event) {
     const url = new URL(request.url);
     const isSameOrigin = url.origin === self.location.origin;
     const isEndpointRequest = isSameOrigin && url.pathname.includes('/endpoints/');
+    const normalizedPath = normalizePathname(url.pathname);
+    const isSubscriptionMediaRequest = isSameOrigin && pathMatchesPrefix(url.pathname, 'images/uploads/logos/subscription-media/');
+    const isLogoUploadRequest = isSameOrigin && pathMatchesPrefix(url.pathname, 'images/uploads/logos/');
+    const isStaticAssetRequest = isSameOrigin && isStaticAssetPath(url.pathname);
     const isDocumentRequest = request.mode === 'navigate' || request.destination === 'document';
 
     // Never intercept non-GET requests (POST, etc.)
     if (request.method !== 'GET') return;
 
-    // Logo images: cache-first, populate on first load
-    if (url.pathname.includes('images/uploads/logos')) {
+    // Subscription media is private and access-controlled by PHP endpoints / nginx rules.
+    // Never put it in shared browser caches, otherwise deleted or cross-account media can linger client-side.
+    if (isSubscriptionMediaRequest) {
+        event.respondWith(fetch(request));
+        return;
+    }
+
+    // Logo images: cache-first, populate on first load. Subscription media is excluded above.
+    if (isLogoUploadRequest) {
         event.respondWith(
             caches.match(request).then(response => {
                 return response || fetch(request).then(networkResponse => {
-                    return caches.open(LOGOS_CACHE).then(cache => {
-                        cache.put(request, networkResponse.clone());
-                        return networkResponse;
-                    });
+                    cacheOkResponse(LOGOS_CACHE, request, networkResponse);
+                    return networkResponse;
                 });
             })
         );
         return;
     }
 
-    // Static assets: cache-first (they only change on deploy)
-    if (staticAssets.some(asset => url.pathname.endsWith(asset))) {
+    // Versioned static assets stay network-first so new CSS/JS takes effect immediately after deploy.
+    if (isStaticAssetRequest && url.search) {
         event.respondWith(
-            caches.match(request).then(response => response || fetch(request))
+            fetch(request).then(networkResponse => {
+                cacheOkResponse(STATIC_CACHE, request, networkResponse);
+                return networkResponse;
+            }).catch(() => {
+                return caches.match(request).then(response => response || caches.match(normalizedPath));
+            })
+        );
+        return;
+    }
+
+    // Unversioned static assets are cache-first and repopulate only when the cache version changes.
+    if (isStaticAssetRequest) {
+        event.respondWith(
+            caches.match(request).then(response => {
+                return response || fetch(request).then(networkResponse => {
+                    cacheOkResponse(STATIC_CACHE, request, networkResponse);
+                    return networkResponse;
+                });
+            })
         );
         return;
     }

@@ -99,6 +99,17 @@ npm run e2e:subscriptions
 
 该脚本会真实点击订阅分页、三点菜单、编辑弹窗、新增保存、实际支付记录、记录支付弹窗、图片预览、单/双/三列切换、成本与价值显示开关、动态壁纸相关按钮和 CSRF 持久提醒。脚本会创建临时订阅并自动清理，同时恢复测试前的订阅页显示偏好。
 
+修改 Service Worker、静态资源版本、管理员缓存刷新按钮或右下角提示样式后，请额外运行客户端缓存刷新 E2E：
+
+```bash
+WALLOS_BASE_URL=http://127.0.0.1:18282 \
+WALLOS_TEST_USERNAME=你的测试账号 \
+WALLOS_TEST_PASSWORD=你的测试密码 \
+npm run e2e:cache
+```
+
+该脚本会检查普通用户页面中的 `WallosClientCache` 状态接口、缓存刷新持久提示、缺失翻译和页面宽度不被提示框撑开。
+
 浏览器级 E2E 失败时会在 `screenshots/e2e/` 留下截图、当前 HTML 和诊断 JSON。修改订阅页交互、主题、Service Worker、共享请求层、CSRF 或弹窗层级后，请优先查看这些诊断文件，而不是只看终端最后一行错误。
 
 详细说明请继续阅读：

@@ -49,12 +49,15 @@ function wallos_regression_run_public_suite(array $config, array $suiteDefinitio
 
     $allJsPath = $config['repo_root'] . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'all.js';
     $allJsContents = file_exists($allJsPath) ? (string) file_get_contents($allJsPath) : '';
+    $serviceWorkerRegistrationValid = strpos($allJsContents, 'navigator.serviceWorker.register') !== false
+        && strpos($allJsContents, 'wallosResolveServiceWorkerUrl') !== false
+        && strpos($allJsContents, 'WallosServiceWorkerUrl') !== false;
     $results[] = wallos_regression_make_result(
-        (strpos($allJsContents, "navigator.serviceWorker.register('service-worker.js')") !== false) ? 'PASS' : 'FAIL',
+        $serviceWorkerRegistrationValid ? 'PASS' : 'FAIL',
         'public',
         'service-worker-registration',
         file_exists($allJsPath)
-            ? 'Expected scripts/all.js to keep registering service-worker.js'
+            ? 'Expected scripts/all.js to keep registering the versioned service-worker.js URL'
             : 'scripts/all.js not found'
     );
 
@@ -75,13 +78,16 @@ function wallos_regression_run_public_suite(array $config, array $suiteDefinitio
     $hasEndpointGuard = strpos($serviceWorkerContents, "const isEndpointRequest = isSameOrigin && url.pathname.includes('/endpoints/');") !== false
         && strpos($serviceWorkerContents, 'if (isEndpointRequest) {') !== false
         && strpos($serviceWorkerContents, 'event.respondWith(fetch(request));') !== false;
+    $hasPrivateMediaGuard = strpos($serviceWorkerContents, 'isSubscriptionMediaRequest') !== false
+        && strpos($serviceWorkerContents, "pathMatchesPrefix(url.pathname, 'images/uploads/logos/subscription-media/')") !== false
+        && strpos($serviceWorkerContents, 'Never put it in shared browser caches') !== false;
     $hasNoIgnoreSearchFallback = strpos($serviceWorkerContents, 'ignoreSearch: true') === false;
     $results[] = wallos_regression_make_result(
-        ($hasEndpointGuard && $hasNoIgnoreSearchFallback) ? 'PASS' : 'FAIL',
+        ($hasEndpointGuard && $hasPrivateMediaGuard && $hasNoIgnoreSearchFallback) ? 'PASS' : 'FAIL',
         'public',
         'service-worker-dynamic-cache-guard',
         file_exists($serviceWorkerPath)
-            ? 'Expected service-worker.js to keep endpoints network-only and avoid ignoreSearch cache fallbacks for dynamic pages.'
+            ? 'Expected service-worker.js to keep endpoints/private subscription media network-only and avoid ignoreSearch cache fallbacks for dynamic pages.'
             : 'service-worker.js not found'
     );
 
@@ -263,19 +269,30 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
 
     $headerPhp = wallos_regression_read_repo_file($config, 'includes/header.php');
     $serviceWorkerJs = wallos_regression_read_repo_file($config, 'service-worker.js');
+    $allJs = wallos_regression_read_repo_file($config, 'scripts/all.js');
     $adminPhp = wallos_regression_read_repo_file($config, 'admin.php');
     $adminJs = wallos_regression_read_repo_file($config, 'scripts/admin.js');
     $cacheRefreshEndpoint = wallos_regression_read_repo_file($config, 'endpoints/admin/requestcacherefresh.php');
     $cacheRefreshValid = wallos_regression_text_has_all($headerPhp, array(
         'cache_refresh.php',
         'window.WallosCacheRefresh',
+        'window.WallosServiceWorkerUrl',
         '@filemtime(__DIR__ . \'/../scripts/common.js\')',
+        '@filemtime(__DIR__ . \'/../service-worker.js\')',
     )) && wallos_regression_text_has_all($serviceWorkerJs, array(
-        "static-cache-v17",
+        "static-cache-v18",
         "WALLOS_CLEAR_CACHES",
         "WALLOS_CACHE_STATUS",
         "currentCaches",
         "WALLOS_CACHE_PREFIXES",
+        "isSubscriptionMediaRequest",
+        "cacheOkResponse",
+        "url.search",
+    )) && wallos_regression_text_has_all($allJs, array(
+        "WallosServiceWorkerUrl",
+        "registration.update",
+        "controllerchange",
+        "WallosServiceWorkerRegistration",
     )) && wallos_regression_text_has_all($commonJs, array(
         'initializeCacheRefreshMarker',
         'clearWallosClientCaches',
@@ -456,6 +473,30 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         $subscriptionImagesE2eValid
             ? 'Subscription image browser E2E covers upload, passthrough, size metadata, access denial, and cleanup.'
             : 'Expected tests/e2e/subscription_images_smoke.mjs to cover image upload and media access contracts.'
+    );
+
+    $clientCacheE2e = wallos_regression_read_repo_file($config, 'tests/e2e/client_cache_smoke.mjs');
+    $packageJson = wallos_regression_read_repo_file($config, 'package.json');
+    $clientCacheE2eValid = wallos_regression_text_has_all($clientCacheE2e, array(
+        'client cache helpers load on authenticated page',
+        'cache refresh notice is persistent and does not widen the page',
+        'initializeCacheRefreshMarker',
+        'WallosClientCache.status',
+        'wallos-client-cache-refresh-token',
+        'toast-persistent',
+        'client cache refresh prompt auto-hidden before manual close',
+        'toast widened page',
+    )) && wallos_regression_text_has_all($packageJson, array(
+        '"e2e:cache"',
+        'client_cache_smoke.mjs',
+    ));
+    $results[] = wallos_regression_make_result(
+        $clientCacheE2eValid ? 'PASS' : 'FAIL',
+        'static',
+        'client-cache-browser-e2e-contract',
+        $clientCacheE2eValid
+            ? 'Client cache browser E2E keeps persistent refresh prompt and layout-safety coverage.'
+            : 'Expected tests/e2e/client_cache_smoke.mjs and package scripts to cover cache refresh prompt behavior.'
     );
 
     $adminE2e = wallos_regression_read_repo_file($config, 'tests/e2e/admin_smoke.mjs');

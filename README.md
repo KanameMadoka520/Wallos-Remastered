@@ -259,6 +259,9 @@ OK
 - 直接从备份列表恢复
 - 备份、图片、媒体访问全部尽量走鉴权端点而不是裸静态目录
 - 管理员后台显示 Service Worker 缓存版本、当前浏览器控制状态，并可发布客户端缓存刷新提示
+- Service Worker 注册 URL 跟随 `service-worker.js` 文件版本，页面回到前台时会主动检查更新
+- 版本化 CSS/JS 使用网络优先、精确缓存回落策略，降低部署后浏览器继续拿旧资源的概率
+- 订阅私有媒体目录 `images/uploads/logos/subscription-media/` 明确不进入 Service Worker 图片缓存，继续只通过鉴权端点访问
 - 管理员后台提供维护入口：
   - 查看日志/异常/速率限制用量保留策略
   - 查看数据库、上传目录、订阅图片目录、备份目录的当前占用
@@ -363,7 +366,7 @@ docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-ur
 
 - `health.php`
 - 登录页 / 注册页主题与默认紫色主题
-- Service Worker 缓存契约
+- Service Worker 缓存契约、订阅私有媒体不进浏览器缓存的约束
 - 未登录 endpoint 的标准 `401` JSON 契约
 - 订阅分页 JSON 契约
 - 订阅页关键 DOM 与脚本加载顺序
@@ -372,6 +375,7 @@ docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-ur
 - 订阅图片缩略图、预览图、原图大小显示契约
 - 管理后台运行可观测性、异常快捷筛选和日志内容安全渲染契约
 - 管理后台维护工具契约：存储占用、日志增长风险、图片审计 CSV、SQLite 维护前后指标
+- 客户端缓存刷新提示 E2E：确认提示持续显示到手动关闭，且不会把页面撑宽
 - 既有预算、账本、偏好逻辑回归
 
 登录态回归可以使用专用测试账号运行：
@@ -415,6 +419,17 @@ npm run e2e:images
 ```
 
 该脚本会真实上传一张测试 PNG，验证未压缩上传时原图字节透传、预览图/缩略图不会大于原图、图片预览尺寸信息不出现缺失翻译、未登录访问媒体端点会被拒绝，并在永久删除临时订阅后确认媒体记录不再可读。
+
+客户端缓存刷新提示也有独立浏览器级 E2E，适合在修改 Service Worker、`common.js` 右下角提示、静态资源版本号或管理员缓存刷新功能后运行：
+
+```bash
+WALLOS_TEST_USERNAME=你的测试账号 \
+WALLOS_TEST_PASSWORD=你的测试密码 \
+WALLOS_BASE_URL=http://127.0.0.1:18282 \
+npm run e2e:cache
+```
+
+该脚本会用普通测试账号登录，检查 `WallosClientCache` 状态接口可用，模拟管理员发布客户端缓存刷新提示，并确认提示不会自动消失、不会出现缺失翻译、不会把页面宽度撑大。
 
 如果浏览器级 E2E 失败，脚本会把截图、当前 HTML 和诊断 JSON 写入 `screenshots/e2e/`。诊断内容包含前端 `console.error`、页面运行时异常、失败请求和 endpoint 异常响应，便于定位“按钮点不了”“分页只转圈”“弹窗打不开”这类回归。
 
