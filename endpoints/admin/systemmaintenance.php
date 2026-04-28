@@ -57,6 +57,18 @@ try {
         exit;
     }
 
+    if ($action === 'check_sqlite_indexes') {
+        $result = wallos_check_sqlite_index_health($db);
+        echo json_encode([
+            'success' => true,
+            'message' => $result['success']
+                ? translate('sqlite_index_health_ok', $i18n)
+                : translate('sqlite_index_health_problem', $i18n),
+            'index_health' => $result,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     echo json_encode([
         'success' => false,
         'message' => translate('error', $i18n),

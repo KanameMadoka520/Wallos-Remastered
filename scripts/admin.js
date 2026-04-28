@@ -213,6 +213,52 @@ function formatAdminSqliteMaintenanceResult(result) {
   ].join("\n");
 }
 
+function formatAdminSqliteIndexHealthResult(result) {
+  if (!result || typeof result !== "object") {
+    return translate("success");
+  }
+
+  const lines = [
+    result.success
+      ? adminTranslateWithFallback("sqlite_index_health_ok", "SQLite index health check passed.")
+      : adminTranslateWithFallback("sqlite_index_health_problem", "SQLite index health check found problems."),
+    `${adminTranslateWithFallback("generated_at", "Generated At")}: ${result.checked_at || "-"}`,
+    `${adminTranslateWithFallback("sqlite_index_total", "Expected Indexes")}: ${formatAdminNumber(result.total_indexes ?? 0)}`,
+    `${adminTranslateWithFallback("sqlite_index_existing", "Existing Indexes")}: ${formatAdminNumber(result.existing_indexes ?? 0)}`,
+    `${adminTranslateWithFallback("sqlite_index_missing", "Missing Indexes")}: ${formatAdminNumber(result.missing_indexes ?? 0)}`,
+    `${adminTranslateWithFallback("sqlite_index_invalid", "Invalid Indexes")}: ${formatAdminNumber(result.invalid_indexes ?? 0)}`,
+  ];
+
+  const appendSamples = (label, samples) => {
+    if (!Array.isArray(samples) || samples.length === 0) {
+      return;
+    }
+
+    lines.push("");
+    lines.push(label);
+    samples.forEach((item) => {
+      const expectedColumns = Array.isArray(item?.expected_columns)
+        ? item.expected_columns.join(", ")
+        : "";
+      const actualColumns = Array.isArray(item?.actual_columns)
+        ? item.actual_columns.join(", ")
+        : "";
+      lines.push(`- ${item?.table || "-"} :: ${item?.index || "-"} | expected: ${expectedColumns || "-"} | actual: ${actualColumns || "-"}`);
+    });
+  };
+
+  appendSamples(
+    adminTranslateWithFallback("sqlite_index_missing_samples", "Missing Index Samples"),
+    result.missing_samples
+  );
+  appendSamples(
+    adminTranslateWithFallback("sqlite_index_invalid_samples", "Invalid Index Samples"),
+    result.invalid_samples
+  );
+
+  return lines.join("\n");
+}
+
 function escapeAdminCsvCell(value) {
   const text = String(value ?? "");
   if (/[",\r\n]/.test(text)) {
@@ -793,6 +839,8 @@ function runAdminMaintenanceAction(action, button) {
           resultTextArea.value = formatAdminMaintenanceAudit(data.audit);
         } else if (data.oversized_variant_result) {
           resultTextArea.value = formatAdminOversizedVariantResult(data.oversized_variant_result);
+        } else if (data.index_health) {
+          resultTextArea.value = formatAdminSqliteIndexHealthResult(data.index_health);
         } else if (data.result) {
           resultTextArea.value = formatAdminSqliteMaintenanceResult(data.result);
         } else {
