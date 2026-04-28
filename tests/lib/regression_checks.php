@@ -404,6 +404,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'orphan_details',
         'wallos_cleanup_subscription_image_orphans',
         'wallos_run_sqlite_maintenance',
+        'wallos_get_expected_sqlite_indexes',
+        'wallos_check_sqlite_index_health',
         'WALLOS_REQUEST_LOG_RETENTION_DAYS',
         'VACUUM',
         'ANALYZE',
@@ -416,6 +418,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'reuse_oversized_subscription_image_variants',
         'cleanup_subscription_image_orphans',
         'run_sqlite_maintenance',
+        'check_sqlite_indexes',
         'validate_endpoint_admin.php',
     )) && wallos_regression_text_has_all($adminPhp, array(
         'maintenance_retention_strategy',
@@ -423,6 +426,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'export_subscription_image_audit',
         'reuse_oversized_subscription_image_variants',
         'cleanup_subscription_image_orphans',
+        'check_sqlite_indexes',
         'adminMaintenanceResult',
     )) && wallos_regression_text_has_all($adminJs, array(
         'runAdminMaintenanceAction',
@@ -430,6 +434,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'exportAdminSubscriptionImageAuditCsv',
         'formatAdminOrphanCleanupResult',
         'formatAdminSqliteMaintenanceResult',
+        'formatAdminSqliteIndexHealthResult',
         'formatAdminOversizedVariantResult',
         'endpoints/admin/systemmaintenance.php',
     ));

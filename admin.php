@@ -1386,6 +1386,8 @@ $pageSections = [
                 <input type="button" value="<?= translate('run_sqlite_maintenance', $i18n) ?>" class="secondary-button tiny mobile-grow"
                     onclick="runAdminMaintenanceAction('run_sqlite_maintenance', this)"
                     data-confirm-message="<?= htmlspecialchars(translate('sqlite_maintenance_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>">
+                <input type="button" value="<?= translate('check_sqlite_indexes', $i18n) ?>" class="secondary-button tiny mobile-grow"
+                    onclick="runAdminMaintenanceAction('check_sqlite_indexes', this)">
             </div>
             <div class="inline-row">
                 <textarea id="adminMaintenanceResult" class="thin" readonly

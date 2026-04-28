@@ -19,6 +19,8 @@ function wallos_sqlite_index_contract_index_exists($db, $tableName, $indexName)
     return false;
 }
 
+require_once __DIR__ . '/../includes/system_maintenance.php';
+
 $db = new SQLite3(':memory:');
 
 try {
@@ -164,6 +166,11 @@ try {
             );
         }
     }
+
+    $health = wallos_check_sqlite_index_health($db);
+    wallos_sqlite_index_contract_assert(!empty($health['success']), 'SQLite index health helper should pass on a migrated database.');
+    wallos_sqlite_index_contract_assert((int) ($health['missing_indexes'] ?? -1) === 0, 'SQLite index health helper reported missing indexes.');
+    wallos_sqlite_index_contract_assert((int) ($health['invalid_indexes'] ?? -1) === 0, 'SQLite index health helper reported invalid indexes.');
 
     echo 'SQLite index migration contract checks passed.' . PHP_EOL;
     exit(0);
