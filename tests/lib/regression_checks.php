@@ -194,11 +194,16 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $apiJs = wallos_regression_read_repo_file($config, 'scripts/api.js');
     $stylesCss = wallos_regression_read_repo_file($config, 'styles/styles.css');
     $subscriptionPagesEndpoint = wallos_regression_read_repo_file($config, 'endpoints/subscriptionpages.php');
+    $authSessionPhp = wallos_regression_read_repo_file($config, 'includes/auth_session.php');
     $csrfRefreshReminderValid = wallos_regression_text_has_all($commonJs, array(
         'CSRF_BACKGROUND_STALE_MS',
         'showCsrfTokenRefreshReminder',
         'isWallosCsrfFailurePayload',
+        'isWallosLoginHtmlResponse',
+        'createWallosSessionExpiredErrorFromHtml',
+        'html_login_response',
         'wallos:csrf-invalid',
+        'wallos:session-expired',
         'visibilitychange',
         'showErrorMessage(message, { persistent: true })',
         'function shouldPersistToast',
@@ -206,11 +211,17 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     )) && wallos_regression_text_has_all($apiJs, array(
         'isCsrfFailurePayload',
         'csrfInvalid',
+        'isLoginHtmlResponse',
+        'html_login_response',
     )) && wallos_regression_text_has_all($subscriptionsJs, array(
         'showCsrfTokenRefreshReminder',
     )) && wallos_regression_text_has_all($subscriptionPagesEndpoint, array(
-        "'code' => 'invalid_csrf'",
-        "'error' => 'invalid_csrf'",
+        'wallos_auth_emit_async_error',
+        'invalid_request_method',
+    )) && wallos_regression_text_has_all($authSessionPhp, array(
+        "'code' => \$resolvedCode",
+        "'error' => \$resolvedCode",
+        "\$resolvedCode === 'session_expired'",
     )) && wallos_regression_text_has_all($stylesCss, array(
         '.toast.toast-persistent .progress',
     ));
@@ -479,9 +490,11 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $packageJson = wallos_regression_read_repo_file($config, 'package.json');
     $clientCacheE2eValid = wallos_regression_text_has_all($clientCacheE2e, array(
         'client cache helpers load on authenticated page',
+        'unexpected login HTML is normalized as session expiry',
         'cache refresh notice is persistent and does not widen the page',
         'initializeCacheRefreshMarker',
         'WallosClientCache.status',
+        'wallos:session-expired',
         'wallos-client-cache-refresh-token',
         'toast-persistent',
         'client cache refresh prompt auto-hidden before manual close',
@@ -699,6 +712,22 @@ function wallos_regression_run_auth_suite(array $config, array $suiteDefinition)
             : wallos_regression_build_json_failure_detail($guestPaymentsResponse, $guestPaymentsJson, 'Expected standardized session-expired JSON contract.')
     );
 
+    $guestExportResponse = wallos_regression_http_request(
+        $guestClient,
+        'GET',
+        wallos_regression_build_url($config, 'endpoints/subscriptions/export.php')
+    );
+    $guestExportJson = wallos_regression_http_decode_json($guestExportResponse);
+    $guestExportClean = wallos_regression_json_session_expired_contract_is_valid($guestExportResponse, $guestExportJson);
+    $results[] = wallos_regression_make_result(
+        $guestExportClean ? 'PASS' : 'FAIL',
+        'auth',
+        'subscriptions-export-unauth-401',
+        $guestExportClean
+            ? 'Unauthenticated subscriptions/export.php returned the standardized JSON 401 contract.'
+            : wallos_regression_build_json_failure_detail($guestExportResponse, $guestExportJson, 'Expected standardized session-expired JSON contract.')
+    );
+
     $authState = wallos_regression_acquire_authenticated_client($config);
     $results[] = wallos_regression_make_result(
         $authState['status'],
@@ -757,6 +786,32 @@ function wallos_regression_run_auth_suite(array $config, array $suiteDefinition)
         $pagesJsonValid
             ? 'Authenticated subscriptionpages.php returned expected JSON keys.'
             : wallos_regression_build_json_failure_detail($pagesResponse, $pagesJson, 'Expected JSON with success/message/pages/counts.')
+    );
+
+    $invalidCsrfResponse = wallos_regression_http_request(
+        $authClient,
+        'POST',
+        wallos_regression_build_url($config, 'endpoints/subscriptionpages.php'),
+        array(
+            'headers' => array(
+                'Content-Type: application/json',
+                'X-CSRF-Token: wallos-regression-invalid-csrf',
+            ),
+            'body' => json_encode(array(
+                'action' => 'create',
+                'name' => 'Wallos Invalid CSRF Smoke',
+            )),
+        )
+    );
+    $invalidCsrfJson = wallos_regression_http_decode_json($invalidCsrfResponse);
+    $invalidCsrfValid = wallos_regression_json_invalid_csrf_contract_is_valid($invalidCsrfResponse, $invalidCsrfJson);
+    $results[] = wallos_regression_make_result(
+        $invalidCsrfValid ? 'PASS' : 'FAIL',
+        'auth',
+        'subscription-pages-invalid-csrf',
+        $invalidCsrfValid
+            ? 'subscriptionpages.php returned the standardized invalid_csrf JSON contract.'
+            : wallos_regression_build_json_failure_detail($invalidCsrfResponse, $invalidCsrfJson, 'Expected standardized invalid_csrf JSON contract.')
     );
 
     $subscriptionsResponse = wallos_regression_http_request(
@@ -1263,6 +1318,20 @@ function wallos_regression_json_session_expired_contract_is_valid(array $respons
         && $payload['success'] === false
         && $payload['code'] === 'session_expired'
         && !empty($payload['session_expired']);
+}
+
+function wallos_regression_json_invalid_csrf_contract_is_valid(array $response, array $decodedJson)
+{
+    if ((int) $response['status'] !== 400 || !$decodedJson['ok'] || !is_array($decodedJson['data'])) {
+        return false;
+    }
+
+    $payload = $decodedJson['data'];
+    return isset($payload['success'], $payload['code'], $payload['error'], $payload['message'])
+        && $payload['success'] === false
+        && $payload['code'] === 'invalid_csrf'
+        && $payload['error'] === 'invalid_csrf'
+        && trim((string) $payload['message']) !== '';
 }
 
 function wallos_regression_read_repo_file(array $config, $relativePath)

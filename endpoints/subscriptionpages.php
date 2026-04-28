@@ -6,8 +6,9 @@ require_once '../libs/csrf.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
-function subscription_pages_json_response($success, $message, array $extra = [])
+function subscription_pages_json_response($success, $message, array $extra = [], $statusCode = 200)
 {
+    http_response_code((int) $statusCode);
     echo json_encode(array_merge([
         'success' => $success,
         'message' => $message,
@@ -45,15 +46,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    subscription_pages_json_response(false, translate('error', $i18n));
+    subscription_pages_json_response(false, translate('error', $i18n), [
+        'code' => 'invalid_request_method',
+        'error' => 'invalid_request_method',
+    ], 405);
 }
 
 $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
 if (!verify_csrf_token($csrfToken)) {
-    subscription_pages_json_response(false, 'Invalid CSRF token', [
-        'code' => 'invalid_csrf',
-        'error' => 'invalid_csrf',
-    ]);
+    wallos_auth_emit_async_error($i18n, 'invalid_csrf', 400, [], null, 'Invalid CSRF token');
 }
 
 $data = json_decode(file_get_contents('php://input'), true);

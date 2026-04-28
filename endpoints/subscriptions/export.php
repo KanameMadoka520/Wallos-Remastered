@@ -2,12 +2,7 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/subscription_trash.php';
 
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    die(json_encode([
-        "success" => false,
-        "message" => translate('session_expired', $i18n)
-    ]));
-}
+wallos_endpoint_require_authenticated($i18n);
 
 require_once '../../includes/getdbkeys.php';
 

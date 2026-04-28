@@ -90,7 +90,7 @@ After changing high-risk pages or shared request logic, run:
 docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-url=http://127.0.0.1
 ```
 
-The runner checks public pages, default purple theme behavior, Service Worker cache contracts, unauthenticated endpoint `401` contracts, subscription page JSON/HTML contracts, subscription frontend static contracts, API key transport rules, subscription image size slots, admin runtime observability/log rendering contracts, and the existing PHP logic regressions.
+The runner checks public pages, default purple theme behavior, Service Worker cache contracts, unauthenticated endpoint `401` contracts, invalid-CSRF JSON contracts, subscription page JSON/HTML contracts, subscription frontend static contracts, API key transport rules, subscription image size slots, admin runtime observability/log rendering contracts, and the existing PHP logic regressions.
 
 Authenticated smoke checks can log in with a dedicated test account:
 
@@ -143,7 +143,7 @@ WALLOS_TEST_PASSWORD=YOUR_TEST_PASSWORD \
 npm run e2e:cache
 ```
 
-This smoke logs in as a normal test user, checks the `WallosClientCache` status helper, simulates an administrator cache-refresh marker, and verifies that the refresh notice stays visible until manually closed without missing translations or page-width expansion.
+This smoke logs in as a normal test user, checks the `WallosClientCache` status helper, verifies that unexpected login-page HTML is normalized as a session-expired error, simulates an administrator cache-refresh marker, and verifies that the refresh notice stays visible until manually closed without missing translations or page-width expansion.
 
 When the browser smoke fails, it writes a screenshot, current HTML, and diagnostics JSON to `screenshots/e2e/`. The diagnostics collect frontend `console.error` messages, page runtime exceptions, failed requests, and abnormal endpoint responses.
 
