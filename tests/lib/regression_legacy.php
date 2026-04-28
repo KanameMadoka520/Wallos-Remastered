@@ -8,6 +8,7 @@ function wallos_regression_run_legacy_suite(array $config, array $suiteDefinitio
         'subscription-preferences' => 'tests/subscription_preferences_test.php',
         'subscription-image-maintenance' => 'tests/subscription_image_maintenance_test.php',
         'csrf-ttl' => 'tests/csrf_ttl_test.php',
+        'sqlite-index-contract' => 'tests/sqlite_index_contract_test.php',
     );
 
     $results = array();
