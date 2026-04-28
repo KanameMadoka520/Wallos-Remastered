@@ -12,6 +12,23 @@
     );
   }
 
+  function isLoginHtmlResponse(rawBody) {
+    const body = String(rawBody || "").toLowerCase();
+    if (body === "" || (!body.includes("<html") && !body.includes("<!doctype html"))) {
+      return false;
+    }
+
+    const hasLoginForm = body.includes('id="username"')
+      && body.includes('id="password"')
+      && body.includes("login.php");
+    const hasLoginCopy = body.includes("please login")
+      || body.includes("sign in")
+      || body.includes("请登录")
+      || body.includes("登入");
+
+    return hasLoginForm || hasLoginCopy;
+  }
+
   function isSessionFailureError(error) {
     return Boolean(
       error
@@ -66,6 +83,24 @@
     error.sessionExpired = isSessionFailurePayload(context.data);
     error.csrfInvalid = isCsrfFailurePayload(context.data);
     return error;
+  }
+
+  function createSessionExpiredErrorFromHtml(response, rawBody) {
+    const message = translateFallback("session_expired", "Session expired");
+    return createFallbackRequestError(message, {
+      response,
+      status: Number(response?.status || 401) || 401,
+      rawBody,
+      data: {
+        success: false,
+        code: "session_expired",
+        error: "session_expired",
+        message,
+        session_expired: true,
+        requires_relogin: true,
+        html_login_response: true,
+      },
+    });
   }
 
   function createWallosApiFromExisting(existingHttp) {
@@ -148,6 +183,7 @@
         }
         return isSessionFailurePayload(payload);
       },
+      isLoginHtmlResponse,
       isSessionFailureError(error) {
         if (typeof existingHttp.isSessionFailureError === "function") {
           return existingHttp.isSessionFailureError(error);
@@ -210,6 +246,12 @@
           rawBody,
         };
       } catch (error) {
+        if (isLoginHtmlResponse(rawBody)) {
+          const requestError = createSessionExpiredErrorFromHtml(response, rawBody);
+          window.dispatchEvent(new CustomEvent("wallos:session-expired", { detail: requestError }));
+          throw requestError;
+        }
+
         throw createFallbackRequestError(translateFallback("unknown_error", "Unknown error"), {
           response,
           status: response.status,
@@ -359,6 +401,7 @@
         return this.getErrorMessage(error, fallbackMessage);
       },
       isSessionFailurePayload,
+      isLoginHtmlResponse,
       isSessionFailureError,
       isCsrfFailurePayload,
       isCsrfFailureError,

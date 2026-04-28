@@ -767,6 +767,41 @@ function isWallosSessionFailurePayload(data) {
   );
 }
 
+function isWallosLoginHtmlResponse(rawBody) {
+  const body = String(rawBody || "").toLowerCase();
+  if (body === "" || (!body.includes("<html") && !body.includes("<!doctype html"))) {
+    return false;
+  }
+
+  const hasLoginForm = body.includes('id="username"')
+    && body.includes('id="password"')
+    && body.includes("login.php");
+  const hasLoginCopy = body.includes("please login")
+    || body.includes("sign in")
+    || body.includes("请登录")
+    || body.includes("登入");
+
+  return hasLoginForm || hasLoginCopy;
+}
+
+function createWallosSessionExpiredErrorFromHtml(response, rawBody) {
+  const message = translate("session_expired");
+  return createWallosRequestError(message, {
+    response,
+    status: Number(response?.status || 401) || 401,
+    rawBody,
+    data: {
+      success: false,
+      code: "session_expired",
+      error: "session_expired",
+      message,
+      session_expired: true,
+      requires_relogin: true,
+      html_login_response: true,
+    },
+  });
+}
+
 function isWallosCsrfFailurePayload(data) {
   if (!data || typeof data !== "object") {
     return false;
@@ -1021,6 +1056,12 @@ async function wallosRequest(url, options = {}) {
         try {
           data = JSON.parse(rawBody);
         } catch (error) {
+          if (isWallosLoginHtmlResponse(rawBody)) {
+            const requestError = createWallosSessionExpiredErrorFromHtml(response, rawBody);
+            dispatchWallosSessionFailure(requestError);
+            throw requestError;
+          }
+
           const requestError = createWallosRequestError(
             fallbackErrorMessage || translate("unknown_error"),
             {

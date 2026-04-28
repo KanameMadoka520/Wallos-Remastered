@@ -179,6 +179,48 @@ try {
     }
   });
 
+  await step("unexpected login HTML is normalized as session expiry", async () => {
+    await page.route("**/endpoints/e2e-login-html.php", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "text/html; charset=UTF-8",
+        body: '<!doctype html><html><body><form action="login.php"><input id="username"><input id="password" type="password"></form><h1>Please login</h1></body></html>',
+      });
+    });
+
+    const result = await page.evaluate(async () => {
+      window.__wallosSessionExpiredEventSeen = false;
+      const stopReloadHandler = (event) => {
+        window.__wallosSessionExpiredEventSeen = true;
+        event.stopImmediatePropagation();
+      };
+      window.addEventListener("wallos:session-expired", stopReloadHandler, true);
+
+      try {
+        await window.WallosHttp.getJson("endpoints/e2e-login-html.php");
+        return { resolved: true, eventSeen: window.__wallosSessionExpiredEventSeen };
+      } catch (error) {
+        return {
+          resolved: false,
+          eventSeen: window.__wallosSessionExpiredEventSeen,
+          sessionExpired: error?.sessionExpired === true,
+          code: String(error?.code || ""),
+          hasHtmlMarker: error?.data?.html_login_response === true,
+        };
+      } finally {
+        window.removeEventListener("wallos:session-expired", stopReloadHandler, true);
+      }
+    });
+    await page.unroute("**/endpoints/e2e-login-html.php").catch(() => null);
+
+    if (result.resolved) {
+      throw new Error("login HTML unexpectedly resolved as JSON");
+    }
+    if (!result.sessionExpired || !result.eventSeen || result.code !== "session_expired" || !result.hasHtmlMarker) {
+      throw new Error(`login HTML was not normalized as session expiry: ${JSON.stringify(result)}`);
+    }
+  });
+
   await step("cache refresh notice is persistent and does not widen the page", async () => {
     await page.evaluate(() => {
       document.querySelector("#successToast .close-success")?.click();

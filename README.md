@@ -356,6 +356,8 @@ OK
   - 下载/导出
   - 纯二进制媒体流
 - 会话失效与通用错误反馈应优先复用共享请求层和 `common.js`
+- 受保护异步接口应返回标准 JSON 契约：`success:false`、`code:error`、`message`，未登录统一使用 `401 session_expired`
+- 如果异步请求意外收到登录页 HTML，前端会把它归一化为会话失效并触发统一刷新/重登录提示，避免显示“未知错误”
 - 修改高风险链路后，建议至少运行一次：
 
 ```bash
@@ -368,6 +370,7 @@ docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-ur
 - 登录页 / 注册页主题与默认紫色主题
 - Service Worker 缓存契约、订阅私有媒体不进浏览器缓存的约束
 - 未登录 endpoint 的标准 `401` JSON 契约
+- invalid CSRF 的标准 `400 invalid_csrf` JSON 契约
 - 订阅分页 JSON 契约
 - 订阅页关键 DOM 与脚本加载顺序
 - 订阅页共享请求层、会话失效处理和事件重绑契约

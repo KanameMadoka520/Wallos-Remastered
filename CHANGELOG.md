@@ -6,6 +6,9 @@
 
 ## 2026-04-28
 
+- 会话稳定性：共享请求层现在会把“异步请求意外拿到登录页 HTML”的情况归一化为 `session_expired`，不再显示笼统未知错误，减少页面挂久后的按钮漂移和只转圈问题。
+- 会话稳定性：`subscriptionpages.php` 的非法方法和 invalid CSRF 响应改为标准 HTTP 状态与统一 JSON 契约；`subscriptions/export.php` 未登录时也统一返回标准 `401 session_expired` JSON。
+- 回归检查：登录态回归新增订阅导出未登录 `401` 和订阅分页 invalid CSRF 契约检查；客户端缓存 E2E 同时覆盖登录页 HTML 误返回的会话失效归一化。
 - 缓存治理：Service Worker 缓存版本升级到 v18，版本化 CSS/JS 改为网络优先并回落到精确缓存，减少旧静态资源导致的“某台设备异常”。
 - 缓存治理：订阅私有媒体目录被明确排除出 Service Worker 图片缓存，继续只通过鉴权端点访问，避免已删图或跨账号媒体在浏览器缓存里残留。
 - 回归检查：新增 `tests/e2e/client_cache_smoke.mjs` 普通用户浏览器级缓存刷新 E2E，验证客户端缓存刷新提示会持续显示到手动关闭，并检查右下角提示不会撑宽页面；`npm run e2e` 已纳入该检查。
