@@ -941,6 +941,7 @@ $i18n = [
     "maintenance_recommendations" => "Maintenance Recommendations",
     "refresh_maintenance_recommendations" => "Refresh Maintenance Recommendations",
     "maintenance_recommendations_refreshed" => "Maintenance recommendations refreshed.",
+    "maintenance_recommendations_generated_at" => "Recommendations Generated At",
     "maintenance_recommendation_action_confirm" => "Run maintenance action: %s?",
     "maintenance_recommendation_status" => "Recommendation Status",
     "maintenance_recommendation_status_ok" => "OK",
