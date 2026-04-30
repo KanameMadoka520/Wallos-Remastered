@@ -681,6 +681,12 @@ function executeAdminMaintenanceRecommendation(action, button) {
     return;
   }
 
+  if (normalizedAction === "open_slow_maintenance_actions") {
+    setAdminMaintenanceActionLogFilter("slow");
+    document.getElementById("adminMaintenanceActionLogs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+
   if (normalizedAction !== "") {
     runAdminMaintenanceAction(normalizedAction, button);
   }
