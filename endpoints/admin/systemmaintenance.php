@@ -55,6 +55,13 @@ try {
         ]);
     }
 
+    if ($action === 'get_maintenance_action_logs') {
+        wallos_emit_system_maintenance_response($db, $i18n, $action, $startedAt, $userId, [
+            'success' => true,
+            'message' => translate('maintenance_action_logs_refreshed', $i18n),
+        ]);
+    }
+
     if ($action === 'scan_subscription_images') {
         wallos_emit_system_maintenance_response($db, $i18n, $action, $startedAt, $userId, [
             'success' => true,

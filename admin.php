@@ -1570,6 +1570,8 @@ $pageSections = [
                 data-maintenance-action-logs="<?= htmlspecialchars($maintenanceActionLogsJson ?: '[]', ENT_QUOTES, 'UTF-8') ?>">
             </div>
             <div class="inline-row">
+                <input type="button" value="<?= translate('refresh_maintenance_action_logs', $i18n) ?>" class="button tiny mobile-grow"
+                    onclick="runAdminMaintenanceAction('get_maintenance_action_logs', this)">
                 <input type="button" value="<?= translate('export_maintenance_action_logs', $i18n) ?>" class="secondary-button tiny mobile-grow"
                     onclick="exportAdminMaintenanceActionLogsCsv()">
             </div>

@@ -400,6 +400,7 @@ function getAdminMaintenanceActionLabel(action) {
     get_system_overview: adminTranslateWithFallback("maintenance_action_get_system_overview", "Refresh System Overview"),
     get_storage_usage: adminTranslateWithFallback("maintenance_action_get_storage_usage", "Refresh Storage Usage"),
     get_maintenance_recommendations: adminTranslateWithFallback("maintenance_action_get_maintenance_recommendations", "Refresh Maintenance Recommendations"),
+    get_maintenance_action_logs: adminTranslateWithFallback("maintenance_action_get_maintenance_action_logs", "Refresh Maintenance Action Logs"),
     scan_subscription_images: adminTranslateWithFallback("scan_subscription_images", "Scan Subscription Images"),
     reuse_oversized_subscription_image_variants: adminTranslateWithFallback("reuse_oversized_subscription_image_variants", "Reuse Oversized Variants"),
     cleanup_subscription_image_orphans: adminTranslateWithFallback("cleanup_subscription_image_orphans", "Clean Orphan Images"),
