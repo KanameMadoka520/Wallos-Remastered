@@ -1281,6 +1281,65 @@ function createRuntimeSlowRequestCard(item, ui) {
   return card;
 }
 
+function createRuntimeSlowEndpointCard(item, ui) {
+  const card = document.createElement("article");
+  card.className = "runtime-anomaly-card runtime-slow-endpoint-card";
+
+  const header = document.createElement("div");
+  header.className = "runtime-anomaly-card-header";
+
+  const methodBadge = document.createElement("span");
+  methodBadge.className = "access-log-id-badge";
+  methodBadge.textContent = String(item?.method || "-");
+
+  const pathNode = document.createElement("strong");
+  pathNode.textContent = String(item?.path || "-");
+
+  const countNode = document.createElement("span");
+  countNode.textContent = `${ui?.dataset.slowEndpointCountLabel || "Count"}: ${String(item?.total || 0)}`;
+
+  header.append(methodBadge, pathNode, countNode);
+
+  const message = document.createElement("p");
+  message.textContent = [
+    `${ui?.dataset.avgDurationLabel || "Avg"}: ${String(item?.avg_duration_ms || 0)} ms`,
+    `${ui?.dataset.maxDurationLabel || "Max"}: ${String(item?.max_duration_ms || 0)} ms`,
+    `${ui?.dataset.failureCountLabel || "Failures"}: ${String(item?.failure_count || 0)}`,
+  ].join(" / ");
+
+  const meta = document.createElement("small");
+  meta.textContent = `${ui?.dataset.lastSeenLabel || "Last Seen"}: ${String(item?.last_seen_at_display || item?.last_seen_at || "-")}`;
+
+  card.append(header, message, meta);
+  return card;
+}
+
+function renderRuntimeSlowEndpointGroups(groups = []) {
+  const ui = document.getElementById("admin-runtime-observability-ui");
+  const grid = document.querySelector("[data-slow-endpoint-grid]");
+  if (!grid) {
+    return;
+  }
+
+  grid.innerHTML = "";
+  const items = Array.isArray(groups) ? groups : [];
+  if (items.length === 0) {
+    const emptyState = document.createElement("div");
+    emptyState.className = "settings-notes access-log-empty";
+    const paragraph = document.createElement("p");
+    const icon = document.createElement("i");
+    icon.className = "fa-solid fa-circle-info";
+    paragraph.append(icon, document.createTextNode(ui?.dataset.topSlowEndpointsEmptyLabel || "No slow endpoints detected."));
+    emptyState.appendChild(paragraph);
+    grid.appendChild(emptyState);
+    return;
+  }
+
+  items.forEach((item) => {
+    grid.appendChild(createRuntimeSlowEndpointCard(item, ui));
+  });
+}
+
 function renderRuntimeObservabilityFeed(items, slowRequests = []) {
   const ui = document.getElementById("admin-runtime-observability-ui");
   const feed = document.querySelector("[data-observability-feed]");
@@ -1335,6 +1394,7 @@ function updateRuntimeObservabilitySummary(data) {
   }
 
   renderRuntimeObservabilityFeed(data?.recent_anomalies || [], data?.recent_slow_requests || []);
+  renderRuntimeSlowEndpointGroups(data?.top_slow_request_groups || []);
 }
 
 function refreshRuntimeObservabilityButton(button) {

@@ -19,6 +19,7 @@ $securityAnomaliesTableExists = wallos_security_anomalies_table_exists($db);
 $typeCounts = $securityAnomaliesTableExists ? wallos_get_security_anomaly_type_counts($db, 24) : [];
 $recentAnomalies = $securityAnomaliesTableExists ? wallos_get_recent_security_anomalies($db, 8, 24) : [];
 $recentSlowRequests = wallos_get_recent_slow_request_logs($db, 6, 24);
+$topSlowRequestGroups = wallos_get_top_slow_request_groups($db, 6, 24);
 $cacheRefreshMarker = wallos_read_cache_refresh_marker(__DIR__ . '/../..');
 
 echo json_encode([
@@ -40,6 +41,10 @@ echo json_encode([
         $item['created_at_display'] = wallos_format_observability_timestamp($item['created_at'] ?? '', $backupTimezone);
         return $item;
     }, $recentSlowRequests),
+    'top_slow_request_groups' => array_map(static function ($item) use ($backupTimezone) {
+        $item['last_seen_at_display'] = wallos_format_observability_timestamp($item['last_seen_at'] ?? '', $backupTimezone);
+        return $item;
+    }, $topSlowRequestGroups),
     'service_worker_versions' => wallos_parse_service_worker_cache_versions(__DIR__ . '/../../service-worker.js'),
     'cache_refresh' => [
         'token_short' => substr((string) ($cacheRefreshMarker['token'] ?? ''), 0, 12),
