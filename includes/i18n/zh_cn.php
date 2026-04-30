@@ -867,6 +867,7 @@ $i18n = [
     "recent_request_failures" => "最近请求失败",
     "runtime_observability" => "运行可观测性",
     "runtime_observability_info" => "汇总最近前端报错、请求失败、缓存刷新状态和最新异常流，便于快速定位问题。",
+    "runtime_observability_generated_at" => "诊断刷新时间",
     "top_slow_endpoints" => "慢请求接口排行",
     "top_slow_endpoints_info" => "按请求方法和路径汇总最近 24 小时慢请求，便于直接定位变慢的接口。",
     "no_slow_endpoints" => "最近 24 小时没有检测到慢接口。",
