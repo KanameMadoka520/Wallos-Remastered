@@ -340,6 +340,21 @@ try {
     }, null, { timeout: 15000 });
   });
 
+  await step("maintenance action log filters switch cleanly", async () => {
+    const filters = ["failed", "slow", "all"];
+    for (const filter of filters) {
+      await page.locator(`[data-maintenance-action-log-filter="${filter}"]`).click();
+      await page.waitForFunction((expectedFilter) => {
+        const activeButton = document.querySelector("[data-maintenance-action-log-filter].is-active");
+        const panel = document.getElementById("adminMaintenanceActionLogs");
+        return !!activeButton
+          && activeButton.dataset.maintenanceActionLogFilter === expectedFilter
+          && !!panel
+          && !!panel.querySelector(".maintenance-action-log-card");
+      }, filter, { timeout: 10000 });
+    }
+  });
+
   await step("service worker cache refresh request updates observability marker", async () => {
     const beforeText = (await page.locator("[data-observability-cache-refresh]").textContent())?.trim() || "";
     await page.waitForTimeout(1200);
