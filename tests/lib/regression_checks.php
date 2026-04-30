@@ -498,6 +498,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'renderAdminSystemOverview',
         'refreshAdminSystemOverview',
         'renderAdminMaintenanceStorageSummary',
+        'storage_usage_generated_at',
         'log_rows_last_24h',
         'log_rows_daily_average',
         'log_oldest_at',
