@@ -231,6 +231,7 @@ The admin page includes a maintenance area for long-running deployments:
 - system overview cards for service health, maintenance status, SQLite indexes, slow requests, security anomalies, subscription image consistency, and log growth, with a read-only partial refresh button
 - request-log duration/status/completion tracking, plus a 24-hour slow-request summary and filtered export fields
 - top slow-endpoint aggregation for the last 24 hours, grouped by request method and path with hit count, average duration, maximum duration, failures, last-seen time, and a one-click filtered access-log shortcut
+- storage cards for request logs, security anomalies, and rate-limit usage now show retention days, last-24-hour rows, retention-window daily average, and growth risk
 - maintenance recommendations that summarize index health, SQLite free pages, orphan subscription images, log growth, slow requests, and backup-directory size into actionable cards
 - storage usage cards for the database, upload root, subscription media, and backup directory
 - log growth risk indicators for request logs, security anomalies, and rate-limit usage

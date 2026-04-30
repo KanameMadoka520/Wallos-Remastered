@@ -40,6 +40,55 @@ function wallos_maintenance_count_table_rows($db, $tableName)
     return (int) $db->querySingle('SELECT COUNT(*) AS total FROM ' . $tableName);
 }
 
+function wallos_get_maintenance_log_activity($db, $tableName, $retentionDays)
+{
+    $activity = [
+        'oldest_at' => '',
+        'latest_at' => '',
+        'last_24h_rows' => 0,
+        'last_24h_rows_label' => '0',
+        'retention_window_rows' => 0,
+        'retention_window_rows_label' => '0',
+        'daily_average_rows' => 0.0,
+        'daily_average_rows_label' => '0',
+    ];
+    $tableName = trim((string) $tableName);
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $tableName) || !wallos_maintenance_table_has_columns($db, $tableName, ['created_at'])) {
+        return $activity;
+    }
+
+    $quotedTable = wallos_quote_sqlite_identifier($tableName);
+    $range = $db->querySingle('SELECT MIN(created_at) AS oldest_at, MAX(created_at) AS latest_at FROM ' . $quotedTable, true);
+    if (is_array($range)) {
+        $activity['oldest_at'] = (string) ($range['oldest_at'] ?? '');
+        $activity['latest_at'] = (string) ($range['latest_at'] ?? '');
+    }
+
+    $stmt = $db->prepare('SELECT COUNT(*) AS total FROM ' . $quotedTable . ' WHERE created_at >= datetime(\'now\', \'-24 hours\')');
+    if ($stmt) {
+        $result = $stmt->execute();
+        $row = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+        $activity['last_24h_rows'] = (int) ($row['total'] ?? 0);
+        $activity['last_24h_rows_label'] = number_format($activity['last_24h_rows']);
+    }
+
+    $retentionDays = max(1, (int) $retentionDays);
+    $stmt = $db->prepare('SELECT COUNT(*) AS total FROM ' . $quotedTable . ' WHERE created_at >= datetime(\'now\', :window)');
+    if ($stmt) {
+        $stmt->bindValue(':window', '-' . $retentionDays . ' days', SQLITE3_TEXT);
+        $result = $stmt->execute();
+        $row = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+        $activity['retention_window_rows'] = (int) ($row['total'] ?? 0);
+        $activity['retention_window_rows_label'] = number_format($activity['retention_window_rows']);
+    }
+
+    $dailyAverage = $activity['retention_window_rows'] / $retentionDays;
+    $activity['daily_average_rows'] = round($dailyAverage, 1);
+    $activity['daily_average_rows_label'] = number_format($activity['daily_average_rows'], $dailyAverage >= 10 ? 0 : 1);
+
+    return $activity;
+}
+
 function wallos_maintenance_table_has_columns($db, $tableName, array $requiredColumns)
 {
     $tableName = trim((string) $tableName);
@@ -295,6 +344,7 @@ function wallos_check_sqlite_index_health($db)
 function wallos_describe_maintenance_log_table($db, $tableName, $retentionDays, $warningRows, $criticalRows)
 {
     $rows = wallos_maintenance_count_table_rows($db, $tableName);
+    $activity = wallos_get_maintenance_log_activity($db, $tableName, $retentionDays);
     $risk = 'normal';
 
     if ($rows >= $criticalRows) {
@@ -309,7 +359,7 @@ function wallos_describe_maintenance_log_table($db, $tableName, $retentionDays, 
         'rows_label' => number_format($rows),
         'retention_days' => (int) $retentionDays,
         'risk' => $risk,
-    ];
+    ] + $activity;
 }
 
 function wallos_get_storage_usage_summary($db, $basePath)
