@@ -99,6 +99,8 @@ try {
     wallos_subscription_image_maintenance_assert($auditBefore['missing_original_rows'] === 0, 'Expected no missing originals before cleanup.');
     wallos_subscription_image_maintenance_assert($auditBefore['missing_variant_files'] === 0, 'Expected no missing variant files before cleanup.');
     wallos_subscription_image_maintenance_assert($auditBefore['oversized_variants'] === 1, 'Expected one oversized derived variant before cleanup.');
+    wallos_subscription_image_maintenance_assert(count($auditBefore['user_issue_summary']) === 1, 'Expected one affected user group before cleanup.');
+    wallos_subscription_image_maintenance_assert($auditBefore['user_issue_summary'][0]['user_id'] === 7, 'Expected affected user group 7 before cleanup.');
 
     $cleanup = wallos_cleanup_subscription_image_orphans($db, $basePath);
     wallos_subscription_image_maintenance_assert($cleanup['deleted_files'] === 2, 'Expected cleanup to delete exactly two orphan files.');
