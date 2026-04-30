@@ -104,9 +104,16 @@ function buildAdminDirectoryStorageDetail(directory) {
 
 function buildAdminLogStorageDetail(logInfo) {
   const retentionDays = Number(logInfo?.retention_days ?? 0);
+  const last24hRows = logInfo?.last_24h_rows_label || formatAdminNumber(logInfo?.last_24h_rows ?? 0);
+  const dailyAverageRows = logInfo?.daily_average_rows_label || formatAdminNumber(logInfo?.daily_average_rows ?? 0);
   const riskLabel = getAdminLogRiskLabel(logInfo?.risk);
 
-  return `${adminTranslateWithFallback("retention_days", "Retention Days")}: ${formatAdminNumber(retentionDays)} · ${adminTranslateWithFallback("log_growth_risk", "Log Growth Risk")}: ${riskLabel}`;
+  return [
+    `${adminTranslateWithFallback("retention_days", "Retention Days")}: ${formatAdminNumber(retentionDays)}`,
+    `${adminTranslateWithFallback("log_rows_last_24h", "Last 24h Rows")}: ${last24hRows}`,
+    `${adminTranslateWithFallback("log_rows_daily_average", "Daily Average")}: ${dailyAverageRows}`,
+    `${adminTranslateWithFallback("log_growth_risk", "Log Growth Risk")}: ${riskLabel}`,
+  ].join(" · ");
 }
 
 function renderAdminMaintenanceStorageSummary(storage) {
