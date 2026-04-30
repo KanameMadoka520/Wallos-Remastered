@@ -1571,6 +1571,20 @@ $pageSections = [
             <div id="adminMaintenanceActionSummary" class="backup-summary-grid"
                 data-maintenance-action-summary="<?= htmlspecialchars($maintenanceActionSummaryJson ?: '{}', ENT_QUOTES, 'UTF-8') ?>">
             </div>
+            <div class="inline-row maintenance-action-log-filter-row" data-maintenance-action-log-filters>
+                <button type="button" class="secondary-button tiny is-active" data-maintenance-action-log-filter="all"
+                    onclick="setAdminMaintenanceActionLogFilter('all', this)">
+                    <?= translate('maintenance_action_filter_all', $i18n) ?>
+                </button>
+                <button type="button" class="secondary-button tiny" data-maintenance-action-log-filter="failed"
+                    onclick="setAdminMaintenanceActionLogFilter('failed', this)">
+                    <?= translate('maintenance_action_filter_failed', $i18n) ?>
+                </button>
+                <button type="button" class="secondary-button tiny" data-maintenance-action-log-filter="slow"
+                    onclick="setAdminMaintenanceActionLogFilter('slow', this)">
+                    <?= translate('maintenance_action_filter_slow', $i18n) ?>
+                </button>
+            </div>
             <div id="adminMaintenanceActionLogs" class="maintenance-action-log-grid"
                 data-maintenance-action-logs="<?= htmlspecialchars($maintenanceActionLogsJson ?: '[]', ENT_QUOTES, 'UTF-8') ?>">
             </div>
