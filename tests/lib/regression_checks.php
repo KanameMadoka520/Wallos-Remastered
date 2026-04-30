@@ -690,6 +690,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'storage usage refresh repaints maintenance summary',
         'backup settings save and manual backup flow complete',
         'backup verification updates card state',
+        'maintenance action logs refresh and export controls render',
+        'refreshMaintenanceActionLogsButton',
         'writeFailureArtifacts',
         'assertNoBrowserRuntimeErrors',
     ));
