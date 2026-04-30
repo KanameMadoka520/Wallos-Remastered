@@ -1569,6 +1569,10 @@ $pageSections = [
             <div id="adminMaintenanceActionLogs" class="maintenance-action-log-grid"
                 data-maintenance-action-logs="<?= htmlspecialchars($maintenanceActionLogsJson ?: '[]', ENT_QUOTES, 'UTF-8') ?>">
             </div>
+            <div class="inline-row">
+                <input type="button" value="<?= translate('export_maintenance_action_logs', $i18n) ?>" class="secondary-button tiny mobile-grow"
+                    onclick="exportAdminMaintenanceActionLogsCsv()">
+            </div>
             <div id="adminSubscriptionImageAuditSummary" class="subscription-image-audit-summary is-empty">
                 <p>
                     <i class="fa-solid fa-images"></i>

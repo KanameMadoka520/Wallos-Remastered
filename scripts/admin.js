@@ -49,6 +49,7 @@ function adminTranslateWithFallback(key, fallback) {
 }
 
 let latestAdminSubscriptionImageAudit = null;
+let latestAdminMaintenanceActionLogs = [];
 
 function escapeAdminHtml(value) {
   return String(value ?? "")
@@ -416,6 +417,7 @@ function renderAdminMaintenanceActionLogs(logs) {
   }
 
   const items = Array.isArray(logs) ? logs : [];
+  latestAdminMaintenanceActionLogs = items;
   if (items.length === 0) {
     container.innerHTML = `
       <article class="maintenance-action-log-card is-empty">
@@ -449,6 +451,41 @@ function renderAdminMaintenanceActionLogs(logs) {
       </article>
     `;
   }).join("");
+}
+
+function exportAdminMaintenanceActionLogsCsv() {
+  const items = Array.isArray(latestAdminMaintenanceActionLogs) ? latestAdminMaintenanceActionLogs : [];
+  if (items.length === 0) {
+    showErrorMessage(adminTranslateWithFallback("maintenance_action_logs_export_empty", "No maintenance action logs to export."));
+    return;
+  }
+
+  const rows = [[
+    "id",
+    "created_at",
+    "admin_user_id",
+    "action",
+    "action_label",
+    "success",
+    "duration_ms",
+    "summary",
+  ]];
+
+  items.forEach((item) => {
+    rows.push([
+      item?.id ?? "",
+      item?.created_at || "",
+      item?.admin_user_id ?? "",
+      item?.action || "",
+      getAdminMaintenanceActionLabel(item?.action),
+      item?.success ? "1" : "0",
+      item?.duration_ms ?? 0,
+      item?.summary || "",
+    ]);
+  });
+
+  downloadAdminCsvFile(`wallos-maintenance-actions-${Date.now()}.csv`, rows);
+  showSuccessMessage(adminTranslateWithFallback("maintenance_action_logs_exported", "Maintenance action logs exported."));
 }
 
 function executeAdminMaintenanceRecommendation(action, button) {
