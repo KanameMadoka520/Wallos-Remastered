@@ -5559,6 +5559,16 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   margin-bottom: 18px;
 }
 
+.maintenance-action-log-filter-row {
+  margin: 0 0 12px;
+}
+
+.maintenance-action-log-filter-row .secondary-button.is-active {
+  border-color: rgba(var(--main-color-rgb), 0.32);
+  background-color: rgba(var(--main-color-rgb), 0.14);
+  color: var(--main-color);
+}
+
 .maintenance-action-log-card {
   border: 1px solid rgba(var(--main-color-rgb), 0.16);
   border-radius: 16px;

@@ -51,6 +51,7 @@ function adminTranslateWithFallback(key, fallback) {
 let latestAdminSubscriptionImageAudit = null;
 let latestAdminMaintenanceActionLogs = [];
 let latestAdminMaintenanceActionSummary = null;
+let latestAdminMaintenanceActionLogFilter = "all";
 
 function escapeAdminHtml(value) {
   return String(value ?? "")
@@ -466,6 +467,48 @@ function renderAdminMaintenanceActionSummary(summary) {
   container.innerHTML = cards.join("");
 }
 
+function getAdminMaintenanceActionLogFilterLabel(filter) {
+  const normalizedFilter = String(filter || "all");
+  const labels = {
+    all: adminTranslateWithFallback("maintenance_action_filter_all", "All"),
+    failed: adminTranslateWithFallback("maintenance_action_filter_failed", "Failed"),
+    slow: adminTranslateWithFallback("maintenance_action_filter_slow", "Slow"),
+  };
+
+  return labels[normalizedFilter] || labels.all;
+}
+
+function getFilteredAdminMaintenanceActionLogs(items) {
+  const allItems = Array.isArray(items) ? items : [];
+  const slowThreshold = Number(latestAdminMaintenanceActionSummary?.slow_threshold_ms ?? 5000);
+  if (latestAdminMaintenanceActionLogFilter === "failed") {
+    return allItems.filter((item) => !(item?.success === true || item?.success === 1 || item?.success === "1"));
+  }
+
+  if (latestAdminMaintenanceActionLogFilter === "slow") {
+    return allItems.filter((item) => Number(item?.duration_ms ?? 0) >= slowThreshold);
+  }
+
+  return allItems;
+}
+
+function updateAdminMaintenanceActionLogFilterButtons() {
+  document.querySelectorAll("[data-maintenance-action-log-filter]").forEach((button) => {
+    const isActive = button.dataset.maintenanceActionLogFilter === latestAdminMaintenanceActionLogFilter;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function setAdminMaintenanceActionLogFilter(filter, button) {
+  const normalizedFilter = ["all", "failed", "slow"].includes(String(filter || "")) ? String(filter) : "all";
+  latestAdminMaintenanceActionLogFilter = normalizedFilter;
+  if (button) {
+    updateAdminMaintenanceActionLogFilterButtons();
+  }
+  renderAdminMaintenanceActionLogs(latestAdminMaintenanceActionLogs);
+}
+
 function renderAdminMaintenanceActionLogs(logs) {
   const container = document.getElementById("adminMaintenanceActionLogs");
   if (!container) {
@@ -474,19 +517,25 @@ function renderAdminMaintenanceActionLogs(logs) {
 
   const items = Array.isArray(logs) ? logs : [];
   latestAdminMaintenanceActionLogs = items;
-  if (items.length === 0) {
+  const filteredItems = getFilteredAdminMaintenanceActionLogs(items);
+  updateAdminMaintenanceActionLogFilterButtons();
+  if (items.length === 0 || filteredItems.length === 0) {
+    const emptyMessage = items.length === 0
+      ? adminTranslateWithFallback("maintenance_action_log_empty", "No maintenance actions recorded yet.")
+      : adminTranslateWithFallback("maintenance_action_log_filter_empty", "No maintenance actions match the current filter.");
     container.innerHTML = `
       <article class="maintenance-action-log-card is-empty">
         <div class="runtime-anomaly-card-header">
           <span class="maintenance-recommendation-badge">${escapeAdminHtml(adminTranslateWithFallback("maintenance_action_log_empty_status", "Empty"))}</span>
-          <strong>${escapeAdminHtml(adminTranslateWithFallback("maintenance_action_log_empty", "No maintenance actions recorded yet."))}</strong>
+          <strong>${escapeAdminHtml(emptyMessage)}</strong>
         </div>
+        ${items.length > 0 ? `<p>${escapeAdminHtml(adminTranslateWithFallback("maintenance_action_log_filter_active", "Active filter"))}: ${escapeAdminHtml(getAdminMaintenanceActionLogFilterLabel(latestAdminMaintenanceActionLogFilter))}</p>` : ""}
       </article>
     `;
     return;
   }
 
-  container.innerHTML = items.map((item) => {
+  container.innerHTML = filteredItems.map((item) => {
     const success = item?.success === true || item?.success === 1 || item?.success === "1";
     const statusKey = success ? "maintenance_action_success" : "maintenance_action_failed";
     const statusFallback = success ? "Success" : "Failed";
