@@ -735,6 +735,44 @@ function wallos_collect_subscription_image_index($db)
     ];
 }
 
+function wallos_extract_subscription_image_user_id_from_path($path)
+{
+    $path = str_replace('\\', '/', trim((string) $path));
+    if (preg_match('#/subscription-media/user-(\d+)/#', '/' . ltrim($path, '/'), $matches)) {
+        return (int) $matches[1];
+    }
+
+    return 0;
+}
+
+function wallos_increment_subscription_image_user_issue(array &$summary, $userId, $field, $amount = 1)
+{
+    $userId = max(0, (int) $userId);
+    $key = (string) $userId;
+    if (!isset($summary[$key])) {
+        $summary[$key] = [
+            'user_id' => $userId,
+            'orphan_files' => 0,
+            'orphan_bytes' => 0,
+            'orphan_size_label' => wallos_format_maintenance_size(0),
+            'missing_original_rows' => 0,
+            'missing_variant_files' => 0,
+            'oversized_variants' => 0,
+            'total_issues' => 0,
+        ];
+    }
+
+    if (!array_key_exists($field, $summary[$key])) {
+        $summary[$key][$field] = 0;
+    }
+
+    $summary[$key][$field] += (int) $amount;
+    if ($field !== 'orphan_bytes') {
+        $summary[$key]['total_issues'] += (int) $amount;
+    }
+    $summary[$key]['orphan_size_label'] = wallos_format_maintenance_size((int) $summary[$key]['orphan_bytes']);
+}
+
 function wallos_collect_subscription_image_variant_health($db, $basePath)
 {
     $summary = [
@@ -748,6 +786,7 @@ function wallos_collect_subscription_image_variant_health($db, $basePath)
         'oversized_variant_bytes' => 0,
         'oversized_variant_size_label' => wallos_format_maintenance_size(0),
         'oversized_variant_samples' => [],
+        'user_issue_summary' => [],
     ];
 
     if (!wallos_maintenance_table_has_columns($db, 'subscription_uploaded_images', ['id', 'user_id', 'subscription_id', 'path', 'preview_path', 'thumbnail_path'])) {
@@ -770,6 +809,7 @@ function wallos_collect_subscription_image_variant_health($db, $basePath)
 
         if ($originalAbsolutePath === '') {
             $summary['missing_original_rows']++;
+            wallos_increment_subscription_image_user_issue($summary['user_issue_summary'], (int) ($row['user_id'] ?? 0), 'missing_original_rows');
             if (count($summary['missing_original_samples']) < 10) {
                 $summary['missing_original_samples'][] = [
                     'image_id' => $imageId,
@@ -795,6 +835,7 @@ function wallos_collect_subscription_image_variant_health($db, $basePath)
             $variantAbsolutePath = wallos_resolve_subscription_image_absolute_path($basePath, $variantPath);
             if ($variantAbsolutePath === '') {
                 $summary['missing_variant_files']++;
+                wallos_increment_subscription_image_user_issue($summary['user_issue_summary'], (int) ($row['user_id'] ?? 0), 'missing_variant_files');
                 if (count($summary['missing_variant_file_samples']) < 10) {
                     $summary['missing_variant_file_samples'][] = [
                         'image_id' => $imageId,
@@ -814,6 +855,7 @@ function wallos_collect_subscription_image_variant_health($db, $basePath)
             $rowHasOversizedVariant = true;
             $summary['oversized_variants']++;
             $summary['oversized_variant_bytes'] += $variantSize;
+            wallos_increment_subscription_image_user_issue($summary['user_issue_summary'], (int) ($row['user_id'] ?? 0), 'oversized_variants');
             if (count($summary['oversized_variant_samples']) < 10) {
                 $summary['oversized_variant_samples'][] = [
                     'image_id' => $imageId,
@@ -883,6 +925,7 @@ function wallos_audit_subscription_image_storage($db, $basePath)
 {
     $index = wallos_collect_subscription_image_index($db);
     $variantHealth = wallos_collect_subscription_image_variant_health($db, $basePath);
+    $userIssueSummary = $variantHealth['user_issue_summary'] ?? [];
     $files = wallos_scan_subscription_image_file_details($basePath);
     $orphanFiles = [];
     $orphanDetails = [];
@@ -894,8 +937,22 @@ function wallos_audit_subscription_image_storage($db, $basePath)
             $orphanFiles[] = $path;
             $orphanDetails[] = $file;
             $orphanBytes += (int) ($file['size_bytes'] ?? 0);
+            $pathUserId = wallos_extract_subscription_image_user_id_from_path($path);
+            wallos_increment_subscription_image_user_issue($userIssueSummary, $pathUserId, 'orphan_files');
+            wallos_increment_subscription_image_user_issue($userIssueSummary, $pathUserId, 'orphan_bytes', (int) ($file['size_bytes'] ?? 0));
         }
     }
+
+    $userIssueSummary = array_values($userIssueSummary);
+    usort($userIssueSummary, static function ($left, $right) {
+        $leftScore = (int) ($left['total_issues'] ?? 0);
+        $rightScore = (int) ($right['total_issues'] ?? 0);
+        if ($leftScore === $rightScore) {
+            return (int) ($left['user_id'] ?? 0) <=> (int) ($right['user_id'] ?? 0);
+        }
+
+        return $rightScore <=> $leftScore;
+    });
 
     return [
         'generated_at' => date('Y-m-d H:i:s'),
@@ -908,6 +965,7 @@ function wallos_audit_subscription_image_storage($db, $basePath)
         'missing_variant_rows' => (int) $index['missing_variant_rows'],
         'orphan_samples' => array_slice($orphanFiles, 0, 10),
         'orphan_details' => $orphanDetails,
+        'user_issue_summary' => $userIssueSummary,
     ] + $variantHealth;
 }
 
