@@ -4,6 +4,10 @@ require_once __DIR__ . '/subscription_media.php';
 require_once __DIR__ . '/security_maintenance.php';
 require_once __DIR__ . '/backup_manager.php';
 
+if (!defined('WALLOS_SLOW_REQUEST_THRESHOLD_MS')) {
+    define('WALLOS_SLOW_REQUEST_THRESHOLD_MS', 1500);
+}
+
 function wallos_format_maintenance_size($bytes)
 {
     return wallos_format_backup_size(max(0, (int) $bytes));
@@ -34,6 +38,51 @@ function wallos_maintenance_count_table_rows($db, $tableName)
     }
 
     return (int) $db->querySingle('SELECT COUNT(*) AS total FROM ' . $tableName);
+}
+
+function wallos_maintenance_table_has_columns($db, $tableName, array $requiredColumns)
+{
+    $tableName = trim((string) $tableName);
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $tableName) || !wallos_maintenance_table_exists($db, $tableName)) {
+        return false;
+    }
+
+    $columns = [];
+    $result = $db->query('PRAGMA table_info(' . wallos_quote_sqlite_identifier($tableName) . ')');
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $columns[] = (string) ($row['name'] ?? '');
+    }
+
+    foreach ($requiredColumns as $requiredColumn) {
+        if (!in_array((string) $requiredColumn, $columns, true)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function wallos_count_maintenance_slow_requests($db, $hours = 24, $thresholdMs = WALLOS_SLOW_REQUEST_THRESHOLD_MS)
+{
+    if (!wallos_maintenance_table_has_columns($db, 'request_logs', ['duration_ms', 'created_at'])) {
+        return 0;
+    }
+
+    $stmt = $db->prepare('
+        SELECT COUNT(*) AS total
+        FROM request_logs
+        WHERE duration_ms >= :threshold
+          AND created_at >= datetime(\'now\', :window)
+    ');
+    if (!$stmt) {
+        return 0;
+    }
+
+    $stmt->bindValue(':threshold', max(1, (int) $thresholdMs), SQLITE3_INTEGER);
+    $stmt->bindValue(':window', '-' . max(1, (int) $hours) . ' hours', SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $row = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+    return (int) ($row['total'] ?? 0);
 }
 
 function wallos_collect_directory_usage($directory)
@@ -283,6 +332,186 @@ function wallos_get_storage_usage_summary($db, $basePath)
             'security_anomalies' => wallos_describe_maintenance_log_table($db, 'security_anomalies', WALLOS_SECURITY_ANOMALY_RETENTION_DAYS, 500, 5000),
             'rate_limit_usage' => wallos_describe_maintenance_log_table($db, 'rate_limit_usage', WALLOS_RATE_LIMIT_USAGE_RETENTION_DAYS, 10000, 100000),
         ],
+    ];
+}
+
+function wallos_maintenance_translate($i18n, $key, $fallback)
+{
+    if (function_exists('translate') && is_array($i18n)) {
+        $translated = translate($key, $i18n);
+        if (is_string($translated) && $translated !== '' && $translated !== '[i18n String Missing]') {
+            return $translated;
+        }
+    }
+
+    return $fallback;
+}
+
+function wallos_build_maintenance_recommendation($severity, $title, $message, array $details = [], $action = '', $actionLabel = '')
+{
+    return [
+        'severity' => in_array($severity, ['ok', 'watch', 'action'], true) ? $severity : 'watch',
+        'title' => (string) $title,
+        'message' => (string) $message,
+        'details' => array_values(array_filter(array_map('strval', $details))),
+        'action' => (string) $action,
+        'action_label' => (string) $actionLabel,
+    ];
+}
+
+function wallos_get_maintenance_recommendation_summary($db, $basePath, $i18n = null)
+{
+    $storage = wallos_get_storage_usage_summary($db, $basePath);
+    $imageAudit = wallos_audit_subscription_image_storage($db, $basePath);
+    $indexHealth = wallos_check_sqlite_index_health($db);
+    $slowRequests24h = wallos_count_maintenance_slow_requests($db, 24);
+
+    $recommendations = [];
+    $database = $storage['database'] ?? [];
+    $freeBytes = (int) ($database['free_bytes_estimate'] ?? 0);
+    $sizeBytes = max(1, (int) ($database['size_bytes'] ?? 0));
+    $freeRatio = $freeBytes / $sizeBytes;
+
+    if (empty($indexHealth['success'])) {
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            'action',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_index_title', 'SQLite index health needs attention'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_index_message', 'Some expected indexes are missing or have unexpected columns. Re-run migrations or inspect the index health details.'),
+            [
+                wallos_maintenance_translate($i18n, 'sqlite_index_missing', 'Missing Indexes') . ': ' . (int) ($indexHealth['missing_indexes'] ?? 0),
+                wallos_maintenance_translate($i18n, 'sqlite_index_invalid', 'Invalid Indexes') . ': ' . (int) ($indexHealth['invalid_indexes'] ?? 0),
+            ],
+            'check_sqlite_indexes',
+            wallos_maintenance_translate($i18n, 'check_sqlite_indexes', 'Check SQLite Indexes')
+        );
+    }
+
+    if ($freeBytes >= 64 * 1024 * 1024 && $freeRatio >= 0.20) {
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            $freeBytes >= 256 * 1024 * 1024 ? 'action' : 'watch',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_sqlite_free_title', 'SQLite free pages are accumulating'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_sqlite_free_message', 'The database has a meaningful amount of reusable free space. Consider running SQLite maintenance during a quiet window.'),
+            [
+                wallos_maintenance_translate($i18n, 'sqlite_free_size', 'Free Size') . ': ' . ($database['free_size_label'] ?? wallos_format_maintenance_size($freeBytes)),
+                wallos_maintenance_translate($i18n, 'sqlite_free_pages', 'Free Pages') . ': ' . number_format((int) ($database['freelist_count'] ?? 0)),
+            ],
+            'run_sqlite_maintenance',
+            wallos_maintenance_translate($i18n, 'run_sqlite_maintenance', 'Run SQLite Maintenance')
+        );
+    }
+
+    $orphanFiles = (int) ($imageAudit['orphan_files'] ?? 0);
+    $orphanBytes = (int) ($imageAudit['orphan_bytes'] ?? 0);
+    if ($orphanFiles > 0) {
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            $orphanBytes >= 100 * 1024 * 1024 ? 'action' : 'watch',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_orphan_images_title', 'Subscription image orphan files found'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_orphan_images_message', 'Some files on disk are no longer referenced by the subscription image index. They can be cleaned from the media directory.'),
+            [
+                wallos_maintenance_translate($i18n, 'orphan_files', 'Orphan Files') . ': ' . number_format($orphanFiles),
+                wallos_maintenance_translate($i18n, 'orphan_file_size', 'Orphan File Size') . ': ' . ($imageAudit['orphan_size_label'] ?? wallos_format_maintenance_size($orphanBytes)),
+            ],
+            'cleanup_subscription_image_orphans',
+            wallos_maintenance_translate($i18n, 'cleanup_subscription_image_orphans', 'Clean Orphan Images')
+        );
+    }
+
+    $missingVariantRows = (int) ($imageAudit['missing_variant_rows'] ?? 0);
+    if ($missingVariantRows > 0) {
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            'watch',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_missing_variants_title', 'Some subscription images are missing derived variants'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_missing_variants_message', 'Some image records do not have complete preview/thumbnail paths. Regenerate variants from the subscription page when convenient.'),
+            [
+                wallos_maintenance_translate($i18n, 'missing_derived_image_rows', 'Missing Derived Image Rows') . ': ' . number_format($missingVariantRows),
+            ]
+        );
+    }
+
+    foreach (($storage['logs'] ?? []) as $logInfo) {
+        $risk = (string) ($logInfo['risk'] ?? 'normal');
+        if (!in_array($risk, ['watch', 'high'], true)) {
+            continue;
+        }
+
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            $risk === 'high' ? 'action' : 'watch',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_log_growth_title', 'Log table growth needs review'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_log_growth_message', 'A log table is growing beyond its normal operating range. Review retention and clear logs if they are no longer needed.'),
+            [
+                wallos_maintenance_translate($i18n, 'table', 'Table') . ': ' . (string) ($logInfo['table'] ?? '-'),
+                wallos_maintenance_translate($i18n, 'rows', 'Rows') . ': ' . (string) ($logInfo['rows_label'] ?? number_format((int) ($logInfo['rows'] ?? 0))),
+                wallos_maintenance_translate($i18n, 'log_growth_risk', 'Log Growth Risk') . ': ' . $risk,
+            ]
+        );
+    }
+
+    if ($slowRequests24h > 0) {
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            $slowRequests24h >= 20 ? 'action' : 'watch',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_slow_requests_title', 'Slow requests detected'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_slow_requests_message', 'Recent requests exceeded the slow-request threshold. Open the filtered access-log view to inspect which endpoints are slow.'),
+            [
+                wallos_maintenance_translate($i18n, 'slow_requests_24h', 'Slow Requests (24h)') . ': ' . number_format($slowRequests24h),
+                wallos_maintenance_translate($i18n, 'min_duration_ms', 'Minimum Duration (ms)') . ': ' . number_format(WALLOS_SLOW_REQUEST_THRESHOLD_MS),
+            ],
+            'open_slow_requests',
+            wallos_maintenance_translate($i18n, 'open_slow_requests', 'Open Slow Requests')
+        );
+    }
+
+    foreach (($storage['directories'] ?? []) as $key => $directory) {
+        $scanErrors = (int) ($directory['scan_errors'] ?? 0);
+        if ($scanErrors <= 0) {
+            continue;
+        }
+
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            'watch',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_scan_errors_title', 'Storage scan reported errors'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_scan_errors_message', 'Some storage paths could not be scanned completely. Check local file permissions and directory health.'),
+            [
+                wallos_maintenance_translate($i18n, 'directory', 'Directory') . ': ' . (string) $key,
+                wallos_maintenance_translate($i18n, 'scan_errors', 'Scan Errors') . ': ' . number_format($scanErrors),
+            ]
+        );
+    }
+
+    $backupBytes = (int) ($storage['directories']['backups']['size_bytes'] ?? 0);
+    if ($backupBytes >= 2 * 1024 * 1024 * 1024) {
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            'watch',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_backup_size_title', 'Backup directory is getting large'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_backup_size_message', 'Backups are intentionally not deleted from the web UI. Review the Docker-mounted backup directory manually if disk space becomes tight.'),
+            [
+                wallos_maintenance_translate($i18n, 'backup_storage_size', 'Backup Storage') . ': ' . ($storage['directories']['backups']['size_label'] ?? wallos_format_maintenance_size($backupBytes)),
+            ]
+        );
+    }
+
+    if (empty($recommendations)) {
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            'ok',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_ok_title', 'No maintenance action needed'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_ok_message', 'Storage, logs, image index, SQLite indexes, and recent slow requests are within the current operating range.')
+        );
+    }
+
+    $severityCounts = ['ok' => 0, 'watch' => 0, 'action' => 0];
+    foreach ($recommendations as $recommendation) {
+        $severity = (string) ($recommendation['severity'] ?? 'watch');
+        if (!isset($severityCounts[$severity])) {
+            $severity = 'watch';
+        }
+        $severityCounts[$severity]++;
+    }
+
+    return [
+        'generated_at' => date('Y-m-d H:i:s'),
+        'status' => $severityCounts['action'] > 0 ? 'action' : ($severityCounts['watch'] > 0 ? 'watch' : 'ok'),
+        'severity_counts' => $severityCounts,
+        'slow_request_threshold_ms' => WALLOS_SLOW_REQUEST_THRESHOLD_MS,
+        'recommendations' => $recommendations,
     ];
 }
 

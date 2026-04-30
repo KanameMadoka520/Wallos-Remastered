@@ -206,6 +206,8 @@ $rateLimitPresetsJson = json_encode($rateLimitPresets, JSON_UNESCAPED_UNICODE | 
 $maintenanceRetentionSummary = wallos_get_maintenance_retention_summary();
 $maintenanceStorageSummary = wallos_get_storage_usage_summary($db, __DIR__);
 $maintenanceStorageSummaryJson = json_encode($maintenanceStorageSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$maintenanceRecommendationSummary = wallos_get_maintenance_recommendation_summary($db, __DIR__, $i18n);
+$maintenanceRecommendationSummaryJson = json_encode($maintenanceRecommendationSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $backupProgressLabels = wallos_get_backup_progress_labels($lang);
 $adminBackupsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-backups.js');
 $adminAccessLogsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-access-logs.js');
@@ -1400,6 +1402,12 @@ $pageSections = [
             <div id="adminMaintenanceStorageSummary" class="backup-summary-grid"
                 data-storage-summary="<?= htmlspecialchars($maintenanceStorageSummaryJson ?: '{}', ENT_QUOTES, 'UTF-8') ?>">
             </div>
+            <h3><?= translate('maintenance_recommendations', $i18n) ?></h3>
+            <div id="adminMaintenanceRecommendations" class="maintenance-recommendation-grid"
+                data-maintenance-recommendations="<?= htmlspecialchars($maintenanceRecommendationSummaryJson ?: '{}', ENT_QUOTES, 'UTF-8') ?>"
+                data-slow-request-threshold="<?= (int) WALLOS_SLOW_REQUEST_THRESHOLD_MS ?>"
+                data-confirm-template="<?= htmlspecialchars(translate('maintenance_recommendation_action_confirm', $i18n), ENT_QUOTES, 'UTF-8') ?>">
+            </div>
             <div class="settings-notes">
                 <p>
                     <i class="fa-solid fa-circle-info"></i>
@@ -1414,6 +1422,9 @@ $pageSections = [
                 <input type="button" value="<?= translate('refresh_storage_usage', $i18n) ?>" class="button tiny mobile-grow"
                     id="refreshStorageUsageButton"
                     onclick="runAdminMaintenanceAction('get_storage_usage', this)">
+                <input type="button" value="<?= translate('refresh_maintenance_recommendations', $i18n) ?>" class="secondary-button tiny mobile-grow"
+                    id="refreshMaintenanceRecommendationsButton"
+                    onclick="runAdminMaintenanceAction('get_maintenance_recommendations', this)">
             </div>
             <h3><?= translate('subscription_image_audit', $i18n) ?></h3>
             <div class="settings-notes">

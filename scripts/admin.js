@@ -172,6 +172,104 @@ function renderAdminMaintenanceStorageSummary(storage) {
   container.innerHTML = cards.join("");
 }
 
+function getAdminMaintenanceRecommendationSeverityLabel(severity) {
+  const normalizedSeverity = String(severity || "watch");
+  const labels = {
+    ok: adminTranslateWithFallback("maintenance_recommendation_status_ok", "OK"),
+    watch: adminTranslateWithFallback("maintenance_recommendation_status_watch", "Watch"),
+    action: adminTranslateWithFallback("maintenance_recommendation_status_action", "Action"),
+  };
+
+  return labels[normalizedSeverity] || labels.watch;
+}
+
+function renderAdminMaintenanceRecommendations(summary) {
+  const container = document.getElementById("adminMaintenanceRecommendations");
+  if (!container || !summary || typeof summary !== "object") {
+    return;
+  }
+
+  const recommendations = Array.isArray(summary.recommendations) ? summary.recommendations : [];
+  const cards = recommendations.map((item) => {
+    const severity = String(item?.severity || "watch");
+    const details = Array.isArray(item?.details) ? item.details : [];
+    const action = String(item?.action || "");
+    const actionLabel = String(item?.action_label || "");
+    const isConfirmAction = ["cleanup_subscription_image_orphans", "run_sqlite_maintenance", "reuse_oversized_subscription_image_variants"].includes(action);
+    const confirmTemplate = container.dataset.confirmTemplate || "Run maintenance action: %s?";
+    const confirmMessage = isConfirmAction ? confirmTemplate.replace("%s", actionLabel || action) : "";
+    const detailHtml = details.length > 0
+      ? `<ul>${details.map((detail) => `<li>${escapeAdminHtml(detail)}</li>`).join("")}</ul>`
+      : "";
+    const actionHtml = action && actionLabel
+      ? `<button type="button" class="secondary-button tiny" data-maintenance-recommendation-action="${escapeAdminHtml(action)}" data-confirm-message="${escapeAdminHtml(confirmMessage)}">${escapeAdminHtml(actionLabel)}</button>`
+      : "";
+
+    return `
+      <article class="maintenance-recommendation-card severity-${escapeAdminHtml(severity)}">
+        <div class="runtime-anomaly-card-header">
+          <span class="maintenance-recommendation-badge">${escapeAdminHtml(getAdminMaintenanceRecommendationSeverityLabel(severity))}</span>
+          <strong>${escapeAdminHtml(item?.title || "-")}</strong>
+        </div>
+        <p>${escapeAdminHtml(item?.message || "-")}</p>
+        ${detailHtml}
+        ${actionHtml ? `<div class="maintenance-recommendation-actions">${actionHtml}</div>` : ""}
+      </article>
+    `;
+  });
+
+  container.innerHTML = cards.join("") || `
+    <article class="maintenance-recommendation-card severity-ok">
+      <div class="runtime-anomaly-card-header">
+        <span class="maintenance-recommendation-badge">${escapeAdminHtml(getAdminMaintenanceRecommendationSeverityLabel("ok"))}</span>
+        <strong>${escapeAdminHtml(adminTranslateWithFallback("maintenance_recommendation_ok_title", "No maintenance action needed"))}</strong>
+      </div>
+      <p>${escapeAdminHtml(adminTranslateWithFallback("maintenance_recommendation_ok_message", "Current maintenance signals are within range."))}</p>
+    </article>
+  `;
+
+  container.querySelectorAll("[data-maintenance-recommendation-action]").forEach((button) => {
+    button.addEventListener("click", () => executeAdminMaintenanceRecommendation(button.dataset.maintenanceRecommendationAction || "", button));
+  });
+}
+
+function formatAdminMaintenanceRecommendations(summary) {
+  if (!summary || typeof summary !== "object") {
+    return translate("success");
+  }
+
+  const recommendations = Array.isArray(summary.recommendations) ? summary.recommendations : [];
+  const lines = [
+    `${adminTranslateWithFallback("generated_at", "Generated At")}: ${summary.generated_at || "-"}`,
+    `${adminTranslateWithFallback("maintenance_recommendation_status", "Status")}: ${getAdminMaintenanceRecommendationSeverityLabel(summary.status)}`,
+    `${adminTranslateWithFallback("slow_request_threshold", "Slow Request Threshold")}: ${formatAdminNumber(summary.slow_request_threshold_ms ?? 0)} ms`,
+  ];
+
+  recommendations.forEach((item, index) => {
+    lines.push("");
+    lines.push(`${index + 1}. [${getAdminMaintenanceRecommendationSeverityLabel(item?.severity)}] ${item?.title || "-"}`);
+    lines.push(String(item?.message || "-"));
+    if (Array.isArray(item?.details)) {
+      item.details.forEach((detail) => lines.push(`- ${detail}`));
+    }
+  });
+
+  return lines.join("\n");
+}
+
+function executeAdminMaintenanceRecommendation(action, button) {
+  const normalizedAction = String(action || "");
+  if (normalizedAction === "open_slow_requests") {
+    const threshold = document.getElementById("adminMaintenanceRecommendations")?.dataset.slowRequestThreshold || "1500";
+    window.WallosAdminAccessLogs?.openAccessLogsModal?.({ min_duration_ms: threshold });
+    return;
+  }
+
+  if (normalizedAction !== "") {
+    runAdminMaintenanceAction(normalizedAction, button);
+  }
+}
+
 function formatAdminStorageSummary(storage) {
   if (!storage || typeof storage !== "object") {
     return translate("success");
@@ -325,6 +423,24 @@ function initializeAdminMaintenanceStorageSummary() {
   } catch (error) {
     console.warn("Unable to render maintenance storage summary:", error);
   }
+}
+
+function initializeAdminMaintenanceRecommendations() {
+  const container = document.getElementById("adminMaintenanceRecommendations");
+  if (!container?.dataset.maintenanceRecommendations) {
+    return;
+  }
+
+  try {
+    renderAdminMaintenanceRecommendations(JSON.parse(container.dataset.maintenanceRecommendations));
+  } catch (error) {
+    console.warn("Unable to render maintenance recommendations:", error);
+  }
+}
+
+function initializeAdminMaintenancePanels() {
+  initializeAdminMaintenanceStorageSummary();
+  initializeAdminMaintenanceRecommendations();
 }
 
 function testSmtpSettingsButton() {
@@ -825,6 +941,9 @@ function runAdminMaintenanceAction(action, button) {
       }
 
       showSuccessMessage(data.message || translate("success"));
+      if (data.recommendations) {
+        renderAdminMaintenanceRecommendations(data.recommendations);
+      }
       if (resultTextArea) {
         if (data.storage) {
           renderAdminMaintenanceStorageSummary(data.storage);
@@ -843,6 +962,8 @@ function runAdminMaintenanceAction(action, button) {
           resultTextArea.value = formatAdminSqliteIndexHealthResult(data.index_health);
         } else if (data.result) {
           resultTextArea.value = formatAdminSqliteMaintenanceResult(data.result);
+        } else if (data.recommendations) {
+          resultTextArea.value = formatAdminMaintenanceRecommendations(data.recommendations);
         } else {
           resultTextArea.value = data.message || translate("success");
         }
@@ -1243,7 +1364,7 @@ function refreshRuntimeObservabilityButton(button) {
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializeAdminMaintenanceStorageSummary);
+  document.addEventListener("DOMContentLoaded", initializeAdminMaintenancePanels);
 } else {
-  initializeAdminMaintenanceStorageSummary();
+  initializeAdminMaintenancePanels();
 }
