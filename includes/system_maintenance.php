@@ -59,12 +59,12 @@ function wallos_prune_maintenance_action_logs($db)
         return;
     }
 
-    $stmt = $db->prepare("DELETE FROM maintenance_action_logs WHERE created_at <= datetime('now', :window)");
+    $stmt = $db->prepare('DELETE FROM maintenance_action_logs WHERE created_at <= :cutoff');
     if (!$stmt) {
         return;
     }
 
-    $stmt->bindValue(':window', '-' . WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS . ' days', SQLITE3_TEXT);
+    $stmt->bindValue(':cutoff', date('Y-m-d H:i:s', strtotime('-' . WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS . ' days')), SQLITE3_TEXT);
     @$stmt->execute();
 }
 
@@ -185,6 +185,28 @@ function wallos_get_recent_maintenance_actions($db, $limit = 12)
     }
 
     return $items;
+}
+
+function wallos_count_recent_failed_maintenance_actions($db, $hours = 24)
+{
+    if (!wallos_maintenance_action_logs_table_exists($db)) {
+        return 0;
+    }
+
+    $stmt = $db->prepare('
+        SELECT COUNT(*) AS total
+        FROM maintenance_action_logs
+        WHERE success = 0
+          AND created_at >= :cutoff
+    ');
+    if (!$stmt) {
+        return 0;
+    }
+
+    $stmt->bindValue(':cutoff', date('Y-m-d H:i:s', strtotime('-' . max(1, (int) $hours) . ' hours')), SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $row = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+    return (int) ($row['total'] ?? 0);
 }
 
 function wallos_get_maintenance_log_activity($db, $tableName, $retentionDays)
@@ -753,6 +775,7 @@ function wallos_get_admin_system_overview_summary($db, $basePath, $i18n = null, 
         'maintenance_action_logs',
         WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS
     );
+    $failedMaintenanceActions24h = wallos_count_recent_failed_maintenance_actions($db, 24);
     $securityAnomalies24h = function_exists('wallos_count_security_anomalies')
         ? wallos_count_security_anomalies($db, 24)
         : 0;
@@ -836,14 +859,17 @@ function wallos_get_admin_system_overview_summary($db, $basePath, $i18n = null, 
             implode(' | ', $logRisks)
         ),
         wallos_build_system_overview_card(
-            'ok',
+            $failedMaintenanceActions24h > 0 ? 'watch' : 'ok',
             'fa-solid fa-screwdriver-wrench',
             wallos_maintenance_translate($i18n, 'system_overview_maintenance_actions', 'Maintenance Actions'),
-            (string) ($maintenanceActionActivity['last_24h_rows_label'] ?? '0'),
+            (string) ($maintenanceActionActivity['last_24h_rows_label'] ?? '0') . ' / ' . number_format($failedMaintenanceActions24h),
             wallos_maintenance_translate($i18n, 'system_overview_maintenance_actions_detail', 'Last 24h actions / retention days') . ': '
                 . (string) ($maintenanceActionActivity['last_24h_rows_label'] ?? '0')
                 . ' / '
                 . number_format(WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS)
+                . ' | '
+                . wallos_maintenance_translate($i18n, 'system_overview_maintenance_action_failures', 'Recent failures') . ': '
+                . number_format($failedMaintenanceActions24h)
         ),
     ];
 
