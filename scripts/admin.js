@@ -1640,7 +1640,9 @@ function createRuntimeSlowEndpointCard(item, ui) {
   message.textContent = [
     `${ui?.dataset.avgDurationLabel || "Avg"}: ${String(item?.avg_duration_ms || 0)} ms`,
     `${ui?.dataset.maxDurationLabel || "Max"}: ${String(item?.max_duration_ms || 0)} ms`,
+    `${ui?.dataset.totalDurationLabel || "Total"}: ${String(item?.total_duration_ms || 0)} ms`,
     `${ui?.dataset.failureCountLabel || "Failures"}: ${String(item?.failure_count || 0)}`,
+    `${ui?.dataset.failureRateLabel || "Failure Rate"}: ${String(item?.failure_rate_percent || 0)}%`,
   ].join(" / ");
 
   const meta = document.createElement("small");

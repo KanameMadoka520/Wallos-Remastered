@@ -137,6 +137,7 @@ function wallos_get_top_slow_request_groups($db, $limit = 6, $hours = 24, $thres
         SELECT method,
                path,
                COUNT(*) AS total,
+               SUM(duration_ms) AS total_duration_ms,
                CAST(ROUND(AVG(duration_ms)) AS INTEGER) AS avg_duration_ms,
                MAX(duration_ms) AS max_duration_ms,
                SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) AS failure_count,
@@ -159,9 +160,13 @@ function wallos_get_top_slow_request_groups($db, $limit = 6, $hours = 24, $thres
             'method' => (string) ($row['method'] ?? ''),
             'path' => (string) ($row['path'] ?? ''),
             'total' => (int) ($row['total'] ?? 0),
+            'total_duration_ms' => (int) ($row['total_duration_ms'] ?? 0),
             'avg_duration_ms' => (int) ($row['avg_duration_ms'] ?? 0),
             'max_duration_ms' => (int) ($row['max_duration_ms'] ?? 0),
             'failure_count' => (int) ($row['failure_count'] ?? 0),
+            'failure_rate_percent' => (int) ($row['total'] ?? 0) > 0
+                ? round(((int) ($row['failure_count'] ?? 0) / (int) ($row['total'] ?? 1)) * 100, 1)
+                : 0,
             'last_seen_at' => (string) ($row['last_seen_at'] ?? ''),
         ];
     }
