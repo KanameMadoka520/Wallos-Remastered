@@ -966,6 +966,8 @@ function wallos_audit_subscription_image_storage($db, $basePath)
         'orphan_files' => count($orphanFiles),
         'orphan_bytes' => $orphanBytes,
         'orphan_size_label' => wallos_format_maintenance_size($orphanBytes),
+        'reclaimable_bytes_estimate' => $orphanBytes + (int) ($variantHealth['oversized_variant_bytes'] ?? 0),
+        'reclaimable_size_estimate_label' => wallos_format_maintenance_size($orphanBytes + (int) ($variantHealth['oversized_variant_bytes'] ?? 0)),
         'missing_variant_rows' => (int) $index['missing_variant_rows'],
         'orphan_samples' => array_slice($orphanFiles, 0, 10),
         'orphan_details' => $orphanDetails,
