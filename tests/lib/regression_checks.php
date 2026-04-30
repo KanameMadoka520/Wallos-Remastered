@@ -490,6 +490,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'WALLOS_REQUEST_LOG_RETENTION_DAYS',
         'WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS',
         'WALLOS_MAINTENANCE_ACTION_SLOW_MS',
+        'WALLOS_MAINTENANCE_ACTION_RECENT_LIMIT',
         'VACUUM',
         'ANALYZE',
     )) && wallos_regression_text_has_all($securityMaintenancePhp, array(
@@ -544,6 +545,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'refresh_maintenance_action_logs',
         'data-maintenance-action-log-filter',
         'maintenance_action_log_retention_days',
+        'maintenance_action_recent_limit',
     )) && wallos_regression_text_has_all($adminJs, array(
         'runAdminMaintenanceAction',
         'renderAdminSystemOverview',

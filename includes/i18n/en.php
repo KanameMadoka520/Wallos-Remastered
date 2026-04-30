@@ -909,6 +909,7 @@ $i18n = [
     "security_anomaly_retention_days" => "Security Anomaly Retention Days",
     "rate_limit_usage_retention_days" => "Rate-Limit Usage Retention Days",
     "maintenance_action_log_retention_days" => "Maintenance Action Log Retention Days",
+    "maintenance_action_recent_limit" => "Recent Maintenance Action Cards",
     "subscription_image_audit" => "Subscription Image Audit",
     "subscription_image_audit_info" => "Scans the subscription image directory for orphan files and rows missing preview/thumbnail variants. The scan does not delete anything.",
     "scan_subscription_images" => "Scan Subscription Images",

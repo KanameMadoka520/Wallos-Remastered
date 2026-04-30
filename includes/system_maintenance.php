@@ -1333,5 +1333,6 @@ function wallos_get_maintenance_retention_summary()
         'security_anomaly_retention_days' => WALLOS_SECURITY_ANOMALY_RETENTION_DAYS,
         'rate_limit_usage_retention_days' => WALLOS_RATE_LIMIT_USAGE_RETENTION_DAYS,
         'maintenance_action_log_retention_days' => WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS,
+        'maintenance_action_recent_limit' => WALLOS_MAINTENANCE_ACTION_RECENT_LIMIT,
     ];
 }

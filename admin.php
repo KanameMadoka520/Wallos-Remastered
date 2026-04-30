@@ -209,7 +209,7 @@ $maintenanceStorageSummary = wallos_get_storage_usage_summary($db, __DIR__);
 $maintenanceStorageSummaryJson = json_encode($maintenanceStorageSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $maintenanceRecommendationSummary = wallos_get_maintenance_recommendation_summary($db, __DIR__, $i18n);
 $maintenanceRecommendationSummaryJson = json_encode($maintenanceRecommendationSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-$maintenanceActionLogs = wallos_get_recent_maintenance_actions($db, 12);
+$maintenanceActionLogs = wallos_get_recent_maintenance_actions($db, WALLOS_MAINTENANCE_ACTION_RECENT_LIMIT);
 $maintenanceActionLogsJson = json_encode($maintenanceActionLogs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $maintenanceActionSummary = wallos_get_maintenance_action_log_summary($db, 24);
 $maintenanceActionSummaryJson = json_encode($maintenanceActionSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -1493,6 +1493,10 @@ $pageSections = [
                 <div class="backup-summary-card">
                     <span><?= translate('maintenance_action_log_retention_days', $i18n) ?></span>
                     <strong><?= (int) $maintenanceRetentionSummary['maintenance_action_log_retention_days'] ?></strong>
+                </div>
+                <div class="backup-summary-card">
+                    <span><?= translate('maintenance_action_recent_limit', $i18n) ?></span>
+                    <strong><?= (int) $maintenanceRetentionSummary['maintenance_action_recent_limit'] ?></strong>
                 </div>
             </div>
             <div class="settings-notes">

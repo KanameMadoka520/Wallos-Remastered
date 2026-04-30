@@ -932,6 +932,7 @@ $i18n = [
     "security_anomaly_retention_days" => "安全异常保留天数",
     "rate_limit_usage_retention_days" => "速率限制用量保留天数",
     "maintenance_action_log_retention_days" => "维护动作日志保留天数",
+    "maintenance_action_recent_limit" => "最近维护动作卡片数",
     "subscription_image_audit" => "订阅图片审计",
     "subscription_image_audit_info" => "扫描订阅图片目录里的孤儿文件，以及缺少预览图/缩略图的数据库记录。扫描不会删除任何文件。",
     "scan_subscription_images" => "扫描订阅图片",
