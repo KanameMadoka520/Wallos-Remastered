@@ -898,6 +898,7 @@ function wallos_audit_subscription_image_storage($db, $basePath)
     }
 
     return [
+        'generated_at' => date('Y-m-d H:i:s'),
         'indexed_rows' => (int) $index['row_count'],
         'indexed_files' => count($index['paths']),
         'disk_files' => count($files),
