@@ -611,10 +611,18 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         '.subscription-image-audit-summary',
         '.subscription-image-audit-card',
     )) && wallos_regression_text_has_all($dynamicWallpaperCss, array(
+        'button.secondary-button',
+        'a.secondary-button',
+        '.section-tab-button.is-active',
         '.system-overview-panel',
         '.system-overview-card',
         '.maintenance-recommendation-card',
         '.maintenance-action-log-card',
+        '.maintenance-action-log-filter-row .secondary-button.is-active',
+        '.maintenance-action-log-meta span',
+        '.backup-progress-card',
+        '.backup-card',
+        '.backup-progress-card-tone',
         '.subscription-image-audit-card',
     ));
     $results[] = wallos_regression_make_result(
