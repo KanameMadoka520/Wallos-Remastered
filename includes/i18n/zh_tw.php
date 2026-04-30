@@ -1013,6 +1013,7 @@ $i18n = [
     "maintenance_recommendations" => "維護建議",
     "refresh_maintenance_recommendations" => "重新整理維護建議",
     "maintenance_recommendations_refreshed" => "維護建議已重新整理。",
+    "maintenance_recommendations_generated_at" => "維護建議產生時間",
     "maintenance_recommendation_action_confirm" => "確認執行維護動作：%s？",
     "maintenance_recommendation_status" => "建議狀態",
     "maintenance_recommendation_status_ok" => "正常",

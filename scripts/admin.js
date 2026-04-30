@@ -317,6 +317,15 @@ function renderAdminMaintenanceRecommendations(summary) {
   }
 
   const recommendations = Array.isArray(summary.recommendations) ? summary.recommendations : [];
+  const generatedCard = `
+    <article class="maintenance-recommendation-card severity-ok">
+      <div class="runtime-anomaly-card-header">
+        <span class="maintenance-recommendation-badge">${escapeAdminHtml(getAdminMaintenanceRecommendationSeverityLabel("ok"))}</span>
+        <strong>${escapeAdminHtml(adminTranslateWithFallback("maintenance_recommendations_generated_at", "Recommendations Generated At"))}</strong>
+      </div>
+      <p>${escapeAdminHtml(summary.generated_at || "-")}</p>
+    </article>
+  `;
   const cards = recommendations.map((item) => {
     const severity = String(item?.severity || "watch");
     const details = Array.isArray(item?.details) ? item.details : [];
@@ -345,7 +354,7 @@ function renderAdminMaintenanceRecommendations(summary) {
     `;
   });
 
-  container.innerHTML = cards.join("") || `
+  container.innerHTML = generatedCard + (cards.join("") || `
     <article class="maintenance-recommendation-card severity-ok">
       <div class="runtime-anomaly-card-header">
         <span class="maintenance-recommendation-badge">${escapeAdminHtml(getAdminMaintenanceRecommendationSeverityLabel("ok"))}</span>
@@ -353,7 +362,7 @@ function renderAdminMaintenanceRecommendations(summary) {
       </div>
       <p>${escapeAdminHtml(adminTranslateWithFallback("maintenance_recommendation_ok_message", "Current maintenance signals are within range."))}</p>
     </article>
-  `;
+  `);
 
   container.querySelectorAll("[data-maintenance-recommendation-action]").forEach((button) => {
     button.addEventListener("click", () => executeAdminMaintenanceRecommendation(button.dataset.maintenanceRecommendationAction || "", button));

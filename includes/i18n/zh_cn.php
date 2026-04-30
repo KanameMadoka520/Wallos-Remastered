@@ -964,6 +964,7 @@ $i18n = [
     "maintenance_recommendations" => "维护建议",
     "refresh_maintenance_recommendations" => "刷新维护建议",
     "maintenance_recommendations_refreshed" => "维护建议已刷新。",
+    "maintenance_recommendations_generated_at" => "维护建议生成时间",
     "maintenance_recommendation_action_confirm" => "确认执行维护动作：%s？",
     "maintenance_recommendation_status" => "建议状态",
     "maintenance_recommendation_status_ok" => "正常",
