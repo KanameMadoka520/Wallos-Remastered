@@ -1539,6 +1539,12 @@ $pageSections = [
                 <textarea id="adminMaintenanceResult" class="thin" readonly
                     placeholder="<?= htmlspecialchars(translate('maintenance_result', $i18n), ENT_QUOTES, 'UTF-8') ?>"></textarea>
             </div>
+            <div id="adminSubscriptionImageAuditSummary" class="subscription-image-audit-summary is-empty">
+                <p>
+                    <i class="fa-solid fa-images"></i>
+                    <?= translate('subscription_image_audit_summary_empty', $i18n) ?>
+                </p>
+            </div>
             <h3><?= translate('orphaned_logos', $i18n) ?></h3>
             <div class="form-group-inline">
                 <input type="button" class="button thin mobile-grow" value="<?= translate('delete', $i18n) ?>"

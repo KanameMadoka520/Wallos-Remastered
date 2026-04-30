@@ -235,8 +235,8 @@ The admin page includes a maintenance area for long-running deployments:
 - maintenance recommendations that summarize index health, SQLite free pages, orphan subscription images, log growth, slow requests, and backup-directory size into actionable cards
 - storage usage cards for the database, upload root, subscription media, and backup directory
 - log growth risk indicators for request logs, security anomalies, and rate-limit usage
-- subscription image storage audit for missing derived-image rows and orphan files
-- CSV export for the latest subscription image audit, including orphan-file size details
+- subscription image consistency cards for index coverage, orphan files, missing originals/derived files, and oversized derived variants
+- CSV export for the latest subscription image audit, including orphan-file, missing-file, and oversized-variant details
 - one-click cleanup for database-unreferenced orphan subscription image files, limited to the subscription media directory
 - one-click reuse of originals for preview/thumbnail variants that are larger than the original, with cleanup of unreferenced oversized derived files
 - SQLite indexes for hot paths: subscription page filtering/sorting, payment records, subscription-image metadata, request logs, security anomalies, and rate-limit usage

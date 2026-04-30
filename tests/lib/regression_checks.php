@@ -433,6 +433,9 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $systemMaintenanceEndpoint = wallos_regression_read_repo_file($config, 'endpoints/admin/systemmaintenance.php');
     $maintenanceValid = wallos_regression_text_has_all($systemMaintenancePhp, array(
         'wallos_audit_subscription_image_storage',
+        'wallos_collect_subscription_image_variant_health',
+        'oversized_variant_rows',
+        'missing_variant_files',
         'wallos_get_storage_usage_summary',
         'wallos_collect_directory_usage',
         'orphan_details',
@@ -474,6 +477,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'data-system-overview-status',
         'refreshSystemOverviewButton',
         'adminMaintenanceStorageSummary',
+        'adminSubscriptionImageAuditSummary',
         'adminMaintenanceRecommendations',
         'refresh_maintenance_recommendations',
         'export_subscription_image_audit',
@@ -493,6 +497,9 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'executeAdminMaintenanceRecommendation',
         'exportAdminSubscriptionImageAuditCsv',
         'formatAdminOrphanCleanupResult',
+        'renderAdminSubscriptionImageAuditSummary',
+        'subscription_image_audit_health',
+        'subscription_image_oversized_variants',
         'formatAdminSqliteMaintenanceResult',
         'formatAdminSqliteIndexHealthResult',
         'formatAdminOversizedVariantResult',
@@ -502,10 +509,13 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         '.system-overview-card',
         '.maintenance-recommendation-grid',
         '.maintenance-recommendation-card',
+        '.subscription-image-audit-summary',
+        '.subscription-image-audit-card',
     )) && wallos_regression_text_has_all($dynamicWallpaperCss, array(
         '.system-overview-panel',
         '.system-overview-card',
         '.maintenance-recommendation-card',
+        '.subscription-image-audit-card',
     ));
     $results[] = wallos_regression_make_result(
         $maintenanceValid ? 'PASS' : 'FAIL',

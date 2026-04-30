@@ -735,6 +735,109 @@ function wallos_collect_subscription_image_index($db)
     ];
 }
 
+function wallos_collect_subscription_image_variant_health($db, $basePath)
+{
+    $summary = [
+        'checked_variant_rows' => 0,
+        'missing_original_rows' => 0,
+        'missing_original_samples' => [],
+        'missing_variant_files' => 0,
+        'missing_variant_file_samples' => [],
+        'oversized_variant_rows' => 0,
+        'oversized_variants' => 0,
+        'oversized_variant_bytes' => 0,
+        'oversized_variant_size_label' => wallos_format_maintenance_size(0),
+        'oversized_variant_samples' => [],
+    ];
+
+    if (!wallos_maintenance_table_has_columns($db, 'subscription_uploaded_images', ['id', 'user_id', 'subscription_id', 'path', 'preview_path', 'thumbnail_path'])) {
+        return $summary;
+    }
+
+    $stmt = $db->prepare('
+        SELECT id, user_id, subscription_id, path, preview_path, thumbnail_path
+        FROM subscription_uploaded_images
+        ORDER BY user_id ASC, subscription_id ASC, id ASC
+    ');
+    $result = $stmt ? $stmt->execute() : false;
+
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $summary['checked_variant_rows']++;
+        $imageId = (int) ($row['id'] ?? 0);
+        $subscriptionId = (int) ($row['subscription_id'] ?? 0);
+        $originalPath = trim((string) ($row['path'] ?? ''));
+        $originalAbsolutePath = $originalPath === '' ? '' : wallos_resolve_subscription_image_absolute_path($basePath, $originalPath);
+
+        if ($originalAbsolutePath === '') {
+            $summary['missing_original_rows']++;
+            if (count($summary['missing_original_samples']) < 10) {
+                $summary['missing_original_samples'][] = [
+                    'image_id' => $imageId,
+                    'subscription_id' => $subscriptionId,
+                    'path' => $originalPath,
+                ];
+            }
+            continue;
+        }
+
+        $originalSize = (int) @filesize($originalAbsolutePath);
+        if ($originalSize <= 0) {
+            continue;
+        }
+
+        $rowHasOversizedVariant = false;
+        foreach (['preview_path', 'thumbnail_path'] as $column) {
+            $variantPath = trim((string) ($row[$column] ?? ''));
+            if ($variantPath === '' || $variantPath === $originalPath) {
+                continue;
+            }
+
+            $variantAbsolutePath = wallos_resolve_subscription_image_absolute_path($basePath, $variantPath);
+            if ($variantAbsolutePath === '') {
+                $summary['missing_variant_files']++;
+                if (count($summary['missing_variant_file_samples']) < 10) {
+                    $summary['missing_variant_file_samples'][] = [
+                        'image_id' => $imageId,
+                        'subscription_id' => $subscriptionId,
+                        'variant' => $column,
+                        'path' => $variantPath,
+                    ];
+                }
+                continue;
+            }
+
+            $variantSize = (int) @filesize($variantAbsolutePath);
+            if ($variantSize <= 0 || $variantSize < $originalSize) {
+                continue;
+            }
+
+            $rowHasOversizedVariant = true;
+            $summary['oversized_variants']++;
+            $summary['oversized_variant_bytes'] += $variantSize;
+            if (count($summary['oversized_variant_samples']) < 10) {
+                $summary['oversized_variant_samples'][] = [
+                    'image_id' => $imageId,
+                    'subscription_id' => $subscriptionId,
+                    'variant' => $column,
+                    'path' => $variantPath,
+                    'variant_size_bytes' => $variantSize,
+                    'variant_size_label' => wallos_format_maintenance_size($variantSize),
+                    'original_path' => $originalPath,
+                    'original_size_bytes' => $originalSize,
+                    'original_size_label' => wallos_format_maintenance_size($originalSize),
+                ];
+            }
+        }
+
+        if ($rowHasOversizedVariant) {
+            $summary['oversized_variant_rows']++;
+        }
+    }
+
+    $summary['oversized_variant_size_label'] = wallos_format_maintenance_size($summary['oversized_variant_bytes']);
+    return $summary;
+}
+
 function wallos_scan_subscription_image_files($basePath)
 {
     return array_map(
@@ -779,6 +882,7 @@ function wallos_scan_subscription_image_file_details($basePath)
 function wallos_audit_subscription_image_storage($db, $basePath)
 {
     $index = wallos_collect_subscription_image_index($db);
+    $variantHealth = wallos_collect_subscription_image_variant_health($db, $basePath);
     $files = wallos_scan_subscription_image_file_details($basePath);
     $orphanFiles = [];
     $orphanDetails = [];
@@ -803,7 +907,7 @@ function wallos_audit_subscription_image_storage($db, $basePath)
         'missing_variant_rows' => (int) $index['missing_variant_rows'],
         'orphan_samples' => array_slice($orphanFiles, 0, 10),
         'orphan_details' => $orphanDetails,
-    ];
+    ] + $variantHealth;
 }
 
 function wallos_cleanup_subscription_image_orphans($db, $basePath)

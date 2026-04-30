@@ -79,6 +79,35 @@ function getAdminLogRiskLabel(risk) {
   return labels[normalizedRisk] || labels.normal;
 }
 
+function getAdminSubscriptionImageAuditSeverity(audit) {
+  const orphanBytes = Number(audit?.orphan_bytes ?? 0);
+  const orphanFiles = Number(audit?.orphan_files ?? 0);
+  const missingVariantRows = Number(audit?.missing_variant_rows ?? 0);
+  const missingVariantFiles = Number(audit?.missing_variant_files ?? 0);
+  const missingOriginalRows = Number(audit?.missing_original_rows ?? 0);
+  const oversizedVariants = Number(audit?.oversized_variants ?? 0);
+
+  if (missingOriginalRows > 0 || orphanBytes >= 100 * 1024 * 1024) {
+    return "action";
+  }
+
+  if (orphanFiles > 0 || missingVariantRows > 0 || missingVariantFiles > 0 || oversizedVariants > 0) {
+    return "watch";
+  }
+
+  return "ok";
+}
+
+function getAdminSubscriptionImageAuditSeverityLabel(severity) {
+  const labels = {
+    ok: adminTranslateWithFallback("subscription_image_audit_status_ok", "Healthy"),
+    watch: adminTranslateWithFallback("subscription_image_audit_status_watch", "Needs Review"),
+    action: adminTranslateWithFallback("subscription_image_audit_status_action", "Needs Action"),
+  };
+
+  return labels[String(severity || "ok")] || labels.ok;
+}
+
 function renderAdminMaintenanceStorageCard(label, value, detail, iconClass = "fa-solid fa-hard-drive") {
   return `
     <div class="backup-summary-card maintenance-storage-card">
@@ -456,6 +485,10 @@ function exportAdminSubscriptionImageAuditCsv() {
     ["summary", "disk_files", audit.disk_files ?? 0, "", "", ""],
     ["summary", "orphan_files", audit.orphan_files ?? 0, audit.orphan_bytes ?? 0, audit.orphan_size_label || "", ""],
     ["summary", "missing_variant_rows", audit.missing_variant_rows ?? 0, "", "", ""],
+    ["summary", "missing_variant_files", audit.missing_variant_files ?? 0, "", "", ""],
+    ["summary", "missing_original_rows", audit.missing_original_rows ?? 0, "", "", ""],
+    ["summary", "oversized_variant_rows", audit.oversized_variant_rows ?? 0, "", "", ""],
+    ["summary", "oversized_variants", audit.oversized_variants ?? 0, audit.oversized_variant_bytes ?? 0, audit.oversized_variant_size_label || "", ""],
   ];
 
   if (Array.isArray(audit.orphan_details)) {
@@ -466,6 +499,45 @@ function exportAdminSubscriptionImageAuditCsv() {
         "",
         item?.size_bytes ?? 0,
         item?.size_label || "",
+        item?.path || "",
+      ]);
+    });
+  }
+
+  if (Array.isArray(audit.missing_original_samples)) {
+    audit.missing_original_samples.forEach((item) => {
+      rows.push([
+        "missing_original",
+        `image_id:${item?.image_id || ""}`,
+        item?.subscription_id || "",
+        "",
+        "",
+        item?.path || "",
+      ]);
+    });
+  }
+
+  if (Array.isArray(audit.missing_variant_file_samples)) {
+    audit.missing_variant_file_samples.forEach((item) => {
+      rows.push([
+        "missing_variant_file",
+        item?.variant || "",
+        item?.subscription_id || "",
+        "",
+        "",
+        item?.path || "",
+      ]);
+    });
+  }
+
+  if (Array.isArray(audit.oversized_variant_samples)) {
+    audit.oversized_variant_samples.forEach((item) => {
+      rows.push([
+        "oversized_variant",
+        item?.variant || "",
+        item?.subscription_id || "",
+        item?.variant_size_bytes ?? 0,
+        `${item?.variant_size_label || ""} >= ${item?.original_size_label || ""}`,
         item?.path || "",
       ]);
     });
@@ -934,15 +1006,127 @@ function formatAdminMaintenanceAudit(audit) {
     `${adminTranslateWithFallback("subscription_image_orphan_files", "Orphan Files")}: ${audit.orphan_files ?? 0}`,
     `${adminTranslateWithFallback("subscription_image_orphan_bytes", "Orphan File Size")}: ${audit.orphan_size_label || "0 B"}`,
     `${adminTranslateWithFallback("subscription_image_missing_variants", "Rows Missing Variants")}: ${audit.missing_variant_rows ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_missing_variant_files", "Missing Variant Files")}: ${audit.missing_variant_files ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_missing_originals", "Missing Originals")}: ${audit.missing_original_rows ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_oversized_variants", "Oversized Variants")}: ${audit.oversized_variants ?? 0}`,
+    `${adminTranslateWithFallback("subscription_image_oversized_variant_bytes", "Oversized Variant Size")}: ${audit.oversized_variant_size_label || "0 B"}`,
   ];
 
   if (Array.isArray(audit.orphan_samples) && audit.orphan_samples.length > 0) {
     lines.push("");
-    lines.push("Samples:");
+    lines.push(adminTranslateWithFallback("subscription_image_orphan_samples", "Orphan Samples") + ":");
     audit.orphan_samples.forEach((item) => lines.push(`- ${item}`));
   }
 
+  if (Array.isArray(audit.missing_original_samples) && audit.missing_original_samples.length > 0) {
+    lines.push("");
+    lines.push(adminTranslateWithFallback("subscription_image_missing_original_samples", "Missing Original Samples") + ":");
+    audit.missing_original_samples.forEach((item) => {
+      lines.push(`- #${item.image_id || "-"} ${item.path || "-"}`);
+    });
+  }
+
+  if (Array.isArray(audit.missing_variant_file_samples) && audit.missing_variant_file_samples.length > 0) {
+    lines.push("");
+    lines.push(adminTranslateWithFallback("subscription_image_missing_variant_file_samples", "Missing Variant File Samples") + ":");
+    audit.missing_variant_file_samples.forEach((item) => {
+      lines.push(`- #${item.image_id || "-"} ${item.variant || "-"} ${item.path || "-"}`);
+    });
+  }
+
+  if (Array.isArray(audit.oversized_variant_samples) && audit.oversized_variant_samples.length > 0) {
+    lines.push("");
+    lines.push(adminTranslateWithFallback("subscription_image_oversized_variant_samples", "Oversized Variant Samples") + ":");
+    audit.oversized_variant_samples.forEach((item) => {
+      lines.push(`- #${item.image_id || "-"} ${item.variant || "-"} ${item.variant_size_label || "0 B"} >= ${item.original_size_label || "0 B"} ${item.path || "-"}`);
+    });
+  }
+
   return lines.join("\n");
+}
+
+function renderAdminSubscriptionImageAuditCard(label, value, detail, severity = "ok", iconClass = "fa-solid fa-circle-check") {
+  return `
+    <article class="subscription-image-audit-card severity-${escapeAdminHtml(severity)}">
+      <span><i class="${escapeAdminHtml(iconClass)}"></i> ${escapeAdminHtml(label)}</span>
+      <strong>${escapeAdminHtml(value)}</strong>
+      ${detail ? `<small>${escapeAdminHtml(detail)}</small>` : ""}
+    </article>
+  `;
+}
+
+function renderAdminSubscriptionImageAuditSummary(audit) {
+  const container = document.getElementById("adminSubscriptionImageAuditSummary");
+  if (!container) {
+    return;
+  }
+
+  if (!audit || typeof audit !== "object") {
+    container.className = "subscription-image-audit-summary is-empty";
+    container.innerHTML = `
+      <p>
+        <i class="fa-solid fa-images"></i>
+        ${escapeAdminHtml(adminTranslateWithFallback("subscription_image_audit_summary_empty", "Run an image audit to see consistency cards."))}
+      </p>
+    `;
+    return;
+  }
+
+  const severity = getAdminSubscriptionImageAuditSeverity(audit);
+  const variantIssueCount = Number(audit.missing_variant_rows ?? 0)
+    + Number(audit.missing_variant_files ?? 0)
+    + Number(audit.missing_original_rows ?? 0);
+  const cards = [
+    renderAdminSubscriptionImageAuditCard(
+      adminTranslateWithFallback("subscription_image_audit_health", "Audit Health"),
+      getAdminSubscriptionImageAuditSeverityLabel(severity),
+      adminTranslateWithFallback(
+        severity === "ok"
+          ? "subscription_image_audit_health_ok_detail"
+          : "subscription_image_audit_health_problem_detail",
+        severity === "ok"
+          ? "No obvious media consistency issue was found."
+          : "Review the cards below before running cleanup or variant repair actions."
+      ),
+      severity,
+      severity === "ok" ? "fa-solid fa-shield-heart" : "fa-solid fa-triangle-exclamation"
+    ),
+    renderAdminSubscriptionImageAuditCard(
+      adminTranslateWithFallback("subscription_image_audit_index_coverage", "Index Coverage"),
+      `${formatAdminNumber(audit.indexed_rows ?? 0)} / ${formatAdminNumber(audit.disk_files ?? 0)}`,
+      `${adminTranslateWithFallback("subscription_image_indexed_files", "Indexed Image Files")}: ${formatAdminNumber(audit.indexed_files ?? 0)}`,
+      "ok",
+      "fa-solid fa-database"
+    ),
+    renderAdminSubscriptionImageAuditCard(
+      adminTranslateWithFallback("subscription_image_audit_orphan_status", "Orphan Files"),
+      `${formatAdminNumber(audit.orphan_files ?? 0)} · ${audit.orphan_size_label || "0 B"}`,
+      adminTranslateWithFallback("subscription_image_audit_orphan_detail", "Files on disk that are no longer referenced by the image index."),
+      Number(audit.orphan_files ?? 0) > 0 ? "watch" : "ok",
+      "fa-solid fa-broom"
+    ),
+    renderAdminSubscriptionImageAuditCard(
+      adminTranslateWithFallback("subscription_image_audit_variant_status", "Variant Completeness"),
+      formatAdminNumber(variantIssueCount),
+      [
+        `${adminTranslateWithFallback("subscription_image_missing_variants", "Rows Missing Variants")}: ${formatAdminNumber(audit.missing_variant_rows ?? 0)}`,
+        `${adminTranslateWithFallback("subscription_image_missing_variant_files", "Missing Variant Files")}: ${formatAdminNumber(audit.missing_variant_files ?? 0)}`,
+        `${adminTranslateWithFallback("subscription_image_missing_originals", "Missing Originals")}: ${formatAdminNumber(audit.missing_original_rows ?? 0)}`,
+      ].join(" · "),
+      variantIssueCount > 0 ? (Number(audit.missing_original_rows ?? 0) > 0 ? "action" : "watch") : "ok",
+      "fa-solid fa-layer-group"
+    ),
+    renderAdminSubscriptionImageAuditCard(
+      adminTranslateWithFallback("subscription_image_audit_oversized_status", "Oversized Variants"),
+      `${formatAdminNumber(audit.oversized_variants ?? 0)} · ${audit.oversized_variant_size_label || "0 B"}`,
+      `${adminTranslateWithFallback("subscription_image_oversized_variant_rows", "Rows With Oversized Variants")}: ${formatAdminNumber(audit.oversized_variant_rows ?? 0)}`,
+      Number(audit.oversized_variants ?? 0) > 0 ? "watch" : "ok",
+      "fa-solid fa-compress"
+    ),
+  ];
+
+  container.className = "subscription-image-audit-summary";
+  container.innerHTML = cards.join("");
 }
 
 function formatAdminOversizedVariantResult(result) {
@@ -1010,20 +1194,20 @@ function runAdminMaintenanceAction(action, button) {
       if (data.system_overview) {
         renderAdminSystemOverview(data.system_overview);
       }
+      if (data.audit) {
+        latestAdminSubscriptionImageAudit = data.audit;
+        renderAdminSubscriptionImageAuditSummary(data.audit);
+      }
       if (resultTextArea) {
         if (data.storage) {
           renderAdminMaintenanceStorageSummary(data.storage);
           resultTextArea.value = formatAdminStorageSummary(data.storage);
         } else if (data.orphan_cleanup_result) {
-          if (data.audit) {
-            latestAdminSubscriptionImageAudit = data.audit;
-          }
           resultTextArea.value = formatAdminOrphanCleanupResult(data.orphan_cleanup_result);
-        } else if (data.audit) {
-          latestAdminSubscriptionImageAudit = data.audit;
-          resultTextArea.value = formatAdminMaintenanceAudit(data.audit);
         } else if (data.oversized_variant_result) {
           resultTextArea.value = formatAdminOversizedVariantResult(data.oversized_variant_result);
+        } else if (data.audit) {
+          resultTextArea.value = formatAdminMaintenanceAudit(data.audit);
         } else if (data.index_health) {
           resultTextArea.value = formatAdminSqliteIndexHealthResult(data.index_health);
         } else if (data.result) {

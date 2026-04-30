@@ -56,6 +56,7 @@ try {
             'success' => true,
             'message' => translate('subscription_image_oversized_variants_reused', $i18n),
             'oversized_variant_result' => $result,
+            'audit' => wallos_audit_subscription_image_storage($db, __DIR__ . '/../..'),
             'recommendations' => wallos_get_maintenance_recommendation_summary($db, __DIR__ . '/../..', $i18n),
             'system_overview' => wallos_get_admin_system_overview_summary($db, __DIR__ . '/../..', $i18n),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
