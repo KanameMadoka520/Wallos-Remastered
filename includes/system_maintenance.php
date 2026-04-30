@@ -748,6 +748,11 @@ function wallos_get_admin_system_overview_summary($db, $basePath, $i18n = null, 
     $indexHealth = wallos_check_sqlite_index_health($db);
     $imageAudit = wallos_audit_subscription_image_storage($db, $basePath);
     $slowRequests24h = wallos_count_maintenance_slow_requests($db, 24);
+    $maintenanceActionActivity = wallos_get_maintenance_log_activity(
+        $db,
+        'maintenance_action_logs',
+        WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS
+    );
     $securityAnomalies24h = function_exists('wallos_count_security_anomalies')
         ? wallos_count_security_anomalies($db, 24)
         : 0;
@@ -829,6 +834,16 @@ function wallos_get_admin_system_overview_summary($db, $basePath, $i18n = null, 
             wallos_maintenance_translate($i18n, 'system_overview_log_growth', 'Log Growth'),
             wallos_maintenance_translate($i18n, 'log_growth_risk_' . ($logTone === 'action' ? 'high' : ($logTone === 'watch' ? 'watch' : 'normal')), ucfirst($logTone)),
             implode(' | ', $logRisks)
+        ),
+        wallos_build_system_overview_card(
+            'ok',
+            'fa-solid fa-screwdriver-wrench',
+            wallos_maintenance_translate($i18n, 'system_overview_maintenance_actions', 'Maintenance Actions'),
+            (string) ($maintenanceActionActivity['last_24h_rows_label'] ?? '0'),
+            wallos_maintenance_translate($i18n, 'system_overview_maintenance_actions_detail', 'Last 24h actions / retention days') . ': '
+                . (string) ($maintenanceActionActivity['last_24h_rows_label'] ?? '0')
+                . ' / '
+                . number_format(WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS)
         ),
     ];
 

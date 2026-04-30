@@ -472,6 +472,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'wallos_get_maintenance_recommendation_summary',
         'wallos_get_admin_system_overview_summary',
         'wallos_build_system_overview_card',
+        'system_overview_maintenance_actions',
         'wallos_count_maintenance_slow_requests',
         'wallos_get_maintenance_log_activity',
         'last_24h_rows',
