@@ -22,6 +22,7 @@ function wallos_emit_system_maintenance_response($db, $i18n, $action, $startedAt
         $adminUserId
     );
     $response['maintenance_action_logs'] = wallos_get_recent_maintenance_actions($db, 12);
+    $response['maintenance_action_summary'] = wallos_get_maintenance_action_log_summary($db, 24);
 
     echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;

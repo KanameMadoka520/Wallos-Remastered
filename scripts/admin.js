@@ -50,6 +50,7 @@ function adminTranslateWithFallback(key, fallback) {
 
 let latestAdminSubscriptionImageAudit = null;
 let latestAdminMaintenanceActionLogs = [];
+let latestAdminMaintenanceActionSummary = null;
 
 function escapeAdminHtml(value) {
   return String(value ?? "")
@@ -417,6 +418,54 @@ function getAdminMaintenanceActionLabel(action) {
   return labels[normalizedAction] || normalizedAction || "-";
 }
 
+function renderAdminMaintenanceActionSummary(summary) {
+  const container = document.getElementById("adminMaintenanceActionSummary");
+  if (!container || !summary || typeof summary !== "object") {
+    return;
+  }
+
+  latestAdminMaintenanceActionSummary = summary;
+  const slowestAction = summary.slowest_action
+    ? `${getAdminMaintenanceActionLabel(summary.slowest_action)} · ${summary.slowest_duration_label || "0 ms"}`
+    : "-";
+  const cards = [
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("maintenance_action_summary_generated_at", "Action Summary Generated At"),
+      summary.generated_at || "-",
+      adminTranslateWithFallback("maintenance_action_summary_window", "Recent window") + `: ${formatAdminNumber(summary.window_hours ?? 24)}h`,
+      "fa-solid fa-clock"
+    ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("maintenance_action_recent_rows", "Recent Actions"),
+      summary.recent_rows_label || formatAdminNumber(summary.recent_rows ?? 0),
+      `${adminTranslateWithFallback("maintenance_action_total_rows", "Total Rows")}: ${summary.total_rows_label || formatAdminNumber(summary.total_rows ?? 0)}`,
+      "fa-solid fa-screwdriver-wrench"
+    ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("maintenance_action_recent_failures", "Recent Failures"),
+      summary.recent_failed_rows_label || formatAdminNumber(summary.recent_failed_rows ?? 0),
+      `${adminTranslateWithFallback("maintenance_action_recent_successes", "Recent Successes")}: ${summary.recent_success_rows_label || formatAdminNumber(summary.recent_success_rows ?? 0)}`,
+      "fa-solid fa-triangle-exclamation"
+    ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("maintenance_action_recent_slow", "Recent Slow Actions"),
+      summary.recent_slow_rows_label || formatAdminNumber(summary.recent_slow_rows ?? 0),
+      `${adminTranslateWithFallback("maintenance_action_slow_threshold", "Slow Threshold")}: ${formatAdminNumber(summary.slow_threshold_ms ?? 0)} ms`,
+      "fa-solid fa-stopwatch"
+    ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("maintenance_action_slowest_action", "Slowest Action"),
+      slowestAction,
+      summary.slowest_at
+        ? `${adminTranslateWithFallback("log_latest_at", "Latest")}: ${summary.slowest_at}`
+        : "",
+      "fa-solid fa-gauge-high"
+    ),
+  ];
+
+  container.innerHTML = cards.join("");
+}
+
 function renderAdminMaintenanceActionLogs(logs) {
   const container = document.getElementById("adminMaintenanceActionLogs");
   if (!container) {
@@ -766,9 +815,23 @@ function initializeAdminMaintenanceActionLogs() {
   }
 }
 
+function initializeAdminMaintenanceActionSummary() {
+  const container = document.getElementById("adminMaintenanceActionSummary");
+  if (!container?.dataset.maintenanceActionSummary) {
+    return;
+  }
+
+  try {
+    renderAdminMaintenanceActionSummary(JSON.parse(container.dataset.maintenanceActionSummary));
+  } catch (error) {
+    console.warn("Unable to render maintenance action summary:", error);
+  }
+}
+
 function initializeAdminMaintenancePanels() {
   initializeAdminMaintenanceStorageSummary();
   initializeAdminMaintenanceRecommendations();
+  initializeAdminMaintenanceActionSummary();
   initializeAdminMaintenanceActionLogs();
 }
 
@@ -1466,6 +1529,9 @@ function runAdminMaintenanceAction(action, button) {
       }
       if (data.maintenance_action_logs) {
         renderAdminMaintenanceActionLogs(data.maintenance_action_logs);
+      }
+      if (data.maintenance_action_summary) {
+        renderAdminMaintenanceActionSummary(data.maintenance_action_summary);
       }
       if (data.audit) {
         latestAdminSubscriptionImageAudit = data.audit;

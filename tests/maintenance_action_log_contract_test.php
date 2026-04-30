@@ -47,6 +47,10 @@ try {
         wallos_count_recent_failed_maintenance_actions($db, 24) === 1,
         'Recent failed maintenance action count should be one.'
     );
+    $actionSummary = wallos_get_maintenance_action_log_summary($db, 24);
+    wallos_maintenance_action_log_contract_assert((int) ($actionSummary['recent_rows'] ?? 0) === 2, 'Maintenance action summary should count recent rows.');
+    wallos_maintenance_action_log_contract_assert((int) ($actionSummary['recent_failed_rows'] ?? 0) === 1, 'Maintenance action summary should count recent failures.');
+    wallos_maintenance_action_log_contract_assert((string) ($actionSummary['slowest_action'] ?? '') === 'run_sqlite_maintenance', 'Maintenance action summary should expose the slowest recent action.');
 
     $oldTimestamp = date('Y-m-d H:i:s', strtotime('-120 days'));
     $db->exec("UPDATE maintenance_action_logs SET created_at = '" . SQLite3::escapeString($oldTimestamp) . "' WHERE action = 'run_sqlite_maintenance'");
@@ -63,4 +67,3 @@ try {
 } finally {
     $db->close();
 }
-
