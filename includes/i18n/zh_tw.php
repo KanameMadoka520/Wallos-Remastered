@@ -941,6 +941,7 @@ $i18n = [
     "maintenance_action_filter_all" => "全部",
     "maintenance_action_filter_failed" => "失敗",
     "maintenance_action_filter_slow" => "慢動作",
+    "maintenance_action_slow_badge" => "慢",
     "maintenance_action_success" => "成功",
     "maintenance_action_failed" => "失敗",
     "export_maintenance_action_logs" => "匯出維護動作 CSV",

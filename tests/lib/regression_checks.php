@@ -567,6 +567,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'setAdminMaintenanceActionLogFilter',
         'getFilteredAdminMaintenanceActionLogs',
         'maintenance_action_filter_slow',
+        'maintenance_action_slow_badge',
         'maintenance_action_slowest_action',
         'initializeAdminMaintenanceActionLogs',
         'initializeAdminMaintenanceActionSummary',
@@ -606,6 +607,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         '.maintenance-action-log-grid',
         '.maintenance-action-log-filter-row',
         '.maintenance-action-log-card',
+        '.maintenance-action-log-slow-badge',
         '.subscription-image-audit-summary',
         '.subscription-image-audit-card',
     )) && wallos_regression_text_has_all($dynamicWallpaperCss, array(

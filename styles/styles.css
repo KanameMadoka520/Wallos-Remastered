@@ -5584,6 +5584,10 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   border-color: rgba(224, 81, 81, 0.46);
 }
 
+.maintenance-action-log-card.is-slow:not(.status-failed) {
+  border-color: rgba(226, 162, 58, 0.42);
+}
+
 .maintenance-action-log-card p {
   margin: 10px 0 0;
   line-height: 1.45;
@@ -5608,6 +5612,11 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   font-size: 11px;
   color: var(--main-color);
   background-color: rgba(var(--main-color-rgb), 0.10);
+}
+
+.maintenance-action-log-meta .maintenance-action-log-slow-badge {
+  color: #a66f00;
+  background-color: rgba(226, 162, 58, 0.16);
 }
 
 .backup-action-row {
