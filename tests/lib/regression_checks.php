@@ -434,6 +434,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $maintenanceValid = wallos_regression_text_has_all($systemMaintenancePhp, array(
         'wallos_audit_subscription_image_storage',
         'wallos_collect_subscription_image_variant_health',
+        "'generated_at' => date('Y-m-d H:i:s')",
         'oversized_variant_rows',
         'missing_variant_files',
         'wallos_get_storage_usage_summary',
@@ -503,6 +504,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'formatAdminOrphanCleanupResult',
         'renderAdminSubscriptionImageAuditSummary',
         'subscription_image_audit_health',
+        'subscription_image_audit_generated_at',
         'subscription_image_oversized_variants',
         'formatAdminSqliteMaintenanceResult',
         'formatAdminSqliteIndexHealthResult',
