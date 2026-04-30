@@ -153,7 +153,16 @@ while ($usageQuery && ($row = $usageQuery->fetchArray(SQLITE3_ASSOC))) {
 
 // recent request logs
 $recentRequestLogs = [];
-$logsQuery = $db->prepare('SELECT id, user_id, username, path, method, ip_address, forwarded_for, user_agent, headers_json, created_at FROM request_logs ORDER BY id DESC LIMIT 50');
+$logsQuery = $db->prepare('
+    SELECT id, user_id, username, path, method, ip_address, forwarded_for, user_agent, headers_json,
+           COALESCE(duration_ms, 0) AS duration_ms,
+           COALESCE(status_code, 0) AS status_code,
+           completed_at,
+           created_at
+    FROM request_logs
+    ORDER BY id DESC
+    LIMIT 50
+');
 $logsResult = $logsQuery->execute();
 while ($logsResult && ($row = $logsResult->fetchArray(SQLITE3_ASSOC))) {
     $recentRequestLogs[] = $row;
@@ -170,6 +179,7 @@ $securityAnomalyCount = $securityAnomaliesTableExists ? wallos_count_security_an
 $securityAnomalyRecentCount = $securityAnomaliesTableExists ? wallos_count_security_anomalies($db, 24) : 0;
 $clientRuntimeRecentCount = $securityAnomaliesTableExists ? wallos_count_security_anomalies_by_type($db, 'client_runtime', 24) : 0;
 $requestFailureRecentCount = $securityAnomaliesTableExists ? wallos_count_security_anomalies_by_type($db, 'request_failure', 24) : 0;
+$slowRequestRecentCount = wallos_count_slow_request_logs($db, 24);
 $serviceWorkerVersions = wallos_parse_service_worker_cache_versions(__DIR__ . '/service-worker.js');
 $serviceWorkerVersionSummary = trim(implode(' | ', array_filter([
     $serviceWorkerVersions['static'] !== '' ? 'static=' . $serviceWorkerVersions['static'] : '',
@@ -183,6 +193,7 @@ $timezoneOptions = wallos_get_timezone_options($backupTimezone);
 $securityAnomalyTypeCounts = $securityAnomaliesTableExists ? wallos_get_security_anomaly_type_counts($db, 24) : [];
 $securityAnomalyTypeSummary = wallos_summarize_security_anomaly_type_counts($securityAnomalyTypeCounts);
 $recentSecurityAnomalies = $securityAnomaliesTableExists ? wallos_get_recent_security_anomalies($db, 6, 24) : [];
+$recentSlowRequests = wallos_get_recent_slow_request_logs($db, 6, 24);
 $adminCacheRefreshMarker = wallos_read_cache_refresh_marker(__DIR__);
 $adminCacheRefreshRequestedAt = trim((string) ($adminCacheRefreshMarker['token'] ?? '')) !== ''
     ? wallos_format_observability_timestamp($adminCacheRefreshMarker['requested_at'] ?? '', $backupTimezone)
@@ -238,6 +249,9 @@ $pageSections = [
         data-keyword-label="<?= htmlspecialchars(translate('search', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-keyword-placeholder="<?= htmlspecialchars(translate('access_logs_keyword_placeholder', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-method-label="<?= htmlspecialchars(translate('request_method', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-duration-label="<?= htmlspecialchars(translate('request_duration_ms', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-min-duration-label="<?= htmlspecialchars(translate('min_duration_ms', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-status-code-label="<?= htmlspecialchars(translate('status_code', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-start-label="<?= htmlspecialchars(translate('start_time', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-end-label="<?= htmlspecialchars(translate('end_time', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-limit-label="<?= htmlspecialchars(translate('results_limit', $i18n), ENT_QUOTES, 'UTF-8') ?>"
@@ -285,6 +299,8 @@ $pageSections = [
         data-message-label="<?= htmlspecialchars(translate('message', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-user-label="<?= htmlspecialchars(translate('username', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-path-label="<?= htmlspecialchars(translate('anomaly_path', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-slow-request-label="<?= htmlspecialchars(translate('slow_request', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-status-code-label="<?= htmlspecialchars(translate('status_code', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-time-label="<?= htmlspecialchars(translate('time', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-cache-empty-label="<?= htmlspecialchars(translate('never_requested', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-refresh-success="<?= htmlspecialchars(translate('runtime_observability_refreshed', $i18n), ENT_QUOTES, 'UTF-8') ?>"
@@ -1098,6 +1114,10 @@ $pageSections = [
                 <strong data-observability-count="request_failure_24h"><?= (int) $requestFailureRecentCount ?></strong>
             </div>
             <div class="backup-summary-card">
+                <span><?= translate('slow_requests_24h', $i18n) ?></span>
+                <strong data-observability-count="slow_request_24h"><?= (int) $slowRequestRecentCount ?></strong>
+            </div>
+            <div class="backup-summary-card">
                 <span><?= translate('service_worker_versions', $i18n) ?></span>
                 <strong class="compact-summary-text"><?= htmlspecialchars($serviceWorkerVersionSummary, ENT_QUOTES, 'UTF-8') ?></strong>
             </div>
@@ -1137,13 +1157,17 @@ $pageSections = [
                         onClick="window.WallosAdminAccessLogs?.openSecurityAnomaliesModal?.({ anomaly_type: 'request_failure' })">
                         <?= translate('open_request_failures', $i18n) ?>
                     </button>
+                    <button type="button" class="secondary-button thin" id="openSlowRequestsButton"
+                        onClick="window.WallosAdminAccessLogs?.openAccessLogsModal?.({ min_duration_ms: '<?= (int) WALLOS_SLOW_REQUEST_THRESHOLD_MS ?>' })">
+                        <?= translate('open_slow_requests', $i18n) ?>
+                    </button>
                     <button type="button" class="button thin" id="refreshRuntimeObservabilityButton" onClick="refreshRuntimeObservabilityButton(this)">
                         <?= translate('refresh_runtime_observability', $i18n) ?>
                     </button>
                 </div>
             </div>
             <div class="runtime-observability-feed" data-observability-feed>
-                <?php if (empty($recentSecurityAnomalies)) : ?>
+                <?php if (empty($recentSecurityAnomalies) && empty($recentSlowRequests)) : ?>
                     <div class="settings-notes access-log-empty">
                         <p><i class="fa-solid fa-circle-info"></i><?= translate('no_recent_anomalies', $i18n) ?></p>
                     </div>
@@ -1160,6 +1184,28 @@ $pageSections = [
                                 <?= htmlspecialchars((string) ($anomaly['username'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
                                 · <?= htmlspecialchars((string) ($anomaly['ip_address'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
                                 · <?= htmlspecialchars(wallos_format_observability_timestamp($anomaly['created_at'] ?? '', $backupTimezone), ENT_QUOTES, 'UTF-8') ?>
+                            </small>
+                        </article>
+                    <?php endforeach; ?>
+                    <?php foreach ($recentSlowRequests as $slowRequest) : ?>
+                        <article class="runtime-anomaly-card">
+                            <div class="runtime-anomaly-card-header">
+                                <span class="access-log-id-badge">#<?= (int) ($slowRequest['id'] ?? 0) ?></span>
+                                <strong><?= translate('slow_request', $i18n) ?></strong>
+                                <span><?= (int) ($slowRequest['duration_ms'] ?? 0) ?> ms</span>
+                            </div>
+                            <p>
+                                <?= htmlspecialchars((string) ($slowRequest['method'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
+                                <?= htmlspecialchars((string) ($slowRequest['path'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
+                                · <?= translate('status_code', $i18n) ?>:
+                                <?= (int) ($slowRequest['status_code'] ?? 0) ?>
+                            </p>
+                            <small>
+                                <?= htmlspecialchars((string) ($slowRequest['username'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
+                                /
+                                <?= htmlspecialchars((string) ($slowRequest['ip_address'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
+                                /
+                                <?= htmlspecialchars(wallos_format_observability_timestamp($slowRequest['created_at'] ?? '', $backupTimezone), ENT_QUOTES, 'UTF-8') ?>
                             </small>
                         </article>
                     <?php endforeach; ?>
@@ -1262,6 +1308,10 @@ $pageSections = [
                 <div class="backup-summary-card">
                     <span><?= translate('access_logs_total', $i18n) ?></span>
                     <strong><?= (int) $totalRequestLogCount ?></strong>
+                </div>
+                <div class="backup-summary-card">
+                    <span><?= translate('slow_requests_24h', $i18n) ?></span>
+                    <strong><?= (int) $slowRequestRecentCount ?></strong>
                 </div>
             </div>
             <div class="settings-notes">

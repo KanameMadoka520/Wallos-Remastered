@@ -14,6 +14,8 @@ $method = strtoupper(trim((string) ($data['method'] ?? '')));
 $limit = max(20, min(500, (int) ($data['limit'] ?? 100)));
 $startAt = trim((string) ($data['start_at'] ?? ''));
 $endAt = trim((string) ($data['end_at'] ?? ''));
+$minDurationMs = max(0, (int) ($data['min_duration_ms'] ?? 0));
+$statusCode = max(0, (int) ($data['status_code'] ?? 0));
 
 function wallos_normalize_access_log_filter_datetime($value)
 {
@@ -61,6 +63,16 @@ if ($method !== '') {
     $params[':method'] = [$method, SQLITE3_TEXT];
 }
 
+if ($minDurationMs > 0) {
+    $conditions[] = 'COALESCE(duration_ms, 0) >= :minDurationMs';
+    $params[':minDurationMs'] = [$minDurationMs, SQLITE3_INTEGER];
+}
+
+if ($statusCode > 0) {
+    $conditions[] = 'COALESCE(status_code, 0) = :statusCode';
+    $params[':statusCode'] = [$statusCode, SQLITE3_INTEGER];
+}
+
 $normalizedStartAt = wallos_normalize_access_log_filter_datetime($startAt);
 if ($normalizedStartAt !== '') {
     $conditions[] = 'created_at >= :startAt';
@@ -87,7 +99,11 @@ $countRow = $countResult ? $countResult->fetchArray(SQLITE3_ASSOC) : false;
 $total = (int) ($countRow['total'] ?? 0);
 
 $query = '
-    SELECT id, user_id, username, path, method, ip_address, forwarded_for, user_agent, headers_json, created_at
+    SELECT id, user_id, username, path, method, ip_address, forwarded_for, user_agent, headers_json,
+           COALESCE(duration_ms, 0) AS duration_ms,
+           COALESCE(status_code, 0) AS status_code,
+           completed_at,
+           created_at
     FROM request_logs
     ' . $whereSql . '
     ORDER BY id DESC
@@ -114,6 +130,8 @@ echo json_encode([
         'request_id' => $requestId,
         'keyword' => $keyword,
         'method' => $method,
+        'min_duration_ms' => $minDurationMs,
+        'status_code' => $statusCode,
         'start_at' => $normalizedStartAt,
         'end_at' => $normalizedEndAt,
         'limit' => $limit,
