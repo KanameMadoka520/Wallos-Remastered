@@ -1808,6 +1808,11 @@ function updateRuntimeObservabilitySummary(data) {
       : (ui?.dataset.cacheEmptyLabel || "-");
   }
 
+  const generatedAt = document.querySelector("[data-observability-generated-at]");
+  if (generatedAt) {
+    generatedAt.textContent = data?.generated_at_display || data?.generated_at || "-";
+  }
+
   renderRuntimeObservabilityFeed(data?.recent_anomalies || [], data?.recent_slow_requests || []);
   renderRuntimeSlowEndpointGroups(data?.top_slow_request_groups || []);
 }

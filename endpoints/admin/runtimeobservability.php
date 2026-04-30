@@ -24,6 +24,8 @@ $cacheRefreshMarker = wallos_read_cache_refresh_marker(__DIR__ . '/../..');
 
 echo json_encode([
     'success' => true,
+    'generated_at' => date('Y-m-d H:i:s'),
+    'generated_at_display' => wallos_format_observability_timestamp(date('Y-m-d H:i:s'), $backupTimezone),
     'counts' => [
         'security_total' => $securityAnomaliesTableExists ? wallos_count_security_anomalies($db) : 0,
         'security_recent_24h' => $securityAnomaliesTableExists ? wallos_count_security_anomalies($db, 24) : 0,

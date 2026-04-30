@@ -844,6 +844,7 @@ $i18n = [
     "recent_request_failures" => "Recent Request Failures",
     "runtime_observability" => "Runtime Observability",
     "runtime_observability_info" => "Shows recent frontend errors, failed requests, cache-refresh state, and the latest anomaly feed for faster debugging.",
+    "runtime_observability_generated_at" => "Diagnostics Refreshed At",
     "top_slow_endpoints" => "Top Slow Endpoints",
     "top_slow_endpoints_info" => "Groups slow requests from the last 24 hours by method and path so bottlenecks are easier to locate.",
     "no_slow_endpoints" => "No slow endpoints detected in the last 24 hours.",

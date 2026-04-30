@@ -839,6 +839,7 @@ $i18n = [
     "recent_request_failures" => "最近請求失敗",
     "runtime_observability" => "執行期可觀測性",
     "runtime_observability_info" => "彙總最近前端錯誤、請求失敗、快取刷新狀態與最新異常流，方便快速定位問題。",
+    "runtime_observability_generated_at" => "診斷刷新時間",
     "top_slow_endpoints" => "慢請求介面排行",
     "top_slow_endpoints_info" => "依請求方法與路徑彙總最近 24 小時慢請求，方便直接定位變慢的介面。",
     "no_slow_endpoints" => "最近 24 小時沒有偵測到慢介面。",

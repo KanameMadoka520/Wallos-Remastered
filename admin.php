@@ -1188,6 +1188,10 @@ $pageSections = [
                 <span><?= translate('service_worker_last_refresh_request', $i18n) ?></span>
                 <strong class="compact-summary-text" data-observability-cache-refresh><?= htmlspecialchars($adminCacheRefreshRequestedAt, ENT_QUOTES, 'UTF-8') ?></strong>
             </div>
+            <div class="backup-summary-card">
+                <span><?= translate('runtime_observability_generated_at', $i18n) ?></span>
+                <strong class="compact-summary-text" data-observability-generated-at>-</strong>
+            </div>
         </div>
         <div class="runtime-observability-panel">
             <div class="runtime-observability-header">
