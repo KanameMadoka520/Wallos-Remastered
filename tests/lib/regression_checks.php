@@ -504,6 +504,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'runtime_observability.php',
         'get_storage_usage',
         'get_maintenance_recommendations',
+        'get_maintenance_action_logs',
         'recommendations',
         'scan_subscription_images',
         'reuse_oversized_subscription_image_variants',
@@ -530,6 +531,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'maintenance_action_logs',
         'adminMaintenanceActionLogs',
         'export_maintenance_action_logs',
+        'refresh_maintenance_action_logs',
         'maintenance_action_log_retention_days',
     )) && wallos_regression_text_has_all($adminJs, array(
         'runAdminMaintenanceAction',
@@ -549,6 +551,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'exportAdminMaintenanceActionLogsCsv',
         'wallos-maintenance-actions',
         'maintenance_action_get_storage_usage',
+        'maintenance_action_get_maintenance_action_logs',
         'maintenance_action_logs',
         'executeAdminMaintenanceRecommendation',
         'exportAdminSubscriptionImageAuditCsv',
