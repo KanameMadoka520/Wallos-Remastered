@@ -904,6 +904,7 @@ $i18n = [
     "security_anomaly_retention_days" => "安全異常保留天數",
     "rate_limit_usage_retention_days" => "速率限制用量保留天數",
     "maintenance_action_log_retention_days" => "維護動作日誌保留天數",
+    "maintenance_action_recent_limit" => "最近維護動作卡片數",
     "subscription_image_audit" => "訂閱圖片稽核",
     "subscription_image_audit_info" => "掃描訂閱圖片目錄裡的孤兒檔案，以及缺少預覽圖/縮圖的資料庫記錄。掃描不會刪除任何檔案。",
     "scan_subscription_images" => "掃描訂閱圖片",
