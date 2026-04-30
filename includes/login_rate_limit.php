@@ -131,7 +131,11 @@ function wallos_prune_login_attempts($db)
         return 0;
     }
 
-    $db->exec("DELETE FROM login_attempts WHERE attempted_at <= datetime('now', '-" . WALLOS_LOGIN_ATTEMPT_RETENTION_DAYS . " days')");
+    $result = @$db->exec("DELETE FROM login_attempts WHERE attempted_at <= datetime('now', '-" . WALLOS_LOGIN_ATTEMPT_RETENTION_DAYS . " days')");
+    if ($result === false) {
+        return 0;
+    }
+
     return (int) $db->changes();
 }
 
@@ -215,7 +219,7 @@ function wallos_record_failed_login_attempt($db, $ipAddress, $username)
     $stmt->bindValue(':ip_address', $ipAddress, SQLITE3_TEXT);
     $stmt->bindValue(':username', $username, SQLITE3_TEXT);
     $stmt->bindValue(':blocked_until', $blockedUntil, SQLITE3_TEXT);
-    $stmt->execute();
+    @$stmt->execute();
 
     return $blockedUntil;
 }
@@ -235,7 +239,7 @@ function wallos_clear_login_attempts($db, $ipAddress, $username)
         $stmt->bindValue(':ip_address', $ipAddress, SQLITE3_TEXT);
     }
 
-    $stmt->execute();
+    @$stmt->execute();
 }
 
 function wallos_build_login_rate_limit_message($i18n, $blockedUntil)

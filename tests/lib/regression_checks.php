@@ -268,6 +268,21 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected database busy helper, endpoint exception wiring, caught-endpoint guard, and frontend database_busy detection.'
     );
 
+    $loginRateLimitPhp = wallos_regression_read_repo_file($config, 'includes/login_rate_limit.php');
+    $loginRateLimitBusySafe = wallos_regression_text_has_all($loginRateLimitPhp, array(
+        '@$db->exec',
+        '@$stmt->execute',
+        'wallos_prune_login_attempts',
+    ));
+    $results[] = wallos_regression_make_result(
+        $loginRateLimitBusySafe ? 'PASS' : 'FAIL',
+        'static',
+        'login-rate-limit-busy-safety',
+        $loginRateLimitBusySafe
+            ? 'Login rate-limit cleanup suppresses transient SQLite lock warnings so login responses are not polluted.'
+            : 'Expected login rate-limit writes to avoid leaking SQLite lock warnings into login HTML responses.'
+    );
+
     $csrfPhp = wallos_regression_read_repo_file($config, 'libs/csrf.php');
     $footerPhp = wallos_regression_read_repo_file($config, 'includes/footer.php');
     $dynamicWallpaperCss = wallos_regression_read_repo_file($config, 'styles/dynamic-wallpaper.css');
