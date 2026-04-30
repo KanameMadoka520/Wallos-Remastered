@@ -107,11 +107,14 @@ try {
     $migration71Path = __DIR__ . '/../migrations/000071.php';
     $migration72Path = __DIR__ . '/../migrations/000072.php';
     $migration73Path = __DIR__ . '/../migrations/000073.php';
+    $migration74Path = __DIR__ . '/../migrations/000074.php';
     require $migration71Path;
     require $migration72Path;
     require $migration72Path;
     require $migration73Path;
     require $migration73Path;
+    require $migration74Path;
+    require $migration74Path;
 
     $expectedIndexes = [
         'subscriptions' => [
@@ -157,6 +160,10 @@ try {
         'rate_limit_usage' => [
             'idx_rate_limit_usage_user_category_created',
             'idx_rate_limit_usage_created_id',
+        ],
+        'maintenance_action_logs' => [
+            'idx_maintenance_action_logs_created_id',
+            'idx_maintenance_action_logs_action_created',
         ],
         'user' => [
             'idx_user_status_scheduled_delete',
