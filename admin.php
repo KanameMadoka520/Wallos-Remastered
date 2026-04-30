@@ -310,7 +310,9 @@ $pageSections = [
         data-slow-request-threshold="<?= (int) WALLOS_SLOW_REQUEST_THRESHOLD_MS ?>"
         data-avg-duration-label="<?= htmlspecialchars(translate('avg_duration_ms', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-max-duration-label="<?= htmlspecialchars(translate('max_duration_ms', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-total-duration-label="<?= htmlspecialchars(translate('total_duration_ms', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-failure-count-label="<?= htmlspecialchars(translate('failure_count', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-failure-rate-label="<?= htmlspecialchars(translate('failure_rate_percent', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-last-seen-label="<?= htmlspecialchars(translate('last_seen_at', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-status-code-label="<?= htmlspecialchars(translate('status_code', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-time-label="<?= htmlspecialchars(translate('time', $i18n), ENT_QUOTES, 'UTF-8') ?>"
@@ -1234,7 +1236,11 @@ $pageSections = [
                                     /
                                     <?= translate('max_duration_ms', $i18n) ?>: <?= (int) ($group['max_duration_ms'] ?? 0) ?> ms
                                     /
+                                    <?= translate('total_duration_ms', $i18n) ?>: <?= (int) ($group['total_duration_ms'] ?? 0) ?> ms
+                                    /
                                     <?= translate('failure_count', $i18n) ?>: <?= (int) ($group['failure_count'] ?? 0) ?>
+                                    /
+                                    <?= translate('failure_rate_percent', $i18n) ?>: <?= htmlspecialchars((string) ($group['failure_rate_percent'] ?? 0), ENT_QUOTES, 'UTF-8') ?>%
                                 </p>
                                 <small>
                                     <?= translate('last_seen_at', $i18n) ?>:
