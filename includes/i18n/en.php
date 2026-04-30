@@ -848,6 +848,7 @@ $i18n = [
     "top_slow_endpoints_info" => "Groups slow requests from the last 24 hours by method and path so bottlenecks are easier to locate.",
     "no_slow_endpoints" => "No slow endpoints detected in the last 24 hours.",
     "slow_endpoint_count" => "Hits",
+    "open_slow_endpoint_logs" => "Open Endpoint Logs",
     "avg_duration_ms" => "Average",
     "max_duration_ms" => "Max",
     "failure_count" => "Failures",

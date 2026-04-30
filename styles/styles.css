@@ -5885,6 +5885,13 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   overflow-wrap: anywhere;
 }
 
+.runtime-slow-endpoint-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .runtime-observability-feed {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

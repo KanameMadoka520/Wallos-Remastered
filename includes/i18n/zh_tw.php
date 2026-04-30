@@ -843,6 +843,7 @@ $i18n = [
     "top_slow_endpoints_info" => "依請求方法與路徑彙總最近 24 小時慢請求，方便直接定位變慢的介面。",
     "no_slow_endpoints" => "最近 24 小時沒有偵測到慢介面。",
     "slow_endpoint_count" => "次數",
+    "open_slow_endpoint_logs" => "查看該介面日誌",
     "avg_duration_ms" => "平均耗時",
     "max_duration_ms" => "最大耗時",
     "failure_count" => "失敗次數",
