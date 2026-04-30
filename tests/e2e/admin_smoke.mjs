@@ -228,6 +228,8 @@ async function waitForAdminShell() {
   await expectVisible("#admin-maintenance", "admin maintenance section");
   await expectVisible("#admin-backup", "admin backup section");
   await expectVisible("#backupDB", "backup button");
+  await expectVisible("[data-system-overview-status]", "system overview panel");
+  await expectVisible(".system-overview-card", "system overview cards");
 
   const currentUrl = new URL(page.url());
   if (currentUrl.pathname.endsWith("/login.php") || currentUrl.pathname.endsWith("/index.php")) {

@@ -515,6 +515,141 @@ function wallos_get_maintenance_recommendation_summary($db, $basePath, $i18n = n
     ];
 }
 
+function wallos_build_system_overview_card($tone, $icon, $label, $value, $detail = '')
+{
+    return [
+        'tone' => in_array($tone, ['ok', 'watch', 'action'], true) ? $tone : 'watch',
+        'icon' => (string) $icon,
+        'label' => (string) $label,
+        'value' => (string) $value,
+        'detail' => (string) $detail,
+    ];
+}
+
+function wallos_system_overview_status_label($i18n, $status)
+{
+    $status = in_array($status, ['ok', 'watch', 'action'], true) ? $status : 'watch';
+    return wallos_maintenance_translate(
+        $i18n,
+        'maintenance_recommendation_status_' . $status,
+        $status === 'ok' ? 'OK' : ($status === 'action' ? 'Action' : 'Watch')
+    );
+}
+
+function wallos_get_admin_system_overview_summary($db, $basePath, $i18n = null, $storage = null, $recommendationSummary = null)
+{
+    if (!is_array($storage)) {
+        $storage = wallos_get_storage_usage_summary($db, $basePath);
+    }
+    if (!is_array($recommendationSummary)) {
+        $recommendationSummary = wallos_get_maintenance_recommendation_summary($db, $basePath, $i18n);
+    }
+
+    $indexHealth = wallos_check_sqlite_index_health($db);
+    $imageAudit = wallos_audit_subscription_image_storage($db, $basePath);
+    $slowRequests24h = wallos_count_maintenance_slow_requests($db, 24);
+    $securityAnomalies24h = function_exists('wallos_count_security_anomalies')
+        ? wallos_count_security_anomalies($db, 24)
+        : 0;
+    $securityTypeSummary = function_exists('wallos_get_security_anomaly_type_counts') && function_exists('wallos_summarize_security_anomaly_type_counts')
+        ? wallos_summarize_security_anomaly_type_counts(wallos_get_security_anomaly_type_counts($db, 24))
+        : '-';
+
+    $maintenanceStatus = (string) ($recommendationSummary['status'] ?? 'ok');
+    $severityCounts = $recommendationSummary['severity_counts'] ?? ['ok' => 0, 'watch' => 0, 'action' => 0];
+    $indexProblemCount = (int) ($indexHealth['missing_indexes'] ?? 0) + (int) ($indexHealth['invalid_indexes'] ?? 0);
+    $orphanFiles = (int) ($imageAudit['orphan_files'] ?? 0);
+    $orphanBytes = (int) ($imageAudit['orphan_bytes'] ?? 0);
+    $missingVariantRows = (int) ($imageAudit['missing_variant_rows'] ?? 0);
+
+    $logRisks = [];
+    $logTone = 'ok';
+    foreach (($storage['logs'] ?? []) as $logInfo) {
+        $risk = (string) ($logInfo['risk'] ?? 'normal');
+        if ($risk === 'high') {
+            $logTone = 'action';
+        } elseif ($risk === 'watch' && $logTone !== 'action') {
+            $logTone = 'watch';
+        }
+
+        $logRisks[] = (string) ($logInfo['table'] ?? '-') . '=' . (string) ($logInfo['rows_label'] ?? number_format((int) ($logInfo['rows'] ?? 0)));
+    }
+
+    $cards = [
+        wallos_build_system_overview_card(
+            'ok',
+            'fa-solid fa-heart-pulse',
+            wallos_maintenance_translate($i18n, 'system_overview_service_health', 'Service Health'),
+            wallos_maintenance_translate($i18n, 'system_overview_ok', 'OK'),
+            wallos_maintenance_translate($i18n, 'system_overview_service_health_detail', 'Admin page, PHP runtime, and SQLite connection are responding.')
+        ),
+        wallos_build_system_overview_card(
+            $maintenanceStatus,
+            'fa-solid fa-clipboard-check',
+            wallos_maintenance_translate($i18n, 'system_overview_maintenance_status', 'Maintenance Status'),
+            wallos_system_overview_status_label($i18n, $maintenanceStatus),
+            wallos_maintenance_translate($i18n, 'system_overview_maintenance_detail', 'Action / Watch / OK') . ': '
+                . (int) ($severityCounts['action'] ?? 0) . ' / '
+                . (int) ($severityCounts['watch'] ?? 0) . ' / '
+                . (int) ($severityCounts['ok'] ?? 0)
+        ),
+        wallos_build_system_overview_card(
+            empty($indexHealth['success']) ? 'action' : 'ok',
+            'fa-solid fa-database',
+            wallos_maintenance_translate($i18n, 'system_overview_sqlite_indexes', 'SQLite Indexes'),
+            empty($indexHealth['success'])
+                ? number_format($indexProblemCount)
+                : wallos_maintenance_translate($i18n, 'system_overview_ok', 'OK'),
+            wallos_maintenance_translate($i18n, 'sqlite_index_total', 'Expected Indexes') . ': ' . number_format((int) ($indexHealth['total_indexes'] ?? 0))
+        ),
+        wallos_build_system_overview_card(
+            $slowRequests24h >= 20 ? 'action' : ($slowRequests24h > 0 ? 'watch' : 'ok'),
+            'fa-solid fa-gauge-high',
+            wallos_maintenance_translate($i18n, 'slow_requests_24h', 'Slow Requests (24h)'),
+            number_format($slowRequests24h),
+            wallos_maintenance_translate($i18n, 'slow_request_threshold', 'Slow Request Threshold') . ': ' . number_format(WALLOS_SLOW_REQUEST_THRESHOLD_MS) . ' ms'
+        ),
+        wallos_build_system_overview_card(
+            $securityAnomalies24h >= 20 ? 'action' : ($securityAnomalies24h > 0 ? 'watch' : 'ok'),
+            'fa-solid fa-shield-halved',
+            wallos_maintenance_translate($i18n, 'recent_security_anomalies', 'Recent Security Anomalies'),
+            number_format($securityAnomalies24h),
+            wallos_maintenance_translate($i18n, 'recent_anomaly_type_breakdown', 'Recent Anomaly Type Breakdown') . ': ' . ($securityTypeSummary !== '' ? $securityTypeSummary : '-')
+        ),
+        wallos_build_system_overview_card(
+            $orphanBytes >= 100 * 1024 * 1024 ? 'action' : (($orphanFiles > 0 || $missingVariantRows > 0) ? 'watch' : 'ok'),
+            'fa-solid fa-images',
+            wallos_maintenance_translate($i18n, 'system_overview_subscription_images', 'Subscription Images'),
+            wallos_maintenance_translate($i18n, 'orphan_files', 'Orphan Files') . ': ' . number_format($orphanFiles),
+            wallos_maintenance_translate($i18n, 'missing_derived_image_rows', 'Missing Derived Image Rows') . ': ' . number_format($missingVariantRows)
+        ),
+        wallos_build_system_overview_card(
+            $logTone,
+            'fa-solid fa-table-list',
+            wallos_maintenance_translate($i18n, 'system_overview_log_growth', 'Log Growth'),
+            wallos_maintenance_translate($i18n, 'log_growth_risk_' . ($logTone === 'action' ? 'high' : ($logTone === 'watch' ? 'watch' : 'normal')), ucfirst($logTone)),
+            implode(' | ', $logRisks)
+        ),
+    ];
+
+    $overallStatus = 'ok';
+    foreach ($cards as $card) {
+        if (($card['tone'] ?? '') === 'action') {
+            $overallStatus = 'action';
+            break;
+        }
+        if (($card['tone'] ?? '') === 'watch') {
+            $overallStatus = 'watch';
+        }
+    }
+
+    return [
+        'generated_at' => date('Y-m-d H:i:s'),
+        'status' => $overallStatus,
+        'cards' => $cards,
+    ];
+}
+
 function wallos_collect_subscription_image_index($db)
 {
     $indexedPaths = [];

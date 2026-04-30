@@ -209,6 +209,7 @@ $maintenanceStorageSummary = wallos_get_storage_usage_summary($db, __DIR__);
 $maintenanceStorageSummaryJson = json_encode($maintenanceStorageSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $maintenanceRecommendationSummary = wallos_get_maintenance_recommendation_summary($db, __DIR__, $i18n);
 $maintenanceRecommendationSummaryJson = json_encode($maintenanceRecommendationSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$adminSystemOverviewSummary = wallos_get_admin_system_overview_summary($db, __DIR__, $i18n, $maintenanceStorageSummary, $maintenanceRecommendationSummary);
 $backupProgressLabels = wallos_get_backup_progress_labels($lang);
 $adminBackupsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-backups.js');
 $adminAccessLogsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-access-logs.js');
@@ -984,6 +985,31 @@ $pageSections = [
     <header>
         <h2><?= translate('security_settings', $i18n) ?></h2> </header>
     <div class="admin-form">
+        <div class="system-overview-panel" data-system-overview-status="<?= htmlspecialchars((string) ($adminSystemOverviewSummary['status'] ?? 'ok'), ENT_QUOTES, 'UTF-8') ?>">
+            <div class="system-overview-header">
+                <div>
+                    <h3><?= translate('system_overview', $i18n) ?></h3>
+                    <p><?= translate('system_overview_info', $i18n) ?></p>
+                </div>
+                <span class="maintenance-recommendation-badge">
+                    <?= htmlspecialchars(wallos_system_overview_status_label($i18n, (string) ($adminSystemOverviewSummary['status'] ?? 'ok')), ENT_QUOTES, 'UTF-8') ?>
+                </span>
+            </div>
+            <div class="system-overview-grid">
+                <?php foreach (($adminSystemOverviewSummary['cards'] ?? []) as $overviewCard) : ?>
+                    <article class="system-overview-card severity-<?= htmlspecialchars((string) ($overviewCard['tone'] ?? 'watch'), ENT_QUOTES, 'UTF-8') ?>">
+                        <span>
+                            <i class="<?= htmlspecialchars((string) ($overviewCard['icon'] ?? 'fa-solid fa-circle-info'), ENT_QUOTES, 'UTF-8') ?>"></i>
+                            <?= htmlspecialchars((string) ($overviewCard['label'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
+                        </span>
+                        <strong><?= htmlspecialchars((string) ($overviewCard['value'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong>
+                        <?php if (trim((string) ($overviewCard['detail'] ?? '')) !== '') : ?>
+                            <small><?= htmlspecialchars((string) ($overviewCard['detail'] ?? ''), ENT_QUOTES, 'UTF-8') ?></small>
+                        <?php endif; ?>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        </div>
         <div class="form-group">
             <label for="rateLimitPresetSelect"><?= translate('rate_limit_presets', $i18n) ?></label>
             <select id="rateLimitPresetSelect">

@@ -441,6 +441,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'wallos_get_expected_sqlite_indexes',
         'wallos_check_sqlite_index_health',
         'wallos_get_maintenance_recommendation_summary',
+        'wallos_get_admin_system_overview_summary',
+        'wallos_build_system_overview_card',
         'wallos_count_maintenance_slow_requests',
         'maintenance_recommendation_orphan_images_title',
         'WALLOS_REQUEST_LOG_RETENTION_DAYS',
@@ -461,6 +463,9 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'validate_endpoint_admin.php',
     )) && wallos_regression_text_has_all($adminPhp, array(
         'maintenance_retention_strategy',
+        'system_overview',
+        'system-overview-grid',
+        'data-system-overview-status',
         'adminMaintenanceStorageSummary',
         'adminMaintenanceRecommendations',
         'refresh_maintenance_recommendations',
@@ -482,9 +487,13 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'formatAdminOversizedVariantResult',
         'endpoints/admin/systemmaintenance.php',
     )) && wallos_regression_text_has_all($stylesCss, array(
+        '.system-overview-panel',
+        '.system-overview-card',
         '.maintenance-recommendation-grid',
         '.maintenance-recommendation-card',
     )) && wallos_regression_text_has_all($dynamicWallpaperCss, array(
+        '.system-overview-panel',
+        '.system-overview-card',
         '.maintenance-recommendation-card',
     ));
     $results[] = wallos_regression_make_result(
@@ -573,6 +582,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'installAdminCookie',
         'establish administrator session',
         'administrator shell opens cleanly',
+        'system overview panel',
+        '.system-overview-card',
         'runtime observability refreshes cleanly',
         'data-slow-endpoint-grid',
         'maintenance recommendations refresh cleanly',
