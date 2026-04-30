@@ -209,6 +209,8 @@ $maintenanceStorageSummary = wallos_get_storage_usage_summary($db, __DIR__);
 $maintenanceStorageSummaryJson = json_encode($maintenanceStorageSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $maintenanceRecommendationSummary = wallos_get_maintenance_recommendation_summary($db, __DIR__, $i18n);
 $maintenanceRecommendationSummaryJson = json_encode($maintenanceRecommendationSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$maintenanceActionLogs = wallos_get_recent_maintenance_actions($db, 12);
+$maintenanceActionLogsJson = json_encode($maintenanceActionLogs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $adminSystemOverviewSummary = wallos_get_admin_system_overview_summary($db, __DIR__, $i18n, $maintenanceStorageSummary, $maintenanceRecommendationSummary);
 $backupProgressLabels = wallos_get_backup_progress_labels($lang);
 $adminBackupsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-backups.js');
@@ -1486,6 +1488,10 @@ $pageSections = [
                     <span><?= translate('rate_limit_usage_retention_days', $i18n) ?></span>
                     <strong><?= (int) $maintenanceRetentionSummary['rate_limit_usage_retention_days'] ?></strong>
                 </div>
+                <div class="backup-summary-card">
+                    <span><?= translate('maintenance_action_log_retention_days', $i18n) ?></span>
+                    <strong><?= (int) $maintenanceRetentionSummary['maintenance_action_log_retention_days'] ?></strong>
+                </div>
             </div>
             <div class="settings-notes">
                 <p>
@@ -1552,6 +1558,16 @@ $pageSections = [
             <div class="inline-row">
                 <input type="button" value="<?= translate('copy_maintenance_result', $i18n) ?>" class="secondary-button tiny mobile-grow"
                     onclick="copyAdminMaintenanceResult(this)">
+            </div>
+            <h3><?= translate('maintenance_action_logs', $i18n) ?></h3>
+            <div class="settings-notes">
+                <p>
+                    <i class="fa-solid fa-circle-info"></i>
+                    <?= translate('maintenance_action_logs_info', $i18n) ?>
+                </p>
+            </div>
+            <div id="adminMaintenanceActionLogs" class="maintenance-action-log-grid"
+                data-maintenance-action-logs="<?= htmlspecialchars($maintenanceActionLogsJson ?: '[]', ENT_QUOTES, 'UTF-8') ?>">
             </div>
             <div id="adminSubscriptionImageAuditSummary" class="subscription-image-audit-summary is-empty">
                 <p>

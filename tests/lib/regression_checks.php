@@ -446,10 +446,16 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
 
     $systemMaintenancePhp = wallos_regression_read_repo_file($config, 'includes/system_maintenance.php');
     $systemMaintenanceEndpoint = wallos_regression_read_repo_file($config, 'endpoints/admin/systemmaintenance.php');
+    $securityMaintenancePhp = wallos_regression_read_repo_file($config, 'includes/security_maintenance.php');
+    $maintenanceActionMigration = wallos_regression_read_repo_file($config, 'migrations/000074.php');
     $maintenanceValid = wallos_regression_text_has_all($systemMaintenancePhp, array(
         'wallos_audit_subscription_image_storage',
         'wallos_collect_subscription_image_variant_health',
         'wallos_extract_subscription_image_user_id_from_path',
+        'wallos_record_maintenance_action',
+        'wallos_get_recent_maintenance_actions',
+        'wallos_summarize_maintenance_action_result',
+        'wallos_maintenance_action_logs_table_exists',
         'user_issue_summary',
         "'generated_at' => date('Y-m-d H:i:s')",
         'oversized_variant_rows',
@@ -472,14 +478,27 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'daily_average_rows',
         'oldest_at',
         'latest_at',
+        'maintenance_action_logs',
+        'idx_maintenance_action_logs_created_id',
         'maintenance_recommendation_orphan_images_title',
         'WALLOS_REQUEST_LOG_RETENTION_DAYS',
+        'WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS',
         'VACUUM',
         'ANALYZE',
+    )) && wallos_regression_text_has_all($securityMaintenancePhp, array(
+        'WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS',
+        'define(\'WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS\', 90)',
+    )) && wallos_regression_text_has_all($maintenanceActionMigration, array(
+        'CREATE TABLE IF NOT EXISTS maintenance_action_logs',
+        'idx_maintenance_action_logs_created_id',
+        'idx_maintenance_action_logs_action_created',
     )) && wallos_regression_text_has_all($subscriptionMediaPhp, array(
         'wallos_reuse_oversized_subscription_image_variants',
         'wallos_subscription_image_path_is_referenced',
     )) && wallos_regression_text_has_all($systemMaintenanceEndpoint, array(
+        'wallos_emit_system_maintenance_response',
+        'maintenance_action_logs',
+        'wallos_record_maintenance_action',
         'get_system_overview',
         'system_overview',
         'runtime_observability.php',
@@ -508,6 +527,9 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'check_sqlite_indexes',
         'adminMaintenanceResult',
         'copy_maintenance_result',
+        'maintenance_action_logs',
+        'adminMaintenanceActionLogs',
+        'maintenance_action_log_retention_days',
     )) && wallos_regression_text_has_all($adminJs, array(
         'runAdminMaintenanceAction',
         'renderAdminSystemOverview',
@@ -521,6 +543,10 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'renderAdminMaintenanceRecommendations',
         'maintenance_recommendations_generated_at',
         'formatAdminMaintenanceRecommendations',
+        'renderAdminMaintenanceActionLogs',
+        'initializeAdminMaintenanceActionLogs',
+        'maintenance_action_get_storage_usage',
+        'maintenance_action_logs',
         'executeAdminMaintenanceRecommendation',
         'exportAdminSubscriptionImageAuditCsv',
         'formatAdminOrphanCleanupResult',
@@ -542,12 +568,15 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         '.system-overview-card',
         '.maintenance-recommendation-grid',
         '.maintenance-recommendation-card',
+        '.maintenance-action-log-grid',
+        '.maintenance-action-log-card',
         '.subscription-image-audit-summary',
         '.subscription-image-audit-card',
     )) && wallos_regression_text_has_all($dynamicWallpaperCss, array(
         '.system-overview-panel',
         '.system-overview-card',
         '.maintenance-recommendation-card',
+        '.maintenance-action-log-card',
         '.subscription-image-audit-card',
     ));
     $results[] = wallos_regression_make_result(

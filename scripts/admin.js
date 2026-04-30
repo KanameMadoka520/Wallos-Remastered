@@ -393,6 +393,64 @@ function formatAdminMaintenanceRecommendations(summary) {
   return lines.join("\n");
 }
 
+function getAdminMaintenanceActionLabel(action) {
+  const normalizedAction = String(action || "");
+  const labels = {
+    get_system_overview: adminTranslateWithFallback("maintenance_action_get_system_overview", "Refresh System Overview"),
+    get_storage_usage: adminTranslateWithFallback("maintenance_action_get_storage_usage", "Refresh Storage Usage"),
+    get_maintenance_recommendations: adminTranslateWithFallback("maintenance_action_get_maintenance_recommendations", "Refresh Maintenance Recommendations"),
+    scan_subscription_images: adminTranslateWithFallback("scan_subscription_images", "Scan Subscription Images"),
+    reuse_oversized_subscription_image_variants: adminTranslateWithFallback("reuse_oversized_subscription_image_variants", "Reuse Oversized Variants"),
+    cleanup_subscription_image_orphans: adminTranslateWithFallback("cleanup_subscription_image_orphans", "Clean Orphan Images"),
+    run_sqlite_maintenance: adminTranslateWithFallback("run_sqlite_maintenance", "Run SQLite Maintenance"),
+    check_sqlite_indexes: adminTranslateWithFallback("check_sqlite_indexes", "Check SQLite Indexes"),
+  };
+
+  return labels[normalizedAction] || normalizedAction || "-";
+}
+
+function renderAdminMaintenanceActionLogs(logs) {
+  const container = document.getElementById("adminMaintenanceActionLogs");
+  if (!container) {
+    return;
+  }
+
+  const items = Array.isArray(logs) ? logs : [];
+  if (items.length === 0) {
+    container.innerHTML = `
+      <article class="maintenance-action-log-card is-empty">
+        <div class="runtime-anomaly-card-header">
+          <span class="maintenance-recommendation-badge">${escapeAdminHtml(adminTranslateWithFallback("maintenance_action_log_empty_status", "Empty"))}</span>
+          <strong>${escapeAdminHtml(adminTranslateWithFallback("maintenance_action_log_empty", "No maintenance actions recorded yet."))}</strong>
+        </div>
+      </article>
+    `;
+    return;
+  }
+
+  container.innerHTML = items.map((item) => {
+    const success = item?.success === true || item?.success === 1 || item?.success === "1";
+    const statusKey = success ? "maintenance_action_success" : "maintenance_action_failed";
+    const statusFallback = success ? "Success" : "Failed";
+    const statusClass = success ? "success" : "failed";
+    const summary = String(item?.summary || "");
+    return `
+      <article class="maintenance-action-log-card status-${statusClass}">
+        <div class="runtime-anomaly-card-header">
+          <span class="maintenance-recommendation-badge">${escapeAdminHtml(adminTranslateWithFallback(statusKey, statusFallback))}</span>
+          <strong>${escapeAdminHtml(getAdminMaintenanceActionLabel(item?.action))}</strong>
+        </div>
+        <div class="maintenance-action-log-meta">
+          <span><i class="fa-regular fa-clock"></i>${escapeAdminHtml(item?.created_at || "-")}</span>
+          <span><i class="fa-solid fa-stopwatch"></i>${escapeAdminHtml(formatAdminNumber(item?.duration_ms ?? 0))} ms</span>
+          <span><i class="fa-solid fa-user-shield"></i>#${escapeAdminHtml(item?.admin_user_id ?? 0)}</span>
+        </div>
+        ${summary.trim() !== "" ? `<p>${escapeAdminHtml(summary)}</p>` : ""}
+      </article>
+    `;
+  }).join("");
+}
+
 function executeAdminMaintenanceRecommendation(action, button) {
   const normalizedAction = String(action || "");
   if (normalizedAction === "open_slow_requests") {
@@ -650,9 +708,23 @@ function initializeAdminMaintenanceRecommendations() {
   }
 }
 
+function initializeAdminMaintenanceActionLogs() {
+  const container = document.getElementById("adminMaintenanceActionLogs");
+  if (!container?.dataset.maintenanceActionLogs) {
+    return;
+  }
+
+  try {
+    renderAdminMaintenanceActionLogs(JSON.parse(container.dataset.maintenanceActionLogs));
+  } catch (error) {
+    console.warn("Unable to render maintenance action logs:", error);
+  }
+}
+
 function initializeAdminMaintenancePanels() {
   initializeAdminMaintenanceStorageSummary();
   initializeAdminMaintenanceRecommendations();
+  initializeAdminMaintenanceActionLogs();
 }
 
 function testSmtpSettingsButton() {
@@ -1346,6 +1418,9 @@ function runAdminMaintenanceAction(action, button) {
       }
       if (data.system_overview) {
         renderAdminSystemOverview(data.system_overview);
+      }
+      if (data.maintenance_action_logs) {
+        renderAdminMaintenanceActionLogs(data.maintenance_action_logs);
       }
       if (data.audit) {
         latestAdminSubscriptionImageAudit = data.audit;
