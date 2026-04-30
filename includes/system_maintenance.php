@@ -777,6 +777,21 @@ function wallos_get_maintenance_recommendation_summary($db, $basePath, $i18n = n
         );
     }
 
+    $slowMaintenanceActions24h = (int) ($maintenanceActionSummary['recent_slow_rows'] ?? 0);
+    if ($slowMaintenanceActions24h > 0) {
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            'watch',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_slow_actions_title', 'Slow maintenance actions detected'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_slow_actions_message', 'Some administrator-triggered maintenance actions exceeded the slow-action threshold. Review duration before repeating them during active usage.'),
+            [
+                wallos_maintenance_translate($i18n, 'maintenance_action_recent_slow', 'Recent Slow Actions') . ': ' . number_format($slowMaintenanceActions24h),
+                wallos_maintenance_translate($i18n, 'maintenance_action_slow_threshold', 'Slow Threshold') . ': ' . number_format(WALLOS_MAINTENANCE_ACTION_SLOW_MS) . ' ms',
+            ],
+            'open_slow_maintenance_actions',
+            wallos_maintenance_translate($i18n, 'open_slow_maintenance_actions', 'Open Slow Maintenance Actions')
+        );
+    }
+
     foreach (($storage['directories'] ?? []) as $key => $directory) {
         $scanErrors = (int) ($directory['scan_errors'] ?? 0);
         if ($scanErrors <= 0) {
