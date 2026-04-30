@@ -326,6 +326,20 @@ try {
     }, null, { timeout: 30000 });
   });
 
+  await step("maintenance action logs refresh and export controls render", async () => {
+    await expectVisible("#adminMaintenanceActionLogs", "maintenance action logs");
+    await page.locator("#refreshMaintenanceActionLogsButton").click();
+    await waitForButtonEnabled("#refreshMaintenanceActionLogsButton");
+    await page.waitForFunction(() => {
+      const panel = document.getElementById("adminMaintenanceActionLogs");
+      const exportButton = document.querySelector('input[onclick="exportAdminMaintenanceActionLogsCsv()"]');
+      return !!panel
+        && !!panel.querySelector(".maintenance-action-log-card")
+        && !!exportButton
+        && typeof window.exportAdminMaintenanceActionLogsCsv === "function";
+    }, null, { timeout: 15000 });
+  });
+
   await step("service worker cache refresh request updates observability marker", async () => {
     const beforeText = (await page.locator("[data-observability-cache-refresh]").textContent())?.trim() || "";
     await page.waitForTimeout(1200);
