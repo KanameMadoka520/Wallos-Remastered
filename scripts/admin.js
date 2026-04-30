@@ -559,13 +559,20 @@ function renderAdminMaintenanceActionLogs(logs) {
 }
 
 function exportAdminMaintenanceActionLogsCsv() {
-  const items = Array.isArray(latestAdminMaintenanceActionLogs) ? latestAdminMaintenanceActionLogs : [];
+  const allItems = Array.isArray(latestAdminMaintenanceActionLogs) ? latestAdminMaintenanceActionLogs : [];
+  const items = getFilteredAdminMaintenanceActionLogs(allItems);
   if (items.length === 0) {
     showErrorMessage(adminTranslateWithFallback("maintenance_action_logs_export_empty", "No maintenance action logs to export."));
     return;
   }
 
-  const rows = [[
+  const rows = [
+    ["meta", "generated_at", new Date().toISOString()],
+    ["meta", "active_filter", getAdminMaintenanceActionLogFilterLabel(latestAdminMaintenanceActionLogFilter)],
+    ["meta", "exported_rows", items.length],
+    ["meta", "available_rows", allItems.length],
+    [],
+    [
     "id",
     "created_at",
     "admin_user_id",
@@ -574,7 +581,8 @@ function exportAdminMaintenanceActionLogsCsv() {
     "success",
     "duration_ms",
     "summary",
-  ]];
+    ],
+  ];
 
   items.forEach((item) => {
     rows.push([

@@ -565,6 +565,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'initializeAdminMaintenanceActionSummary',
         'exportAdminMaintenanceActionLogsCsv',
         'wallos-maintenance-actions',
+        'active_filter',
+        'available_rows',
         'maintenance_action_get_storage_usage',
         'maintenance_action_get_maintenance_action_logs',
         'maintenance_action_logs',
