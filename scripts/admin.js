@@ -1340,6 +1340,20 @@ function createRuntimeSlowRequestCard(item, ui) {
   return card;
 }
 
+function openAdminSlowEndpointLogs(source) {
+  const ui = document.getElementById("admin-runtime-observability-ui");
+  const method = String(source?.dataset?.slowEndpointMethod ?? source?.method ?? "").trim();
+  const path = String(source?.dataset?.slowEndpointPath ?? source?.path ?? "").trim();
+  const threshold = ui?.dataset.slowRequestThreshold || "1500";
+
+  window.WallosAdminAccessLogs?.openAccessLogsModal?.({
+    method: method !== "-" ? method : "",
+    keyword: path !== "-" ? path : "",
+    min_duration_ms: threshold,
+    limit: "100",
+  });
+}
+
 function createRuntimeSlowEndpointCard(item, ui) {
   const card = document.createElement("article");
   card.className = "runtime-anomaly-card runtime-slow-endpoint-card";
@@ -1369,7 +1383,18 @@ function createRuntimeSlowEndpointCard(item, ui) {
   const meta = document.createElement("small");
   meta.textContent = `${ui?.dataset.lastSeenLabel || "Last Seen"}: ${String(item?.last_seen_at_display || item?.last_seen_at || "-")}`;
 
-  card.append(header, message, meta);
+  const actions = document.createElement("div");
+  actions.className = "runtime-slow-endpoint-actions";
+  const openLogsButton = document.createElement("button");
+  openLogsButton.type = "button";
+  openLogsButton.className = "secondary-button tiny";
+  openLogsButton.textContent = ui?.dataset.slowEndpointLogsLabel || "Open Endpoint Logs";
+  openLogsButton.dataset.slowEndpointMethod = String(item?.method || "");
+  openLogsButton.dataset.slowEndpointPath = String(item?.path || "");
+  openLogsButton.addEventListener("click", () => openAdminSlowEndpointLogs(openLogsButton));
+  actions.appendChild(openLogsButton);
+
+  card.append(header, message, meta, actions);
   return card;
 }
 

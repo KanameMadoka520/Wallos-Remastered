@@ -871,6 +871,7 @@ $i18n = [
     "top_slow_endpoints_info" => "按请求方法和路径汇总最近 24 小时慢请求，便于直接定位变慢的接口。",
     "no_slow_endpoints" => "最近 24 小时没有检测到慢接口。",
     "slow_endpoint_count" => "次数",
+    "open_slow_endpoint_logs" => "查看该接口日志",
     "avg_duration_ms" => "平均耗时",
     "max_duration_ms" => "最大耗时",
     "failure_count" => "失败次数",

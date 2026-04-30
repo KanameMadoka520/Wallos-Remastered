@@ -306,6 +306,8 @@ $pageSections = [
         data-slow-request-label="<?= htmlspecialchars(translate('slow_request', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-top-slow-endpoints-empty-label="<?= htmlspecialchars(translate('no_slow_endpoints', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-slow-endpoint-count-label="<?= htmlspecialchars(translate('slow_endpoint_count', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-slow-endpoint-logs-label="<?= htmlspecialchars(translate('open_slow_endpoint_logs', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-slow-request-threshold="<?= (int) WALLOS_SLOW_REQUEST_THRESHOLD_MS ?>"
         data-avg-duration-label="<?= htmlspecialchars(translate('avg_duration_ms', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-max-duration-label="<?= htmlspecialchars(translate('max_duration_ms', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-failure-count-label="<?= htmlspecialchars(translate('failure_count', $i18n), ENT_QUOTES, 'UTF-8') ?>"
@@ -1238,6 +1240,14 @@ $pageSections = [
                                     <?= translate('last_seen_at', $i18n) ?>:
                                     <?= htmlspecialchars(wallos_format_observability_timestamp($group['last_seen_at'] ?? '', $backupTimezone), ENT_QUOTES, 'UTF-8') ?>
                                 </small>
+                                <div class="runtime-slow-endpoint-actions">
+                                    <button type="button" class="secondary-button tiny"
+                                        data-slow-endpoint-method="<?= htmlspecialchars((string) ($group['method'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-slow-endpoint-path="<?= htmlspecialchars((string) ($group['path'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        onClick="openAdminSlowEndpointLogs(this)">
+                                        <?= translate('open_slow_endpoint_logs', $i18n) ?>
+                                    </button>
+                                </div>
                             </article>
                         <?php endforeach; ?>
                     <?php endif; ?>
