@@ -897,6 +897,7 @@ $i18n = [
     "system_overview_log_growth" => "日志增长",
     "system_overview_maintenance_actions" => "维护动作",
     "system_overview_maintenance_actions_detail" => "最近 24 小时动作 / 保留天数",
+    "system_overview_maintenance_action_failures" => "最近失败",
     "recent_anomaly_feed" => "最新异常流",
     "recent_anomaly_type_breakdown" => "最近异常类型分布",
     "service_worker_last_refresh_request" => "最近客户端缓存刷新提示",

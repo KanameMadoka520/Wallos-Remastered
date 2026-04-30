@@ -874,6 +874,7 @@ $i18n = [
     "system_overview_log_growth" => "Log Growth",
     "system_overview_maintenance_actions" => "Maintenance Actions",
     "system_overview_maintenance_actions_detail" => "Last 24h actions / retention days",
+    "system_overview_maintenance_action_failures" => "Recent failures",
     "recent_anomaly_feed" => "Recent Anomaly Feed",
     "recent_anomaly_type_breakdown" => "Recent Anomaly Type Breakdown",
     "service_worker_last_refresh_request" => "Last Client Cache Refresh Notice",
