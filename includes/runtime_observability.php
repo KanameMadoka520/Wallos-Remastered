@@ -127,6 +127,48 @@ function wallos_get_recent_slow_request_logs($db, $limit = 6, $hours = 24, $thre
     return $items;
 }
 
+function wallos_get_top_slow_request_groups($db, $limit = 6, $hours = 24, $thresholdMs = WALLOS_SLOW_REQUEST_THRESHOLD_MS)
+{
+    if (!wallos_request_logs_has_runtime_columns($db)) {
+        return [];
+    }
+
+    $stmt = $db->prepare('
+        SELECT method,
+               path,
+               COUNT(*) AS total,
+               CAST(ROUND(AVG(duration_ms)) AS INTEGER) AS avg_duration_ms,
+               MAX(duration_ms) AS max_duration_ms,
+               SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) AS failure_count,
+               MAX(created_at) AS last_seen_at
+        FROM request_logs
+        WHERE duration_ms >= :threshold
+          AND created_at >= datetime(\'now\', :window)
+        GROUP BY method, path
+        ORDER BY total DESC, max_duration_ms DESC, path ASC
+        LIMIT :limit
+    ');
+    $stmt->bindValue(':threshold', max(1, (int) $thresholdMs), SQLITE3_INTEGER);
+    $stmt->bindValue(':window', '-' . max(1, (int) $hours) . ' hours', SQLITE3_TEXT);
+    $stmt->bindValue(':limit', max(1, min(20, (int) $limit)), SQLITE3_INTEGER);
+    $result = $stmt->execute();
+
+    $items = [];
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $items[] = [
+            'method' => (string) ($row['method'] ?? ''),
+            'path' => (string) ($row['path'] ?? ''),
+            'total' => (int) ($row['total'] ?? 0),
+            'avg_duration_ms' => (int) ($row['avg_duration_ms'] ?? 0),
+            'max_duration_ms' => (int) ($row['max_duration_ms'] ?? 0),
+            'failure_count' => (int) ($row['failure_count'] ?? 0),
+            'last_seen_at' => (string) ($row['last_seen_at'] ?? ''),
+        ];
+    }
+
+    return $items;
+}
+
 function wallos_count_security_anomalies($db, $hours = null)
 {
     if (!wallos_security_anomalies_table_exists($db)) {

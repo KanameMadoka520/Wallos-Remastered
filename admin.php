@@ -194,6 +194,7 @@ $securityAnomalyTypeCounts = $securityAnomaliesTableExists ? wallos_get_security
 $securityAnomalyTypeSummary = wallos_summarize_security_anomaly_type_counts($securityAnomalyTypeCounts);
 $recentSecurityAnomalies = $securityAnomaliesTableExists ? wallos_get_recent_security_anomalies($db, 6, 24) : [];
 $recentSlowRequests = wallos_get_recent_slow_request_logs($db, 6, 24);
+$topSlowRequestGroups = wallos_get_top_slow_request_groups($db, 6, 24);
 $adminCacheRefreshMarker = wallos_read_cache_refresh_marker(__DIR__);
 $adminCacheRefreshRequestedAt = trim((string) ($adminCacheRefreshMarker['token'] ?? '')) !== ''
     ? wallos_format_observability_timestamp($adminCacheRefreshMarker['requested_at'] ?? '', $backupTimezone)
@@ -302,6 +303,12 @@ $pageSections = [
         data-user-label="<?= htmlspecialchars(translate('username', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-path-label="<?= htmlspecialchars(translate('anomaly_path', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-slow-request-label="<?= htmlspecialchars(translate('slow_request', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-top-slow-endpoints-empty-label="<?= htmlspecialchars(translate('no_slow_endpoints', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-slow-endpoint-count-label="<?= htmlspecialchars(translate('slow_endpoint_count', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-avg-duration-label="<?= htmlspecialchars(translate('avg_duration_ms', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-max-duration-label="<?= htmlspecialchars(translate('max_duration_ms', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-failure-count-label="<?= htmlspecialchars(translate('failure_count', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+        data-last-seen-label="<?= htmlspecialchars(translate('last_seen_at', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-status-code-label="<?= htmlspecialchars(translate('status_code', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-time-label="<?= htmlspecialchars(translate('time', $i18n), ENT_QUOTES, 'UTF-8') ?>"
         data-cache-empty-label="<?= htmlspecialchars(translate('never_requested', $i18n), ENT_QUOTES, 'UTF-8') ?>"
@@ -1166,6 +1173,40 @@ $pageSections = [
                     <button type="button" class="button thin" id="refreshRuntimeObservabilityButton" onClick="refreshRuntimeObservabilityButton(this)">
                         <?= translate('refresh_runtime_observability', $i18n) ?>
                     </button>
+                </div>
+            </div>
+            <div class="runtime-slow-endpoints">
+                <div class="runtime-slow-endpoints-title">
+                    <h4><?= translate('top_slow_endpoints', $i18n) ?></h4>
+                    <p><?= translate('top_slow_endpoints_info', $i18n) ?></p>
+                </div>
+                <div class="runtime-slow-endpoint-grid" data-slow-endpoint-grid>
+                    <?php if (empty($topSlowRequestGroups)) : ?>
+                        <div class="settings-notes access-log-empty">
+                            <p><i class="fa-solid fa-circle-info"></i><?= translate('no_slow_endpoints', $i18n) ?></p>
+                        </div>
+                    <?php else : ?>
+                        <?php foreach ($topSlowRequestGroups as $group) : ?>
+                            <article class="runtime-anomaly-card runtime-slow-endpoint-card">
+                                <div class="runtime-anomaly-card-header">
+                                    <span class="access-log-id-badge"><?= htmlspecialchars((string) ($group['method'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <strong><?= htmlspecialchars((string) ($group['path'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong>
+                                    <span><?= translate('slow_endpoint_count', $i18n) ?>: <?= (int) ($group['total'] ?? 0) ?></span>
+                                </div>
+                                <p>
+                                    <?= translate('avg_duration_ms', $i18n) ?>: <?= (int) ($group['avg_duration_ms'] ?? 0) ?> ms
+                                    /
+                                    <?= translate('max_duration_ms', $i18n) ?>: <?= (int) ($group['max_duration_ms'] ?? 0) ?> ms
+                                    /
+                                    <?= translate('failure_count', $i18n) ?>: <?= (int) ($group['failure_count'] ?? 0) ?>
+                                </p>
+                                <small>
+                                    <?= translate('last_seen_at', $i18n) ?>:
+                                    <?= htmlspecialchars(wallos_format_observability_timestamp($group['last_seen_at'] ?? '', $backupTimezone), ENT_QUOTES, 'UTF-8') ?>
+                                </small>
+                            </article>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="runtime-observability-feed" data-observability-feed>

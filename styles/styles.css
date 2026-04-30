@@ -5765,6 +5765,40 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   flex-wrap: wrap;
 }
 
+.runtime-slow-endpoints {
+  margin-bottom: 16px;
+}
+
+.runtime-slow-endpoints-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.runtime-slow-endpoints-title h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.runtime-slow-endpoints-title p {
+  margin: 0;
+  opacity: 0.72;
+  line-height: 1.45;
+}
+
+.runtime-slow-endpoint-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.runtime-slow-endpoint-card .runtime-anomaly-card-header strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 .runtime-observability-feed {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -5891,6 +5925,14 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
 @media (max-width: 900px) {
   .runtime-observability-header {
     flex-direction: column;
+  }
+
+  .runtime-slow-endpoints-title {
+    display: block;
+  }
+
+  .runtime-slow-endpoints-title p {
+    margin-top: 6px;
   }
 
   .runtime-observability-actions {
