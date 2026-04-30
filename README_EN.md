@@ -229,6 +229,7 @@ The admin page includes a maintenance area for long-running deployments:
 
 - retention-policy visibility for request logs, security anomalies, and rate-limit usage
 - request-log duration/status/completion tracking, plus a 24-hour slow-request summary and filtered export fields
+- maintenance recommendations that summarize index health, SQLite free pages, orphan subscription images, log growth, slow requests, and backup-directory size into actionable cards
 - storage usage cards for the database, upload root, subscription media, and backup directory
 - log growth risk indicators for request logs, security anomalies, and rate-limit usage
 - subscription image storage audit for missing derived-image rows and orphan files

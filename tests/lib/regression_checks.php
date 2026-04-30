@@ -440,6 +440,9 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'wallos_run_sqlite_maintenance',
         'wallos_get_expected_sqlite_indexes',
         'wallos_check_sqlite_index_health',
+        'wallos_get_maintenance_recommendation_summary',
+        'wallos_count_maintenance_slow_requests',
+        'maintenance_recommendation_orphan_images_title',
         'WALLOS_REQUEST_LOG_RETENTION_DAYS',
         'VACUUM',
         'ANALYZE',
@@ -448,6 +451,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'wallos_subscription_image_path_is_referenced',
     )) && wallos_regression_text_has_all($systemMaintenanceEndpoint, array(
         'get_storage_usage',
+        'get_maintenance_recommendations',
+        'recommendations',
         'scan_subscription_images',
         'reuse_oversized_subscription_image_variants',
         'cleanup_subscription_image_orphans',
@@ -457,6 +462,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     )) && wallos_regression_text_has_all($adminPhp, array(
         'maintenance_retention_strategy',
         'adminMaintenanceStorageSummary',
+        'adminMaintenanceRecommendations',
+        'refresh_maintenance_recommendations',
         'export_subscription_image_audit',
         'reuse_oversized_subscription_image_variants',
         'cleanup_subscription_image_orphans',
@@ -465,12 +472,20 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     )) && wallos_regression_text_has_all($adminJs, array(
         'runAdminMaintenanceAction',
         'renderAdminMaintenanceStorageSummary',
+        'renderAdminMaintenanceRecommendations',
+        'formatAdminMaintenanceRecommendations',
+        'executeAdminMaintenanceRecommendation',
         'exportAdminSubscriptionImageAuditCsv',
         'formatAdminOrphanCleanupResult',
         'formatAdminSqliteMaintenanceResult',
         'formatAdminSqliteIndexHealthResult',
         'formatAdminOversizedVariantResult',
         'endpoints/admin/systemmaintenance.php',
+    )) && wallos_regression_text_has_all($stylesCss, array(
+        '.maintenance-recommendation-grid',
+        '.maintenance-recommendation-card',
+    )) && wallos_regression_text_has_all($dynamicWallpaperCss, array(
+        '.maintenance-recommendation-card',
     ));
     $results[] = wallos_regression_make_result(
         $maintenanceValid ? 'PASS' : 'FAIL',

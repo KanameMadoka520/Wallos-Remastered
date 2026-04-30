@@ -13,6 +13,16 @@ try {
             'success' => true,
             'message' => translate('storage_usage_refreshed', $i18n),
             'storage' => wallos_get_storage_usage_summary($db, __DIR__ . '/../..'),
+            'recommendations' => wallos_get_maintenance_recommendation_summary($db, __DIR__ . '/../..', $i18n),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    if ($action === 'get_maintenance_recommendations') {
+        echo json_encode([
+            'success' => true,
+            'message' => translate('maintenance_recommendations_refreshed', $i18n),
+            'recommendations' => wallos_get_maintenance_recommendation_summary($db, __DIR__ . '/../..', $i18n),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
@@ -22,6 +32,7 @@ try {
             'success' => true,
             'message' => translate('success', $i18n),
             'audit' => wallos_audit_subscription_image_storage($db, __DIR__ . '/../..'),
+            'recommendations' => wallos_get_maintenance_recommendation_summary($db, __DIR__ . '/../..', $i18n),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
@@ -32,6 +43,7 @@ try {
             'success' => true,
             'message' => translate('subscription_image_oversized_variants_reused', $i18n),
             'oversized_variant_result' => $result,
+            'recommendations' => wallos_get_maintenance_recommendation_summary($db, __DIR__ . '/../..', $i18n),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
@@ -43,6 +55,7 @@ try {
             'message' => translate('subscription_image_orphans_cleaned', $i18n),
             'orphan_cleanup_result' => $result,
             'audit' => $result['after'] ?? null,
+            'recommendations' => wallos_get_maintenance_recommendation_summary($db, __DIR__ . '/../..', $i18n),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
@@ -53,6 +66,7 @@ try {
             'success' => true,
             'message' => translate('sqlite_maintenance_completed', $i18n),
             'result' => $result,
+            'recommendations' => wallos_get_maintenance_recommendation_summary($db, __DIR__ . '/../..', $i18n),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
@@ -65,6 +79,7 @@ try {
                 ? translate('sqlite_index_health_ok', $i18n)
                 : translate('sqlite_index_health_problem', $i18n),
             'index_health' => $result,
+            'recommendations' => wallos_get_maintenance_recommendation_summary($db, __DIR__ . '/../..', $i18n),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
