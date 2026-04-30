@@ -675,6 +675,12 @@ function executeAdminMaintenanceRecommendation(action, button) {
     return;
   }
 
+  if (normalizedAction === "open_failed_maintenance_actions") {
+    setAdminMaintenanceActionLogFilter("failed");
+    document.getElementById("adminMaintenanceActionLogs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+
   if (normalizedAction !== "") {
     runAdminMaintenanceAction(normalizedAction, button);
   }

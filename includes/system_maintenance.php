@@ -666,6 +666,7 @@ function wallos_get_maintenance_recommendation_summary($db, $basePath, $i18n = n
     $imageAudit = wallos_audit_subscription_image_storage($db, $basePath);
     $indexHealth = wallos_check_sqlite_index_health($db);
     $slowRequests24h = wallos_count_maintenance_slow_requests($db, 24);
+    $maintenanceActionSummary = wallos_get_maintenance_action_log_summary($db, 24);
 
     $recommendations = [];
     $database = $storage['database'] ?? [];
@@ -758,6 +759,21 @@ function wallos_get_maintenance_recommendation_summary($db, $basePath, $i18n = n
             ],
             'open_slow_requests',
             wallos_maintenance_translate($i18n, 'open_slow_requests', 'Open Slow Requests')
+        );
+    }
+
+    $failedMaintenanceActions24h = (int) ($maintenanceActionSummary['recent_failed_rows'] ?? 0);
+    if ($failedMaintenanceActions24h > 0) {
+        $recommendations[] = wallos_build_maintenance_recommendation(
+            'watch',
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_failed_actions_title', 'Recent maintenance actions failed'),
+            wallos_maintenance_translate($i18n, 'maintenance_recommendation_failed_actions_message', 'One or more administrator-triggered maintenance actions failed recently. Open the maintenance action log and review the summaries before retrying.'),
+            [
+                wallos_maintenance_translate($i18n, 'maintenance_action_recent_failures', 'Recent Failures') . ': ' . number_format($failedMaintenanceActions24h),
+                wallos_maintenance_translate($i18n, 'maintenance_action_summary_window', 'Recent window') . ': 24h',
+            ],
+            'open_failed_maintenance_actions',
+            wallos_maintenance_translate($i18n, 'open_failed_maintenance_actions', 'Open Failed Maintenance Actions')
         );
     }
 
