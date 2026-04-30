@@ -170,6 +170,8 @@ body.dynamic-wallpaper-enabled .access-log-modal,
 body.dynamic-wallpaper-enabled .generated-password-modal,
 body.dynamic-wallpaper-enabled .access-log-card,
 body.dynamic-wallpaper-enabled .backup-summary-card,
+body.dynamic-wallpaper-enabled .backup-progress-card,
+body.dynamic-wallpaper-enabled .backup-card,
 body.dynamic-wallpaper-enabled .subscription-image-audit-summary.is-empty,
 body.dynamic-wallpaper-enabled .subscription-image-audit-card,
 body.dynamic-wallpaper-enabled .system-overview-panel,
@@ -190,9 +192,65 @@ body.dynamic-wallpaper-enabled .runtime-anomaly-card {
         inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
+body.dynamic-wallpaper-enabled .section-tab-button,
+body.dynamic-wallpaper-enabled .maintenance-action-log-filter-row .secondary-button,
+body.dynamic-wallpaper-enabled .maintenance-action-log-meta span,
+body.dynamic-wallpaper-enabled .maintenance-recommendation-badge,
+body.dynamic-wallpaper-enabled .backup-mode-badge.manual,
+body.dynamic-wallpaper-enabled .backup-progress-card-tone {
+    color: var(--wallos-dynamic-text-color);
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+body.dynamic-wallpaper-enabled .section-tab-button.is-active,
+body.dynamic-wallpaper-enabled .section-tab-button.is-active:hover,
+body.dynamic-wallpaper-enabled .maintenance-action-log-filter-row .secondary-button.is-active,
+body.dynamic-wallpaper-enabled .maintenance-action-log-filter-row .secondary-button.is-active:hover {
+    color: #ffffff;
+    background-color: rgba(var(--main-color-rgb), 0.28);
+    border-color: rgba(var(--main-color-rgb), 0.54);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        0 10px 22px rgba(0, 0, 0, 0.20);
+}
+
+body.dynamic-wallpaper-enabled .backup-summary-card strong,
+body.dynamic-wallpaper-enabled .subscription-image-audit-card strong,
+body.dynamic-wallpaper-enabled .system-overview-card strong,
+body.dynamic-wallpaper-enabled .runtime-anomaly-card-header strong {
+    color: var(--wallos-dynamic-text-color);
+}
+
 body.dynamic-wallpaper-enabled .maintenance-action-log-meta .maintenance-action-log-slow-badge {
     color: #ffd37d;
     background-color: rgba(226, 162, 58, 0.22);
+}
+
+body.dynamic-wallpaper-enabled .backup-progress-card.is-success .backup-progress-card-tone,
+body.dynamic-wallpaper-enabled .backup-mode-badge.auto,
+body.dynamic-wallpaper-enabled .backup-card-status.is-success {
+    color: #9cffcb;
+    border-color: rgba(156, 255, 203, 0.28);
+    background-color: rgba(35, 174, 111, 0.18);
+}
+
+body.dynamic-wallpaper-enabled .backup-card-status.is-warning {
+    color: #ffd37d;
+    border-color: rgba(255, 211, 125, 0.26);
+    background-color: rgba(226, 162, 58, 0.18);
+}
+
+body.dynamic-wallpaper-enabled .backup-progress-card.is-error .backup-progress-card-tone,
+body.dynamic-wallpaper-enabled .backup-card-status.is-error {
+    color: #ffb4ac;
+    border-color: rgba(255, 180, 172, 0.28);
+    background-color: rgba(224, 81, 81, 0.18);
+}
+
+body.dynamic-wallpaper-enabled .backup-progress-bar {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.14);
 }
 
 body.dark.dynamic-wallpaper-enabled .account-section,
@@ -234,6 +292,8 @@ body.dark.dynamic-wallpaper-enabled .access-log-modal,
 body.dark.dynamic-wallpaper-enabled .generated-password-modal,
 body.dark.dynamic-wallpaper-enabled .access-log-card,
 body.dark.dynamic-wallpaper-enabled .backup-summary-card,
+body.dark.dynamic-wallpaper-enabled .backup-progress-card,
+body.dark.dynamic-wallpaper-enabled .backup-card,
 body.dark.dynamic-wallpaper-enabled .subscription-image-audit-summary.is-empty,
 body.dark.dynamic-wallpaper-enabled .subscription-image-audit-card,
 body.dark.dynamic-wallpaper-enabled .system-overview-panel,
@@ -263,6 +323,9 @@ body.dynamic-wallpaper-enabled > .custom-edition-banner .contain {
 
 body.dynamic-wallpaper-enabled .button.secondary-button,
 body.dynamic-wallpaper-enabled button.button.secondary-button,
+body.dynamic-wallpaper-enabled button.secondary-button,
+body.dynamic-wallpaper-enabled a.button.secondary-button,
+body.dynamic-wallpaper-enabled a.secondary-button,
 body.dynamic-wallpaper-enabled input[type="button"].secondary-button,
 body.dynamic-wallpaper-enabled .media-layout-button,
 body.dynamic-wallpaper-enabled .dark-theme-button {
@@ -274,6 +337,9 @@ body.dynamic-wallpaper-enabled .dark-theme-button {
 
 body.dynamic-wallpaper-enabled .button.secondary-button:hover,
 body.dynamic-wallpaper-enabled button.button.secondary-button:hover,
+body.dynamic-wallpaper-enabled button.secondary-button:hover,
+body.dynamic-wallpaper-enabled a.button.secondary-button:hover,
+body.dynamic-wallpaper-enabled a.secondary-button:hover,
 body.dynamic-wallpaper-enabled input[type="button"].secondary-button:hover,
 body.dynamic-wallpaper-enabled .media-layout-button:hover,
 body.dynamic-wallpaper-enabled .dark-theme-button:hover {
