@@ -828,6 +828,18 @@ function isWallosAccountTrashedPayload(data) {
   );
 }
 
+function isWallosDatabaseBusyPayload(data) {
+  return Boolean(
+    data
+    && typeof data === "object"
+    && (
+      data.database_busy === true
+      || data.code === "database_busy"
+      || data.error === "database_busy"
+    )
+  );
+}
+
 function createWallosRequestError(message, context = {}) {
   const error = new Error(String(message || translate("unknown_error")));
   error.response = context.response || null;
@@ -841,6 +853,7 @@ function createWallosRequestError(message, context = {}) {
   error.csrfInvalid = isWallosCsrfFailurePayload(context.data);
   error.accountTrashed = isWallosAccountTrashedPayload(context.data);
   error.rateLimit = Boolean(context.data && typeof context.data === "object" && context.data.rate_limit === true);
+  error.databaseBusy = isWallosDatabaseBusyPayload(context.data);
   return error;
 }
 
@@ -856,6 +869,18 @@ function isWallosSessionFailureError(error) {
   }
 
   return isWallosSessionFailurePayload(error.data);
+}
+
+function isWallosDatabaseBusyError(error) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  if (error.databaseBusy === true) {
+    return true;
+  }
+
+  return isWallosDatabaseBusyPayload(error.data);
 }
 
 function dispatchWallosSessionFailure(error) {
@@ -981,7 +1006,7 @@ function maybeLogWallosRequestFailure(url, method, error) {
     return;
   }
 
-  if (error.sessionExpired || error.rateLimit || error.accountTrashed) {
+  if (error.sessionExpired || error.rateLimit || error.accountTrashed || error.databaseBusy) {
     return;
   }
 
@@ -1204,6 +1229,8 @@ window.WallosHttp = {
   handleSessionFailure: handleWallosSessionFailure,
   isCsrfFailurePayload: isWallosCsrfFailurePayload,
   isCsrfFailureError: isWallosCsrfFailureError,
+  isDatabaseBusyPayload: isWallosDatabaseBusyPayload,
+  isDatabaseBusyError: isWallosDatabaseBusyError,
   showCsrfTokenRefreshReminder,
 };
 

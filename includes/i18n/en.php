@@ -671,6 +671,7 @@ $i18n = [
     "fill_all_fields" => "Please fill all fields",
     "fill_mandatory_fields" => "Please fill all mandatory fields",
     "error" => "Error",
+    "database_busy_retry" => "The database is busy processing another write. Please wait a few seconds and try again.",
     // Category
     "failed_add_category" => "Failed to add category",
     "failed_edit_category" => "Failed to edit category",

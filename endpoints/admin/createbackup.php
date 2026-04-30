@@ -80,6 +80,7 @@ try {
         'operationId' => $operationId,
     ]);
 } catch (Throwable $throwable) {
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
     wallos_write_backup_progress_status(
         $operationId,
         wallos_build_backup_progress_payload($lang, 'failed', 100, 'error'),

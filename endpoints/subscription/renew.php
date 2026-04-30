@@ -89,6 +89,7 @@ try {
     ];
     echo json_encode($response);
 } catch (Throwable $throwable) {
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
     $db->exec('ROLLBACK');
     die(json_encode([
         "success" => false,

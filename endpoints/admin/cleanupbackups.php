@@ -13,6 +13,7 @@ try {
         'deletedCount' => (int) $result['deleted_count'],
     ]);
 } catch (Throwable $throwable) {
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
     http_response_code(500);
     echo json_encode([
         'success' => false,

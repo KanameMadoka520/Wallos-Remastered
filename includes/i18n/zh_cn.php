@@ -676,6 +676,7 @@ $i18n = [
     "fill_all_fields" => "请填写所有字段",
     "fill_mandatory_fields" => "请填写所有必填字段",
     "error" => "错误",
+    "database_busy_retry" => "数据库正在处理其他写入，请等待几秒后重试。",
 
     // Category
     "failed_add_category" => "添加分类失败",

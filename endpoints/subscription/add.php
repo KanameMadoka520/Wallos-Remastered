@@ -571,6 +571,7 @@ try {
     echo json_encode($success);
     exit();
 } catch (Throwable $throwable) {
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
     $db->exec('ROLLBACK');
 
     foreach ($storedUploadedImages as $storedImage) {

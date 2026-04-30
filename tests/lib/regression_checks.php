@@ -234,6 +234,40 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected common/api/subscription scripts and subscriptionpages.php to keep invalid CSRF refresh reminder hooks.'
     );
 
+    $databaseErrorsPhp = wallos_regression_read_repo_file($config, 'includes/database_errors.php');
+    $connectEndpointPhp = wallos_regression_read_repo_file($config, 'includes/connect_endpoint.php');
+    $subscriptionAddEndpoint = wallos_regression_read_repo_file($config, 'endpoints/subscription/add.php');
+    $databaseBusyValid = wallos_regression_text_has_all($databaseErrorsPhp, array(
+        'wallos_database_message_is_busy',
+        'wallos_database_build_busy_payload',
+        "'code' => 'database_busy'",
+        "'database_busy' => true",
+        'Retry-After',
+        'wallos_database_register_endpoint_exception_handler',
+    )) && wallos_regression_text_has_all($connectEndpointPhp, array(
+        "require_once __DIR__ . '/database_errors.php';",
+        'wallos_database_register_endpoint_exception_handler($i18n);',
+    )) && wallos_regression_text_has_all($commonJs, array(
+        'isWallosDatabaseBusyPayload',
+        'databaseBusy',
+        'isDatabaseBusyPayload',
+    )) && wallos_regression_text_has_all($apiJs, array(
+        'isDatabaseBusyPayload',
+        'isDatabaseBusyError',
+    )) && wallos_regression_text_has_all($subscriptionPagesEndpoint, array(
+        'wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);',
+    )) && wallos_regression_text_has_all($subscriptionAddEndpoint, array(
+        'wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);',
+    ));
+    $results[] = wallos_regression_make_result(
+        $databaseBusyValid ? 'PASS' : 'FAIL',
+        'static',
+        'database-busy-contract',
+        $databaseBusyValid
+            ? 'SQLite busy/locked errors keep the standardized database_busy JSON contract and frontend detection.'
+            : 'Expected database busy helper, endpoint exception wiring, caught-endpoint guard, and frontend database_busy detection.'
+    );
+
     $csrfPhp = wallos_regression_read_repo_file($config, 'libs/csrf.php');
     $footerPhp = wallos_regression_read_repo_file($config, 'includes/footer.php');
     $dynamicWallpaperCss = wallos_regression_read_repo_file($config, 'styles/dynamic-wallpaper.css');

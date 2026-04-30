@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/connect.php';
+require_once __DIR__ . '/database_errors.php';
 require_once __DIR__ . '/request_security.php';
 require_once __DIR__ . '/auth_session.php';
 require_once 'i18n/languages.php';
@@ -9,6 +10,7 @@ require_once 'request_logs.php';
 require_once 'security_rate_limits.php';
 
 wallos_prepare_api_request_credentials();
+wallos_database_register_endpoint_exception_handler($i18n);
 
 wallos_auth_start_session();
 

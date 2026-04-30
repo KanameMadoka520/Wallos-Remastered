@@ -114,6 +114,7 @@ let i18n = {
   no_file_selected: "No file selected",
   error: "Error",
   unknown_error: "Unknown error, please try again.",
+  database_busy_retry: "The database is busy processing another write. Please wait a few seconds and try again.",
   error_saving_notification_data: "Error saving notification data",
   error_sending_notification: "Error sending notification",
   delete_account_confirmation: "Are you sure you want to delete your account?",

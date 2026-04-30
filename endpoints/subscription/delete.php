@@ -15,6 +15,7 @@ try {
         "message" => translate('subscription_moved_to_recycle_bin', $i18n)
     ]);
 } catch (Throwable $throwable) {
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
     echo json_encode([
         "success" => false,
         "message" => translate('error_deleting_subscription', $i18n)

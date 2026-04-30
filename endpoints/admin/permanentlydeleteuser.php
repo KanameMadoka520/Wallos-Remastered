@@ -31,6 +31,7 @@ if ($targetUser === false || !wallos_is_user_trashed($targetUser['account_status
 try {
     wallos_delete_user_data($db, $targetUserId, __DIR__ . '/../../');
 } catch (Throwable $throwable) {
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
     die(json_encode([
         'success' => false,
         'message' => translate('error', $i18n)
