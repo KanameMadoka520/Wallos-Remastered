@@ -953,6 +953,10 @@ function wallos_audit_subscription_image_storage($db, $basePath)
 
         return $rightScore <=> $leftScore;
     });
+    $largestOrphanDetails = $orphanDetails;
+    usort($largestOrphanDetails, static function ($left, $right) {
+        return (int) ($right['size_bytes'] ?? 0) <=> (int) ($left['size_bytes'] ?? 0);
+    });
 
     return [
         'generated_at' => date('Y-m-d H:i:s'),
@@ -965,6 +969,7 @@ function wallos_audit_subscription_image_storage($db, $basePath)
         'missing_variant_rows' => (int) $index['missing_variant_rows'],
         'orphan_samples' => array_slice($orphanFiles, 0, 10),
         'orphan_details' => $orphanDetails,
+        'orphan_largest_samples' => array_slice($largestOrphanDetails, 0, 10),
         'user_issue_summary' => $userIssueSummary,
     ] + $variantHealth;
 }
