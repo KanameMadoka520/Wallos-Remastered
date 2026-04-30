@@ -175,6 +175,7 @@ body.dynamic-wallpaper-enabled .subscription-image-audit-card,
 body.dynamic-wallpaper-enabled .system-overview-panel,
 body.dynamic-wallpaper-enabled .system-overview-card,
 body.dynamic-wallpaper-enabled .maintenance-recommendation-card,
+body.dynamic-wallpaper-enabled .maintenance-action-log-card,
 body.dynamic-wallpaper-enabled .runtime-observability-panel,
 body.dynamic-wallpaper-enabled .runtime-anomaly-card {
     --text-color: var(--wallos-dynamic-text-color);
@@ -233,6 +234,7 @@ body.dark.dynamic-wallpaper-enabled .subscription-image-audit-card,
 body.dark.dynamic-wallpaper-enabled .system-overview-panel,
 body.dark.dynamic-wallpaper-enabled .system-overview-card,
 body.dark.dynamic-wallpaper-enabled .maintenance-recommendation-card,
+body.dark.dynamic-wallpaper-enabled .maintenance-action-log-card,
 body.dark.dynamic-wallpaper-enabled .runtime-observability-panel,
 body.dark.dynamic-wallpaper-enabled .runtime-anomaly-card {
     background-color: rgba(14, 18, 24, 0.88);

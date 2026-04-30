@@ -40,6 +40,153 @@ function wallos_maintenance_count_table_rows($db, $tableName)
     return (int) $db->querySingle('SELECT COUNT(*) AS total FROM ' . $tableName);
 }
 
+function wallos_maintenance_action_logs_table_exists($db)
+{
+    return wallos_maintenance_table_has_columns($db, 'maintenance_action_logs', [
+        'id',
+        'admin_user_id',
+        'action',
+        'success',
+        'duration_ms',
+        'summary',
+        'created_at',
+    ]);
+}
+
+function wallos_prune_maintenance_action_logs($db)
+{
+    if (!wallos_maintenance_action_logs_table_exists($db)) {
+        return;
+    }
+
+    $stmt = $db->prepare("DELETE FROM maintenance_action_logs WHERE created_at <= datetime('now', :window)");
+    if (!$stmt) {
+        return;
+    }
+
+    $stmt->bindValue(':window', '-' . WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS . ' days', SQLITE3_TEXT);
+    @$stmt->execute();
+}
+
+function wallos_summarize_maintenance_action_result($action, array $payload)
+{
+    $action = (string) $action;
+    if (isset($payload['message']) && trim((string) $payload['message']) !== '') {
+        $baseMessage = trim((string) $payload['message']);
+    } else {
+        $baseMessage = $action;
+    }
+
+    if ($action === 'scan_subscription_images' && isset($payload['audit']) && is_array($payload['audit'])) {
+        $audit = $payload['audit'];
+        return $baseMessage
+            . ' | orphan=' . number_format((int) ($audit['orphan_files'] ?? 0))
+            . ' | missing_variants=' . number_format((int) ($audit['missing_variant_rows'] ?? 0))
+            . ' | reclaimable=' . (string) ($audit['reclaimable_size_estimate_label'] ?? '-');
+    }
+
+    if ($action === 'cleanup_subscription_image_orphans' && isset($payload['orphan_cleanup_result']) && is_array($payload['orphan_cleanup_result'])) {
+        $result = $payload['orphan_cleanup_result'];
+        return $baseMessage
+            . ' | deleted=' . number_format((int) ($result['deleted_files'] ?? 0))
+            . ' | failed=' . number_format((int) ($result['failed_files'] ?? 0))
+            . ' | size=' . (string) ($result['deleted_size_label'] ?? '-');
+    }
+
+    if ($action === 'reuse_oversized_subscription_image_variants' && isset($payload['oversized_variant_result']) && is_array($payload['oversized_variant_result'])) {
+        $result = $payload['oversized_variant_result'];
+        return $baseMessage
+            . ' | checked=' . number_format((int) ($result['checked_rows'] ?? 0))
+            . ' | updated=' . number_format((int) ($result['updated_rows'] ?? 0))
+            . ' | reused=' . number_format((int) ($result['reused_variants'] ?? 0));
+    }
+
+    if ($action === 'run_sqlite_maintenance' && isset($payload['result']) && is_array($payload['result'])) {
+        $result = $payload['result'];
+        return $baseMessage
+            . ' | before=' . (string) ($result['before']['size_label'] ?? '-')
+            . ' | after=' . (string) ($result['after']['size_label'] ?? '-')
+            . ' | duration=' . number_format((int) ($result['duration_ms'] ?? 0)) . ' ms';
+    }
+
+    if ($action === 'check_sqlite_indexes' && isset($payload['index_health']) && is_array($payload['index_health'])) {
+        $result = $payload['index_health'];
+        return $baseMessage
+            . ' | missing=' . number_format((int) ($result['missing_indexes'] ?? 0))
+            . ' | invalid=' . number_format((int) ($result['invalid_indexes'] ?? 0));
+    }
+
+    if ($action === 'get_storage_usage' && isset($payload['storage']) && is_array($payload['storage'])) {
+        $storage = $payload['storage'];
+        return $baseMessage
+            . ' | db=' . (string) ($storage['database']['size_label'] ?? '-')
+            . ' | subscription_media=' . (string) ($storage['directories']['subscription_media']['size_label'] ?? '-');
+    }
+
+    return $baseMessage;
+}
+
+function wallos_record_maintenance_action($db, $action, $success, $durationMs, $summary = '', $adminUserId = 0)
+{
+    if (!wallos_maintenance_action_logs_table_exists($db)) {
+        return false;
+    }
+
+    wallos_prune_maintenance_action_logs($db);
+
+    $stmt = $db->prepare('
+        INSERT INTO maintenance_action_logs (admin_user_id, action, success, duration_ms, summary, created_at)
+        VALUES (:admin_user_id, :action, :success, :duration_ms, :summary, :created_at)
+    ');
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bindValue(':admin_user_id', max(0, (int) $adminUserId), SQLITE3_INTEGER);
+    $stmt->bindValue(':action', substr((string) $action, 0, 96), SQLITE3_TEXT);
+    $stmt->bindValue(':success', !empty($success) ? 1 : 0, SQLITE3_INTEGER);
+    $stmt->bindValue(':duration_ms', max(0, (int) $durationMs), SQLITE3_INTEGER);
+    $stmt->bindValue(':summary', substr((string) $summary, 0, 1000), SQLITE3_TEXT);
+    $stmt->bindValue(':created_at', date('Y-m-d H:i:s'), SQLITE3_TEXT);
+
+    return @$stmt->execute() !== false;
+}
+
+function wallos_get_recent_maintenance_actions($db, $limit = 12)
+{
+    if (!wallos_maintenance_action_logs_table_exists($db)) {
+        return [];
+    }
+
+    $limit = min(50, max(1, (int) $limit));
+    $stmt = $db->prepare('
+        SELECT id, admin_user_id, action, success, duration_ms, summary, created_at
+        FROM maintenance_action_logs
+        ORDER BY created_at DESC, id DESC
+        LIMIT :limit
+    ');
+    if (!$stmt) {
+        return [];
+    }
+
+    $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $items = [];
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $items[] = [
+            'id' => (int) ($row['id'] ?? 0),
+            'admin_user_id' => (int) ($row['admin_user_id'] ?? 0),
+            'action' => (string) ($row['action'] ?? ''),
+            'success' => (int) ($row['success'] ?? 0) === 1,
+            'duration_ms' => (int) ($row['duration_ms'] ?? 0),
+            'summary' => (string) ($row['summary'] ?? ''),
+            'created_at' => (string) ($row['created_at'] ?? ''),
+        ];
+    }
+
+    return $items;
+}
+
 function wallos_get_maintenance_log_activity($db, $tableName, $retentionDays)
 {
     $activity = [
@@ -258,6 +405,8 @@ function wallos_get_expected_sqlite_indexes()
         ['security_anomalies', 'idx_security_anomalies_user_created_id', ['user_id', 'created_at', 'id']],
         ['rate_limit_usage', 'idx_rate_limit_usage_user_category_created', ['user_id', 'category', 'created_at']],
         ['rate_limit_usage', 'idx_rate_limit_usage_created_id', ['created_at', 'id']],
+        ['maintenance_action_logs', 'idx_maintenance_action_logs_created_id', ['created_at', 'id']],
+        ['maintenance_action_logs', 'idx_maintenance_action_logs_action_created', ['action', 'created_at']],
         ['user', 'idx_user_status_scheduled_delete', ['account_status', 'scheduled_delete_at', 'id']],
     ];
 }
@@ -381,6 +530,7 @@ function wallos_get_storage_usage_summary($db, $basePath)
             'request_logs' => wallos_describe_maintenance_log_table($db, 'request_logs', WALLOS_REQUEST_LOG_RETENTION_DAYS, 5000, 50000),
             'security_anomalies' => wallos_describe_maintenance_log_table($db, 'security_anomalies', WALLOS_SECURITY_ANOMALY_RETENTION_DAYS, 500, 5000),
             'rate_limit_usage' => wallos_describe_maintenance_log_table($db, 'rate_limit_usage', WALLOS_RATE_LIMIT_USAGE_RETENTION_DAYS, 10000, 100000),
+            'maintenance_action_logs' => wallos_describe_maintenance_log_table($db, 'maintenance_action_logs', WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS, 500, 5000),
         ],
     ];
 }
@@ -1046,5 +1196,6 @@ function wallos_get_maintenance_retention_summary()
         'request_log_retention_days' => WALLOS_REQUEST_LOG_RETENTION_DAYS,
         'security_anomaly_retention_days' => WALLOS_SECURITY_ANOMALY_RETENTION_DAYS,
         'rate_limit_usage_retention_days' => WALLOS_RATE_LIMIT_USAGE_RETENTION_DAYS,
+        'maintenance_action_log_retention_days' => WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS,
     ];
 }
