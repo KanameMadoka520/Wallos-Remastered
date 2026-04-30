@@ -1240,6 +1240,40 @@ function formatAdminOrphanCleanupResult(result) {
   return lines.join("\n");
 }
 
+function copyAdminMaintenanceResult(button) {
+  const resultTextArea = document.getElementById("adminMaintenanceResult");
+  const text = String(resultTextArea?.value || "").trim();
+  if (!text) {
+    showErrorMessage(adminTranslateWithFallback("maintenance_result_empty", "No maintenance result to copy yet."));
+    return;
+  }
+
+  const finish = () => {
+    showSuccessMessage(adminTranslateWithFallback("maintenance_result_copied", "Maintenance result copied."));
+    if (button) {
+      button.blur();
+    }
+  };
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(finish).catch(() => {
+      resultTextArea.focus();
+      resultTextArea.select();
+      showErrorMessage(adminTranslateWithFallback("maintenance_result_copy_failed", "Copy failed. The result text has been selected."));
+    });
+    return;
+  }
+
+  resultTextArea.focus();
+  resultTextArea.select();
+  try {
+    document.execCommand("copy");
+    finish();
+  } catch (error) {
+    showErrorMessage(adminTranslateWithFallback("maintenance_result_copy_failed", "Copy failed. The result text has been selected."));
+  }
+}
+
 function runAdminMaintenanceAction(action, button) {
   const resultTextArea = document.getElementById('adminMaintenanceResult');
   if (button?.dataset.confirmMessage && !confirm(button.dataset.confirmMessage)) {

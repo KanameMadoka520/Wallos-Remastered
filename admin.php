@@ -1545,6 +1545,10 @@ $pageSections = [
                 <textarea id="adminMaintenanceResult" class="thin" readonly
                     placeholder="<?= htmlspecialchars(translate('maintenance_result', $i18n), ENT_QUOTES, 'UTF-8') ?>"></textarea>
             </div>
+            <div class="inline-row">
+                <input type="button" value="<?= translate('copy_maintenance_result', $i18n) ?>" class="secondary-button tiny mobile-grow"
+                    onclick="copyAdminMaintenanceResult(this)">
+            </div>
             <div id="adminSubscriptionImageAuditSummary" class="subscription-image-audit-summary is-empty">
                 <p>
                     <i class="fa-solid fa-images"></i>

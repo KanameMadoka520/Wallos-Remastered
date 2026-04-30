@@ -490,6 +490,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'cleanup_subscription_image_orphans',
         'check_sqlite_indexes',
         'adminMaintenanceResult',
+        'copy_maintenance_result',
     )) && wallos_regression_text_has_all($adminJs, array(
         'runAdminMaintenanceAction',
         'renderAdminSystemOverview',
@@ -504,6 +505,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'executeAdminMaintenanceRecommendation',
         'exportAdminSubscriptionImageAuditCsv',
         'formatAdminOrphanCleanupResult',
+        'copyAdminMaintenanceResult',
+        'maintenance_result_copied',
         'renderAdminSubscriptionImageAuditSummary',
         'subscription_image_audit_health',
         'subscription_image_audit_generated_at',
