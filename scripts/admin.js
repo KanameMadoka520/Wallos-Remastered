@@ -136,13 +136,27 @@ function buildAdminLogStorageDetail(logInfo) {
   const last24hRows = logInfo?.last_24h_rows_label || formatAdminNumber(logInfo?.last_24h_rows ?? 0);
   const dailyAverageRows = logInfo?.daily_average_rows_label || formatAdminNumber(logInfo?.daily_average_rows ?? 0);
   const riskLabel = getAdminLogRiskLabel(logInfo?.risk);
+  const timeParts = [];
 
-  return [
+  if (logInfo?.oldest_at) {
+    timeParts.push(`${adminTranslateWithFallback("log_oldest_at", "Oldest")}: ${logInfo.oldest_at}`);
+  }
+  if (logInfo?.latest_at) {
+    timeParts.push(`${adminTranslateWithFallback("log_latest_at", "Latest")}: ${logInfo.latest_at}`);
+  }
+
+  const parts = [
     `${adminTranslateWithFallback("retention_days", "Retention Days")}: ${formatAdminNumber(retentionDays)}`,
     `${adminTranslateWithFallback("log_rows_last_24h", "Last 24h Rows")}: ${last24hRows}`,
     `${adminTranslateWithFallback("log_rows_daily_average", "Daily Average")}: ${dailyAverageRows}`,
     `${adminTranslateWithFallback("log_growth_risk", "Log Growth Risk")}: ${riskLabel}`,
-  ].join(" · ");
+  ];
+
+  if (timeParts.length > 0) {
+    parts.push(timeParts.join(" · "));
+  }
+
+  return parts.join(" · ");
 }
 
 function renderAdminMaintenanceStorageSummary(storage) {
