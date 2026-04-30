@@ -60,6 +60,7 @@ try {
 
     wallos_emit_bootstrap_import_response(true, translate('success', $i18n));
 } catch (Throwable $throwable) {
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
     wallos_emit_bootstrap_import_response(false, translate('restore_failed', $i18n), 500);
 } finally {
     if (file_exists($fileDestination)) {

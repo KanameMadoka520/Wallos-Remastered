@@ -164,6 +164,7 @@ try {
 
     throw new RuntimeException(translate('error', $i18n));
 } catch (Throwable $throwable) {
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
     @ $db->exec('ROLLBACK');
 
     subscription_pages_json_response(false, $throwable->getMessage());

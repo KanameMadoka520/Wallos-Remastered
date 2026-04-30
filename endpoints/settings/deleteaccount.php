@@ -18,6 +18,7 @@ if ($userIdToDelete == 1 || $userIdToDelete != $userId) {
     try {
         wallos_delete_user_data($db, $userIdToDelete, __DIR__ . '/../../');
     } catch (Throwable $throwable) {
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
         die(json_encode([
             "success" => false,
             "message" => translate('error', $i18n)

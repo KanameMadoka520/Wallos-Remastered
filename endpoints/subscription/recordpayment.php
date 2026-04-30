@@ -53,6 +53,7 @@ try {
         'record_id' => $recordId,
     ]);
 } catch (Throwable $throwable) {
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
     echo json_encode([
         'success' => false,
         'message' => translate('error', $i18n),

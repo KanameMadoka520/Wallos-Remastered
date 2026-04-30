@@ -59,6 +59,26 @@
     );
   }
 
+  function isDatabaseBusyPayload(data) {
+    return Boolean(
+      data
+      && typeof data === "object"
+      && (
+        data.database_busy === true
+        || data.code === "database_busy"
+        || data.error === "database_busy"
+      )
+    );
+  }
+
+  function isDatabaseBusyError(error) {
+    return Boolean(
+      error
+      && typeof error === "object"
+      && (error.databaseBusy === true || isDatabaseBusyPayload(error.data))
+    );
+  }
+
   function translateFallback(key, fallback) {
     if (typeof window.translate === "function") {
       const translated = window.translate(key);
@@ -82,6 +102,7 @@
       : "");
     error.sessionExpired = isSessionFailurePayload(context.data);
     error.csrfInvalid = isCsrfFailurePayload(context.data);
+    error.databaseBusy = isDatabaseBusyPayload(context.data);
     return error;
   }
 
@@ -202,6 +223,13 @@
         }
         return isCsrfFailureError(error);
       },
+      isDatabaseBusyPayload(payload) {
+        if (typeof existingHttp.isDatabaseBusyPayload === "function") {
+          return existingHttp.isDatabaseBusyPayload(payload);
+        }
+        return isDatabaseBusyPayload(payload);
+      },
+      isDatabaseBusyError,
       showCsrfTokenRefreshReminder() {
         if (typeof existingHttp.showCsrfTokenRefreshReminder === "function") {
           return existingHttp.showCsrfTokenRefreshReminder();
@@ -405,6 +433,8 @@
       isSessionFailureError,
       isCsrfFailurePayload,
       isCsrfFailureError,
+      isDatabaseBusyPayload,
+      isDatabaseBusyError,
     };
   }
 

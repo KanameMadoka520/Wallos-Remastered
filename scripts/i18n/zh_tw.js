@@ -111,6 +111,7 @@ let i18n = {
     no_file_selected: '尚未選擇檔案',
     error: '錯誤',
     unknown_error: '發生未知的錯誤，請再試一次。',
+    database_busy_retry: '資料庫正在處理其他寫入，請等待幾秒後再試。',
     error_saving_notification_data: '保存通知資料時發生錯誤',
     error_sending_notification: '發送通知時發生錯誤',
     delete_account_confirmation: "您確定要刪除您的帳戶嗎？",

@@ -111,6 +111,7 @@ let i18n = {
     'no_file_selected': '未选择文件',
     'error': '错误',
     'unknown_error': '未知错误，请重试。',
+    'database_busy_retry': '数据库正在处理其他写入，请等待几秒后重试。',
     'error_saving_notification_data': '保存通知数据时出错',
     'error_sending_notification': '发送通知时出错',
     'delete_account_confirmation': "您确定要删除您的帐户吗？",

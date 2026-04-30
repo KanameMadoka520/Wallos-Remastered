@@ -219,6 +219,7 @@ npm run e2e
 - The registered Service Worker URL also carries the `service-worker.js` file version and checks for updates when a page becomes visible again.
 - Versioned CSS/JS requests are network-first with an exact-cache fallback, reducing stale-resource drift after deployments.
 - Private subscription media under `images/uploads/logos/subscription-media/` is explicitly excluded from Service Worker image caching and remains access-controlled by PHP/nginx rules.
+- SQLite busy/locked failures return a standardized `database_busy` JSON payload with a retry hint instead of a generic unknown error.
 - `service-worker.js` exposes a client-cache clear message.
 - The admin page can clear the current browser cache and publish a refresh marker so other clients clear cached static assets on their next page load.
 

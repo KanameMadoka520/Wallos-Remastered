@@ -661,6 +661,7 @@ $i18n = [
     "fill_all_fields" => "請填寫所有欄位",
     "fill_mandatory_fields" => "請填寫所有必填欄位",
     "error" => "錯誤",
+    "database_busy_retry" => "資料庫正在處理其他寫入，請等待幾秒後再試。",
     // 分類
     "failed_add_category" => "新增分類失敗",
     "failed_edit_category" => "編輯分類失敗",
