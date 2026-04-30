@@ -183,6 +183,62 @@ function getAdminMaintenanceRecommendationSeverityLabel(severity) {
   return labels[normalizedSeverity] || labels.watch;
 }
 
+function renderAdminSystemOverview(summary) {
+  const panel = document.getElementById("adminSystemOverviewPanel");
+  const grid = document.querySelector("[data-system-overview-grid]");
+  if (!panel || !grid || !summary || typeof summary !== "object") {
+    return;
+  }
+
+  const status = String(summary.status || "watch");
+  panel.dataset.systemOverviewStatus = status;
+  const statusBadge = panel.querySelector("[data-system-overview-status-badge]");
+  if (statusBadge) {
+    statusBadge.textContent = getAdminMaintenanceRecommendationSeverityLabel(status);
+  }
+
+  const cards = Array.isArray(summary.cards) ? summary.cards : [];
+  grid.innerHTML = cards.map((card) => {
+    const tone = String(card?.tone || "watch");
+    const detail = String(card?.detail || "");
+    return `
+      <article class="system-overview-card severity-${escapeAdminHtml(tone)}">
+        <span>
+          <i class="${escapeAdminHtml(card?.icon || "fa-solid fa-circle-info")}"></i>
+          ${escapeAdminHtml(card?.label || "-")}
+        </span>
+        <strong>${escapeAdminHtml(card?.value || "-")}</strong>
+        ${detail.trim() !== "" ? `<small>${escapeAdminHtml(detail)}</small>` : ""}
+      </article>
+    `;
+  }).join("");
+}
+
+function refreshAdminSystemOverview(button) {
+  const panel = document.getElementById("adminSystemOverviewPanel");
+  if (button) {
+    button.disabled = true;
+  }
+
+  adminPostJson("endpoints/admin/systemmaintenance.php", { action: "get_system_overview" })
+    .then((data) => {
+      if (!data.success) {
+        throw new Error(data.message || panel?.dataset.refreshFailed || translate("error"));
+      }
+
+      renderAdminSystemOverview(data.system_overview);
+      showSuccessMessage(data.message || panel?.dataset.refreshSuccess || translate("success"));
+    })
+    .catch((error) => {
+      showErrorMessage(getAdminRequestErrorMessage(error) || panel?.dataset.refreshFailed || translate("error"));
+    })
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+      }
+    });
+}
+
 function renderAdminMaintenanceRecommendations(summary) {
   const container = document.getElementById("adminMaintenanceRecommendations");
   if (!container || !summary || typeof summary !== "object") {
@@ -943,6 +999,9 @@ function runAdminMaintenanceAction(action, button) {
       showSuccessMessage(data.message || translate("success"));
       if (data.recommendations) {
         renderAdminMaintenanceRecommendations(data.recommendations);
+      }
+      if (data.system_overview) {
+        renderAdminSystemOverview(data.system_overview);
       }
       if (resultTextArea) {
         if (data.storage) {

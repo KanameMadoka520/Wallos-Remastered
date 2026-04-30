@@ -283,6 +283,16 @@ try {
     }, null, { timeout: 15000 });
   });
 
+  await step("system overview refreshes cleanly", async () => {
+    await page.locator("#refreshSystemOverviewButton").click();
+    await waitForButtonEnabled("#refreshSystemOverviewButton");
+    await page.waitForFunction(() => {
+      const panel = document.getElementById("adminSystemOverviewPanel");
+      const cards = document.querySelectorAll(".system-overview-card");
+      return !!panel && panel.dataset.systemOverviewStatus && cards.length >= 6;
+    }, null, { timeout: 15000 });
+  });
+
   await step("runtime observability refreshes cleanly", async () => {
     await page.locator("#refreshRuntimeObservabilityButton").click();
     await waitForButtonEnabled("#refreshRuntimeObservabilityButton");

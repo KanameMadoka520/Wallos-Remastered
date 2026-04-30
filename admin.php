@@ -985,17 +985,25 @@ $pageSections = [
     <header>
         <h2><?= translate('security_settings', $i18n) ?></h2> </header>
     <div class="admin-form">
-        <div class="system-overview-panel" data-system-overview-status="<?= htmlspecialchars((string) ($adminSystemOverviewSummary['status'] ?? 'ok'), ENT_QUOTES, 'UTF-8') ?>">
+        <div id="adminSystemOverviewPanel" class="system-overview-panel"
+            data-system-overview-status="<?= htmlspecialchars((string) ($adminSystemOverviewSummary['status'] ?? 'ok'), ENT_QUOTES, 'UTF-8') ?>"
+            data-refresh-success="<?= htmlspecialchars(translate('system_overview_refreshed', $i18n), ENT_QUOTES, 'UTF-8') ?>"
+            data-refresh-failed="<?= htmlspecialchars(translate('system_overview_refresh_failed', $i18n), ENT_QUOTES, 'UTF-8') ?>">
             <div class="system-overview-header">
                 <div>
                     <h3><?= translate('system_overview', $i18n) ?></h3>
                     <p><?= translate('system_overview_info', $i18n) ?></p>
                 </div>
-                <span class="maintenance-recommendation-badge">
-                    <?= htmlspecialchars(wallos_system_overview_status_label($i18n, (string) ($adminSystemOverviewSummary['status'] ?? 'ok')), ENT_QUOTES, 'UTF-8') ?>
-                </span>
+                <div class="system-overview-actions">
+                    <span class="maintenance-recommendation-badge" data-system-overview-status-badge>
+                        <?= htmlspecialchars(wallos_system_overview_status_label($i18n, (string) ($adminSystemOverviewSummary['status'] ?? 'ok')), ENT_QUOTES, 'UTF-8') ?>
+                    </span>
+                    <button type="button" class="secondary-button tiny" id="refreshSystemOverviewButton" onClick="refreshAdminSystemOverview(this)">
+                        <?= translate('refresh_system_overview', $i18n) ?>
+                    </button>
+                </div>
             </div>
-            <div class="system-overview-grid">
+            <div class="system-overview-grid" data-system-overview-grid>
                 <?php foreach (($adminSystemOverviewSummary['cards'] ?? []) as $overviewCard) : ?>
                     <article class="system-overview-card severity-<?= htmlspecialchars((string) ($overviewCard['tone'] ?? 'watch'), ENT_QUOTES, 'UTF-8') ?>">
                         <span>

@@ -5371,6 +5371,14 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   line-height: 1.55;
 }
 
+.system-overview-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .system-overview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -6003,6 +6011,11 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
 @media (max-width: 900px) {
   .system-overview-header {
     flex-direction: column;
+  }
+
+  .system-overview-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .runtime-observability-header {
