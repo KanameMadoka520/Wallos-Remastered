@@ -946,6 +946,7 @@ $i18n = [
     "maintenance_action_filter_all" => "All",
     "maintenance_action_filter_failed" => "Failed",
     "maintenance_action_filter_slow" => "Slow",
+    "maintenance_action_slow_badge" => "Slow",
     "maintenance_action_success" => "Success",
     "maintenance_action_failed" => "Failed",
     "export_maintenance_action_logs" => "Export Maintenance Actions CSV",

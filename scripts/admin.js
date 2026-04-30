@@ -537,12 +537,13 @@ function renderAdminMaintenanceActionLogs(logs) {
 
   container.innerHTML = filteredItems.map((item) => {
     const success = item?.success === true || item?.success === 1 || item?.success === "1";
+    const isSlow = Number(item?.duration_ms ?? 0) >= Number(latestAdminMaintenanceActionSummary?.slow_threshold_ms ?? 5000);
     const statusKey = success ? "maintenance_action_success" : "maintenance_action_failed";
     const statusFallback = success ? "Success" : "Failed";
     const statusClass = success ? "success" : "failed";
     const summary = String(item?.summary || "");
     return `
-      <article class="maintenance-action-log-card status-${statusClass}">
+      <article class="maintenance-action-log-card status-${statusClass}${isSlow ? " is-slow" : ""}">
         <div class="runtime-anomaly-card-header">
           <span class="maintenance-recommendation-badge">${escapeAdminHtml(adminTranslateWithFallback(statusKey, statusFallback))}</span>
           <strong>${escapeAdminHtml(getAdminMaintenanceActionLabel(item?.action))}</strong>
@@ -550,6 +551,7 @@ function renderAdminMaintenanceActionLogs(logs) {
         <div class="maintenance-action-log-meta">
           <span><i class="fa-regular fa-clock"></i>${escapeAdminHtml(item?.created_at || "-")}</span>
           <span><i class="fa-solid fa-stopwatch"></i>${escapeAdminHtml(formatAdminNumber(item?.duration_ms ?? 0))} ms</span>
+          ${isSlow ? `<span class="maintenance-action-log-slow-badge"><i class="fa-solid fa-gauge-high"></i>${escapeAdminHtml(adminTranslateWithFallback("maintenance_action_slow_badge", "Slow"))}</span>` : ""}
           <span><i class="fa-solid fa-user-shield"></i>#${escapeAdminHtml(item?.admin_user_id ?? 0)}</span>
         </div>
         ${summary.trim() !== "" ? `<p>${escapeAdminHtml(summary)}</p>` : ""}

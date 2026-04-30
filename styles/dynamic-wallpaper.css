@@ -190,6 +190,11 @@ body.dynamic-wallpaper-enabled .runtime-anomaly-card {
         inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
+body.dynamic-wallpaper-enabled .maintenance-action-log-meta .maintenance-action-log-slow-badge {
+    color: #ffd37d;
+    background-color: rgba(226, 162, 58, 0.22);
+}
+
 body.dark.dynamic-wallpaper-enabled .account-section,
 body.dark.dynamic-wallpaper-enabled .graph,
 body.dark.dynamic-wallpaper-enabled .statistic,

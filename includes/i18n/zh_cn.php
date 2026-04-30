@@ -969,6 +969,7 @@ $i18n = [
     "maintenance_action_filter_all" => "全部",
     "maintenance_action_filter_failed" => "失败",
     "maintenance_action_filter_slow" => "慢动作",
+    "maintenance_action_slow_badge" => "慢",
     "maintenance_action_success" => "成功",
     "maintenance_action_failed" => "失败",
     "export_maintenance_action_logs" => "导出维护动作 CSV",
