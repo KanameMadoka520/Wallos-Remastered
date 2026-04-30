@@ -997,6 +997,7 @@ $i18n = [
     "request_log_rows" => "Request Log Rows",
     "security_anomaly_rows" => "Security Anomaly Rows",
     "rate_limit_usage_rows" => "Rate-Limit Usage Rows",
+    "maintenance_action_log_rows" => "Maintenance Action Rows",
     "file_count" => "Files",
     "directory_count" => "Directories",
     "scan_errors" => "Scan Errors",
