@@ -534,6 +534,19 @@ function exportAdminSubscriptionImageAuditCsv() {
     });
   }
 
+  if (Array.isArray(audit.orphan_largest_samples)) {
+    audit.orphan_largest_samples.forEach((item) => {
+      rows.push([
+        "largest_orphan_sample",
+        "path",
+        "",
+        item?.size_bytes ?? 0,
+        item?.size_label || "",
+        item?.path || "",
+      ]);
+    });
+  }
+
   if (Array.isArray(audit.missing_original_samples)) {
     audit.missing_original_samples.forEach((item) => {
       rows.push([
@@ -1068,6 +1081,14 @@ function formatAdminMaintenanceAudit(audit) {
     audit.orphan_samples.forEach((item) => lines.push(`- ${item}`));
   }
 
+  if (Array.isArray(audit.orphan_largest_samples) && audit.orphan_largest_samples.length > 0) {
+    lines.push("");
+    lines.push(adminTranslateWithFallback("subscription_image_largest_orphan_samples", "Largest Orphan Samples") + ":");
+    audit.orphan_largest_samples.forEach((item) => {
+      lines.push(`- ${item?.size_label || "0 B"} ${item?.path || "-"}`);
+    });
+  }
+
   if (Array.isArray(audit.missing_original_samples) && audit.missing_original_samples.length > 0) {
     lines.push("");
     lines.push(adminTranslateWithFallback("subscription_image_missing_original_samples", "Missing Original Samples") + ":");
@@ -1173,7 +1194,9 @@ function renderAdminSubscriptionImageAuditSummary(audit) {
     renderAdminSubscriptionImageAuditCard(
       adminTranslateWithFallback("subscription_image_audit_orphan_status", "Orphan Files"),
       `${formatAdminNumber(audit.orphan_files ?? 0)} · ${audit.orphan_size_label || "0 B"}`,
-      adminTranslateWithFallback("subscription_image_audit_orphan_detail", "Files on disk that are no longer referenced by the image index."),
+      Array.isArray(audit.orphan_largest_samples) && audit.orphan_largest_samples.length > 0
+        ? `${adminTranslateWithFallback("subscription_image_audit_largest_orphan", "Largest")}: ${audit.orphan_largest_samples[0]?.size_label || "0 B"}`
+        : adminTranslateWithFallback("subscription_image_audit_orphan_detail", "Files on disk that are no longer referenced by the image index."),
       Number(audit.orphan_files ?? 0) > 0 ? "watch" : "ok",
       "fa-solid fa-broom"
     ),

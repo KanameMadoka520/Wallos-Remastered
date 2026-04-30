@@ -96,6 +96,7 @@ try {
     wallos_subscription_image_maintenance_assert($auditBefore['indexed_files'] === 3, 'Expected three indexed file paths before cleanup.');
     wallos_subscription_image_maintenance_assert($auditBefore['disk_files'] === 5, 'Expected five subscription-media disk files before cleanup.');
     wallos_subscription_image_maintenance_assert($auditBefore['orphan_files'] === 2, 'Expected two orphan subscription-media files before cleanup.');
+    wallos_subscription_image_maintenance_assert($auditBefore['orphan_largest_samples'][0]['size_bytes'] >= $auditBefore['orphan_largest_samples'][1]['size_bytes'], 'Expected largest orphan samples to be sorted by size.');
     wallos_subscription_image_maintenance_assert($auditBefore['missing_original_rows'] === 0, 'Expected no missing originals before cleanup.');
     wallos_subscription_image_maintenance_assert($auditBefore['missing_variant_files'] === 0, 'Expected no missing variant files before cleanup.');
     wallos_subscription_image_maintenance_assert($auditBefore['oversized_variants'] === 1, 'Expected one oversized derived variant before cleanup.');
