@@ -1594,6 +1594,8 @@ $pageSections = [
                     onclick="runAdminMaintenanceAction('get_maintenance_action_logs', this)">
                 <input type="button" value="<?= translate('export_maintenance_action_logs', $i18n) ?>" class="secondary-button tiny mobile-grow"
                     onclick="exportAdminMaintenanceActionLogsCsv()">
+                <input type="button" value="<?= translate('copy_maintenance_action_logs', $i18n) ?>" class="secondary-button tiny mobile-grow"
+                    onclick="copyAdminMaintenanceActionLogs(this)">
             </div>
             <div id="adminSubscriptionImageAuditSummary" class="subscription-image-audit-summary is-empty">
                 <p>

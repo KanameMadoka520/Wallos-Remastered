@@ -601,6 +601,72 @@ function exportAdminMaintenanceActionLogsCsv() {
   showSuccessMessage(adminTranslateWithFallback("maintenance_action_logs_exported", "Maintenance action logs exported."));
 }
 
+function formatAdminMaintenanceActionLogsForCopy() {
+  const allItems = Array.isArray(latestAdminMaintenanceActionLogs) ? latestAdminMaintenanceActionLogs : [];
+  const items = getFilteredAdminMaintenanceActionLogs(allItems);
+  const summary = latestAdminMaintenanceActionSummary || {};
+  const lines = [
+    adminTranslateWithFallback("maintenance_action_logs", "Recent Maintenance Actions"),
+    `${adminTranslateWithFallback("generated_at", "Generated At")}: ${summary.generated_at || new Date().toISOString()}`,
+    `${adminTranslateWithFallback("maintenance_action_log_filter_active", "Active filter")}: ${getAdminMaintenanceActionLogFilterLabel(latestAdminMaintenanceActionLogFilter)}`,
+    `${adminTranslateWithFallback("maintenance_action_recent_rows", "Recent Actions")}: ${summary.recent_rows_label || formatAdminNumber(summary.recent_rows ?? allItems.length)}`,
+    `${adminTranslateWithFallback("maintenance_action_recent_failures", "Recent Failures")}: ${summary.recent_failed_rows_label || formatAdminNumber(summary.recent_failed_rows ?? 0)}`,
+    `${adminTranslateWithFallback("maintenance_action_recent_slow", "Recent Slow Actions")}: ${summary.recent_slow_rows_label || formatAdminNumber(summary.recent_slow_rows ?? 0)}`,
+    `${adminTranslateWithFallback("maintenance_action_exported_rows", "Exported Rows")}: ${formatAdminNumber(items.length)}`,
+    "",
+  ];
+
+  items.forEach((item, index) => {
+    const success = item?.success === true || item?.success === 1 || item?.success === "1";
+    lines.push(`${index + 1}. [${adminTranslateWithFallback(success ? "maintenance_action_success" : "maintenance_action_failed", success ? "Success" : "Failed")}] ${getAdminMaintenanceActionLabel(item?.action)}`);
+    lines.push(`   ${adminTranslateWithFallback("generated_at", "Generated At")}: ${item?.created_at || "-"}`);
+    lines.push(`   ${adminTranslateWithFallback("duration", "Duration")}: ${formatAdminNumber(item?.duration_ms ?? 0)} ms`);
+    if (item?.summary) {
+      lines.push(`   ${adminTranslateWithFallback("details", "Details")}: ${item.summary}`);
+    }
+  });
+
+  return lines.join("\n").trim();
+}
+
+function copyAdminMaintenanceActionLogs(button) {
+  const text = formatAdminMaintenanceActionLogsForCopy();
+  if (!text) {
+    showErrorMessage(adminTranslateWithFallback("maintenance_action_logs_export_empty", "No maintenance action logs to export."));
+    return;
+  }
+
+  const finish = () => {
+    showSuccessMessage(adminTranslateWithFallback("maintenance_action_logs_copied", "Maintenance action logs copied."));
+    if (button) {
+      button.blur();
+    }
+  };
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(finish).catch(() => {
+      showErrorMessage(adminTranslateWithFallback("maintenance_action_logs_copy_failed", "Copy failed."));
+    });
+    return;
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.setAttribute("readonly", "readonly");
+  textArea.style.position = "fixed";
+  textArea.style.left = "-9999px";
+  document.body.appendChild(textArea);
+  textArea.select();
+  try {
+    document.execCommand("copy");
+    finish();
+  } catch (error) {
+    showErrorMessage(adminTranslateWithFallback("maintenance_action_logs_copy_failed", "Copy failed."));
+  } finally {
+    document.body.removeChild(textArea);
+  }
+}
+
 function executeAdminMaintenanceRecommendation(action, button) {
   const normalizedAction = String(action || "");
   if (normalizedAction === "open_slow_requests") {
