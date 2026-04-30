@@ -106,9 +106,12 @@ try {
 
     $migration71Path = __DIR__ . '/../migrations/000071.php';
     $migration72Path = __DIR__ . '/../migrations/000072.php';
+    $migration73Path = __DIR__ . '/../migrations/000073.php';
     require $migration71Path;
     require $migration72Path;
     require $migration72Path;
+    require $migration73Path;
+    require $migration73Path;
 
     $expectedIndexes = [
         'subscriptions' => [
@@ -143,6 +146,8 @@ try {
             'idx_request_logs_created_id',
             'idx_request_logs_method_created_id',
             'idx_request_logs_user_created_id',
+            'idx_request_logs_duration_created_id',
+            'idx_request_logs_status_created_id',
         ],
         'security_anomalies' => [
             'idx_security_anomalies_created_id',

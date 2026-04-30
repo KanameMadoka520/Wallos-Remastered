@@ -585,16 +585,22 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $adminObservabilityValid = wallos_regression_text_has_all($runtimeObservability, array(
         'wallos_get_recent_security_anomalies',
         'wallos_get_security_anomaly_type_counts',
+        'wallos_count_slow_request_logs',
+        'wallos_get_recent_slow_request_logs',
         'wallos_format_observability_timestamp',
     )) && wallos_regression_text_has_all($runtimeObservabilityEndpoint, array(
         'validate_endpoint_admin.php',
         'recent_anomalies',
+        'recent_slow_requests',
+        'slow_request_24h',
         'cache_refresh',
         'service_worker_versions',
     )) && wallos_regression_text_has_all($adminPhp, array(
         'admin-runtime-observability-ui',
         'runtime-observability-panel',
         'data-observability-feed',
+        'slow_requests_24h',
+        'openSlowRequestsButton',
         'refreshRuntimeObservabilityButton',
         "openSecurityAnomaliesModal?.({ anomaly_type: 'client_runtime' })",
         "openSecurityAnomaliesModal?.({ anomaly_type: 'request_failure' })",
@@ -603,8 +609,13 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'WallosApi.postJson("endpoints/admin/runtimeobservability.php", {}',
         'endpoints/admin/runtimeobservability.php',
         'renderRuntimeObservabilityFeed',
+        'createRuntimeSlowRequestCard',
     )) && wallos_regression_text_has_all($adminAccessLogsJs, array(
         'function escapeHtml',
+        'formatDurationMs',
+        'min_duration_ms',
+        'status_code',
+        'openAccessLogsModal(initialFilters = {})',
         'openSecurityAnomaliesModal(initialFilters = {})',
         'ui.dataset.detailsLabel',
     )) && wallos_regression_text_has_all($stylesCss, array(

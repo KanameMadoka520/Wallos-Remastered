@@ -153,6 +153,8 @@ function wallos_get_expected_sqlite_indexes()
         ['request_logs', 'idx_request_logs_created_id', ['created_at', 'id']],
         ['request_logs', 'idx_request_logs_method_created_id', ['method', 'created_at', 'id']],
         ['request_logs', 'idx_request_logs_user_created_id', ['user_id', 'created_at', 'id']],
+        ['request_logs', 'idx_request_logs_duration_created_id', ['duration_ms', 'created_at', 'id']],
+        ['request_logs', 'idx_request_logs_status_created_id', ['status_code', 'created_at', 'id']],
         ['security_anomalies', 'idx_security_anomalies_created_id', ['created_at', 'id']],
         ['security_anomalies', 'idx_security_anomalies_type_created_id', ['anomaly_type', 'created_at', 'id']],
         ['security_anomalies', 'idx_security_anomalies_user_created_id', ['user_id', 'created_at', 'id']],

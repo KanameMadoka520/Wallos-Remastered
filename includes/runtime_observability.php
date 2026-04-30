@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('WALLOS_SLOW_REQUEST_THRESHOLD_MS')) {
+    define('WALLOS_SLOW_REQUEST_THRESHOLD_MS', 1500);
+}
+
 function wallos_parse_service_worker_cache_versions($filePath)
 {
     $versions = [
@@ -58,6 +62,69 @@ function wallos_count_security_anomalies_by_type($db, $anomalyType, $hours = nul
 function wallos_security_anomalies_table_exists($db)
 {
     return (bool) $db->querySingle("SELECT name FROM sqlite_master WHERE type='table' AND name='security_anomalies'");
+}
+
+function wallos_request_logs_has_runtime_columns($db)
+{
+    static $hasColumns = null;
+    if ($hasColumns !== null) {
+        return $hasColumns;
+    }
+
+    $columns = [];
+    $result = $db->query('PRAGMA table_info(request_logs)');
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $columns[] = (string) ($row['name'] ?? '');
+    }
+
+    $hasColumns = in_array('duration_ms', $columns, true) && in_array('status_code', $columns, true);
+    return $hasColumns;
+}
+
+function wallos_count_slow_request_logs($db, $hours = 24, $thresholdMs = WALLOS_SLOW_REQUEST_THRESHOLD_MS)
+{
+    if (!wallos_request_logs_has_runtime_columns($db)) {
+        return 0;
+    }
+
+    $stmt = $db->prepare('
+        SELECT COUNT(*) AS total
+        FROM request_logs
+        WHERE duration_ms >= :threshold
+          AND created_at >= datetime(\'now\', :window)
+    ');
+    $stmt->bindValue(':threshold', max(1, (int) $thresholdMs), SQLITE3_INTEGER);
+    $stmt->bindValue(':window', '-' . max(1, (int) $hours) . ' hours', SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $row = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+    return (int) ($row['total'] ?? 0);
+}
+
+function wallos_get_recent_slow_request_logs($db, $limit = 6, $hours = 24, $thresholdMs = WALLOS_SLOW_REQUEST_THRESHOLD_MS)
+{
+    if (!wallos_request_logs_has_runtime_columns($db)) {
+        return [];
+    }
+
+    $stmt = $db->prepare('
+        SELECT id, user_id, username, path, method, ip_address, forwarded_for, duration_ms, status_code, created_at
+        FROM request_logs
+        WHERE duration_ms >= :threshold
+          AND created_at >= datetime(\'now\', :window)
+        ORDER BY duration_ms DESC, id DESC
+        LIMIT :limit
+    ');
+    $stmt->bindValue(':threshold', max(1, (int) $thresholdMs), SQLITE3_INTEGER);
+    $stmt->bindValue(':window', '-' . max(1, (int) $hours) . ' hours', SQLITE3_TEXT);
+    $stmt->bindValue(':limit', max(1, min(20, (int) $limit)), SQLITE3_INTEGER);
+    $result = $stmt->execute();
+
+    $items = [];
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $items[] = $row;
+    }
+
+    return $items;
 }
 
 function wallos_count_security_anomalies($db, $hours = null)

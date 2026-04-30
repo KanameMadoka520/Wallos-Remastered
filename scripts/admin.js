@@ -1128,7 +1128,39 @@ function createRuntimeAnomalyCard(item, ui) {
   return card;
 }
 
-function renderRuntimeObservabilityFeed(items) {
+function createRuntimeSlowRequestCard(item, ui) {
+  const card = document.createElement("article");
+  card.className = "runtime-anomaly-card";
+
+  const header = document.createElement("div");
+  header.className = "runtime-anomaly-card-header";
+
+  const idBadge = document.createElement("span");
+  idBadge.className = "access-log-id-badge";
+  idBadge.textContent = `#${String(item?.id || "-")}`;
+
+  const typeNode = document.createElement("strong");
+  typeNode.textContent = ui?.dataset.slowRequestLabel || "Slow Request";
+
+  const codeNode = document.createElement("span");
+  codeNode.textContent = `${String(item?.duration_ms || 0)} ms`;
+
+  header.append(idBadge, typeNode, codeNode);
+
+  const message = document.createElement("p");
+  message.textContent = `${String(item?.method || "-")} ${String(item?.path || "-")} · ${ui?.dataset.statusCodeLabel || "Status"}: ${String(item?.status_code || "-")}`;
+
+  const meta = document.createElement("small");
+  const user = String(item?.username || "-");
+  const ip = String(item?.ip_address || "-");
+  const time = String(item?.created_at_display || item?.created_at || "-");
+  meta.textContent = `${user} / ${ip} / ${time}`;
+
+  card.append(header, message, meta);
+  return card;
+}
+
+function renderRuntimeObservabilityFeed(items, slowRequests = []) {
   const ui = document.getElementById("admin-runtime-observability-ui");
   const feed = document.querySelector("[data-observability-feed]");
   if (!feed) {
@@ -1136,7 +1168,10 @@ function renderRuntimeObservabilityFeed(items) {
   }
 
   feed.innerHTML = "";
-  if (!Array.isArray(items) || items.length === 0) {
+  const anomalyItems = Array.isArray(items) ? items : [];
+  const slowRequestItems = Array.isArray(slowRequests) ? slowRequests : [];
+
+  if (anomalyItems.length === 0 && slowRequestItems.length === 0) {
     const emptyState = document.createElement("div");
     emptyState.className = "settings-notes access-log-empty";
     const paragraph = document.createElement("p");
@@ -1148,8 +1183,11 @@ function renderRuntimeObservabilityFeed(items) {
     return;
   }
 
-  items.forEach((item) => {
+  anomalyItems.forEach((item) => {
     feed.appendChild(createRuntimeAnomalyCard(item, ui));
+  });
+  slowRequestItems.forEach((item) => {
+    feed.appendChild(createRuntimeSlowRequestCard(item, ui));
   });
 }
 
@@ -1175,7 +1213,7 @@ function updateRuntimeObservabilitySummary(data) {
       : (ui?.dataset.cacheEmptyLabel || "-");
   }
 
-  renderRuntimeObservabilityFeed(data?.recent_anomalies || []);
+  renderRuntimeObservabilityFeed(data?.recent_anomalies || [], data?.recent_slow_requests || []);
 }
 
 function refreshRuntimeObservabilityButton(button) {

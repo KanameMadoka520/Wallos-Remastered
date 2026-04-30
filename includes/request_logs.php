@@ -1,5 +1,14 @@
 <?php
 
+if (!defined('WALLOS_SLOW_REQUEST_THRESHOLD_MS')) {
+    define('WALLOS_SLOW_REQUEST_THRESHOLD_MS', 1500);
+}
+
+function wallos_request_log_database_path()
+{
+    return __DIR__ . '/../db/wallos.db';
+}
+
 function wallos_request_logging_skip_paths()
 {
     return [
@@ -118,6 +127,9 @@ function wallos_log_request($db, $userId = 0, $username = '')
     }
 
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    $requestStartedAt = isset($_SERVER['REQUEST_TIME_FLOAT'])
+        ? (float) $_SERVER['REQUEST_TIME_FLOAT']
+        : microtime(true);
     $headersJson = json_encode(wallos_get_safe_request_headers(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($headersJson === false) {
         $headersJson = '{}';
@@ -145,4 +157,48 @@ function wallos_log_request($db, $userId = 0, $username = '')
     @$stmt->execute();
 
     $requestLogged = true;
+
+    $logId = (int) @$db->lastInsertRowID();
+    if ($logId > 0) {
+        wallos_register_request_log_completion_update($logId, $requestStartedAt);
+    }
+}
+
+function wallos_register_request_log_completion_update($logId, $requestStartedAt)
+{
+    static $completionRegistered = false;
+
+    if ($completionRegistered) {
+        return;
+    }
+
+    $completionRegistered = true;
+    register_shutdown_function(static function () use ($logId, $requestStartedAt) {
+        $durationMs = max(0, (int) round((microtime(true) - (float) $requestStartedAt) * 1000));
+        $statusCode = (int) http_response_code();
+        if ($statusCode <= 0) {
+            $statusCode = 200;
+        }
+
+        try {
+            $completionDb = new SQLite3(wallos_request_log_database_path());
+            $completionDb->busyTimeout(1000);
+            $stmt = @$completionDb->prepare('
+                UPDATE request_logs
+                SET duration_ms = :duration_ms,
+                    status_code = :status_code,
+                    completed_at = CURRENT_TIMESTAMP
+                WHERE id = :id
+            ');
+            if ($stmt !== false) {
+                $stmt->bindValue(':duration_ms', $durationMs, SQLITE3_INTEGER);
+                $stmt->bindValue(':status_code', $statusCode, SQLITE3_INTEGER);
+                $stmt->bindValue(':id', (int) $logId, SQLITE3_INTEGER);
+                @$stmt->execute();
+            }
+            $completionDb->close();
+        } catch (Throwable $throwable) {
+            // Request logging must never break the user-facing response.
+        }
+    });
 }

@@ -138,6 +138,11 @@
     if (existingModal) existingModal.remove();
   }
 
+  function formatDurationMs(value) {
+    const numericValue = Number(value || 0);
+    return numericValue > 0 ? `${Math.round(numericValue)} ms` : '-';
+  }
+
   function renderAccessLogEntries(logs, resultContainer, ui) {
     resultContainer.innerHTML = '';
     if (!Array.isArray(logs) || logs.length === 0) {
@@ -157,7 +162,7 @@
       header.innerHTML = `<div class="access-log-card-title"><span class="access-log-id-badge">#${escapeHtml(log.id || '-')}</span><strong>${escapeHtml(log.method || '-')}</strong></div><span>${escapeHtml(log.path || '-')}</span>`;
       const headerJson = String(log.headers_json || '').trim();
       card.appendChild(header);
-      card.innerHTML += `<p>${escapeHtml(ui.dataset.userLabel)}: ${escapeHtml(log.username || '-')}</p><p>${escapeHtml(ui.dataset.ipLabel)}: ${escapeHtml(log.ip_address || '-')}</p><p>${escapeHtml(ui.dataset.forwardedLabel)}: ${escapeHtml(log.forwarded_for || '-')}</p><p>${escapeHtml(ui.dataset.agentLabel)}: ${escapeHtml(log.user_agent || '-')}</p><p>${escapeHtml(ui.dataset.timeLabel)}: ${escapeHtml(log.created_at || '-')}</p>`;
+      card.innerHTML += `<p>${escapeHtml(ui.dataset.userLabel)}: ${escapeHtml(log.username || '-')}</p><p>${escapeHtml(ui.dataset.ipLabel)}: ${escapeHtml(log.ip_address || '-')}</p><p>${escapeHtml(ui.dataset.forwardedLabel)}: ${escapeHtml(log.forwarded_for || '-')}</p><p>${escapeHtml(ui.dataset.agentLabel)}: ${escapeHtml(log.user_agent || '-')}</p><p>${escapeHtml(ui.dataset.durationLabel || 'Duration')}: ${escapeHtml(formatDurationMs(log.duration_ms))}</p><p>${escapeHtml(ui.dataset.statusCodeLabel || 'Status')}: ${escapeHtml(log.status_code || '-')}</p><p>${escapeHtml(ui.dataset.timeLabel)}: ${escapeHtml(log.created_at || '-')}</p>`;
       if (headerJson !== '') {
         const details = document.createElement('details');
         const summary = document.createElement('summary');
@@ -177,12 +182,14 @@
     rows.push([ui.dataset.requestIdLabel, String(filters.request_id || '')]);
     rows.push([ui.dataset.keywordLabel, String(filters.keyword || '')]);
     rows.push([ui.dataset.methodLabel, String(filters.method || '')]);
+    rows.push([ui.dataset.minDurationLabel || 'Minimum Duration', String(filters.min_duration_ms || '')]);
+    rows.push([ui.dataset.statusCodeLabel || 'Status Code', String(filters.status_code || '')]);
     rows.push([ui.dataset.startLabel, String(filters.start_at || '')]);
     rows.push([ui.dataset.endLabel, String(filters.end_at || '')]);
     rows.push([ui.dataset.limitLabel, String(filters.limit || '')]);
     rows.push([]);
-    rows.push([ui.dataset.idLabel || 'ID', ui.dataset.methodLabel || 'Method', 'Path', ui.dataset.userLabel || 'Username', ui.dataset.ipLabel || 'IP', ui.dataset.forwardedLabel || 'Forwarded For', ui.dataset.agentLabel || 'User Agent', ui.dataset.timeLabel || 'Time', ui.dataset.headersLabel || 'Headers']);
-    (logs || []).forEach((log) => rows.push([String(log.id || ''), String(log.method || ''), String(log.path || ''), String(log.username || ''), String(log.ip_address || ''), String(log.forwarded_for || ''), String(log.user_agent || ''), String(log.created_at || ''), String(log.headers_json || '')]));
+    rows.push([ui.dataset.idLabel || 'ID', ui.dataset.methodLabel || 'Method', 'Path', ui.dataset.userLabel || 'Username', ui.dataset.ipLabel || 'IP', ui.dataset.forwardedLabel || 'Forwarded For', ui.dataset.agentLabel || 'User Agent', ui.dataset.durationLabel || 'Duration', ui.dataset.statusCodeLabel || 'Status Code', ui.dataset.timeLabel || 'Time', ui.dataset.headersLabel || 'Headers']);
+    (logs || []).forEach((log) => rows.push([String(log.id || ''), String(log.method || ''), String(log.path || ''), String(log.username || ''), String(log.ip_address || ''), String(log.forwarded_for || ''), String(log.user_agent || ''), String(log.duration_ms || ''), String(log.status_code || ''), String(log.created_at || ''), String(log.headers_json || '')]));
     const csvContent = rows.map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -209,10 +216,11 @@
       .finally(() => { searchButton.disabled = false; });
   }
 
-  function openAccessLogsModal() {
+  function openAccessLogsModal(initialFilters = {}) {
     removeAccessLogsModal();
     const ui = document.getElementById('admin-access-log-ui');
     if (!ui) { showErrorMessage(translate('error')); return; }
+    const defaults = initialFilters && typeof initialFilters === 'object' ? initialFilters : {};
     const backdrop = document.createElement('div'); backdrop.id = 'admin-access-log-backdrop'; backdrop.className = 'access-log-modal-backdrop';
     const modal = document.createElement('div'); modal.className = 'access-log-modal';
     const header = document.createElement('div'); header.className = 'access-log-modal-header';
@@ -223,6 +231,8 @@
     const requestIdField = document.createElement('div'); requestIdField.className = 'form-group'; requestIdField.innerHTML = `<label for="accessLogRequestId">${ui.dataset.requestIdLabel}</label><input type="number" id="accessLogRequestId" min="0" autocomplete="off" />`;
     const keywordField = document.createElement('div'); keywordField.className = 'form-group'; keywordField.innerHTML = `<label for="accessLogKeyword">${ui.dataset.keywordLabel}</label><input type="text" id="accessLogKeyword" autocomplete="off" placeholder="${ui.dataset.keywordPlaceholder || ''}" />`;
     const methodField = document.createElement('div'); methodField.className = 'form-group'; methodField.innerHTML = `<label for="accessLogMethod">${ui.dataset.methodLabel}</label><select id="accessLogMethod"><option value="">ALL</option><option value="GET">GET</option><option value="POST">POST</option><option value="PUT">PUT</option><option value="PATCH">PATCH</option><option value="DELETE">DELETE</option></select>`;
+    const minDurationField = document.createElement('div'); minDurationField.className = 'form-group'; minDurationField.innerHTML = `<label for="accessLogMinDuration">${ui.dataset.minDurationLabel || 'Minimum Duration'}</label><input type="number" id="accessLogMinDuration" min="0" autocomplete="off" />`;
+    const statusCodeField = document.createElement('div'); statusCodeField.className = 'form-group'; statusCodeField.innerHTML = `<label for="accessLogStatusCode">${ui.dataset.statusCodeLabel || 'Status Code'}</label><input type="number" id="accessLogStatusCode" min="0" autocomplete="off" />`;
     const limitField = document.createElement('div'); limitField.className = 'form-group'; limitField.innerHTML = `<label for="accessLogLimit">${ui.dataset.limitLabel}</label><select id="accessLogLimit"><option value="50">50</option><option value="100" selected>100</option><option value="200">200</option><option value="300">300</option><option value="500">500</option></select>`;
     const actionField = document.createElement('div'); actionField.className = 'form-group access-log-filter-actions';
     const searchButton = document.createElement('button'); searchButton.type = 'button'; searchButton.className = 'button thin'; searchButton.textContent = ui.dataset.searchLabel || 'Search';
@@ -231,11 +241,19 @@
     actionField.appendChild(searchButton); actionField.appendChild(exportButton); actionField.appendChild(clearButton);
     const startField = document.createElement('div'); startField.className = 'form-group'; startField.innerHTML = `<label for="accessLogStart">${ui.dataset.startLabel}</label><input type="datetime-local" id="accessLogStart" />`;
     const endField = document.createElement('div'); endField.className = 'form-group'; endField.innerHTML = `<label for="accessLogEnd">${ui.dataset.endLabel}</label><input type="datetime-local" id="accessLogEnd" />`;
-    [requestIdField, keywordField, methodField, startField, endField, limitField, actionField].forEach((node) => filterGrid.appendChild(node));
+    [requestIdField, keywordField, methodField, minDurationField, statusCodeField, startField, endField, limitField, actionField].forEach((node) => filterGrid.appendChild(node));
     const resultSummary = document.createElement('p'); resultSummary.className = 'access-log-results-summary'; resultSummary.textContent = ui.dataset.emptyLabel || '';
     const resultContainer = document.createElement('div');
+    requestIdField.querySelector('input').value = String(defaults.request_id || '');
+    keywordField.querySelector('input').value = String(defaults.keyword || '');
+    methodField.querySelector('select').value = String(defaults.method || '');
+    minDurationField.querySelector('input').value = String(defaults.min_duration_ms || '');
+    statusCodeField.querySelector('input').value = String(defaults.status_code || '');
+    startField.querySelector('input').value = String(defaults.start_at || '');
+    endField.querySelector('input').value = String(defaults.end_at || '');
+    limitField.querySelector('select').value = String(defaults.limit || '100');
     const runSearch = () => {
-      fetchAdminAccessLogs({ request_id: document.getElementById('accessLogRequestId')?.value || '', keyword: document.getElementById('accessLogKeyword')?.value || '', method: document.getElementById('accessLogMethod')?.value || '', start_at: document.getElementById('accessLogStart')?.value || '', end_at: document.getElementById('accessLogEnd')?.value || '', limit: document.getElementById('accessLogLimit')?.value || '100' }, resultSummary, resultContainer, searchButton, ui);
+      fetchAdminAccessLogs({ request_id: document.getElementById('accessLogRequestId')?.value || '', keyword: document.getElementById('accessLogKeyword')?.value || '', method: document.getElementById('accessLogMethod')?.value || '', min_duration_ms: document.getElementById('accessLogMinDuration')?.value || '', status_code: document.getElementById('accessLogStatusCode')?.value || '', start_at: document.getElementById('accessLogStart')?.value || '', end_at: document.getElementById('accessLogEnd')?.value || '', limit: document.getElementById('accessLogLimit')?.value || '100' }, resultSummary, resultContainer, searchButton, ui);
     };
     searchButton.addEventListener('click', runSearch);
     exportButton.addEventListener('click', () => {
