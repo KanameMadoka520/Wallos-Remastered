@@ -288,6 +288,30 @@ try {
       const feed = document.querySelector("[data-observability-feed]");
       return !!feed && feed.textContent.trim().length > 0;
     }, null, { timeout: 15000 });
+    await page.waitForFunction(() => {
+      const grid = document.querySelector("[data-slow-endpoint-grid]");
+      return !!grid && grid.textContent.trim().length > 0;
+    }, null, { timeout: 15000 });
+  });
+
+  await step("maintenance recommendations refresh cleanly", async () => {
+    await expectVisible("#adminMaintenanceRecommendations", "maintenance recommendations");
+    await page.waitForFunction(() => {
+      const panel = document.getElementById("adminMaintenanceRecommendations");
+      return !!panel && panel.querySelector(".maintenance-recommendation-card");
+    }, null, { timeout: 15000 });
+
+    await page.locator("#refreshMaintenanceRecommendationsButton").click();
+    await waitForButtonEnabled("#refreshMaintenanceRecommendationsButton");
+    await page.waitForFunction(() => {
+      const panel = document.getElementById("adminMaintenanceRecommendations");
+      const result = document.getElementById("adminMaintenanceResult");
+      return !!panel
+        && !!panel.querySelector(".maintenance-recommendation-card")
+        && !!result
+        && result.value.trim().length > 20
+        && !result.value.toLowerCase().includes("running");
+    }, null, { timeout: 30000 });
   });
 
   await step("service worker cache refresh request updates observability marker", async () => {
