@@ -1069,6 +1069,7 @@ $i18n = [
     "request_log_rows" => "存取日誌列數",
     "security_anomaly_rows" => "安全異常列數",
     "rate_limit_usage_rows" => "速率限制用量列數",
+    "maintenance_action_log_rows" => "維護動作日誌列數",
     "file_count" => "檔案數",
     "directory_count" => "資料夾數",
     "scan_errors" => "掃描錯誤",

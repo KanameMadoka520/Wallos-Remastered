@@ -544,6 +544,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'log_rows_daily_average',
         'log_oldest_at',
         'log_latest_at',
+        'maintenance_action_log_rows',
         'renderAdminMaintenanceRecommendations',
         'maintenance_recommendations_generated_at',
         'formatAdminMaintenanceRecommendations',

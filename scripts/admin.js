@@ -239,6 +239,12 @@ function renderAdminMaintenanceStorageSummary(storage) {
       buildAdminLogStorageDetail(logs.rate_limit_usage),
       "fa-solid fa-gauge-high"
     ),
+    renderAdminMaintenanceStorageCard(
+      adminTranslateWithFallback("maintenance_action_log_rows", "Maintenance Action Rows"),
+      logs.maintenance_action_logs?.rows_label || formatAdminNumber(logs.maintenance_action_logs?.rows ?? 0),
+      buildAdminLogStorageDetail(logs.maintenance_action_logs),
+      "fa-solid fa-screwdriver-wrench"
+    ),
   ];
 
   container.innerHTML = cards.join("");
@@ -521,6 +527,7 @@ function formatAdminStorageSummary(storage) {
     `${adminTranslateWithFallback("request_log_rows", "Request Log Rows")}: ${logs.request_logs?.rows_label || "0"} (${getAdminLogRiskLabel(logs.request_logs?.risk)})`,
     `${adminTranslateWithFallback("security_anomaly_rows", "Security Anomaly Rows")}: ${logs.security_anomalies?.rows_label || "0"} (${getAdminLogRiskLabel(logs.security_anomalies?.risk)})`,
     `${adminTranslateWithFallback("rate_limit_usage_rows", "Rate-Limit Usage Rows")}: ${logs.rate_limit_usage?.rows_label || "0"} (${getAdminLogRiskLabel(logs.rate_limit_usage?.risk)})`,
+    `${adminTranslateWithFallback("maintenance_action_log_rows", "Maintenance Action Rows")}: ${logs.maintenance_action_logs?.rows_label || "0"} (${getAdminLogRiskLabel(logs.maintenance_action_logs?.risk)})`,
   ].join("\n");
 }
 
