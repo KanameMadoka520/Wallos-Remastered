@@ -209,6 +209,85 @@ function wallos_count_recent_failed_maintenance_actions($db, $hours = 24)
     return (int) ($row['total'] ?? 0);
 }
 
+function wallos_get_maintenance_action_log_summary($db, $hours = 24)
+{
+    $hours = max(1, (int) $hours);
+    $summary = [
+        'generated_at' => date('Y-m-d H:i:s'),
+        'window_hours' => $hours,
+        'retention_days' => WALLOS_MAINTENANCE_ACTION_LOG_RETENTION_DAYS,
+        'slow_threshold_ms' => WALLOS_MAINTENANCE_ACTION_SLOW_MS,
+        'total_rows' => 0,
+        'total_rows_label' => '0',
+        'recent_rows' => 0,
+        'recent_rows_label' => '0',
+        'recent_success_rows' => 0,
+        'recent_success_rows_label' => '0',
+        'recent_failed_rows' => 0,
+        'recent_failed_rows_label' => '0',
+        'recent_slow_rows' => 0,
+        'recent_slow_rows_label' => '0',
+        'latest_at' => '',
+        'slowest_action' => '',
+        'slowest_duration_ms' => 0,
+        'slowest_duration_label' => '0 ms',
+        'slowest_at' => '',
+    ];
+
+    if (!wallos_maintenance_action_logs_table_exists($db)) {
+        return $summary;
+    }
+
+    $summary['total_rows'] = wallos_maintenance_count_table_rows($db, 'maintenance_action_logs');
+    $summary['total_rows_label'] = number_format($summary['total_rows']);
+    $cutoff = date('Y-m-d H:i:s', strtotime('-' . $hours . ' hours'));
+
+    $stmt = $db->prepare('
+        SELECT
+            COUNT(*) AS recent_rows,
+            SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS recent_success_rows,
+            SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) AS recent_failed_rows,
+            SUM(CASE WHEN duration_ms >= :slow_threshold THEN 1 ELSE 0 END) AS recent_slow_rows,
+            MAX(created_at) AS latest_at
+        FROM maintenance_action_logs
+        WHERE created_at >= :cutoff
+    ');
+    if ($stmt) {
+        $stmt->bindValue(':slow_threshold', WALLOS_MAINTENANCE_ACTION_SLOW_MS, SQLITE3_INTEGER);
+        $stmt->bindValue(':cutoff', $cutoff, SQLITE3_TEXT);
+        $result = $stmt->execute();
+        $row = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+        if (is_array($row)) {
+            foreach (['recent_rows', 'recent_success_rows', 'recent_failed_rows', 'recent_slow_rows'] as $key) {
+                $summary[$key] = (int) ($row[$key] ?? 0);
+                $summary[$key . '_label'] = number_format($summary[$key]);
+            }
+            $summary['latest_at'] = (string) ($row['latest_at'] ?? '');
+        }
+    }
+
+    $stmt = $db->prepare('
+        SELECT action, duration_ms, created_at
+        FROM maintenance_action_logs
+        WHERE created_at >= :cutoff
+        ORDER BY duration_ms DESC, id DESC
+        LIMIT 1
+    ');
+    if ($stmt) {
+        $stmt->bindValue(':cutoff', $cutoff, SQLITE3_TEXT);
+        $result = $stmt->execute();
+        $row = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+        if (is_array($row)) {
+            $summary['slowest_action'] = (string) ($row['action'] ?? '');
+            $summary['slowest_duration_ms'] = (int) ($row['duration_ms'] ?? 0);
+            $summary['slowest_duration_label'] = number_format($summary['slowest_duration_ms']) . ' ms';
+            $summary['slowest_at'] = (string) ($row['created_at'] ?? '');
+        }
+    }
+
+    return $summary;
+}
+
 function wallos_get_maintenance_log_activity($db, $tableName, $retentionDays)
 {
     $activity = [

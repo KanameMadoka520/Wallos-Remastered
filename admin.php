@@ -211,6 +211,8 @@ $maintenanceRecommendationSummary = wallos_get_maintenance_recommendation_summar
 $maintenanceRecommendationSummaryJson = json_encode($maintenanceRecommendationSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $maintenanceActionLogs = wallos_get_recent_maintenance_actions($db, 12);
 $maintenanceActionLogsJson = json_encode($maintenanceActionLogs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$maintenanceActionSummary = wallos_get_maintenance_action_log_summary($db, 24);
+$maintenanceActionSummaryJson = json_encode($maintenanceActionSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $adminSystemOverviewSummary = wallos_get_admin_system_overview_summary($db, __DIR__, $i18n, $maintenanceStorageSummary, $maintenanceRecommendationSummary);
 $backupProgressLabels = wallos_get_backup_progress_labels($lang);
 $adminBackupsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-backups.js');
@@ -1565,6 +1567,9 @@ $pageSections = [
                     <i class="fa-solid fa-circle-info"></i>
                     <?= translate('maintenance_action_logs_info', $i18n) ?>
                 </p>
+            </div>
+            <div id="adminMaintenanceActionSummary" class="backup-summary-grid"
+                data-maintenance-action-summary="<?= htmlspecialchars($maintenanceActionSummaryJson ?: '{}', ENT_QUOTES, 'UTF-8') ?>">
             </div>
             <div id="adminMaintenanceActionLogs" class="maintenance-action-log-grid"
                 data-maintenance-action-logs="<?= htmlspecialchars($maintenanceActionLogsJson ?: '[]', ENT_QUOTES, 'UTF-8') ?>">
