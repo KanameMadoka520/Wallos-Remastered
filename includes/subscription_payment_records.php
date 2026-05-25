@@ -49,11 +49,39 @@ function wallos_convert_amount_to_main_snapshot($amountOriginal, $rateToMain)
     return $amountOriginal / $rateToMain;
 }
 
+function wallos_payment_main_conversion_is_available($currencyCode, $mainCurrencyCode, $rateToMain)
+{
+    $currencyCode = strtoupper(trim((string) $currencyCode));
+    $mainCurrencyCode = strtoupper(trim((string) $mainCurrencyCode));
+
+    if ($currencyCode === '' || $mainCurrencyCode === '' || $currencyCode === $mainCurrencyCode) {
+        return true;
+    }
+
+    $rateToMain = (float) $rateToMain;
+    if ($rateToMain <= 0) {
+        return false;
+    }
+
+    return abs($rateToMain - 1.0) > 0.000001;
+}
+
+function wallos_enrich_payment_record_conversion_status(array $record)
+{
+    $record['main_currency_conversion_available'] = wallos_payment_main_conversion_is_available(
+        $record['currency_code_snapshot'] ?? '',
+        $record['main_currency_code_snapshot'] ?? '',
+        $record['fx_rate_to_main_snapshot'] ?? 0
+    );
+
+    return $record;
+}
+
 function wallos_get_subscription_payment_records($db, $subscriptionId, $userId, $limit = 10)
 {
     $sql = '
         SELECT id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot,
-               main_currency_code_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
+               main_currency_code_snapshot, fx_rate_to_main_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
         FROM subscription_payment_records
         WHERE subscription_id = :subscription_id AND user_id = :user_id
         ORDER BY paid_at DESC, id DESC
@@ -72,7 +100,7 @@ function wallos_get_subscription_payment_records($db, $subscriptionId, $userId, 
 
     $records = [];
     while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
-        $records[] = $row;
+        $records[] = wallos_enrich_payment_record_conversion_status($row);
     }
 
     return $records;
@@ -82,7 +110,7 @@ function wallos_get_subscription_payment_record_by_id($db, $recordId, $subscript
 {
     $stmt = $db->prepare('
         SELECT id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot,
-               main_currency_code_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
+               main_currency_code_snapshot, fx_rate_to_main_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
         FROM subscription_payment_records
         WHERE id = :id AND subscription_id = :subscription_id AND user_id = :user_id
         LIMIT 1
@@ -92,14 +120,15 @@ function wallos_get_subscription_payment_record_by_id($db, $recordId, $subscript
     $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
     $result = $stmt->execute();
 
-    return $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+    $record = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+    return $record === false ? false : wallos_enrich_payment_record_conversion_status($record);
 }
 
 function wallos_get_subscription_payment_record_by_due_date($db, $subscriptionId, $userId, $dueDate)
 {
     $stmt = $db->prepare('
         SELECT id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot,
-               main_currency_code_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
+               main_currency_code_snapshot, fx_rate_to_main_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
         FROM subscription_payment_records
         WHERE subscription_id = :subscription_id AND user_id = :user_id AND due_date = :due_date AND status = :status
         ORDER BY paid_at DESC, id DESC
@@ -111,14 +140,15 @@ function wallos_get_subscription_payment_record_by_due_date($db, $subscriptionId
     $stmt->bindValue(':status', 'paid', SQLITE3_TEXT);
     $result = $stmt->execute();
 
-    return $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+    $record = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+    return $record === false ? false : wallos_enrich_payment_record_conversion_status($record);
 }
 
 function wallos_get_subscription_payment_records_map($db, $userId, $limitPerSubscription = 6)
 {
     $stmt = $db->prepare('
         SELECT id, subscription_id, due_date, paid_at, amount_original, currency_code_snapshot,
-               main_currency_code_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
+               main_currency_code_snapshot, fx_rate_to_main_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at
         FROM subscription_payment_records
         WHERE user_id = :user_id
         ORDER BY subscription_id ASC, paid_at DESC, id DESC
@@ -141,7 +171,7 @@ function wallos_get_subscription_payment_records_map($db, $userId, $limitPerSubs
             continue;
         }
 
-        $recordsMap[$subscriptionId][] = $row;
+        $recordsMap[$subscriptionId][] = wallos_enrich_payment_record_conversion_status($row);
     }
 
     return $recordsMap;
@@ -192,7 +222,8 @@ function wallos_get_subscription_payment_records_for_period($db, $userId, $dateF
         SELECT subscription_payment_records.id, subscription_payment_records.subscription_id,
                subscription_payment_records.due_date, subscription_payment_records.paid_at,
                subscription_payment_records.amount_original, subscription_payment_records.currency_code_snapshot,
-               subscription_payment_records.main_currency_code_snapshot, subscription_payment_records.amount_main_snapshot,
+               subscription_payment_records.main_currency_code_snapshot, subscription_payment_records.fx_rate_to_main_snapshot,
+               subscription_payment_records.amount_main_snapshot,
                subscription_payment_records.payment_method_id, subscription_payment_records.status,
                subscription_payment_records.note, subscription_payment_records.created_at,
                subscriptions.name AS subscription_name
@@ -219,7 +250,7 @@ function wallos_get_subscription_payment_records_for_period($db, $userId, $dateF
 
     $records = [];
     while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
-        $records[] = $row;
+        $records[] = wallos_enrich_payment_record_conversion_status($row);
     }
 
     return $records;

@@ -107,6 +107,16 @@ foreach ($records as $record) {
     $investedTotal += (float) ($record['amount_main_snapshot'] ?? 0);
 }
 
+$hasUnavailableExchangeSnapshots = false;
+foreach (array_merge($records, $forecast, $summaryForecast, $selectedYearForecast) as $paymentItem) {
+    if (array_key_exists('main_currency_conversion_available', $paymentItem)
+        && empty($paymentItem['main_currency_conversion_available'])
+    ) {
+        $hasUnavailableExchangeSnapshots = true;
+        break;
+    }
+}
+
 echo json_encode([
     'success' => true,
     'subscription' => [
@@ -127,6 +137,7 @@ echo json_encode([
         'projected_total' => round($actualThisYearTotal + $predictedRemainingTotal, 2),
         'current_year' => $currentYear,
         'remaining_value' => $remainingValue,
+        'has_unavailable_exchange_snapshots' => $hasUnavailableExchangeSnapshots,
     ],
     'cashflow' => $cashflow,
     'forecast' => $forecast,

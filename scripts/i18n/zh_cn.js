@@ -11,6 +11,8 @@ let i18n = {
     'subscription_payment_history': '实际支付记录',
     'subscription_payment_history_empty': '这个订阅暂时还没有记录任何实际支付。',
     'subscription_payment_main_amount': '主货币折算快照',
+    'subscription_payment_exchange_rate_missing': '汇率未更新，暂不显示主货币折算',
+    'subscription_payment_exchange_rate_missing_notice': '部分记录或预测缺少有效汇率快照，主货币汇总可能不准确。请在设置中配置 Fixer API 并更新汇率。',
     'subscription_edit_payment': '编辑支付记录',
     'subscription_price_rules': '特殊价格规则',
     'subscription_price_rules_empty': '当前还没有配置任何特殊价格规则。',

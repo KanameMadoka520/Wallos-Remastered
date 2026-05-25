@@ -76,19 +76,38 @@ try {
         (1, 1, 9, '2026-01-01', '2026-01-01', 100, 1, 'USD', 'USD', 1, 100, 1, 'paid', '', '2026-01-01 00:00:00'),
         (2, 1, 9, '2026-02-01', '2026-02-01', 100, 1, 'USD', 'USD', 1, 100, 1, 'paid', '', '2026-02-01 00:00:00')");
 
+    $db->exec("INSERT INTO user (id, main_currency) VALUES (2, 22)");
+    $db->exec("INSERT INTO currencies (id, user_id, code, rate) VALUES (21, 2, 'EUR', 1.0)");
+    $db->exec("INSERT INTO currencies (id, user_id, code, rate) VALUES (22, 2, 'CNY', 1.0)");
+    $db->exec("INSERT INTO subscriptions (id, user_id, name, price, currency_id, cycle, frequency, start_date, next_payment, payment_method_id)
+        VALUES (10, 2, 'EUR Subscription', 21.61, 21, 3, 1, '2026-06-01', '2026-06-01', 1)");
+
+    wallos_record_subscription_payment($db, 2, 10, '2026-06-01', '2026-06-01', 21.61, 21, 1);
+    $missingRateRecords = wallos_get_subscription_payment_records($db, 10, 2, 0);
+    wallos_ledger_assert_equal($missingRateRecords[0]['currency_code_snapshot'], 'EUR', '实付记录应保留原始扣款币种快照');
+    wallos_ledger_assert_equal($missingRateRecords[0]['main_currency_conversion_available'], false, '非主货币且汇率仍为默认 1 时不应展示误导性的主货币折算');
+    wallos_ledger_print_ok('缺少汇率时账本保留原币种并标记主货币折算不可用');
+
+    $db->exec("UPDATE currencies SET rate = 0.125 WHERE id = 21 AND user_id = 2");
+    wallos_record_subscription_payment($db, 2, 10, '2026-07-01', '2026-07-01', 21.61, 21, 1);
+    $convertedRateRecords = wallos_get_subscription_payment_records($db, 10, 2, 0);
+    wallos_ledger_assert_equal($convertedRateRecords[0]['main_currency_conversion_available'], true, '存在有效非默认汇率时可以展示主货币折算');
+    wallos_ledger_assert_float($convertedRateRecords[0]['amount_main_snapshot'], 172.88, '有效汇率应写入主货币折算快照');
+    wallos_ledger_print_ok('有效汇率下主货币折算快照可用');
+
     wallos_recalculate_subscription_next_payment_from_history($db, 9, 1);
     $nextPayment = $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 9');
     wallos_ledger_assert_equal($nextPayment, '2026-03-01', '根据已支付账期应回算出最早未支付账期');
     wallos_ledger_print_ok('账期回算到最早未支付日期');
 
     $db->exec("INSERT INTO subscription_payment_records (id, user_id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot, main_currency_code_snapshot, fx_rate_to_main_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at)
-        VALUES (3, 1, 9, '2026-03-01', '2026-03-01', 100, 1, 'USD', 'USD', 1, 100, 1, 'paid', '', '2026-03-01 00:00:00')");
+        VALUES (103, 1, 9, '2026-03-01', '2026-03-01', 100, 1, 'USD', 'USD', 1, 100, 1, 'paid', '', '2026-03-01 00:00:00')");
     wallos_recalculate_subscription_next_payment_from_history($db, 9, 1);
     $nextPayment = $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 9');
     wallos_ledger_assert_equal($nextPayment, '2026-04-01', '新增历史实付后应推进到下一个未支付账期');
     wallos_ledger_print_ok('新增历史实付后自动推进下次扣费');
 
-    $db->exec("DELETE FROM subscription_payment_records WHERE id = 3");
+    $db->exec("DELETE FROM subscription_payment_records WHERE id = 103");
     wallos_recalculate_subscription_next_payment_from_history($db, 9, 1);
     $nextPayment = $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 9');
     wallos_ledger_assert_equal($nextPayment, '2026-03-01', '删除历史实付后应回退到对应未支付账期');

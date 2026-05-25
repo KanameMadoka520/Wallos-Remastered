@@ -220,6 +220,11 @@ function wallos_build_subscription_future_payment_forecast($db, array $subscript
                 'amount_main' => round((float) ($effectivePrice['amount_main'] ?? 0), 2),
                 'currency_code' => (string) ($effectivePrice['currency_code'] ?? ''),
                 'main_currency_code' => $mainCurrencyCode,
+                'main_currency_conversion_available' => wallos_payment_main_conversion_is_available(
+                    $effectivePrice['currency_code'] ?? '',
+                    $mainCurrencyCode,
+                    $effectivePrice['fx_rate_to_main'] ?? 0
+                ),
                 'rule_summary' => $effectivePrice['matched_rule']
                     ? wallos_format_subscription_price_rule_summary($effectivePrice['matched_rule'], $currencies, $i18n)
                     : translate('metric_explanation_regular_price_source', $i18n),

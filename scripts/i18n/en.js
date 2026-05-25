@@ -11,6 +11,8 @@ let i18n = {
   subscription_payment_history: "Actual Payment History",
   subscription_payment_history_empty: "No actual payments have been recorded for this subscription yet.",
   subscription_payment_main_amount: "Main Currency Snapshot",
+  subscription_payment_exchange_rate_missing: "Exchange rates have not been updated, so no main-currency conversion is shown",
+  subscription_payment_exchange_rate_missing_notice: "Some records or forecasts do not have a usable exchange-rate snapshot. Main-currency totals may be inaccurate until you configure a Fixer API key and update exchange rates.",
   subscription_edit_payment: "Edit Payment",
   subscription_price_rules: "Special Price Rules",
   subscription_price_rules_empty: "No special price rules have been configured yet.",

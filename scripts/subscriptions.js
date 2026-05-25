@@ -529,6 +529,14 @@ function formatSubscriptionPaymentHistoryAmount(value, currencyCode) {
     || new Intl.NumberFormat(navigator.language).format(Number(value || 0));
 }
 
+function hasSubscriptionPaymentMainCurrencyConversion(item) {
+  return item?.main_currency_conversion_available !== false && item?.main_currency_conversion_available !== 0;
+}
+
+function getSubscriptionPaymentMissingExchangeRateLabel() {
+  return translate('subscription_payment_exchange_rate_missing');
+}
+
 function sanitizeSubscriptionPaymentHistoryFilenamePart(value) {
   return String(value || "")
     .trim()
@@ -704,6 +712,12 @@ function getSubscriptionPaymentHistorySummaryHtml() {
         <i class="fa-solid fa-shuffle"></i>
         <span>${escapeHtml(translate('subscription_payment_rule_replay_notice'))}</span>
       </div>
+      ${summary.has_unavailable_exchange_snapshots ? `
+        <div class="subscription-payment-history-note">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>${escapeHtml(translate('subscription_payment_exchange_rate_missing_notice'))}</span>
+        </div>
+      ` : ''}
       ${remainingValue.available ? `
         <div class="subscription-payment-history-note">
           <i class="fa-solid fa-hourglass-half"></i>
@@ -767,12 +781,19 @@ function renderSubscriptionPaymentHistoryRecordsHtml() {
 
   return currentPaymentHistoryRecords.map((record) => {
     const noteHtml = record.note_html || "";
+    const hasMainConversion = hasSubscriptionPaymentMainCurrencyConversion(record);
     const amountLabel = formatSubscriptionPaymentHistoryAmount(record.amount_original || 0, record.currency_code_snapshot || '');
-    const mainAmountLabel = formatSubscriptionPaymentHistoryAmount(record.amount_main_snapshot || 0, record.main_currency_code_snapshot || '');
-    const expectedAmountLabel = formatSubscriptionPaymentHistoryAmount(record.expected_amount_main || 0, record.main_currency_code_snapshot || '');
+    const mainAmountLabel = hasMainConversion
+      ? formatSubscriptionPaymentHistoryAmount(record.amount_main_snapshot || 0, record.main_currency_code_snapshot || '')
+      : getSubscriptionPaymentMissingExchangeRateLabel();
+    const expectedAmountLabel = hasMainConversion
+      ? formatSubscriptionPaymentHistoryAmount(record.expected_amount_main || 0, record.main_currency_code_snapshot || '')
+      : getSubscriptionPaymentMissingExchangeRateLabel();
     const ledgerDifference = Number(record.ledger_difference_main || 0);
     const differencePrefix = ledgerDifference > 0 ? '+' : '';
-    const differenceLabel = `${differencePrefix}${formatSubscriptionPaymentHistoryAmount(ledgerDifference, record.main_currency_code_snapshot || '')}`;
+    const differenceLabel = hasMainConversion
+      ? `${differencePrefix}${formatSubscriptionPaymentHistoryAmount(ledgerDifference, record.main_currency_code_snapshot || '')}`
+      : '';
 
     return `
       <article class="subscription-payment-record-item">
@@ -785,7 +806,7 @@ function renderSubscriptionPaymentHistoryRecordsHtml() {
           <span>${escapeHtml(`${translate('subscription_payment_main_amount')}: ${mainAmountLabel}`)}</span>
           <span>${escapeHtml(`${translate('subscription_payment_expected_amount')}: ${expectedAmountLabel}`)}</span>
           <span>${escapeHtml(`${translate('metric_explanation_rule_source')}: ${record.rule_summary_current || translate('metric_explanation_regular_price_source')}`)}</span>
-          ${Math.abs(ledgerDifference) > 0.001 ? `<span>${escapeHtml(`${translate('subscription_payment_ledger_difference')}: ${differenceLabel}`)}</span>` : ''}
+          ${hasMainConversion && Math.abs(ledgerDifference) > 0.001 ? `<span>${escapeHtml(`${translate('subscription_payment_ledger_difference')}: ${differenceLabel}`)}</span>` : ''}
         </div>
         ${noteHtml ? `<div class="subscription-markdown subscription-payment-record-note">${noteHtml}</div>` : ''}
         <div class="buttons subscription-payment-record-history-actions">
@@ -870,8 +891,11 @@ function renderSubscriptionPaymentForecastHtml() {
       <span>${escapeHtml(translate('subscription_payment_forecast_range_notice'))}</span>
     </div>
     ${currentPaymentHistoryForecast.map((item) => {
-    const amountLabel = formatSubscriptionPaymentHistoryAmount(item.amount_main || 0, item.main_currency_code || '');
+    const hasMainConversion = hasSubscriptionPaymentMainCurrencyConversion(item);
     const originalAmountLabel = formatSubscriptionPaymentHistoryAmount(item.amount_original || 0, item.currency_code || '');
+    const amountLabel = hasMainConversion
+      ? formatSubscriptionPaymentHistoryAmount(item.amount_main || 0, item.main_currency_code || '')
+      : originalAmountLabel;
 
     return `
       <article class="subscription-payment-record-item">
@@ -881,6 +905,7 @@ function renderSubscriptionPaymentForecastHtml() {
         </div>
         <div class="subscription-payment-record-meta">
           <span>${escapeHtml(`${translate('subscription_payment_forecast_original_amount')}: ${originalAmountLabel}`)}</span>
+          ${hasMainConversion ? '' : `<span>${escapeHtml(`${translate('subscription_payment_main_amount')}: ${getSubscriptionPaymentMissingExchangeRateLabel()}`)}</span>`}
           <span>${escapeHtml(`${translate('metric_explanation_rule_source')}: ${item.rule_summary || translate('metric_explanation_regular_price_source')}`)}</span>
         </div>
       </article>
