@@ -11,6 +11,8 @@ let i18n = {
     subscription_payment_history: '實際支付記錄',
     subscription_payment_history_empty: '這個訂閱目前還沒有記錄任何實際支付。',
     subscription_payment_main_amount: '主貨幣折算快照',
+    subscription_payment_exchange_rate_missing: '匯率尚未更新，暫不顯示主貨幣折算',
+    subscription_payment_exchange_rate_missing_notice: '部分記錄或預測缺少有效匯率快照，主貨幣彙總可能不準確。請在設定中配置 Fixer API 並更新匯率。',
     subscription_edit_payment: '編輯支付記錄',
     subscription_price_rules: '特殊價格規則',
     subscription_price_rules_empty: '目前還沒有設定任何特殊價格規則。',

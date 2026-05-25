@@ -352,6 +352,7 @@ function wallos_get_effective_subscription_price_for_due_date($subscription, arr
         'amount_original' => round($amountOriginal, 2),
         'currency_id' => $currencyId,
         'currency_code' => $currencySnapshot['code'] ?? '',
+        'fx_rate_to_main' => $currencySnapshot['rate'] ?? 0,
         'amount_main' => round($amountMain, 2),
         'matched_rule' => $matchedRule,
     ];
