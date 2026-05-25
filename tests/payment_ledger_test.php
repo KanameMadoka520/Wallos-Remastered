@@ -88,6 +88,44 @@ try {
     wallos_ledger_assert_equal($missingRateRecords[0]['main_currency_conversion_available'], false, '非主货币且汇率仍为默认 1 时不应展示误导性的主货币折算');
     wallos_ledger_print_ok('缺少汇率时账本保留原币种并标记主货币折算不可用');
 
+    $missingRateOriginalTotal = wallos_build_single_currency_original_total($missingRateRecords, 'amount_original', 'currency_code_snapshot');
+    wallos_ledger_assert_equal($missingRateOriginalTotal['available'], true, 'Missing-rate summaries should be able to fall back to one original currency');
+    wallos_ledger_assert_equal($missingRateOriginalTotal['currency_code'], 'EUR', 'Missing-rate summary fallback should keep EUR');
+    wallos_ledger_assert_float($missingRateOriginalTotal['amount'], 21.61, 'Missing-rate summary fallback should sum original EUR amounts');
+    wallos_ledger_assert_equal(wallos_all_payment_main_conversions_are_available($missingRateRecords), false, 'Missing-rate summary should mark main-currency totals unavailable');
+    wallos_ledger_print_ok('缺少汇率时摘要汇总回退到原币种');
+
+    $missingRateSubscription = [
+        'id' => 10,
+        'price' => 21.61,
+        'currency_id' => 21,
+        'cycle' => 3,
+        'frequency' => 1,
+        'start_date' => '2026-06-01',
+        'next_payment' => '2026-07-01',
+    ];
+    $missingRateRemainingValue = wallos_build_subscription_remaining_value_snapshot(
+        $db,
+        $missingRateSubscription,
+        2,
+        [],
+        $missingRateRecords,
+        [21 => ['code' => 'EUR'], 22 => ['code' => 'CNY']],
+        [
+            'metric_explanation_regular_price_source' => 'Regular subscription price',
+            'subscription_remaining_value_source_record' => 'Based on the actual payment recorded for the current cycle',
+            'subscription_remaining_value_source_rule' => 'Estimated from the current pricing rules for the active cycle',
+            'subscription_remaining_value_mode_time' => 'Uses the time-prorated remaining value of the active cycle',
+            'subscription_remaining_value_mode_hybrid' => 'Uses the smaller of time-prorated value and manually remaining quota value',
+        ],
+        new DateTime('2026-06-16')
+    );
+    wallos_ledger_assert_equal($missingRateRemainingValue['main_currency_conversion_available'], false, 'Missing-rate remaining value should mark main conversion unavailable');
+    wallos_ledger_assert_equal($missingRateRemainingValue['remaining_value_original_available'], true, 'Missing-rate remaining value should expose original-currency fallback');
+    wallos_ledger_assert_equal($missingRateRemainingValue['currency_code'], 'EUR', 'Missing-rate remaining value fallback should keep EUR');
+    wallos_ledger_assert_float($missingRateRemainingValue['remaining_value_original'], 10.81, 'Missing-rate remaining value should calculate original-currency remainder');
+    wallos_ledger_print_ok('缺少汇率时剩余价值回退到原币种');
+
     $db->exec("UPDATE currencies SET rate = 0.125 WHERE id = 21 AND user_id = 2");
     wallos_record_subscription_payment($db, 2, 10, '2026-07-01', '2026-07-01', 21.61, 21, 1);
     $convertedRateRecords = wallos_get_subscription_payment_records($db, 10, 2, 0);

@@ -111,8 +111,11 @@ function wallos_build_subscription_remaining_value_snapshot($db, array $subscrip
         return [
             'available' => false,
             'remaining_value_main' => 0.0,
+            'remaining_value_original' => 0.0,
             'current_cycle_value_main' => 0.0,
+            'current_cycle_value_original' => 0.0,
             'time_prorated_remaining_main' => 0.0,
+            'time_prorated_remaining_original' => 0.0,
             'manual_used_value_main' => 0.0,
             'manual_unused_value_main' => 0.0,
             'manual_used_value_active' => false,
@@ -124,6 +127,9 @@ function wallos_build_subscription_remaining_value_snapshot($db, array $subscrip
             'current_cycle_value_label' => '',
             'value_source_summary' => '',
             'main_currency_code' => $mainCurrencyCode,
+            'currency_code' => '',
+            'main_currency_conversion_available' => true,
+            'remaining_value_original_available' => false,
         ];
     }
 
@@ -142,6 +148,13 @@ function wallos_build_subscription_remaining_value_snapshot($db, array $subscrip
 
     if ($currentCycleRecord !== false && $currentCycleRecord !== null) {
         $currentCycleValueMain = round((float) ($currentCycleRecord['amount_main_snapshot'] ?? 0), 2);
+        $currentCycleValueOriginal = round((float) ($currentCycleRecord['amount_original'] ?? 0), 2);
+        $currentCycleCurrencyCode = strtoupper(trim((string) ($currentCycleRecord['currency_code_snapshot'] ?? '')));
+        $mainCurrencyConversionAvailable = wallos_payment_main_conversion_is_available(
+            $currentCycleCurrencyCode,
+            $mainCurrencyCode,
+            $currentCycleRecord['fx_rate_to_main_snapshot'] ?? 0
+        );
         $currentCycleValueLabel = !empty($currentCycleRecord['currency_code_snapshot'])
             ? CurrencyFormatter::format((float) ($currentCycleRecord['amount_original'] ?? 0), (string) $currentCycleRecord['currency_code_snapshot'])
             : number_format((float) ($currentCycleRecord['amount_original'] ?? 0), 2);
@@ -150,6 +163,13 @@ function wallos_build_subscription_remaining_value_snapshot($db, array $subscrip
         $effectivePrice = wallos_get_effective_subscription_price_for_due_date($subscription, $priceRules, $currentCycleAnchor, $db, $userId);
         $currentCycleValueMain = round((float) ($effectivePrice['amount_main'] ?? 0), 2);
         $currencyCode = (string) ($effectivePrice['currency_code'] ?? '');
+        $currentCycleValueOriginal = round((float) ($effectivePrice['amount_original'] ?? 0), 2);
+        $currentCycleCurrencyCode = strtoupper(trim($currencyCode));
+        $mainCurrencyConversionAvailable = wallos_payment_main_conversion_is_available(
+            $currentCycleCurrencyCode,
+            $mainCurrencyCode,
+            $effectivePrice['fx_rate_to_main'] ?? 0
+        );
         $currentCycleValueLabel = $currencyCode !== ''
             ? CurrencyFormatter::format((float) ($effectivePrice['amount_original'] ?? 0), $currencyCode)
             : number_format((float) ($effectivePrice['amount_original'] ?? 0), 2);
@@ -160,6 +180,7 @@ function wallos_build_subscription_remaining_value_snapshot($db, array $subscrip
 
     $remainingRatio = (int) ($window['total_days'] ?? 0) > 0 ? round(((int) ($window['remaining_days'] ?? 0)) / ((int) ($window['total_days'] ?? 1)), 6) : 0.0;
     $timeProratedRemainingMain = round($currentCycleValueMain * $remainingRatio, 2);
+    $timeProratedRemainingOriginal = round($currentCycleValueOriginal * $remainingRatio, 2);
 
     $storedManualUsedValue = round((float) ($subscription['manual_cycle_used_value_main'] ?? 0), 2);
     $storedManualAnchor = trim((string) ($subscription['manual_cycle_used_value_cycle_start'] ?? ''));
@@ -168,17 +189,29 @@ function wallos_build_subscription_remaining_value_snapshot($db, array $subscrip
     $manualUnusedValueMain = round(max(0, $currentCycleValueMain - $manualUsedValueMain), 2);
 
     $remainingValueMain = $timeProratedRemainingMain;
+    $remainingValueOriginal = $timeProratedRemainingOriginal;
+    $remainingValueOriginalAvailable = $currentCycleCurrencyCode !== '' && !$manualUsedValueActive;
     $remainingValueModeSummary = translate('subscription_remaining_value_mode_time', $i18n);
     if ($manualUsedValueActive) {
         $remainingValueMain = round(min($timeProratedRemainingMain, $manualUnusedValueMain), 2);
         $remainingValueModeSummary = translate('subscription_remaining_value_mode_hybrid', $i18n);
+
+        if ($mainCurrencyConversionAvailable && $currentCycleValueMain > 0 && $currentCycleCurrencyCode !== '') {
+            $mainToOriginalRatio = $currentCycleValueOriginal / $currentCycleValueMain;
+            $manualUnusedValueOriginal = round(max(0, $manualUnusedValueMain * $mainToOriginalRatio), 2);
+            $remainingValueOriginal = round(min($timeProratedRemainingOriginal, $manualUnusedValueOriginal), 2);
+            $remainingValueOriginalAvailable = true;
+        }
     }
 
     return [
         'available' => true,
         'remaining_value_main' => $remainingValueMain,
+        'remaining_value_original' => $remainingValueOriginal,
         'current_cycle_value_main' => $currentCycleValueMain,
+        'current_cycle_value_original' => $currentCycleValueOriginal,
         'time_prorated_remaining_main' => $timeProratedRemainingMain,
+        'time_prorated_remaining_original' => $timeProratedRemainingOriginal,
         'manual_used_value_main' => $manualUsedValueMain,
         'manual_unused_value_main' => $manualUnusedValueMain,
         'manual_used_value_active' => $manualUsedValueActive,
@@ -191,6 +224,9 @@ function wallos_build_subscription_remaining_value_snapshot($db, array $subscrip
         'value_source_summary' => $valueSourceSummary,
         'remaining_mode_summary' => $remainingValueModeSummary,
         'main_currency_code' => $mainCurrencyCode,
+        'currency_code' => $currentCycleCurrencyCode,
+        'main_currency_conversion_available' => $mainCurrencyConversionAvailable,
+        'remaining_value_original_available' => $remainingValueOriginalAvailable,
     ];
 }
 
@@ -242,6 +278,7 @@ function wallos_build_subscription_yearly_cashflow(array $records, array $foreca
 {
     $year = (int) $year;
     $rows = [];
+    $originalRows = [];
 
     for ($month = 1; $month <= 12; $month++) {
         $rows[$month] = [
@@ -249,6 +286,13 @@ function wallos_build_subscription_yearly_cashflow(array $records, array $foreca
             'actual_total' => 0.0,
             'predicted_total' => 0.0,
             'total' => 0.0,
+            'actual_total_main_currency_available' => true,
+            'predicted_total_main_currency_available' => true,
+            'total_main_currency_available' => true,
+        ];
+        $originalRows[$month] = [
+            'actual' => [],
+            'predicted' => [],
         ];
     }
 
@@ -265,6 +309,15 @@ function wallos_build_subscription_yearly_cashflow(array $records, array $foreca
 
         $month = (int) $paidDate->format('n');
         $rows[$month]['actual_total'] += round((float) ($record['amount_main_snapshot'] ?? 0), 2);
+        $originalRows[$month]['actual'][] = [
+            'amount' => (float) ($record['amount_original'] ?? 0),
+            'currency_code' => (string) ($record['currency_code_snapshot'] ?? ''),
+        ];
+        if (array_key_exists('main_currency_conversion_available', $record)
+            && empty($record['main_currency_conversion_available'])
+        ) {
+            $rows[$month]['actual_total_main_currency_available'] = false;
+        }
     }
 
     foreach ($forecast as $item) {
@@ -280,12 +333,29 @@ function wallos_build_subscription_yearly_cashflow(array $records, array $foreca
 
         $month = (int) $forecastDate->format('n');
         $rows[$month]['predicted_total'] += round((float) ($item['amount_main'] ?? 0), 2);
+        $originalRows[$month]['predicted'][] = [
+            'amount' => (float) ($item['amount_original'] ?? 0),
+            'currency_code' => (string) ($item['currency_code'] ?? ''),
+        ];
+        if (array_key_exists('main_currency_conversion_available', $item)
+            && empty($item['main_currency_conversion_available'])
+        ) {
+            $rows[$month]['predicted_total_main_currency_available'] = false;
+        }
     }
 
     foreach ($rows as &$row) {
+        $monthNumber = (int) $row['month_number'];
+        $totalOriginalItems = array_merge($originalRows[$monthNumber]['actual'], $originalRows[$monthNumber]['predicted']);
+
         $row['actual_total'] = round((float) $row['actual_total'], 2);
         $row['predicted_total'] = round((float) $row['predicted_total'], 2);
         $row['total'] = round((float) ($row['actual_total'] + $row['predicted_total']), 2);
+        $row['actual_total_original'] = wallos_build_single_currency_original_total($originalRows[$monthNumber]['actual'], 'amount', 'currency_code');
+        $row['predicted_total_original'] = wallos_build_single_currency_original_total($originalRows[$monthNumber]['predicted'], 'amount', 'currency_code');
+        $row['total_original'] = wallos_build_single_currency_original_total($totalOriginalItems, 'amount', 'currency_code');
+        $row['total_main_currency_available'] = !empty($row['actual_total_main_currency_available'])
+            && !empty($row['predicted_total_main_currency_available']);
     }
     unset($row);
 

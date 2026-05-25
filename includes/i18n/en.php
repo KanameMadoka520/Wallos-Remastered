@@ -305,6 +305,7 @@ $i18n = [
     "subscription_payment_history_range_12_months" => "Next 12 Months",
     "subscription_payment_history_range_24_months" => "Next 24 Months",
     "subscription_payment_history_range_36_months" => "Next 36 Months",
+    "subscription_payment_exchange_rate_missing" => "Exchange rates have not been updated, so no main-currency conversion is shown",
     "subscription_invested_total" => "Total Invested Cost",
     "subscription_remaining_value" => "Remaining Value",
     "subscription_remaining_value_days_dynamic" => "%1\$d / %2\$d days remaining, about %3\$s%% of the current cycle",
