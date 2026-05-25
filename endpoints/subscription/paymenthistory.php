@@ -84,6 +84,7 @@ $selectedYearForecast = wallos_build_subscription_future_payment_forecast($db, $
 $cashflow = wallos_build_subscription_yearly_cashflow($records, $selectedYearForecast, $selectedYear);
 
 $actualThisYearTotal = 0.0;
+$actualThisYearRecords = [];
 foreach ($records as $record) {
     $paidAt = trim((string) ($record['paid_at'] ?? ''));
     if ($paidAt === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $paidAt)) {
@@ -95,6 +96,7 @@ foreach ($records as $record) {
     }
 
     $actualThisYearTotal += (float) ($record['amount_main_snapshot'] ?? 0);
+    $actualThisYearRecords[] = $record;
 }
 
 $predictedRemainingTotal = 0.0;
@@ -107,8 +109,32 @@ foreach ($records as $record) {
     $investedTotal += (float) ($record['amount_main_snapshot'] ?? 0);
 }
 
+$projectedOriginalItems = [];
+foreach ($actualThisYearRecords as $record) {
+    $projectedOriginalItems[] = [
+        'amount' => (float) ($record['amount_original'] ?? 0),
+        'currency_code' => (string) ($record['currency_code_snapshot'] ?? ''),
+    ];
+}
+foreach ($summaryForecast as $forecastItem) {
+    $projectedOriginalItems[] = [
+        'amount' => (float) ($forecastItem['amount_original'] ?? 0),
+        'currency_code' => (string) ($forecastItem['currency_code'] ?? ''),
+    ];
+}
+
+$investedOriginalTotal = wallos_build_single_currency_original_total($records, 'amount_original', 'currency_code_snapshot');
+$actualThisYearOriginalTotal = wallos_build_single_currency_original_total($actualThisYearRecords, 'amount_original', 'currency_code_snapshot');
+$predictedRemainingOriginalTotal = wallos_build_single_currency_original_total($summaryForecast, 'amount_original', 'currency_code');
+$projectedOriginalTotal = wallos_build_single_currency_original_total($projectedOriginalItems, 'amount', 'currency_code');
+
+$investedTotalMainCurrencyAvailable = wallos_all_payment_main_conversions_are_available($records);
+$actualThisYearTotalMainCurrencyAvailable = wallos_all_payment_main_conversions_are_available($actualThisYearRecords);
+$predictedRemainingTotalMainCurrencyAvailable = wallos_all_payment_main_conversions_are_available($summaryForecast);
+$projectedTotalMainCurrencyAvailable = $actualThisYearTotalMainCurrencyAvailable && $predictedRemainingTotalMainCurrencyAvailable;
+
 $hasUnavailableExchangeSnapshots = false;
-foreach (array_merge($records, $forecast, $summaryForecast, $selectedYearForecast) as $paymentItem) {
+foreach (array_merge($records, $forecast, $summaryForecast, $selectedYearForecast, [$remainingValue]) as $paymentItem) {
     if (array_key_exists('main_currency_conversion_available', $paymentItem)
         && empty($paymentItem['main_currency_conversion_available'])
     ) {
@@ -135,6 +161,14 @@ echo json_encode([
         'actual_this_year_total' => round($actualThisYearTotal, 2),
         'predicted_remaining_total' => round($predictedRemainingTotal, 2),
         'projected_total' => round($actualThisYearTotal + $predictedRemainingTotal, 2),
+        'invested_total_main_currency_available' => $investedTotalMainCurrencyAvailable,
+        'actual_this_year_total_main_currency_available' => $actualThisYearTotalMainCurrencyAvailable,
+        'predicted_remaining_total_main_currency_available' => $predictedRemainingTotalMainCurrencyAvailable,
+        'projected_total_main_currency_available' => $projectedTotalMainCurrencyAvailable,
+        'invested_total_original' => $investedOriginalTotal,
+        'actual_this_year_total_original' => $actualThisYearOriginalTotal,
+        'predicted_remaining_total_original' => $predictedRemainingOriginalTotal,
+        'projected_total_original' => $projectedOriginalTotal,
         'current_year' => $currentYear,
         'remaining_value' => $remainingValue,
         'has_unavailable_exchange_snapshots' => $hasUnavailableExchangeSnapshots,

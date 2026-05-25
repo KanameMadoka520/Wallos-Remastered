@@ -314,6 +314,7 @@ $i18n = [
     "subscription_payment_history_range_12_months" => "未来 12 个月",
     "subscription_payment_history_range_24_months" => "未来 24 个月",
     "subscription_payment_history_range_36_months" => "未来 36 个月",
+    "subscription_payment_exchange_rate_missing" => "汇率未更新，暂不显示主货币折算",
     "subscription_invested_total" => "累计已投入成本",
     "subscription_remaining_value" => "剩余价值折算",
     "subscription_remaining_value_days_dynamic" => "当前周期剩余 %1\$d / %2\$d 天，约占本期价值的 %3\$s%%",

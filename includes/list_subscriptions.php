@@ -115,6 +115,19 @@ function formatSnapshotPrice($amount, $currencyCode)
     return CurrencyFormatter::format((float) $amount, $currencyCode);
 }
 
+function formatSubscriptionValueMetricAmount($mainAmount, $mainCurrencyCode, $mainCurrencyAvailable, $originalTotal, $currencies, $i18n)
+{
+    if ($mainCurrencyAvailable !== false && $mainCurrencyAvailable !== 0) {
+        return formatPrice((float) $mainAmount, (string) $mainCurrencyCode, $currencies);
+    }
+
+    if (!empty($originalTotal['available']) && !empty($originalTotal['currency_code'])) {
+        return formatSnapshotPrice((float) ($originalTotal['amount'] ?? 0), (string) $originalTotal['currency_code']);
+    }
+
+    return translate('subscription_payment_exchange_rate_missing', $i18n);
+}
+
 function formatDate($date, $lang = 'en')
 {
     if (!$date) {
@@ -545,16 +558,39 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                 <?php
                 $remainingValue = $subscription['remaining_value'] ?? ['available' => false];
                 $paymentTotalMain = (float) ($subscription['payment_total_main'] ?? 0);
+                $paymentTotalCurrencyCode = $subscription['payment_total_currency_code'] ?? $subscription['currency_code'];
+                $paymentTotalLabel = formatSubscriptionValueMetricAmount(
+                    $paymentTotalMain,
+                    $paymentTotalCurrencyCode,
+                    $subscription['payment_total_main_currency_available'] ?? true,
+                    $subscription['payment_total_original'] ?? [],
+                    $currencies,
+                    $i18n
+                );
+                $remainingValueLabel = !empty($remainingValue['available'])
+                    ? formatSubscriptionValueMetricAmount(
+                        (float) ($remainingValue['remaining_value_main'] ?? 0),
+                        $paymentTotalCurrencyCode,
+                        $remainingValue['main_currency_conversion_available'] ?? true,
+                        [
+                            'available' => $remainingValue['remaining_value_original_available'] ?? false,
+                            'amount' => $remainingValue['remaining_value_original'] ?? 0,
+                            'currency_code' => $remainingValue['currency_code'] ?? '',
+                        ],
+                        $currencies,
+                        $i18n
+                    )
+                    : '';
                 ?>
                 <div class="subscription-value-metrics">
                     <article class="subscription-value-metric-card metric-invested">
                         <span class="subscription-value-metric-label"><?= translate('subscription_invested_total', $i18n) ?></span>
-                        <strong><?= htmlspecialchars(formatPrice($paymentTotalMain, $subscription['payment_total_currency_code'] ?? $subscription['currency_code'], $currencies), ENT_QUOTES, 'UTF-8') ?></strong>
+                        <strong><?= htmlspecialchars($paymentTotalLabel, ENT_QUOTES, 'UTF-8') ?></strong>
                     </article>
                     <?php if (!empty($remainingValue['available'])): ?>
                         <article class="subscription-value-metric-card emphasis metric-remaining">
                             <span class="subscription-value-metric-label"><?= translate('subscription_remaining_value', $i18n) ?></span>
-                            <strong><?= htmlspecialchars(formatPrice((float) ($remainingValue['remaining_value_main'] ?? 0), $subscription['payment_total_currency_code'] ?? $subscription['currency_code'], $currencies), ENT_QUOTES, 'UTF-8') ?></strong>
+                            <strong><?= htmlspecialchars($remainingValueLabel, ENT_QUOTES, 'UTF-8') ?></strong>
                             <div class="subscription-value-metric-meta">
                                 <span><?= sprintf(
                                     translate('subscription_remaining_value_days_dynamic', $i18n),
@@ -570,10 +606,10 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                     <?php if (!empty($remainingValue['manual_used_value_active'])): ?>
                         <article class="subscription-value-metric-card metric-used">
                             <span class="subscription-value-metric-label"><?= translate('subscription_manual_used_value', $i18n) ?></span>
-                            <strong><?= htmlspecialchars(formatPrice((float) ($remainingValue['manual_used_value_main'] ?? 0), $subscription['payment_total_currency_code'] ?? $subscription['currency_code'], $currencies), ENT_QUOTES, 'UTF-8') ?></strong>
+                            <strong><?= htmlspecialchars(formatSubscriptionValueMetricAmount((float) ($remainingValue['manual_used_value_main'] ?? 0), $paymentTotalCurrencyCode, $remainingValue['main_currency_conversion_available'] ?? true, [], $currencies, $i18n), ENT_QUOTES, 'UTF-8') ?></strong>
                             <div class="subscription-value-metric-meta">
                                 <span><?= htmlspecialchars(translate('subscription_manual_used_value_manual_badge', $i18n), ENT_QUOTES, 'UTF-8') ?></span>
-                                <span><?= htmlspecialchars(formatPrice((float) ($remainingValue['manual_unused_value_main'] ?? 0), $subscription['payment_total_currency_code'] ?? $subscription['currency_code'], $currencies), ENT_QUOTES, 'UTF-8') ?> <?= translate('subscription_manual_unused_value_suffix', $i18n) ?></span>
+                                <span><?= htmlspecialchars(formatSubscriptionValueMetricAmount((float) ($remainingValue['manual_unused_value_main'] ?? 0), $paymentTotalCurrencyCode, $remainingValue['main_currency_conversion_available'] ?? true, [], $currencies, $i18n), ENT_QUOTES, 'UTF-8') ?> <?= translate('subscription_manual_unused_value_suffix', $i18n) ?></span>
                             </div>
                         </article>
                     <?php endif; ?>

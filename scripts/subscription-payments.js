@@ -222,12 +222,84 @@ function formatSubscriptionPaymentHistoryAmount(value, currencyCode) {
   return new Intl.NumberFormat(navigator.language).format(numericValue);
 }
 
+function isSubscriptionPaymentMainCurrencyAvailable(value) {
+  return value !== false && value !== 0;
+}
+
 function hasSubscriptionPaymentMainCurrencyConversion(item) {
-  return item?.main_currency_conversion_available !== false && item?.main_currency_conversion_available !== 0;
+  return isSubscriptionPaymentMainCurrencyAvailable(item?.main_currency_conversion_available);
 }
 
 function getSubscriptionPaymentMissingExchangeRateLabel() {
   return translate('subscription_payment_exchange_rate_missing');
+}
+
+function formatSubscriptionPaymentHistoryMainOrOriginalAmount(mainValue, mainCurrencyCode, mainAvailable, originalTotal) {
+  if (isSubscriptionPaymentMainCurrencyAvailable(mainAvailable)) {
+    return formatSubscriptionPaymentHistoryAmount(mainValue || 0, mainCurrencyCode || '');
+  }
+
+  if (originalTotal?.available && originalTotal.currency_code) {
+    return formatSubscriptionPaymentHistoryAmount(originalTotal.amount || 0, originalTotal.currency_code);
+  }
+
+  return getSubscriptionPaymentMissingExchangeRateLabel();
+}
+
+function getSubscriptionPaymentDisplayAmountNumber(mainValue, mainAvailable, originalTotal) {
+  if (isSubscriptionPaymentMainCurrencyAvailable(mainAvailable)) {
+    return Number(mainValue || 0);
+  }
+
+  if (originalTotal?.available) {
+    return Number(originalTotal.amount || 0);
+  }
+
+  return 0;
+}
+
+function buildSubscriptionPaymentCombinedOriginalTotal(items, originalTotalKey) {
+  let total = 0;
+  let currencyCode = "";
+  let hasItems = false;
+  let mixedCurrency = false;
+
+  items.forEach((item) => {
+    const originalTotal = item?.[originalTotalKey];
+    if (!originalTotal?.available || !originalTotal.currency_code) {
+      return;
+    }
+
+    const itemCurrencyCode = String(originalTotal.currency_code).toUpperCase();
+    if (!currencyCode) {
+      currencyCode = itemCurrencyCode;
+    } else if (currencyCode !== itemCurrencyCode) {
+      mixedCurrency = true;
+    }
+
+    total += Number(originalTotal.amount || 0);
+    hasItems = true;
+  });
+
+  return {
+    available: hasItems && !mixedCurrency && Boolean(currencyCode),
+    amount: total,
+    currency_code: currencyCode,
+    mixed_currency: mixedCurrency,
+  };
+}
+
+function getSubscriptionPaymentRemainingValueLabel(remainingValue, mainCurrencyCode) {
+  return formatSubscriptionPaymentHistoryMainOrOriginalAmount(
+    remainingValue?.remaining_value_main || 0,
+    mainCurrencyCode || '',
+    remainingValue?.main_currency_conversion_available,
+    {
+      available: remainingValue?.remaining_value_original_available,
+      amount: remainingValue?.remaining_value_original || 0,
+      currency_code: remainingValue?.currency_code || '',
+    }
+  );
 }
 
 function sanitizeSubscriptionPaymentHistoryFilenamePart(value) {
@@ -377,19 +449,39 @@ function getSubscriptionPaymentHistorySummaryHtml() {
   const summaryCards = [
     {
       label: translate('subscription_invested_total'),
-      value: formatSubscriptionPaymentHistoryAmount(summary.invested_total || 0, currencyCode),
+      value: formatSubscriptionPaymentHistoryMainOrOriginalAmount(
+        summary.invested_total || 0,
+        currencyCode,
+        summary.invested_total_main_currency_available,
+        summary.invested_total_original
+      ),
     },
     {
       label: translate('subscription_payment_summary_actual_this_year'),
-      value: formatSubscriptionPaymentHistoryAmount(summary.actual_this_year_total || 0, currencyCode),
+      value: formatSubscriptionPaymentHistoryMainOrOriginalAmount(
+        summary.actual_this_year_total || 0,
+        currencyCode,
+        summary.actual_this_year_total_main_currency_available,
+        summary.actual_this_year_total_original
+      ),
     },
     {
       label: translate('subscription_payment_summary_predicted_remaining'),
-      value: formatSubscriptionPaymentHistoryAmount(summary.predicted_remaining_total || 0, currencyCode),
+      value: formatSubscriptionPaymentHistoryMainOrOriginalAmount(
+        summary.predicted_remaining_total || 0,
+        currencyCode,
+        summary.predicted_remaining_total_main_currency_available,
+        summary.predicted_remaining_total_original
+      ),
     },
     {
       label: translate('subscription_payment_summary_projected_total'),
-      value: formatSubscriptionPaymentHistoryAmount(summary.projected_total || 0, currencyCode),
+      value: formatSubscriptionPaymentHistoryMainOrOriginalAmount(
+        summary.projected_total || 0,
+        currencyCode,
+        summary.projected_total_main_currency_available,
+        summary.projected_total_original
+      ),
     },
     {
       label: translate('subscription_payment_summary_record_count'),
@@ -400,7 +492,7 @@ function getSubscriptionPaymentHistorySummaryHtml() {
   if (remainingValue.available) {
     summaryCards.push({
       label: translate('subscription_remaining_value'),
-      value: formatSubscriptionPaymentHistoryAmount(remainingValue.remaining_value_main || 0, currencyCode),
+      value: getSubscriptionPaymentRemainingValueLabel(remainingValue, currencyCode),
     });
   }
 
@@ -431,7 +523,7 @@ function getSubscriptionPaymentHistorySummaryHtml() {
       ${remainingValue.available ? `
         <div class="subscription-payment-history-note">
           <i class="fa-solid fa-hourglass-half"></i>
-          <span>${escapeHtml(`${translate('subscription_remaining_value')}: ${formatSubscriptionPaymentHistoryAmount(remainingValue.remaining_value_main || 0, currencyCode)} | ${translate('subscription_remaining_value_days_inline').replace('%1$s', String(remainingValue.remaining_days || 0)).replace('%2$s', String(remainingValue.total_days || 0)).replace('%3$s', new Intl.NumberFormat(navigator.language, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(remainingValue.remaining_ratio || 0)))} | ${remainingValue.value_source_summary || ''}`)}</span>
+          <span>${escapeHtml(`${translate('subscription_remaining_value')}: ${getSubscriptionPaymentRemainingValueLabel(remainingValue, currencyCode)} | ${translate('subscription_remaining_value_days_inline').replace('%1$s', String(remainingValue.remaining_days || 0)).replace('%2$s', String(remainingValue.total_days || 0)).replace('%3$s', new Intl.NumberFormat(navigator.language, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(remainingValue.remaining_ratio || 0)))} | ${remainingValue.value_source_summary || ''}`)}</span>
         </div>
       ` : ''}
     </div>
@@ -551,37 +643,73 @@ function renderSubscriptionPaymentCashflowHtml() {
     currentPaymentHistoryRecords[0]?.main_currency_code_snapshot ||
     currentPaymentHistoryForecast[0]?.main_currency_code ||
     '';
-  const maxTotal = Math.max(...currentPaymentHistoryCashflow.map((row) => Number(row.total || 0)), 0.01);
+  const maxTotal = Math.max(...currentPaymentHistoryCashflow.map((row) => getSubscriptionPaymentDisplayAmountNumber(
+    row.total || 0,
+    row.total_main_currency_available,
+    row.total_original
+  )), 0.01);
   const actualTotal = currentPaymentHistoryCashflow.reduce((sum, row) => sum + Number(row.actual_total || 0), 0);
   const predictedTotal = currentPaymentHistoryCashflow.reduce((sum, row) => sum + Number(row.predicted_total || 0), 0);
+  const actualTotalMainAvailable = currentPaymentHistoryCashflow.every((row) => isSubscriptionPaymentMainCurrencyAvailable(row.actual_total_main_currency_available));
+  const predictedTotalMainAvailable = currentPaymentHistoryCashflow.every((row) => isSubscriptionPaymentMainCurrencyAvailable(row.predicted_total_main_currency_available));
+  const actualTotalOriginal = buildSubscriptionPaymentCombinedOriginalTotal(currentPaymentHistoryCashflow, "actual_total_original");
+  const predictedTotalOriginal = buildSubscriptionPaymentCombinedOriginalTotal(currentPaymentHistoryCashflow, "predicted_total_original");
 
   return `
     <div class="subscription-payment-section-intro">
       <strong>${escapeHtml(`${translate('subscription_payment_history_year_label')}: ${currentPaymentHistoryYear}`)}</strong>
-      <span>${escapeHtml(`${translate('subscription_payment_cashflow_actual')}: ${formatSubscriptionPaymentHistoryAmount(actualTotal, currencyCode)} / ${translate('subscription_payment_cashflow_predicted')}: ${formatSubscriptionPaymentHistoryAmount(predictedTotal, currencyCode)}`)}</span>
+      <span>${escapeHtml(`${translate('subscription_payment_cashflow_actual')}: ${formatSubscriptionPaymentHistoryMainOrOriginalAmount(actualTotal, currencyCode, actualTotalMainAvailable, actualTotalOriginal)} / ${translate('subscription_payment_cashflow_predicted')}: ${formatSubscriptionPaymentHistoryMainOrOriginalAmount(predictedTotal, currencyCode, predictedTotalMainAvailable, predictedTotalOriginal)}`)}</span>
     </div>
     <div class="subscription-payment-cashflow-list">
       ${currentPaymentHistoryCashflow.map((row) => {
-        const actualWidth = Math.max(0, Math.min(100, (Number(row.actual_total || 0) / maxTotal) * 100));
-        const predictedWidth = Math.max(0, Math.min(100 - actualWidth, (Number(row.predicted_total || 0) / maxTotal) * 100));
+        const actualDisplayValue = getSubscriptionPaymentDisplayAmountNumber(
+          row.actual_total || 0,
+          row.actual_total_main_currency_available,
+          row.actual_total_original
+        );
+        const predictedDisplayValue = getSubscriptionPaymentDisplayAmountNumber(
+          row.predicted_total || 0,
+          row.predicted_total_main_currency_available,
+          row.predicted_total_original
+        );
+        const actualWidth = Math.max(0, Math.min(100, (actualDisplayValue / maxTotal) * 100));
+        const predictedWidth = Math.max(0, Math.min(100 - actualWidth, (predictedDisplayValue / maxTotal) * 100));
         const monthLabel = new Date(year, Number(row.month_number || 1) - 1, 1).toLocaleDateString(navigator.language, {
           month: 'short',
           year: 'numeric',
         });
+        const totalLabel = formatSubscriptionPaymentHistoryMainOrOriginalAmount(
+          row.total || 0,
+          currencyCode,
+          row.total_main_currency_available,
+          row.total_original
+        );
+        const actualLabel = formatSubscriptionPaymentHistoryMainOrOriginalAmount(
+          row.actual_total || 0,
+          currencyCode,
+          row.actual_total_main_currency_available,
+          row.actual_total_original
+        );
+        const predictedLabel = formatSubscriptionPaymentHistoryMainOrOriginalAmount(
+          row.predicted_total || 0,
+          currencyCode,
+          row.predicted_total_main_currency_available,
+          row.predicted_total_original
+        );
 
         return `
           <article class="subscription-payment-cashflow-row">
             <div class="subscription-payment-cashflow-topline">
               <strong>${escapeHtml(monthLabel)}</strong>
-              <span>${escapeHtml(formatSubscriptionPaymentHistoryAmount(row.total || 0, currencyCode))}</span>
+              <span>${escapeHtml(totalLabel)}</span>
             </div>
             <div class="subscription-payment-cashflow-bar" aria-hidden="true">
               <span class="actual" style="width: ${actualWidth}%;"></span>
               <span class="predicted" style="width: ${predictedWidth}%;"></span>
             </div>
             <div class="subscription-payment-record-meta">
-              <span>${escapeHtml(`${translate('subscription_payment_cashflow_actual')}: ${formatSubscriptionPaymentHistoryAmount(row.actual_total || 0, currencyCode)}`)}</span>
-              <span>${escapeHtml(`${translate('subscription_payment_cashflow_predicted')}: ${formatSubscriptionPaymentHistoryAmount(row.predicted_total || 0, currencyCode)}`)}</span>
+              <span>${escapeHtml(`${translate('subscription_payment_cashflow_actual')}: ${actualLabel}`)}</span>
+              <span>${escapeHtml(`${translate('subscription_payment_cashflow_predicted')}: ${predictedLabel}`)}</span>
             </div>
           </article>
         `;

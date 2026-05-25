@@ -66,6 +66,58 @@ function wallos_payment_main_conversion_is_available($currencyCode, $mainCurrenc
     return abs($rateToMain - 1.0) > 0.000001;
 }
 
+function wallos_build_single_currency_original_total(array $items, $amountKey, $currencyKey)
+{
+    $total = 0.0;
+    $currencyCode = '';
+    $hasItems = false;
+    $mixedCurrency = false;
+
+    foreach ($items as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+
+        $itemCurrencyCode = strtoupper(trim((string) ($item[$currencyKey] ?? '')));
+        if ($itemCurrencyCode === '') {
+            continue;
+        }
+
+        if ($currencyCode === '') {
+            $currencyCode = $itemCurrencyCode;
+        } else if ($currencyCode !== $itemCurrencyCode) {
+            $mixedCurrency = true;
+        }
+
+        $total += (float) ($item[$amountKey] ?? 0);
+        $hasItems = true;
+    }
+
+    return [
+        'available' => $hasItems && !$mixedCurrency && $currencyCode !== '',
+        'amount' => round($total, 2),
+        'currency_code' => $currencyCode,
+        'mixed_currency' => $mixedCurrency,
+    ];
+}
+
+function wallos_all_payment_main_conversions_are_available(array $items)
+{
+    foreach ($items as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+
+        if (array_key_exists('main_currency_conversion_available', $item)
+            && empty($item['main_currency_conversion_available'])
+        ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function wallos_enrich_payment_record_conversion_status(array $record)
 {
     $record['main_currency_conversion_available'] = wallos_payment_main_conversion_is_available(
@@ -212,6 +264,59 @@ function wallos_get_subscription_payment_total_map($db, $userId)
     while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
         $totals[(int) ($row['subscription_id'] ?? 0)] = round((float) ($row['total_amount'] ?? 0), 2);
     }
+
+    return $totals;
+}
+
+function wallos_get_subscription_payment_total_summary_map($db, $userId)
+{
+    $stmt = $db->prepare('
+        SELECT subscription_id, amount_original, currency_code_snapshot,
+               main_currency_code_snapshot, fx_rate_to_main_snapshot, amount_main_snapshot
+        FROM subscription_payment_records
+        WHERE user_id = :user_id AND status = :status
+        ORDER BY subscription_id ASC, paid_at ASC, id ASC
+    ');
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $stmt->bindValue(':status', 'paid', SQLITE3_TEXT);
+    $result = $stmt->execute();
+
+    $totals = [];
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $subscriptionId = (int) ($row['subscription_id'] ?? 0);
+        if ($subscriptionId <= 0) {
+            continue;
+        }
+
+        if (!isset($totals[$subscriptionId])) {
+            $totals[$subscriptionId] = [
+                'main_amount' => 0.0,
+                'main_currency_conversion_available' => true,
+                'original_items' => [],
+            ];
+        }
+
+        $totals[$subscriptionId]['main_amount'] += (float) ($row['amount_main_snapshot'] ?? 0);
+        $totals[$subscriptionId]['original_items'][] = [
+            'amount' => (float) ($row['amount_original'] ?? 0),
+            'currency_code' => (string) ($row['currency_code_snapshot'] ?? ''),
+        ];
+
+        if (!wallos_payment_main_conversion_is_available(
+            $row['currency_code_snapshot'] ?? '',
+            $row['main_currency_code_snapshot'] ?? '',
+            $row['fx_rate_to_main_snapshot'] ?? 0
+        )) {
+            $totals[$subscriptionId]['main_currency_conversion_available'] = false;
+        }
+    }
+
+    foreach ($totals as &$total) {
+        $total['main_amount'] = round((float) ($total['main_amount'] ?? 0), 2);
+        $total['original_total'] = wallos_build_single_currency_original_total($total['original_items'] ?? [], 'amount', 'currency_code');
+        unset($total['original_items']);
+    }
+    unset($total);
 
     return $totals;
 }
