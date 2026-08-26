@@ -814,7 +814,7 @@ function wallos_advance_subscription_next_payment_after_record($db, $subscriptio
     $updateStmt->execute();
 }
 
-function wallos_recalculate_subscription_next_payment_from_history($db, $subscriptionId, $userId)
+function wallos_recalculate_subscription_next_payment_from_history($db, $subscriptionId, $userId, $affectedDueDates = [])
 {
     $stmt = $db->prepare('
         SELECT id, start_date, next_payment, cycle, frequency, manual_cycle_used_value_cycle_start
@@ -842,16 +842,27 @@ function wallos_recalculate_subscription_next_payment_from_history($db, $subscri
         return;
     }
 
-    $startDateValue = trim((string) ($subscription['start_date'] ?? ''));
     $nextPaymentValue = trim((string) ($subscription['next_payment'] ?? ''));
-    $anchorValue = '';
-
-    if (wallos_payment_record_is_valid_date($startDateValue)) {
-        $anchorValue = $startDateValue;
-    } elseif (wallos_payment_record_is_valid_date($nextPaymentValue)) {
-        $anchorValue = $nextPaymentValue;
-    } else {
+    if (!wallos_payment_record_is_valid_date($nextPaymentValue)) {
         return;
+    }
+
+    $currentNextTimestamp = wallos_calendar_parse_date($nextPaymentValue);
+    $anchorTimestamp = $currentNextTimestamp;
+    $startDateValue = trim((string) ($subscription['start_date'] ?? ''));
+    $startTimestamp = wallos_payment_record_is_valid_date($startDateValue)
+        ? wallos_calendar_parse_date($startDateValue)
+        : false;
+    if ($startTimestamp !== false
+        && $startTimestamp <= $currentNextTimestamp
+        && wallos_calendar_get_occurrence_index(
+            $startTimestamp,
+            $currentNextTimestamp,
+            $cycleId,
+            $frequency,
+            10000
+        ) !== null) {
+        $anchorTimestamp = $startTimestamp;
     }
 
     $paidDueDates = [];
@@ -872,8 +883,54 @@ function wallos_recalculate_subscription_next_payment_from_history($db, $subscri
         }
     }
 
-    $anchorTimestamp = wallos_calendar_parse_date($anchorValue);
-    $cursorTimestamp = $anchorTimestamp;
+    // next_payment is the authoritative start of the unpaid schedule. The
+    // ledger may contain only recent or selectively entered history, so
+    // scanning from start_date would rewind long-lived subscriptions by years.
+    // A deleted or moved due date may reopen an earlier, contiguous ledger
+    // segment; callers pass those dates explicitly so that rollback remains
+    // possible without treating unrelated old history as complete coverage.
+    $cursorTimestamp = $currentNextTimestamp;
+    $affectedDueDates = is_array($affectedDueDates) ? $affectedDueDates : [$affectedDueDates];
+    foreach (array_unique($affectedDueDates) as $affectedDueDate) {
+        if (!wallos_payment_record_is_valid_date($affectedDueDate)) {
+            continue;
+        }
+
+        $candidateTimestamp = wallos_calendar_parse_date($affectedDueDate);
+        if ($candidateTimestamp >= $currentNextTimestamp
+            || ($startTimestamp !== false && $candidateTimestamp < $startTimestamp)) {
+            continue;
+        }
+
+        $probeTimestamp = $candidateTimestamp;
+        $connectedToCurrentNext = false;
+        for ($probeIteration = 0; $probeIteration < 2400; $probeIteration++) {
+            $nextProbeTimestamp = wallos_calendar_shift_recurring_date(
+                $probeTimestamp,
+                $cycleId,
+                $frequency,
+                1,
+                $anchorTimestamp
+            );
+            if ($nextProbeTimestamp === false || $nextProbeTimestamp <= $probeTimestamp) {
+                break;
+            }
+            if ($nextProbeTimestamp === $currentNextTimestamp) {
+                $connectedToCurrentNext = true;
+                break;
+            }
+            if ($nextProbeTimestamp > $currentNextTimestamp
+                || empty($paidDueDates[date('Y-m-d', $nextProbeTimestamp)])) {
+                break;
+            }
+            $probeTimestamp = $nextProbeTimestamp;
+        }
+
+        if ($connectedToCurrentNext && $candidateTimestamp < $cursorTimestamp) {
+            $cursorTimestamp = $candidateTimestamp;
+        }
+    }
+
     $nextUnpaidDueDate = null;
 
     for ($iteration = 0; $iteration < 2400; $iteration++) {

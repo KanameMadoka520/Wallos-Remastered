@@ -25,7 +25,12 @@ try {
     }
 
     wallos_delete_subscription_payment_record($db, $recordId, $subscriptionId, $userId);
-    wallos_recalculate_subscription_next_payment_from_history($db, $subscriptionId, $userId);
+    wallos_recalculate_subscription_next_payment_from_history(
+        $db,
+        $subscriptionId,
+        $userId,
+        [$existingRecord['due_date'] ?? '']
+    );
 
     echo json_encode([
         'success' => true,
