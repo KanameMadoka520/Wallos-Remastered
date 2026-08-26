@@ -65,6 +65,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         "title" => "version",
         "version" => $version,
         "version_number" => $version_number,
+        "remastered_version" => $remasteredVersion,
         "notes" => []
     ];
 

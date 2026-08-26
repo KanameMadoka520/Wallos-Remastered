@@ -55,9 +55,9 @@ $pageSections = [
                 <div class="credits-list">
                     <div>
                         <h3>
-                            Wallos-Remastered <?= $version ?> <?= $demoMode ? "Demo" : "" ?>
+                            Wallos-Remastered <?= htmlspecialchars($remasteredVersion, ENT_QUOTES, 'UTF-8') ?> <?= $demoMode ? "Demo" : "" ?>
                         </h3>
-                        <span>Current running remastered build. Compatibility sync target: Wallos <?= $version ?>.</span>
+                        <span>Current running remastered build. Compatibility sync target: Wallos <?= htmlspecialchars($version, ENT_QUOTES, 'UTF-8') ?>.</span>
                     </div>
                     <div>
                         <h3>Remastered update scope</h3>

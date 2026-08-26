@@ -117,8 +117,9 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
     $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
     $remasteredVersionValid = strpos($versionPhp, '$version = "v5.4.5";') !== false
+        && strpos($versionPhp, '$remasteredVersion = "v5.4.5-remastered.1";') !== false
         && strpos($aboutPhp, 'Current running remastered build.') !== false
-        && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= $version ?>.') !== false
+        && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= htmlspecialchars($version') !== false
         && strpos($aboutPhp, 'Remastered update scope') !== false;
     $results[] = wallos_regression_make_result(
         $remasteredVersionValid ? 'PASS' : 'FAIL',
