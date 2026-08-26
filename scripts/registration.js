@@ -112,17 +112,15 @@ function cleanupLanguageQueryParam() {
   window.history.replaceState({}, document.title, url.toString());
 }
 
-function runDatabaseMigration() {
-  let url = "endpoints/db/migrate.php";
-  fetch(url)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(translate('network_response_error'));
-      }
-    })
-    .catch((error) => {
-      console.error(error);
-    });
+function registrationTranslate(key, fallback) {
+  if (typeof window.translate === "function") {
+    const translated = window.translate(key);
+    if (translated && translated !== "[Translation Missing]") {
+      return translated;
+    }
+  }
+
+  return fallback || key;
 }
 
 function showErrorMessage(message) {
@@ -224,26 +222,28 @@ function restoreDB() {
   const formData = new FormData();
   formData.append('file', file);
 
+  if (!window.WallosApi || typeof window.WallosApi.postForm !== 'function') {
+    showErrorMessage(registrationTranslate('unknown_error', 'Unknown error, please try again.'));
+    return;
+  }
+
   window.WallosApi.postForm('endpoints/db/import.php', formData, {
     includeCsrf: false,
-    fallbackErrorMessage: translate('unknown_error'),
+    fallbackErrorMessage: registrationTranslate('unknown_error', 'Unknown error, please try again.'),
   })
     .then(data => {
       if (data.success) {
         showSuccessMessage(data.message);
-        fetch('endpoints/db/migrate.php')
-          .then(response => response.text())
-          .then(() => {
-            window.location.href = 'logout.php';
-          })
-          .catch(error => {
-            window.location.href = 'logout.php';
-          });
+        // The import endpoint migrates the restored database before returning.
+        // Give the success toast a moment to render before leaving the page.
+        setTimeout(() => {
+          window.location.href = 'logout.php';
+        }, 1500);
       } else {
-        showErrorMessage(data.message || translate('unknown_error'));
+        showErrorMessage(data.message || registrationTranslate('unknown_error', 'Unknown error, please try again.'));
       }
     })
-    .catch(error => showErrorMessage(error?.message || translate('unknown_error')));
+    .catch(error => showErrorMessage(error?.message || registrationTranslate('unknown_error', 'Unknown error, please try again.')));
 }
 
 function checkThemeNeedsUpdate() {
@@ -273,7 +273,6 @@ window.onload = function () {
   cleanupLanguageQueryParam();
   restoreFormFields();
   removeFromStorage();
-  runDatabaseMigration();
   checkThemeNeedsUpdate();
   enableGoToLoginButton();
   syncRegistrationLanguageInput();
