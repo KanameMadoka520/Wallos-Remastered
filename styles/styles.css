@@ -6908,6 +6908,336 @@ input[type="radio"]:checked+label::after {
   font-size: 20px;;
 }
 
+/* Dashboard subscription details popup. Keep this separate from the editable
+   subscription form so the dashboard retains its existing card and theme. */
+body.details-open {
+  overflow: hidden;
+}
+
+.dashboard-subscription-trigger {
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-subscription-trigger:hover,
+.dashboard-subscription-trigger:focus-visible {
+  border-color: rgba(var(--main-color-rgb), 0.55);
+  box-shadow: 0 8px 22px rgba(var(--main-color-rgb), 0.18);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.details-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12070;
+  background: rgba(10, 14, 22, 0.48);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.22s ease, visibility 0s linear 0.22s;
+}
+
+.details-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.22s ease;
+}
+
+.subscription-details {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 12080;
+  width: min(92vw, 460px);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 24px;
+  color: var(--text-color);
+  background: var(--box-background-color);
+  border: 1px solid var(--box-border-color);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+  transform: translate(-50%, -46%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s linear 0.22s;
+}
+
+.subscription-details.is-open {
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.subscription-details .hide {
+  display: none !important;
+}
+
+.details-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: rgba(var(--text-color-rgb), 0.68);
+  background: transparent;
+  cursor: pointer;
+}
+
+.details-close:hover,
+.details-close:focus-visible {
+  color: var(--text-color);
+  background: rgba(var(--text-color-rgb), 0.08);
+  outline: none;
+}
+
+.details-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.details-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding-right: 38px;
+}
+
+.details-logo {
+  display: flex;
+  align-items: center;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.details-logo img {
+  max-width: 140px;
+  max-height: 52px;
+  object-fit: contain;
+}
+
+/* Keep themed logo variants in sync with the rest of the subscription UI. */
+.details-logo img.logo-theme-variant {
+  display: none;
+}
+
+body.dark .details-logo img.logo-theme-original[data-native-theme="light"],
+body.light .details-logo img.logo-theme-original[data-native-theme="dark"] {
+  display: none;
+}
+
+body.dark .details-logo img.logo-theme-variant[data-native-theme="light"],
+body.light .details-logo img.logo-theme-variant[data-native-theme="dark"] {
+  display: revert;
+}
+
+.details-logo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  color: var(--main-color);
+  background: rgba(var(--main-color-rgb), 0.12);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.details-hero h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.details-chips {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.details-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: var(--main-color);
+  background: rgba(var(--main-color-rgb), 0.12);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.details-chip.warn {
+  color: var(--error-color);
+  background: rgba(var(--error-color-rgb), 0.12);
+}
+
+.details-chip.ok {
+  color: var(--success-color);
+  background: rgba(var(--success-color-rgb), 0.14);
+}
+
+.details-chip.manual {
+  color: #a66f00;
+  background: rgba(226, 162, 58, 0.16);
+}
+
+.details-chip.muted {
+  color: rgba(var(--text-color-rgb), 0.68);
+  background: rgba(var(--text-color-rgb), 0.10);
+}
+
+.details-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 16px 0 4px;
+}
+
+.details-price {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.details-cycle {
+  color: rgba(var(--text-color-rgb), 0.68);
+  font-size: 14px;
+}
+
+.details-price-row .details-action-button {
+  align-self: center;
+  min-width: 38px;
+  height: 38px;
+  padding: 8px 10px;
+  margin: 0;
+  color: var(--main-color);
+  background: var(--box-background-color);
+  border-color: var(--input-border-color);
+  box-shadow: none;
+}
+
+.details-price-row .details-action-button:hover,
+.details-price-row .details-action-button:focus-visible {
+  color: var(--hover-color);
+  background: rgba(var(--main-color-rgb), 0.08);
+  border-color: var(--main-color);
+  box-shadow: none;
+}
+
+.details-price-row .details-export-button {
+  margin-inline-start: auto;
+}
+
+.details-progress-track {
+  height: 6px;
+  margin: 10px 0 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(var(--main-color-rgb), 0.12);
+}
+
+.details-progress {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-color), var(--main-color));
+  transition: width 0.35s ease;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0 0;
+  padding: 18px 0;
+  border-top: 1px solid var(--box-border-color);
+}
+
+.details-item dt {
+  margin-bottom: 4px;
+  color: rgba(var(--text-color-rgb), 0.62);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.details-item dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+#details-payment-method img {
+  width: 30px;
+  height: 20px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.details-notes {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  color: rgba(var(--text-color-rgb), 0.84);
+  background: rgba(var(--text-color-rgb), 0.06);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.details-notes i {
+  margin-top: 2px;
+  color: var(--main-color);
+}
+
+@media (max-width: 768px) {
+  .subscription-details {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    max-height: 78dvh;
+    border-radius: 18px 18px 0 0;
+    transform: translateY(100%);
+    transition: opacity 0.25s ease, transform 0.32s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s linear 0.32s;
+  }
+
+  .subscription-details.is-open {
+    transform: translateY(0);
+    transition: opacity 0.25s ease, transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
+
+@media (max-width: 460px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+}
+
 .budget-visualizer {
   width: 100%;
   background: linear-gradient(135deg, rgba(var(--main-color-rgb), 0.09), rgba(var(--accent-color-rgb), 0.08));
