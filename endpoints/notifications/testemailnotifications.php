@@ -6,6 +6,7 @@ use PHPMailer\PHPMailer\Exception;
 
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
+require_once '../../includes/ssrf_helper.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -32,7 +33,22 @@ if (
     require '../../libs/PHPMailer/Exception.php';
 
     $smtpAddress = $data["smtpaddress"];
-    $smtpPort = $data["smtpport"];
+    $smtpPort = filter_var($data["smtpport"], FILTER_VALIDATE_INT);
+
+    if ($smtpPort === false || $smtpPort < 1 || $smtpPort > 65535) {
+        die(json_encode([
+            "success" => false,
+            "message" => translate('fill_all_fields', $i18n)
+        ]));
+    }
+
+    $smtpTarget = wallos_resolve_smtp_target($smtpAddress, $smtpPort, $db);
+    if ($smtpTarget === false) {
+        die(json_encode([
+            "success" => false,
+            "message" => "Security Error: SMTP host must not target link-local or loopback addresses."
+        ]));
+    }
     $smtpUsername = $data["smtpusername"];
     $smtpPassword = $data["smtppassword"];
     $fromEmail = $data["fromemail"] ? $data['fromemail'] : "wallos@wallosapp.com";
@@ -41,7 +57,7 @@ if (
     $mail->CharSet = "UTF-8";
     $mail->isSMTP();
 
-    $mail->Host = $smtpAddress;
+    wallos_configure_smtp_target($mail, $smtpTarget);
     $mail->SMTPAuth = $smtpAuth;
     if ($smtpAuth) {
         $mail->Username = $smtpUsername;
@@ -54,8 +70,6 @@ if (
         $mail->SMTPSecure = false;
         $mail->SMTPAutoTLS = false;
     }
-
-    $mail->Port = $smtpPort;
 
     $getUser = "SELECT * FROM user WHERE id = $userId";
     $user = $db->querySingle($getUser, true);
