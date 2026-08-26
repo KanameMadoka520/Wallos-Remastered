@@ -134,6 +134,10 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $calendarCalculationsPhp = wallos_regression_read_repo_file($config, 'includes/calendar_calculations.php');
     $oneTimeMigrationPhp = wallos_regression_read_repo_file($config, 'migrations/000076.php');
     $listSubscriptionsPhp = wallos_regression_read_repo_file($config, 'includes/list_subscriptions.php');
+    $updateNextPaymentPhp = wallos_regression_read_repo_file($config, 'endpoints/cronjobs/updatenextpayment.php');
+    $renewSubscriptionPhp = wallos_regression_read_repo_file($config, 'endpoints/subscription/renew.php');
+    $yearlyCostPhp = wallos_regression_read_repo_file($config, 'endpoints/cronjobs/storetotalyearlycost.php');
+    $oneTimeSubscriptionsJs = wallos_regression_read_repo_file($config, 'scripts/subscriptions.js');
     $oneTimeCompatibilityValid = wallos_regression_text_has_all($statsCalculationsPhp, array(
         'case 5:',
         'return 0;',
@@ -148,6 +152,16 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     )) && wallos_regression_text_has_all($listSubscriptionsPhp, array(
         'case 5:',
         "'one_time'",
+    )) && wallos_regression_text_has_all($updateNextPaymentPhp, array(
+        'cycle != 5',
+    )) && wallos_regression_text_has_all($renewSubscriptionPhp, array(
+        'cycle != 5',
+    )) && wallos_regression_text_has_all($yearlyCostPhp, array(
+        'case 5:',
+        'return 0;',
+    )) && wallos_regression_text_has_all($oneTimeSubscriptionsJs, array(
+        "if (cycle === '5')",
+        'nextPayment.value = startDate.value;',
     ));
     $results[] = wallos_regression_make_result(
         $oneTimeCompatibilityValid ? 'PASS' : 'FAIL',

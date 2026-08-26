@@ -19,7 +19,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 }
 
 $subscriptionId = $data["id"];
-$query = "SELECT * FROM subscriptions WHERE id = :id AND user_id = :user_id AND auto_renew = 0 AND lifecycle_status = :lifecycle_status";
+$query = "SELECT * FROM subscriptions WHERE id = :id AND user_id = :user_id AND auto_renew = 0 AND cycle != 5 AND lifecycle_status = :lifecycle_status";
 $stmt = $db->prepare($query);
 $stmt->bindValue(':id', $subscriptionId, SQLITE3_INTEGER);
 $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);

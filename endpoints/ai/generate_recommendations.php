@@ -7,17 +7,23 @@ require_once '../../includes/ssrf_helper.php';
 
 function getPricePerMonth($cycle, $frequency, $price)
 {
+    $frequency = max(1, (int) $frequency);
     switch ($cycle) {
         case 1:  return $price * (30 / $frequency);   // daily
         case 2:  return $price * (4.35 / $frequency); // weekly
         case 3:  return $price / $frequency;          // monthly
         case 4:  return $price / (12 * $frequency);   // yearly
-        default: return $price;
+        case 5:  return 0;
+        default: return 0;
     }
 }
 
 function describeFrequency($cycle, $frequency)
 {
+    if ((int) $cycle === 5) {
+        return 'One-time purchase (lifetime)';
+    }
+
     $unit = match ($cycle) {
         1 => 'day',
         2 => 'week',
@@ -169,7 +175,7 @@ You are a helpful assistant designed to help users save money on digital subscri
 The user has shared a list of their active subscriptions across household members. For each subscription, you are given:
 - Name of the service
 - Price (in original currency)
-- Payment frequency (e.g., every month, every year, etc.)
+- Payment frequency (e.g., every month, every year, etc.); entries marked "One-time purchase (lifetime)" are already paid and have no recurring cost
 - Category
 - Payer (which household member pays for it)
 
@@ -186,6 +192,7 @@ Follow these guidelines:
 - Recommend switching from monthly to yearly plans only if it provides clear savings and the user is likely to keep the service long-term.
 - Suggest looking for promo or new customer deals if a service appears overpriced.
 - Only recommend cancelling rarely used services if they do not provide unique value.
+- Do NOT suggest cancelling or changing one-time purchases (lifetime licenses); they are already paid for and have no ongoing cost.
 
 Return the result as a JSON array. Each item in the array should have:
 - "title": a short summary of the suggestion
