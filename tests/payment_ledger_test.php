@@ -222,6 +222,34 @@ try {
     );
     wallos_ledger_print_ok('多年老订阅的部分付款账本不会造成历史账期倒退');
 
+    $db->exec("INSERT INTO subscriptions (id, user_id, name, price, currency_id, cycle, frequency, start_date, next_payment, payment_method_id)
+        VALUES (16, 1, 'Strict Month-end Chain', 70, 1, 3, 1, '2026-01-31', '2026-04-30', 1)");
+    wallos_record_subscription_payment($db, 1, 16, '2026-03-31', '2026-03-31', 70, 1, 1);
+    $offScheduleRecordId = wallos_record_subscription_payment(
+        $db,
+        1,
+        16,
+        '2026-02-27',
+        '2026-02-27',
+        70,
+        1,
+        1
+    );
+    wallos_delete_subscription_payment_record($db, $offScheduleRecordId, 16, 1);
+    wallos_recalculate_subscription_next_payment_from_history($db, 16, 1, ['2026-02-27']);
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 16'),
+        '2026-04-30',
+        '删除脱离月末日程的额外记录不得制造新的未付账期'
+    );
+    wallos_recalculate_subscription_next_payment_from_history($db, 16, 1, ['2026-02-28']);
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 16'),
+        '2026-02-28',
+        '真正的短月月末账期仍必须能够沿连续账本正确回退'
+    );
+    wallos_ledger_print_ok('账期回退只接受严格位于原日程上的日期');
+
     $recordsBeforeInvalidInsert = (int) $db->querySingle('SELECT COUNT(*) FROM subscription_payment_records');
     wallos_ledger_assert_throws(
         static function () use ($db) {
