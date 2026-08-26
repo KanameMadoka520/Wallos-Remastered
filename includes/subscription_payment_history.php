@@ -5,7 +5,7 @@ require_once __DIR__ . '/subscription_price_rules.php';
 
 function wallos_payment_history_is_valid_date($value)
 {
-    return preg_match('/^\d{4}-\d{2}-\d{2}$/', trim((string) $value)) === 1;
+    return wallos_payment_record_is_valid_date($value);
 }
 
 function wallos_get_subscription_paid_due_dates_from_records(array $records)
@@ -37,18 +37,60 @@ function wallos_get_subscription_cycle_window(array $subscription, DateTime $tod
         ];
     }
 
+    $cycleId = (int) ($subscription['cycle'] ?? 0);
+    $frequency = (int) ($subscription['frequency'] ?? 0);
+    if (!in_array($cycleId, [1, 2, 3, 4], true) || $frequency < 1) {
+        return [
+            'available' => false,
+            'cycle_start' => '',
+            'cycle_end' => '',
+            'remaining_days' => 0,
+            'total_days' => 0,
+        ];
+    }
+
     $today = $today ?: new DateTime('today');
-    $cycleEnd = new DateTime($nextPaymentValue);
-    $interval = new DateInterval(wallos_get_subscription_interval_spec((int) ($subscription['cycle'] ?? 3), (int) ($subscription['frequency'] ?? 1)));
-    $cycleStart = (clone $cycleEnd)->sub($interval);
+    $cycleEndTimestamp = wallos_calendar_parse_date($nextPaymentValue);
+    $anchorTimestamp = $cycleEndTimestamp;
 
     $startDateValue = trim((string) ($subscription['start_date'] ?? ''));
+    $configuredStartTimestamp = false;
     if (wallos_payment_history_is_valid_date($startDateValue)) {
-        $configuredStartDate = new DateTime($startDateValue);
-        if ($cycleStart < $configuredStartDate) {
-            $cycleStart = $configuredStartDate;
+        $configuredStartTimestamp = wallos_calendar_parse_date($startDateValue);
+        if ($configuredStartTimestamp <= $cycleEndTimestamp
+            && wallos_calendar_get_occurrence_index(
+                $configuredStartTimestamp,
+                $cycleEndTimestamp,
+                $cycleId,
+                $frequency,
+                10000
+            ) !== null) {
+            $anchorTimestamp = $configuredStartTimestamp;
         }
     }
+
+    $cycleStartTimestamp = wallos_calendar_shift_recurring_date(
+        $cycleEndTimestamp,
+        $cycleId,
+        $frequency,
+        -1,
+        $anchorTimestamp
+    );
+    if ($cycleStartTimestamp === false) {
+        return [
+            'available' => false,
+            'cycle_start' => '',
+            'cycle_end' => '',
+            'remaining_days' => 0,
+            'total_days' => 0,
+        ];
+    }
+    if ($configuredStartTimestamp !== false && $cycleStartTimestamp < $configuredStartTimestamp) {
+        $cycleStartTimestamp = $configuredStartTimestamp;
+    }
+
+    $cycleEnd = new DateTime(date('Y-m-d', $cycleEndTimestamp));
+    $cycleStart = new DateTime(date('Y-m-d', $cycleStartTimestamp));
 
     $totalDays = max(1, (int) $cycleStart->diff($cycleEnd)->days);
     if ($today >= $cycleEnd) {
@@ -240,15 +282,39 @@ function wallos_build_subscription_future_payment_forecast($db, array $subscript
         return $forecast;
     }
 
+    $cycleId = (int) ($subscription['cycle'] ?? 0);
+    $frequency = (int) ($subscription['frequency'] ?? 0);
+    $oneTime = $cycleId === 5;
+    if (!$oneTime && (!in_array($cycleId, [1, 2, 3, 4], true) || $frequency < 1)) {
+        return $forecast;
+    }
+
     $fromDate = $fromDate ?: new DateTime('today');
     $endDate = $endDate ?: new DateTime(($fromDate->format('Y') + 1) . '-12-31');
-    $interval = new DateInterval(wallos_get_subscription_interval_spec((int) ($subscription['cycle'] ?? 3), (int) ($subscription['frequency'] ?? 1)));
-    $cursor = new DateTime($nextPaymentValue);
+    $cursorTimestamp = wallos_calendar_parse_date($nextPaymentValue);
+    $anchorTimestamp = $cursorTimestamp;
+    $startDateValue = trim((string) ($subscription['start_date'] ?? ''));
+    if (!$oneTime && wallos_payment_history_is_valid_date($startDateValue)) {
+        $startTimestamp = wallos_calendar_parse_date($startDateValue);
+        if ($startTimestamp <= $cursorTimestamp
+            && wallos_calendar_get_occurrence_index(
+                $startTimestamp,
+                $cursorTimestamp,
+                $cycleId,
+                $frequency,
+                10000
+            ) !== null) {
+            $anchorTimestamp = $startTimestamp;
+        }
+    }
+
+    $fromTimestamp = wallos_calendar_parse_date($fromDate->format('Y-m-d'));
+    $endTimestamp = wallos_calendar_parse_date($endDate->format('Y-m-d'));
     $iterations = 0;
 
-    while ($cursor <= $endDate && count($forecast) < max(1, (int) $limit) && $iterations < 2400) {
-        $dueDate = $cursor->format('Y-m-d');
-        if ($cursor >= $fromDate && empty($paidDueDates[$dueDate])) {
+    while ($cursorTimestamp <= $endTimestamp && count($forecast) < max(1, (int) $limit) && $iterations < 2400) {
+        $dueDate = date('Y-m-d', $cursorTimestamp);
+        if ($cursorTimestamp >= $fromTimestamp && empty($paidDueDates[$dueDate])) {
             $effectivePrice = wallos_get_effective_subscription_price_for_due_date($subscription, $priceRules, $dueDate, $db, $userId);
             $forecast[] = [
                 'due_date' => $dueDate,
@@ -267,7 +333,21 @@ function wallos_build_subscription_future_payment_forecast($db, array $subscript
             ];
         }
 
-        $cursor->add($interval);
+        if ($oneTime) {
+            break;
+        }
+
+        $nextTimestamp = wallos_calendar_shift_recurring_date(
+            $cursorTimestamp,
+            $cycleId,
+            $frequency,
+            1,
+            $anchorTimestamp
+        );
+        if ($nextTimestamp === false || $nextTimestamp <= $cursorTimestamp) {
+            break;
+        }
+        $cursorTimestamp = $nextTimestamp;
         $iterations++;
     }
 
