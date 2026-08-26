@@ -7,6 +7,7 @@ require_once __DIR__ . '/budget_metrics.php';
 
 function getPricePerMonth($cycle, $frequency, $price)
 {
+    $frequency = max(1, (int) $frequency);
     switch ($cycle) {
         case 1:
             $numberOfPaymentsPerMonth = (30 / $frequency);
@@ -20,6 +21,11 @@ function getPricePerMonth($cycle, $frequency, $price)
         case 4:
             $numberOfMonths = (12 * $frequency);
             return $price / $numberOfMonths;
+        case 5:
+            // One-time purchases have no recurring monthly equivalent.
+            return 0;
+        default:
+            return 0;
     }
 }
 
@@ -35,8 +41,8 @@ function getPriceConverted($price, $currency, $database, $userId)
     if ($exchangeRate === false) {
         return $price;
     } else {
-        $fromRate = $exchangeRate['rate'];
-        return $price / $fromRate;
+        $fromRate = (float) ($exchangeRate['rate'] ?? 0);
+        return $fromRate > 0 ? $price / $fromRate : $price;
     }
 }
 
@@ -107,17 +113,17 @@ $currentMonthStart = $currentDateForPayments->format('Y-m-01');
 $currentMonthEnd = $currentDateForPayments->format('Y-m-t');
 $currentYearStart = $currentDateForPayments->format('Y-01-01');
 $currentYearEnd = $currentDateForPayments->format('Y-12-31');
-$currentMonthActualPaid = wallos_get_subscription_payment_total($db, $userId, $currentMonthStart, $currentMonthEnd, true);
-$currentYearActualPaid = wallos_get_subscription_payment_total($db, $userId, $currentYearStart, $currentYearEnd, true);
-$paidDueDatesThisYear = wallos_get_paid_due_dates_map($db, $userId, $currentYearStart, $currentYearEnd, true);
+$currentMonthActualPaid = 0;
+$currentYearActualPaid = 0;
+$paidDueDatesThisYear = [];
 $projectedRemainingYearCost = 0;
 $mainCurrencyCode = $currencies[$userData['main_currency']]['code'] ?? '';
 $monthlyCostBreakdown = [];
 $yearlyCostBreakdown = [];
 $amountDueThisMonthSummary = [];
 $projectedYearSummary = [];
-$actualPaidThisMonthRecords = wallos_get_subscription_payment_records_for_period($db, $userId, $currentMonthStart, $currentMonthEnd, true);
-$actualPaidThisYearRecords = wallos_get_subscription_payment_records_for_period($db, $userId, $currentYearStart, $currentYearEnd, true);
+$actualPaidThisMonthRecords = [];
+$actualPaidThisYearRecords = [];
 $priceRulesMap = wallos_get_subscription_price_rules_map($db, $userId, true);
 // Calculate total monthly price
 $mostExpensiveSubscription = array();
@@ -176,6 +182,60 @@ if ($result) {
         $subscriptions[] = $row;
     }
     if (isset($subscriptions)) {
+        $hasStatsFilter = false;
+        foreach (['member', 'category', 'payment'] as $filterKey) {
+            if (isset($_GET[$filterKey]) && trim((string) $_GET[$filterKey]) !== '') {
+                $hasStatsFilter = true;
+                break;
+            }
+        }
+        $filteredSubscriptionIds = array_map(
+            static function ($subscription) {
+                return (int) ($subscription['id'] ?? 0);
+            },
+            $subscriptions
+        );
+        $paymentScopeIds = $hasStatsFilter ? $filteredSubscriptionIds : null;
+        $currentMonthActualPaid = wallos_get_subscription_payment_total(
+            $db,
+            $userId,
+            $currentMonthStart,
+            $currentMonthEnd,
+            true,
+            $paymentScopeIds
+        );
+        $currentYearActualPaid = wallos_get_subscription_payment_total(
+            $db,
+            $userId,
+            $currentYearStart,
+            $currentYearEnd,
+            true,
+            $paymentScopeIds
+        );
+        $paidDueDatesThisYear = wallos_get_paid_due_dates_map(
+            $db,
+            $userId,
+            $currentYearStart,
+            $currentYearEnd,
+            true,
+            $paymentScopeIds
+        );
+        $actualPaidThisMonthRecords = wallos_get_subscription_payment_records_for_period(
+            $db,
+            $userId,
+            $currentMonthStart,
+            $currentMonthEnd,
+            true,
+            $paymentScopeIds
+        );
+        $actualPaidThisYearRecords = wallos_get_subscription_payment_records_for_period(
+            $db,
+            $userId,
+            $currentYearStart,
+            $currentYearEnd,
+            true,
+            $paymentScopeIds
+        );
         $replacementSubscriptions = array();
 
         foreach ($subscriptions as $subscription) {
@@ -203,75 +263,75 @@ if ($result) {
             $price = getPricePerMonth($cycle, $frequency, $originalSubscriptionPrice);
 
             if ($inactive == 0) {
-                $activeSubscriptions++;
-                $totalCostPerMonth += $price;
-                $memberCost[$payerId]['cost'] += $price;
-                $categoryCost[$categoryId]['cost'] += $price;
-                $paymentMethodsCount[$paymentMethodId]['count'] += 1;
-                if ($price > $mostExpensiveSubscription['price']) {
-                    $mostExpensiveSubscription['price'] = $price;
-                    $mostExpensiveSubscription['name'] = $name;
-                    $mostExpensiveSubscription['logo'] = $logo;
-                }
+                if ((int) $cycle !== 5) {
+                    $activeSubscriptions++;
+                    $totalCostPerMonth += $price;
+                    $memberCost[$payerId]['cost'] += $price;
+                    $categoryCost[$categoryId]['cost'] += $price;
+                    $paymentMethodsCount[$paymentMethodId]['count'] += 1;
+                    if ($price > $mostExpensiveSubscription['price']) {
+                        $mostExpensiveSubscription['price'] = $price;
+                        $mostExpensiveSubscription['name'] = $name;
+                        $mostExpensiveSubscription['logo'] = $logo;
+                    }
 
-                $monthlyCostBreakdown[] = [
-                    'name' => $name,
-                    'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
-                    'price_per_charge' => round((float) $originalSubscriptionPrice, 2),
-                    'monthly_equivalent' => round((float) $price, 2),
-                    'next_payment' => $next_payment,
-                    'currency_code' => $mainCurrencyCode,
-                ];
-                $yearlyCostBreakdown[] = [
-                    'name' => $name,
-                    'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
-                    'price_per_charge' => round((float) $originalSubscriptionPrice, 2),
-                    'monthly_equivalent' => round((float) $price, 2),
-                    'total_amount' => round((float) ($price * 12), 2),
-                    'next_payment' => $next_payment,
-                    'currency_code' => $mainCurrencyCode,
-                ];
+                    $monthlyCostBreakdown[] = [
+                        'name' => $name,
+                        'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
+                        'price_per_charge' => round((float) $originalSubscriptionPrice, 2),
+                        'monthly_equivalent' => round((float) $price, 2),
+                        'next_payment' => $next_payment,
+                        'currency_code' => $mainCurrencyCode,
+                    ];
+                    $yearlyCostBreakdown[] = [
+                        'name' => $name,
+                        'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
+                        'price_per_charge' => round((float) $originalSubscriptionPrice, 2),
+                        'monthly_equivalent' => round((float) $price, 2),
+                        'total_amount' => round((float) ($price * 12), 2),
+                        'next_payment' => $next_payment,
+                        'currency_code' => $mainCurrencyCode,
+                    ];
 
-                // Calculate ammount due this month
-                $nextPaymentDate = DateTime::createFromFormat('Y-m-d', trim($next_payment));
-                $tomorrow = new DateTime('tomorrow');
-                $endOfMonth = new DateTime('last day of this month');
+                    // Calculate amount due this month, including today.
+                    $nextPaymentDate = DateTime::createFromFormat('Y-m-d', trim($next_payment));
+                    $today = new DateTime('today');
+                    $endOfMonth = new DateTime('last day of this month');
 
-                if ($nextPaymentDate >= $tomorrow && $nextPaymentDate <= $endOfMonth) {
-                    $nextPaymentDateKey = $nextPaymentDate->format('Y-m-d');
-                    if (!empty($paidDueDatesThisYear[$subscriptionId][$nextPaymentDateKey])) {
-                        // Already settled by an actual payment record.
-                    } else {
-                        $timesToPay = 1;
-                        $daysInMonth = $endOfMonth->diff($tomorrow)->days + 1;
-                        $daysRemaining = $endOfMonth->diff($nextPaymentDate)->days + 1;
-                        if ($cycle == 1) {
-                            $timesToPay = $daysRemaining / $frequency;
+                    if ($nextPaymentDate instanceof DateTime && $nextPaymentDate >= $today && $nextPaymentDate <= $endOfMonth) {
+                        $nextPaymentDateKey = $nextPaymentDate->format('Y-m-d');
+                        if (empty($paidDueDatesThisYear[$subscriptionId][$nextPaymentDateKey])) {
+                            $timesToPay = 1;
+                            $daysInMonth = $endOfMonth->diff($today)->days + 1;
+                            $daysRemaining = $endOfMonth->diff($nextPaymentDate)->days + 1;
+                            if ($cycle == 1) {
+                                $timesToPay = $daysRemaining / max(1, (int) $frequency);
+                            }
+                            if ($cycle == 2) {
+                                $weeksInMonth = ceil($daysInMonth / 7);
+                                $weeksRemaining = ceil($daysRemaining / 7);
+                                $timesToPay = $weeksRemaining / max(1, (int) $frequency);
+                            }
+                            $effectivePrice = wallos_get_effective_subscription_price_for_due_date($subscription, $priceRules, $nextPaymentDateKey, $db, $userId);
+                            $ruleSourceSummary = $effectivePrice['matched_rule']
+                                ? wallos_format_subscription_price_rule_summary($effectivePrice['matched_rule'], $currencies, $i18n)
+                                : translate('metric_explanation_regular_price_source', $i18n);
+                            $lineAmount = $effectivePrice['amount_main'] * $timesToPay;
+                            $amountDueThisMonth += $lineAmount;
+                            $amountDueThisMonthSummary[] = [
+                                'name' => $name,
+                                'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
+                                'count' => $timesToPay,
+                                'unit_amount' => round((float) $effectivePrice['amount_main'], 2),
+                                'total_amount' => round((float) $lineAmount, 2),
+                                'next_due' => $nextPaymentDateKey,
+                                'currency_code' => $mainCurrencyCode,
+                                'rule_summary' => $ruleSourceSummary,
+                            ];
                         }
-                        if ($cycle == 2) {
-                            $weeksInMonth = ceil($daysInMonth / 7);
-                            $weeksRemaining = ceil($daysRemaining / 7);
-                            $timesToPay = $weeksRemaining / $frequency;
-                        }
-                        $effectivePrice = wallos_get_effective_subscription_price_for_due_date($subscription, $priceRules, $nextPaymentDateKey, $db, $userId);
-                        $ruleSourceSummary = $effectivePrice['matched_rule']
-                            ? wallos_format_subscription_price_rule_summary($effectivePrice['matched_rule'], $currencies, $i18n)
-                            : translate('metric_explanation_regular_price_source', $i18n);
-                        $lineAmount = $effectivePrice['amount_main'] * $timesToPay;
-                        $amountDueThisMonth += $lineAmount;
-                        $amountDueThisMonthSummary[] = [
-                            'name' => $name,
-                            'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
-                            'count' => $timesToPay,
-                            'unit_amount' => round((float) $effectivePrice['amount_main'], 2),
-                            'total_amount' => round((float) $lineAmount, 2),
-                            'next_due' => $nextPaymentDateKey,
-                            'currency_code' => $mainCurrencyCode,
-                            'rule_summary' => $ruleSourceSummary,
-                        ];
                     }
                 }
-                if (!empty($subscription['next_payment'])) {
+                if ((int) $cycle !== 5 && !empty($subscription['next_payment'])) {
                     try {
                         $forecastDate = new DateTime($subscription['next_payment']);
                         $yearEndDate = new DateTime($currentYearEnd);
