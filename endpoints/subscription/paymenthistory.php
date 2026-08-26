@@ -18,7 +18,7 @@ if ($subscriptionId <= 0) {
 }
 
 $stmt = $db->prepare('
-    SELECT id, name, price, currency_id, cycle, frequency, start_date, next_payment, payment_method_id
+    SELECT id, name, price, currency_id, cycle, frequency, start_date, next_payment, payment_method_id, auto_renew
     FROM subscriptions
     WHERE id = :id AND user_id = :user_id AND lifecycle_status = :lifecycle_status
 ');

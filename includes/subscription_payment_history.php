@@ -285,6 +285,10 @@ function wallos_build_subscription_future_payment_forecast($db, array $subscript
     $cycleId = (int) ($subscription['cycle'] ?? 0);
     $frequency = (int) ($subscription['frequency'] ?? 0);
     $oneTime = $cycleId === 5;
+    // Manual-renewal subscriptions expose only their explicitly stored next
+    // payment. Missing auto_renew fails closed so a partial SELECT cannot turn
+    // one known charge into an unlimited recurring forecast.
+    $recursAutomatically = !$oneTime && (int) ($subscription['auto_renew'] ?? 0) === 1;
     if (!$oneTime && (!in_array($cycleId, [1, 2, 3, 4], true) || $frequency < 1)) {
         return $forecast;
     }
@@ -333,7 +337,7 @@ function wallos_build_subscription_future_payment_forecast($db, array $subscript
             ];
         }
 
-        if ($oneTime) {
+        if (!$recursAutomatically) {
             break;
         }
 
