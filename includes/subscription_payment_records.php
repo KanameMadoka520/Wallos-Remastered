@@ -902,28 +902,32 @@ function wallos_recalculate_subscription_next_payment_from_history($db, $subscri
             continue;
         }
 
-        $probeTimestamp = $candidateTimestamp;
+        // Walk backwards from the authoritative current due date. Moving a
+        // candidate forwards can clamp an arbitrary short-month date onto the
+        // real schedule (for example Feb 27 -> Mar 31), falsely treating an
+        // off-schedule ledger row as a recurrence occurrence.
+        $probeTimestamp = $currentNextTimestamp;
         $connectedToCurrentNext = false;
         for ($probeIteration = 0; $probeIteration < 2400; $probeIteration++) {
-            $nextProbeTimestamp = wallos_calendar_shift_recurring_date(
+            $previousProbeTimestamp = wallos_calendar_shift_recurring_date(
                 $probeTimestamp,
                 $cycleId,
                 $frequency,
-                1,
+                -1,
                 $anchorTimestamp
             );
-            if ($nextProbeTimestamp === false || $nextProbeTimestamp <= $probeTimestamp) {
+            if ($previousProbeTimestamp === false || $previousProbeTimestamp >= $probeTimestamp) {
                 break;
             }
-            if ($nextProbeTimestamp === $currentNextTimestamp) {
+            if ($previousProbeTimestamp === $candidateTimestamp) {
                 $connectedToCurrentNext = true;
                 break;
             }
-            if ($nextProbeTimestamp > $currentNextTimestamp
-                || empty($paidDueDates[date('Y-m-d', $nextProbeTimestamp)])) {
+            if ($previousProbeTimestamp < $candidateTimestamp
+                || empty($paidDueDates[date('Y-m-d', $previousProbeTimestamp)])) {
                 break;
             }
-            $probeTimestamp = $nextProbeTimestamp;
+            $probeTimestamp = $previousProbeTimestamp;
         }
 
         if ($connectedToCurrentNext && $candidateTimestamp < $cursorTimestamp) {
