@@ -3,20 +3,13 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/subscription_payment_records.php';
+require_once '../../includes/calendar_calculations.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
 
 $currentDate = new DateTime();
 $currentDateString = $currentDate->format('Y-m-d');
-
-$cycles = array();
-$query = "SELECT * FROM cycles";
-$result = $db->query($query);
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-    $cycleId = $row['id'];
-    $cycles[$cycleId] = $row;
-}
 
 $subscriptionId = $data["id"];
 $query = "SELECT * FROM subscriptions WHERE id = :id AND user_id = :user_id AND auto_renew = 0 AND cycle != 5 AND lifecycle_status = :lifecycle_status";
@@ -33,28 +26,17 @@ if ($subscriptionToRenew === false) {
     ]));
 }
 
-$nextPaymentDate = new DateTime($subscriptionToRenew['next_payment']);
 $renewedDueDate = $subscriptionToRenew['next_payment'];
-$frequency = $subscriptionToRenew['frequency'];
-$cycle = $cycles[$subscriptionToRenew['cycle']]['name'];
-
-// Calculate the interval to add based on the cycle
-$intervalSpec = "P";
-if ($cycle == 'Daily') {
-    $intervalSpec .= "{$frequency}D";
-} elseif ($cycle === 'Weekly') {
-    $intervalSpec .= "{$frequency}W";
-} elseif ($cycle === 'Monthly') {
-    $intervalSpec .= "{$frequency}M";
-} elseif ($cycle === 'Yearly') {
-    $intervalSpec .= "{$frequency}Y";
-}
-
-$interval = new DateInterval($intervalSpec);
-
-// Add intervals until the next payment date is in the future and after current next payment date
-while ($nextPaymentDate < $currentDate || $nextPaymentDate == new DateTime($subscriptionToRenew['next_payment'])) {
-    $nextPaymentDate->add($interval);
+$nextPaymentDate = wallos_calendar_advance_subscription_next_payment(
+    $subscriptionToRenew,
+    $currentDate->format('Y-m-d H:i:s'),
+    1
+);
+if ($nextPaymentDate === false) {
+    die(json_encode([
+        "success" => false,
+        "message" => translate("error", $i18n)
+    ]));
 }
 
 try {
@@ -74,7 +56,7 @@ try {
 
     $updateQuery = "UPDATE subscriptions SET next_payment = :nextPaymentDate WHERE id = :subscriptionId";
     $updateStmt = $db->prepare($updateQuery);
-    $updateStmt->bindValue(':nextPaymentDate', $nextPaymentDate->format('Y-m-d'));
+    $updateStmt->bindValue(':nextPaymentDate', $nextPaymentDate, SQLITE3_TEXT);
     $updateStmt->bindValue(':subscriptionId', $subscriptionId);
 
     if (!$updateStmt->execute()) {
