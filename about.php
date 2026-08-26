@@ -57,7 +57,21 @@ $pageSections = [
                         <h3>
                             Wallos-Remastered <?= $version ?> <?= $demoMode ? "Demo" : "" ?>
                         </h3>
-                        <span>Current running version of the remastered build.</span>
+                        <span>Current running remastered build. Compatibility sync target: Wallos <?= $version ?>.</span>
+                    </div>
+                    <div>
+                        <h3>Remastered update scope</h3>
+                        <span>Security, database migration, currency, OIDC, backup recovery, TOTP and query-performance fixes were synchronized without replacing the custom dashboard, subscriptions, calendar, ledger, media or theme work.</span>
+                    </div>
+                    <div>
+                        <h3>Release notes</h3>
+                        <span>
+                            Wallos <?= $version ?>
+                            <a href="https://github.com/ellite/Wallos/releases/tag/<?= rawurlencode($version) ?>" target="_blank"
+                                title="<?= translate('external_url', $i18n) ?>" rel="noreferrer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </span>
                     </div>
                     <?php if (!$wallosIsUpToDate): ?>
                         <div class="update-available">

@@ -10,6 +10,7 @@ It returns a downloadable VCAL file with the active subscriptions
 
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/ical_helper.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -27,20 +28,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         exit;
     }
 
-    function getPriceConverted($price, $currency, $database)
+    function getPriceConverted($price, $currency, $database, $userId)
     {
-        $query = "SELECT rate FROM currencies WHERE id = :currency";
+        $query = "SELECT rate FROM currencies WHERE id = :currency AND user_id = :userId";
         $stmt = $database->prepare($query);
         $stmt->bindParam(':currency', $currency, SQLITE3_INTEGER);
+        $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
         $result = $stmt->execute();
 
         $exchangeRate = $result->fetchArray(SQLITE3_ASSOC);
-        if ($exchangeRate === false) {
-            return $price;
-        } else {
-            $fromRate = $exchangeRate['rate'];
-            return $price / $fromRate;
+        if ($exchangeRate === false || !is_numeric($exchangeRate['rate']) || (float) $exchangeRate['rate'] <= 0) {
+            return (float) $price;
         }
+
+        return (float) $price / (float) $exchangeRate['rate'];
     }
 
     // Get user from API key
@@ -142,45 +143,44 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         $subscriptionToReturn = $subscription;
 
         if (isset($_REQUEST['convert_currency']) && $_REQUEST['convert_currency'] === 'true' && $canConvertCurrency && $subscription['currency_id'] != $userCurrencyId) {
-            $subscriptionToReturn['price'] = getPriceConverted($subscription['price'], $subscription['currency_id'], $db);
+            $subscriptionToReturn['price'] = getPriceConverted($subscription['price'], $subscription['currency_id'], $db, $userId);
+            // The converted amount is in the user's main currency.
+            $subscriptionToReturn['currency_id'] = $userCurrencyId;
         } else {
             $subscriptionToReturn['price'] = $subscription['price'];
         }
 
-        $subscriptionToReturn['category_name'] = $categories[$subscription['category_id']];
-        $subscriptionToReturn['payer_user_name'] = $members[$subscription['payer_user_id']];
-        $subscriptionToReturn['payment_method_name'] = $paymentMethods[$subscription['payment_method_id']];
+        $subscriptionToReturn['category_name'] = $categories[$subscription['category_id']] ?? 'No category';
+        $subscriptionToReturn['payer_user_name'] = $members[$subscription['payer_user_id']] ?? 'Unknown member';
+        $subscriptionToReturn['payment_method_name'] = $paymentMethods[$subscription['payment_method_id']] ?? 'Unknown payment method';
 
         $subscriptionsToReturn[] = $subscriptionToReturn;
     }
 
-    $stmt->bindValue(':inactive', false, SQLITE3_INTEGER);
-    $result = $stmt->execute();
-
     header('Content-Type: text/calendar; charset=utf-8');
     header('Content-Disposition: attachment; filename="subscriptions.ics"');
 
-    if ($result === false) {
-        die("BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:NAME:\nEND:VCALENDAR");
-    }
-
     $icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Wallos//iCalendar//EN\nNAME:Wallos\nX-WR-CALNAME:Wallos\n";
 
-    while ($subscription = $result->fetchArray(SQLITE3_ASSOC)) {
-        $subscription['payer_user'] = $members[$subscription['payer_user_id']];
-        $subscription['category'] = $categories[$subscription['category_id']];
-        $subscription['payment_method'] = $paymentMethods[$subscription['payment_method_id']];
-        $subscription['currency'] = $currencies[$subscription['currency_id']]['symbol'];
+    foreach ($subscriptionsToReturn as $subscription) {
+        $subscription['payer_user'] = $subscription['payer_user_name'];
+        $subscription['category'] = $subscription['category_name'];
+        $subscription['payment_method'] = $subscription['payment_method_name'];
+        $subscription['currency'] = $currencies[$subscription['currency_id']]['symbol'] ?? '';
         $subscription['trigger'] = ($subscription['notify_days_before'] == -1) ? $globalNotificationDays : ($subscription['notify_days_before'] ?: 1);
         $subscription['price'] = number_format($subscription['price'], 2);
 
         $uid = 'wallos-subscription-' . $subscription['id'] . '@wallos';
-        $summary = html_entity_decode($subscription['name'], ENT_QUOTES, 'UTF-8');
-        $description = "Price: {$subscription['currency']}{$subscription['price']}\\nCategory: {$subscription['category']}\\nPayment Method: {$subscription['payment_method']}\\nPayer: {$subscription['payer_user']}\\nNotes: {$subscription['notes']}";
+        $summary = icalEscape(html_entity_decode((string) $subscription['name'], ENT_QUOTES, 'UTF-8'));
+        $notes = icalEscape(html_entity_decode((string) ($subscription['notes'] ?? ''), ENT_QUOTES, 'UTF-8'));
+        $category = icalEscape($subscription['category']);
+        $paymentMethod = icalEscape($subscription['payment_method']);
+        $payer = icalEscape($subscription['payer_user']);
+        $description = "Price: {$subscription['currency']}{$subscription['price']}\\nCategory: {$category}\\nPayment Method: {$paymentMethod}\\nPayer: {$payer}\\nNotes: {$notes}";
         $dtstamp = gmdate('Ymd\THis\Z');
         $dtstart = (new DateTime($subscription['next_payment']))->format('Ymd');
         $dtend = (new DateTime($subscription['next_payment']))->format('Ymd');
-        $location = isset($subscription['url']) ? $subscription['url'] : '';
+        $location = icalEscape(isset($subscription['url']) ? $subscription['url'] : '');
         $alarm_trigger = '-P' . $subscription['trigger'] . 'D';
 
         $icsContent .= <<<ICS
