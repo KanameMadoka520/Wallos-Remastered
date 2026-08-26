@@ -957,6 +957,15 @@ function setShowSubscriptionProgress() {
   storeSettingsOnDB('subscription_progress', value);
 }
 
+function setWeekStartsSunday() {
+  const weekStartsSundayCheckbox = document.querySelector("#weekstartssunday");
+  if (!weekStartsSundayCheckbox) {
+    return;
+  }
+
+  storeSettingsOnDB('week_starts_sunday', weekStartsSundayCheckbox.checked);
+}
+
 function saveCategorySorting() {
   const categories = document.getElementById("categories");
   const categoryIds = Array.from(categories.children).map(c => c.dataset.categoryid);

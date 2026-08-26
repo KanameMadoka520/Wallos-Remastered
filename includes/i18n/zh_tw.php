@@ -460,6 +460,7 @@ $i18n = [
     "monthly_budget" => "每月預算",
     "budget_info" => "每月預算用於計算統計資訊",
     "yearly_budget_info" => "年預算會把「本年已記錄實付 + 年底前剩餘預測付款」與您的年度上限進行對比。",
+    "week_starts_on_sunday" => "日曆以星期日作為每週第一天",
     "household" => "家庭成員",
     "save_member" => "儲存成員",
     "delete_member" => "刪除成員",
