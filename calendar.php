@@ -14,12 +14,18 @@ function getPriceConverted($price, $currency, $database, $userId)
   $result = $stmt->execute();
 
   $exchangeRate = $result->fetchArray(SQLITE3_ASSOC);
-  if ($exchangeRate === false) {
-    return $price;
-  } else {
-    $fromRate = $exchangeRate['rate'];
-    return $price / $fromRate;
+  // A missing, malformed, or non-positive rate cannot produce a safe
+  // conversion. Keep the original amount instead of dividing by zero.
+  if (
+    $exchangeRate === false
+    || !isset($exchangeRate['rate'])
+    || !is_numeric($exchangeRate['rate'])
+    || (float) $exchangeRate['rate'] <= 0
+  ) {
+    return (float) $price;
   }
+
+  return (float) $price / (float) $exchangeRate['rate'];
 }
 
 // Get budget from user table
