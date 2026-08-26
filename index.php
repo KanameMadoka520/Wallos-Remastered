@@ -170,7 +170,8 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                         $subscriptionDisplayPrice = formatPrice($subscriptionPrice, $currencies[$subscriptionCurrency]['code'], $currencies);
 
                         ?>
-                        <div class="subscription-item">
+                        <div class="subscription-item dashboard-subscription-trigger" data-subscription-id="<?= (int) $subscription['id'] ?>"
+                            role="button" tabindex="0" aria-label="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>">
                             <?php
                             if (empty($subscription['logo'])) {
                                 ?>
@@ -219,7 +220,8 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                         $subscriptionDisplayPrice = formatPrice($subscriptionPrice, $currencies[$subscriptionCurrency]['code'], $currencies);
 
                         ?>
-                        <div class="subscription-item">
+                        <div class="subscription-item dashboard-subscription-trigger" data-subscription-id="<?= (int) $subscription['id'] ?>"
+                            role="button" tabindex="0" aria-label="<?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>">
                             <?php
                             if (empty($subscription['logo'])) {
                                 ?>
@@ -533,6 +535,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 
 <?php wallos_render_metric_explanation_modal($i18n); ?>
 <?php wallos_render_page_immersive_toggle($lang); ?>
+<?php require_once 'includes/subscription_details_popup.php'; ?>
 
 
 <script src="scripts/dashboard.js?<?= $version ?>"></script>
