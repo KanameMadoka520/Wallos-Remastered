@@ -5348,6 +5348,9 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 12px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   margin: 0 0 18px;
 }
 
