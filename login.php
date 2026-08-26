@@ -159,6 +159,7 @@ if ($oidcRow) {
             }
             $state = bin2hex(random_bytes(16));
             $_SESSION['oidc_state'] = $state;
+            $_SESSION['oidc_state_issued_at'] = time();
 
             // Build the OIDC authorization URL
             $params = http_build_query([

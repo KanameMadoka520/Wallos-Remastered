@@ -1,4 +1,22 @@
 <?php
+
+$projectRoot = dirname(__DIR__, 2);
+
+// Migrations run from the container entrypoint through CLI.  A browser may
+// only invoke this endpoint when an authenticated administrator is present.
+if (PHP_SAPI !== 'cli') {
+    require_once $projectRoot . '/includes/connect_endpoint.php';
+    if ((int) ($userId ?? 0) !== 1) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Administrator access required.',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+} 
+
 function errorHandler($severity, $message, $file, $line)
 {
     throw new ErrorException($message, 0, $severity, $file, $line);
@@ -6,17 +24,16 @@ function errorHandler($severity, $message, $file, $line)
 
 // Set the custom error handler
 set_error_handler('errorHandler');
-$projectRoot = dirname(__DIR__, 2);
 chdir($projectRoot);
 /** @var \SQLite3 $db */
-try {
-    require_once $projectRoot . '/includes/connect_endpoint_crontabs.php';
-} catch (Exception $e) {
-    require_once $projectRoot . '/includes/connect_endpoint.php';
-} finally {
-    // Restore the default error handler
-    restore_error_handler();
+if (PHP_SAPI === 'cli') {
+    try {
+        require_once $projectRoot . '/includes/connect_endpoint_crontabs.php';
+    } catch (Exception $e) {
+        require_once $projectRoot . '/includes/connect_endpoint.php';
+    }
 }
+restore_error_handler();
 
 
 $completedMigrations = [];

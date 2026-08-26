@@ -27,6 +27,9 @@ COPY nginx.default.conf /etc/nginx/http.d/default.conf
 RUN rm -rf /var/www/html/nginx.conf && \
     rm -rf /var/www/html/nginx.default.conf
 
+# Keep the entrypoint executable when the repository was edited on Windows.
+RUN sed -i 's/\r$//' /var/www/html/startup.sh
+
 # Copy the custom crontab file
 COPY cronjobs /etc/cron.d/cronjobs
 

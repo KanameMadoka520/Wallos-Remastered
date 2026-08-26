@@ -42,6 +42,7 @@ function wallos_regression_build_suite_catalog()
             'description' => 'Checks high-risk frontend, theme, API, and media contracts without requiring a login.',
             'checks' => array(
                 'default-theme-contract' => 'New users keep the purple theme and Blue Archive transition defaults',
+                'upstream-5-4-5-ical-contract' => 'iCalendar export applies user-scoped currency conversion and RFC 5545 escaping',
                 'subscription-page-dom-contract' => 'subscriptions.php keeps the critical controls and modal anchors',
                 'subscription-module-load-order' => 'subscriptions.php loads subscription modules in dependency order',
                 'subscription-frontend-lifecycle-contract' => 'subscription page scripts keep shared request and rebind lifecycle hooks',

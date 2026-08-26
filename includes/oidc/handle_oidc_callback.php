@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../ssrf_helper.php';
+
 function generate_username_from_email($email)
 {
     if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -15,8 +17,21 @@ $stmt = $db->prepare('SELECT * FROM oauth_settings WHERE id = 1');
 $result = $stmt->execute();
 $oidcSettings = $result->fetchArray(SQLITE3_ASSOC);
 
+if (!$oidcSettings) {
+    header('Location: login.php?error=oidc_not_configured');
+    exit();
+}
+
 $tokenUrl = $oidcSettings['token_url'];
 $redirectUri = $oidcSettings['redirect_url'];
+
+$tokenTarget = validate_oidc_endpoint_url($tokenUrl, $db);
+$userInfoUrl = $oidcSettings['user_info_url'];
+$userInfoTarget = validate_oidc_endpoint_url($userInfoUrl, $db);
+if ($tokenTarget === false || $userInfoTarget === false) {
+    header('Location: login.php?error=oidc_endpoint_blocked');
+    exit();
+}
 
 $postFields = [
     'grant_type' => 'authorization_code',
@@ -28,29 +43,39 @@ $postFields = [
 
 $ch = curl_init($tokenUrl);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+curl_setopt($ch, CURLOPT_RESOLVE, [$tokenTarget['resolve']]);
 curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postFields));
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
 $response = curl_exec($ch);
-unset($ch);
+$tokenCurlError = curl_error($ch);
+curl_close($ch);
 
 $tokenData = json_decode($response, true);
-if (!$tokenData || !isset($tokenData['access_token'])) {
+if ($tokenCurlError !== '' || !$tokenData || !isset($tokenData['access_token'])) {
     die("OIDC token exchange failed.");
 }
 
-$userInfoUrl = $oidcSettings['user_info_url'];
-
 $ch = curl_init($userInfoUrl);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+curl_setopt($ch, CURLOPT_RESOLVE, [$userInfoTarget['resolve']]);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Authorization: Bearer ' . $tokenData['access_token']
 ]);
 $response = curl_exec($ch);
-unset($ch);
+$userInfoCurlError = curl_error($ch);
+curl_close($ch);
 
 $userInfo = json_decode($response, true);
-if (!$userInfo || !isset($userInfo[$oidcSettings['user_identifier_field']])) {
+if ($userInfoCurlError !== '' || !$userInfo || !isset($userInfo[$oidcSettings['user_identifier_field']])) {
     die("Failed to fetch OIDC user info.");
 }
 
@@ -69,6 +94,12 @@ if ($userData) {
 } else {
     // Might be an existing user with the same email
     $email = $userInfo['email'] ?? null;
+
+    $emailVerified = filter_var($userInfo['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    if (!empty($oidcSettings['require_email_verified']) && $emailVerified !== true) {
+        header("Location: login.php?error=oidc_email_not_verified");
+        exit();
+    }
 
     if (!$email) {
         // Login failed, we have nothing to go on with, redirect to login page with error

@@ -7,6 +7,10 @@ if (!isset($userData)) {
     die("User data missing for OIDC login.");
 }
 
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_regenerate_id(true);
+}
+
 $userId = $userData['id'];
 $username = $userData['username'];
 $language = $userData['language'];

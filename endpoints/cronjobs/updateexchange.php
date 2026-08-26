@@ -62,28 +62,40 @@ while ($userToUpdateExchange = $usersToUpdateExchange->fetchArray(SQLITE3_ASSOC)
                 $response = file_get_contents($api_url);
             }
 
-            $apiData = json_decode($response, true);
+            $apiData = json_decode((string) $response, true);
+            $mainCurrencyToEUR = $apiData['rates'][$mainCurrencyCode] ?? null;
 
-            $mainCurrencyToEUR = $apiData['rates'][$mainCurrencyCode];
+            if (!is_array($apiData) || !isset($apiData['rates']) || !is_numeric($mainCurrencyToEUR) || (float) $mainCurrencyToEUR <= 0) {
+                echo "Exchange rates update skipped. Provider returned invalid data.<br />";
+                continue;
+            }
 
-            if ($apiData !== null && isset($apiData['rates'])) {
-                foreach ($apiData['rates'] as $currencyCode => $rate) {
-                    if ($currencyCode === $mainCurrencyCode) {
-                        $exchangeRate = 1.0;
-                    } else {
-                        $exchangeRate = $rate / $mainCurrencyToEUR;
-                    }
-                    $updateQuery = "UPDATE currencies SET rate = :rate WHERE code = :code AND user_id = :userId";
-                    $updateStmt = $db->prepare($updateQuery);
-                    $updateStmt->bindParam(':rate', $exchangeRate, SQLITE3_TEXT);
-                    $updateStmt->bindParam(':code', $currencyCode, SQLITE3_TEXT);
-                    $updateStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                    $updateResult = $updateStmt->execute();
-
-                    if (!$updateResult) {
-                        echo "Error updating rate for currency: $currencyCode <br />";
-                    }
+            $db->exec('BEGIN IMMEDIATE');
+            $updateStmt = $db->prepare("UPDATE currencies SET rate = :rate WHERE code = :code AND user_id = :userId");
+            $updateFailed = false;
+            foreach ($apiData['rates'] as $currencyCode => $rate) {
+                if (!is_numeric($rate)) {
+                    $updateFailed = true;
+                    break;
                 }
+                $exchangeRate = $currencyCode === $mainCurrencyCode ? 1.0 : ((float) $rate / (float) $mainCurrencyToEUR);
+                $updateStmt->bindValue(':rate', $exchangeRate, SQLITE3_FLOAT);
+                $updateStmt->bindValue(':code', $currencyCode, SQLITE3_TEXT);
+                $updateStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                $updateResult = $updateStmt->execute();
+                $updateStmt->reset();
+                if (!$updateResult) {
+                    $updateFailed = true;
+                    break;
+                }
+            }
+
+            if ($updateFailed) {
+                $db->exec('ROLLBACK');
+                echo "Exchange rates update rolled back.<br />";
+                continue;
+            }
+
                 $currentDate = new DateTime();
                 $formattedDate = $currentDate->format('Y-m-d');
 
@@ -98,8 +110,9 @@ while ($userToUpdateExchange = $usersToUpdateExchange->fetchArray(SQLITE3_ASSOC)
                 $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
                 $result = $stmt->execute();
 
+                $db->exec('COMMIT');
+
                 echo "Rates updated successfully!<br />";
-            }
         } else {
             echo "Exchange rates update skipped. No fixer.io api key provided<br />";
             $apiKey = null;

@@ -775,7 +775,9 @@ function wallos_copy_directory_tree($sourceDirectory, $destinationDirectory, $pr
             mkdir($destinationPathDirectory, 0755, true);
         }
 
-        copy($item->getPathname(), $destinationPath);
+        if (!copy($item->getPathname(), $destinationPath)) {
+            throw new RuntimeException('Cannot copy restored logos file');
+        }
         $processedFiles++;
         $progress = $totalFiles > 0
             ? $progressStart + (($progressEnd - $progressStart) * ($processedFiles / $totalFiles))
@@ -811,6 +813,47 @@ function wallos_clear_directory_contents($directory)
 
         wallos_delete_directory_tree($directory . DIRECTORY_SEPARATOR . $entry);
     }
+}
+
+function wallos_run_migrations_after_restore($projectRoot, $databasePath)
+{
+    $db = new SQLite3($databasePath);
+    $db->busyTimeout(10000);
+    $db->exec('PRAGMA foreign_keys = ON');
+
+    $db->exec('CREATE TABLE IF NOT EXISTS migrations (id INTEGER PRIMARY KEY, migration TEXT NOT NULL, migrated_at DATETIME DEFAULT CURRENT_TIMESTAMP)');
+    $completed = [];
+    $result = $db->query('SELECT migration FROM migrations');
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $completed[(string) $row['migration']] = true;
+    }
+
+    $migrations = glob(rtrim($projectRoot, '/\\') . '/migrations/*.php') ?: [];
+    sort($migrations, SORT_STRING);
+    foreach ($migrations as $migrationPath) {
+        $migrationName = 'migrations/' . basename($migrationPath);
+        if (isset($completed[$migrationName])) {
+            continue;
+        }
+
+        require $migrationPath;
+        $stmt = $db->prepare('INSERT INTO migrations (migration) VALUES (:migration)');
+        $stmt->bindValue(':migration', $migrationName, SQLITE3_TEXT);
+        if (!$stmt->execute()) {
+            throw new RuntimeException('Failed to record restored database migration');
+        }
+    }
+
+    $integrity = (string) $db->querySingle('PRAGMA integrity_check');
+    if (strtolower($integrity) !== 'ok') {
+        throw new RuntimeException('Restored database integrity check failed');
+    }
+    $foreignKeyResult = $db->query('PRAGMA foreign_key_check');
+    if ($foreignKeyResult && $foreignKeyResult->fetchArray(SQLITE3_NUM) !== false) {
+        throw new RuntimeException('Restored database foreign key check failed');
+    }
+
+    $db->close();
 }
 
 function wallos_extract_backup_archive_to_workspace($archivePath, $workspace)
@@ -908,10 +951,6 @@ function wallos_restore_backup_archive($archivePath, $projectRoot)
             mkdir($databaseDirectory, 0755, true);
         }
 
-        if (is_file($databaseBackupPath)) {
-            @unlink($databaseBackupPath);
-        }
-
         if (is_file($databasePath) && !@rename($databasePath, $databaseBackupPath)) {
             throw new RuntimeException('Cannot replace current database');
         }
@@ -923,13 +962,41 @@ function wallos_restore_backup_archive($archivePath, $projectRoot)
             throw new RuntimeException('Cannot install restored database');
         }
 
-        if (is_file($databaseBackupPath)) {
-            @unlink($databaseBackupPath);
+        try {
+            wallos_run_migrations_after_restore($projectRoot, $databasePath);
+        } catch (Throwable $throwable) {
+            @unlink($databasePath);
+            if (is_file($databaseBackupPath)) {
+                @rename($databaseBackupPath, $databasePath);
+            }
+            throw $throwable;
         }
 
-        wallos_clear_directory_contents($logosDirectory);
-        if (is_dir($extractedBackup['logos_path'])) {
-            wallos_copy_directory_tree($extractedBackup['logos_path'], $logosDirectory);
+        $logosBackupDirectory = $workspace . DIRECTORY_SEPARATOR . 'logos.previous';
+        if (is_dir($logosDirectory) && !@rename($logosDirectory, $logosBackupDirectory)) {
+            throw new RuntimeException('Cannot preserve current logos before restore');
+        }
+
+        try {
+            if (is_dir($extractedBackup['logos_path'])) {
+                wallos_copy_directory_tree($extractedBackup['logos_path'], $logosDirectory);
+            } else {
+                mkdir($logosDirectory, 0755, true);
+            }
+            if (is_file($databaseBackupPath)) {
+                @unlink($databaseBackupPath);
+            }
+            wallos_delete_directory_tree($logosBackupDirectory);
+        } catch (Throwable $throwable) {
+            wallos_delete_directory_tree($logosDirectory);
+            if (is_dir($logosBackupDirectory)) {
+                @rename($logosBackupDirectory, $logosDirectory);
+            }
+            @unlink($databasePath);
+            if (is_file($databaseBackupPath)) {
+                @rename($databaseBackupPath, $databasePath);
+            }
+            throw $throwable;
         }
     } finally {
         wallos_delete_directory_tree($workspace);
