@@ -33,6 +33,10 @@ const browser = await chromium.launch({ headless });
 const context = await browser.newContext({
   viewport: { width: 1440, height: 1000 },
   ignoreHTTPSErrors: true,
+  // Playwright routes do not see requests handled by a service worker. The
+  // cache helper assertions below do not require a live worker, so block it
+  // to keep the synthetic login HTML response deterministic.
+  serviceWorkers: "block",
 });
 const page = await context.newPage();
 
