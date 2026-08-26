@@ -114,6 +114,21 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected purple theme defaults and Blue Archive transition defaults in settings/theme helpers.'
     );
 
+    $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
+    $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
+    $remasteredVersionValid = strpos($versionPhp, '$version = "v5.4.5";') !== false
+        && strpos($aboutPhp, 'Current running remastered build.') !== false
+        && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= $version ?>.') !== false
+        && strpos($aboutPhp, 'Remastered update scope') !== false;
+    $results[] = wallos_regression_make_result(
+        $remasteredVersionValid ? 'PASS' : 'FAIL',
+        'static',
+        'remastered-version-contract',
+        $remasteredVersionValid
+            ? 'About identifies the current v5.4.5 compatibility baseline and keeps the Remastered scope visible.'
+            : 'Expected version.php and About to identify the v5.4.5 Remastered compatibility baseline.'
+    );
+
     $icalFeedPhp = wallos_regression_read_repo_file($config, 'api/subscriptions/get_ical_feed.php');
     $icalHelperPhp = wallos_regression_read_repo_file($config, 'includes/ical_helper.php');
     $icalContractValid = wallos_regression_text_has_all($icalFeedPhp, array(
