@@ -192,13 +192,17 @@ try {
       });
     });
 
+    const reloadPromise = page.waitForEvent("framenavigated", {
+      predicate: (frame) => frame === page.mainFrame(),
+      timeout: 5000,
+    }).catch(() => null);
+
     const result = await page.evaluate(async () => {
       window.__wallosSessionExpiredEventSeen = false;
-      const stopReloadHandler = (event) => {
+      const observeSessionExpiry = () => {
         window.__wallosSessionExpiredEventSeen = true;
-        event.stopImmediatePropagation();
       };
-      window.addEventListener("wallos:session-expired", stopReloadHandler, true);
+      window.addEventListener("wallos:session-expired", observeSessionExpiry, true);
 
       try {
         await window.WallosHttp.getJson("endpoints/e2e-login-html.php");
@@ -212,7 +216,7 @@ try {
           hasHtmlMarker: error?.data?.html_login_response === true,
         };
       } finally {
-        window.removeEventListener("wallos:session-expired", stopReloadHandler, true);
+        window.removeEventListener("wallos:session-expired", observeSessionExpiry, true);
       }
     });
     await page.unroute("**/endpoints/e2e-login-html.php").catch(() => null);
@@ -223,6 +227,14 @@ try {
     if (!result.sessionExpired || !result.eventSeen || result.code !== "session_expired" || !result.hasHtmlMarker) {
       throw new Error(`login HTML was not normalized as session expiry: ${JSON.stringify(result)}`);
     }
+
+    const reloadedFrame = await reloadPromise;
+    if (!reloadedFrame) {
+      throw new Error("session expiry did not trigger the expected page reload");
+    }
+    await page.waitForLoadState("domcontentloaded", { timeout: 15000 });
+    await page.locator("#subscriptions").waitFor({ state: "visible", timeout: 15000 });
+    await waitForAppHelpers();
   });
 
   await step("cache refresh notice is persistent and does not widen the page", async () => {
