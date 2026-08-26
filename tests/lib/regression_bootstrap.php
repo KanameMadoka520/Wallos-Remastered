@@ -65,6 +65,7 @@ function wallos_regression_build_suite_catalog()
             'description' => 'Runs the existing logic regression scripts and folds them into the unified summary.',
             'checks' => array(
                 'budget-regression' => 'Execute tests/budget_regression_test.php',
+                'calendar-calculations' => 'Execute tests/calendar_calculations_test.php',
                 'payment-ledger' => 'Execute tests/payment_ledger_test.php',
                 'subscription-preferences' => 'Execute tests/subscription_preferences_test.php',
                 'subscription-image-maintenance' => 'Execute tests/subscription_image_maintenance_test.php',

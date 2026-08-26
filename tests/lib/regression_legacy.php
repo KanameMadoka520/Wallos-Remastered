@@ -4,6 +4,7 @@ function wallos_regression_run_legacy_suite(array $config, array $suiteDefinitio
 {
     $tests = array(
         'budget-regression' => 'tests/budget_regression_test.php',
+        'calendar-calculations' => 'tests/calendar_calculations_test.php',
         'payment-ledger' => 'tests/payment_ledger_test.php',
         'subscription-preferences' => 'tests/subscription_preferences_test.php',
         'subscription-image-maintenance' => 'tests/subscription_image_maintenance_test.php',
