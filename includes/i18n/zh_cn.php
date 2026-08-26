@@ -473,6 +473,7 @@ $i18n = [
     "monthly_budget" => "每月预算",
     "budget_info" => "设置预算后，您可以在统计页面上比较预算和实际支出。",
     "yearly_budget_info" => "年预算会把“本年已记录实付 + 年底前剩余预测付款”与您的年度上限进行对比。",
+    "week_starts_on_sunday" => "日历以星期日作为每周第一天",
     "household" => "家庭",
     "save_member" => "保存成员",
     "delete_member" => "删除成员",

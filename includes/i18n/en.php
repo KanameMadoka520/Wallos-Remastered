@@ -470,6 +470,7 @@ $i18n = [
     "monthly_budget" => "Monthly Budget",
     "budget_info" => "Monthly budget is used to calculate statistics",
     "yearly_budget_info" => "Yearly budget compares this year's recorded actual payments plus remaining predicted payments against your annual limit.",
+    "week_starts_on_sunday" => "Start the calendar week on Sunday",
     "household" => "Household",
     "save_member" => "Save Member",
     "delete_member" => "Delete Member",
