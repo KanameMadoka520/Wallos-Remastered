@@ -180,6 +180,79 @@ function wallos_calendar_get_occurrence_index($startTimestamp, $targetTimestamp,
 }
 
 /**
+ * Advance a subscription due date to the first occurrence at or after a
+ * threshold. A configured start date is used as the month/year anchor only
+ * when the current due date is provably on that schedule; manual off-schedule
+ * due dates therefore keep their own anchor.
+ *
+ * The return value is a Y-m-d string, or false when the inputs are invalid or
+ * the bounded search cannot reach the threshold.
+ */
+function wallos_calendar_advance_subscription_next_payment(
+    array $subscription,
+    $thresholdValue,
+    $minimumAdvances = 0,
+    $maxIterations = 10000
+) {
+    $nextPaymentTimestamp = wallos_calendar_parse_date($subscription['next_payment'] ?? '');
+    $thresholdTimestamp = wallos_calendar_parse_date($thresholdValue);
+    $cycle = (int) ($subscription['cycle'] ?? 0);
+    $frequency = (int) ($subscription['frequency'] ?? 0);
+    $minimumAdvances = (int) $minimumAdvances;
+    $maxIterations = (int) $maxIterations;
+
+    if ($nextPaymentTimestamp === false
+        || $thresholdTimestamp === false
+        || !in_array($cycle, [1, 2, 3, 4], true)
+        || $frequency < 1
+        || $minimumAdvances < 0
+        || $maxIterations < 1
+    ) {
+        return false;
+    }
+
+    $anchorTimestamp = $nextPaymentTimestamp;
+    $startTimestamp = wallos_calendar_parse_date($subscription['start_date'] ?? '');
+    if ($startTimestamp !== false
+        && $startTimestamp <= $nextPaymentTimestamp
+        && wallos_calendar_get_occurrence_index(
+            $startTimestamp,
+            $nextPaymentTimestamp,
+            $cycle,
+            $frequency,
+            $maxIterations
+        ) !== null
+    ) {
+        $anchorTimestamp = $startTimestamp;
+    }
+
+    $cursorTimestamp = $nextPaymentTimestamp;
+    for ($advances = 0; $advances <= $maxIterations; $advances++) {
+        if ($advances >= $minimumAdvances && $cursorTimestamp >= $thresholdTimestamp) {
+            return date('Y-m-d', $cursorTimestamp);
+        }
+
+        if ($advances === $maxIterations) {
+            break;
+        }
+
+        $nextTimestamp = wallos_calendar_shift_recurring_date(
+            $cursorTimestamp,
+            $cycle,
+            $frequency,
+            1,
+            $anchorTimestamp
+        );
+        if ($nextTimestamp === false || $nextTimestamp <= $cursorTimestamp) {
+            return false;
+        }
+        $cursorTimestamp = $nextTimestamp;
+    }
+
+    return false;
+}
+
+/**
  * Project a subscription's payment dates into one calendar month.
  *
  * The returned values are midnight timestamps. This function deliberately

@@ -3,6 +3,7 @@
 require_once 'validate.php';
 require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
 require_once __DIR__ . '/../../includes/subscription_trash.php';
+require_once __DIR__ . '/../../includes/calendar_calculations.php';
 
 require 'settimezone.php';
 
@@ -13,15 +14,7 @@ echo $timezone . "<br />\n";
 $currentDate = new DateTime();
 $currentDateString = $currentDate->format('Y-m-d');
 
-$cycles = array();
-$query = "SELECT * FROM cycles";
-$result = $db->query($query);
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-    $cycleId = $row['id'];
-    $cycles[$cycleId] = $row;
-}
-
-$query = "SELECT id, next_payment, frequency, cycle FROM subscriptions WHERE next_payment < :currentDate AND auto_renew = 1 AND inactive = 0 AND cycle != 5 AND lifecycle_status = :lifecycle_status";
+$query = "SELECT id, start_date, next_payment, frequency, cycle FROM subscriptions WHERE next_payment < :currentDate AND auto_renew = 1 AND inactive = 0 AND cycle != 5 AND lifecycle_status = :lifecycle_status";
 $stmt = $db->prepare($query);
 $stmt->bindValue(':currentDate', $currentDate->format('Y-m-d'));
 $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
@@ -29,33 +22,18 @@ $result = $stmt->execute();
 
 while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $subscriptionId = $row['id'];
-    $nextPaymentDate = new DateTime($row['next_payment']);
-    $frequency = $row['frequency'];
-    $cycle = $cycles[$row['cycle']]['name'];
-
-    // Calculate the interval to add based on the cycle
-    $intervalSpec = "P";
-    if ($cycle == 'Daily') {
-        $intervalSpec .= "{$frequency}D";
-    } elseif ($cycle === 'Weekly') {
-        $intervalSpec .= "{$frequency}W";
-    } elseif ($cycle === 'Monthly') {
-        $intervalSpec .= "{$frequency}M";
-    } elseif ($cycle === 'Yearly') {
-        $intervalSpec .= "{$frequency}Y";
-    }
-
-    $interval = new DateInterval($intervalSpec);
-
-    // Add intervals until the next payment date is in the future
-    while ($nextPaymentDate < $currentDate) {
-        $nextPaymentDate->add($interval);
+    $nextPaymentDate = wallos_calendar_advance_subscription_next_payment(
+        $row,
+        $currentDate->format('Y-m-d H:i:s')
+    );
+    if ($nextPaymentDate === false) {
+        continue;
     }
 
     // Update the subscription's next_payment date
     $updateQuery = "UPDATE subscriptions SET next_payment = :nextPaymentDate WHERE id = :subscriptionId";
     $updateStmt = $db->prepare($updateQuery);
-    $updateStmt->bindValue(':nextPaymentDate', $nextPaymentDate->format('Y-m-d'));
+    $updateStmt->bindValue(':nextPaymentDate', $nextPaymentDate, SQLITE3_TEXT);
     $updateStmt->bindValue(':subscriptionId', $subscriptionId);
     $updateStmt->execute();
 }

@@ -136,6 +136,126 @@ try {
         'Yearly leap-day anchors must clamp and then recover'
     );
 
+    $writeMonthEnd = [
+        'start_date' => '2026-01-31',
+        'next_payment' => '2026-01-31',
+        'cycle' => 3,
+        'frequency' => 1,
+    ];
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment(
+            $writeMonthEnd,
+            '2026-02-01 12:00:00'
+        ) === '2026-02-28',
+        'Write paths must clamp a January 31 schedule to February 28'
+    );
+    $writeMonthEnd['next_payment'] = '2026-02-28';
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment(
+            $writeMonthEnd,
+            '2026-03-01 12:00:00'
+        ) === '2026-03-31',
+        'Write paths must recover the January 31 anchor after February'
+    );
+
+    $writeLeapDay = [
+        'start_date' => '2024-02-29',
+        'next_payment' => '2024-02-29',
+        'cycle' => 4,
+        'frequency' => 1,
+    ];
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment(
+            $writeLeapDay,
+            '2025-01-01 12:00:00'
+        ) === '2025-02-28',
+        'Write paths must clamp a leap-day schedule in a short year'
+    );
+    $writeLeapDay['next_payment'] = '2025-02-28';
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment(
+            $writeLeapDay,
+            '2028-01-01 12:00:00'
+        ) === '2028-02-29',
+        'Write paths must recover February 29 in the next leap year'
+    );
+
+    $offScheduleWrite = [
+        'start_date' => '2026-01-31',
+        'next_payment' => '2026-02-27',
+        'cycle' => 3,
+        'frequency' => 1,
+    ];
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment(
+            $offScheduleWrite,
+            '2026-03-01 12:00:00'
+        ) === '2026-03-27',
+        'An off-schedule manual due date must retain its own anchor'
+    );
+
+    $invalidWrite = $writeMonthEnd;
+    $invalidWrite['next_payment'] = '2026-02-30';
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment($invalidWrite, '2026-03-01') === false,
+        'Write paths must reject impossible next-payment dates'
+    );
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment($writeMonthEnd, 'not-a-date') === false,
+        'Write paths must reject invalid thresholds'
+    );
+    $invalidWrite = $writeMonthEnd;
+    $invalidWrite['cycle'] = 5;
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment($invalidWrite, '2026-03-01') === false,
+        'Write paths must reject non-recurring cycles'
+    );
+    $invalidWrite = $writeMonthEnd;
+    $invalidWrite['frequency'] = 0;
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment($invalidWrite, '2026-03-01') === false,
+        'Write paths must reject invalid frequencies'
+    );
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment(
+            $writeMonthEnd,
+            '2027-01-01',
+            0,
+            1
+        ) === false,
+        'Write-path recurrence searches must honor their iteration bound'
+    );
+
+    $manualAdvance = $writeMonthEnd;
+    $manualAdvance['next_payment'] = '2026-03-31';
+    wallos_calendar_test_assert(
+        wallos_calendar_advance_subscription_next_payment(
+            $manualAdvance,
+            '2026-03-01 12:00:00',
+            1
+        ) === '2026-04-30',
+        'Manual renewal must be able to require at least one occurrence'
+    );
+
+    $cronWriteSource = file_get_contents(__DIR__ . '/../endpoints/cronjobs/updatenextpayment.php');
+    $manualWriteSource = file_get_contents(__DIR__ . '/../endpoints/subscription/renew.php');
+    wallos_calendar_test_assert(
+        is_string($cronWriteSource)
+        && strpos($cronWriteSource, 'wallos_calendar_advance_subscription_next_payment(') !== false
+        && strpos($cronWriteSource, 'start_date') !== false
+        && strpos($cronWriteSource, 'new DateInterval(') === false,
+        'The automatic renewal writer must use the shared anchored helper'
+    );
+    wallos_calendar_test_assert(
+        is_string($manualWriteSource)
+        && preg_match(
+            '/wallos_calendar_advance_subscription_next_payment\\(\\s*\\$subscriptionToRenew,\\s*\\$currentDate->format\\([^)]*\\),\\s*1\\s*\\)/s',
+            $manualWriteSource
+        ) === 1
+        && strpos($manualWriteSource, 'new DateInterval(') === false,
+        'The manual renewal writer must use the shared helper and advance at least once'
+    );
+
     echo "[OK] Calendar date compatibility checks passed.\n";
     exit(0);
 } catch (Throwable $throwable) {
