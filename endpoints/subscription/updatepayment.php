@@ -25,6 +25,11 @@ if ($recordId <= 0 || $subscriptionId <= 0 || $paidAt === '' || $amountOriginal 
 }
 
 try {
+    $existingRecord = wallos_get_subscription_payment_record_by_id($db, $recordId, $subscriptionId, $userId);
+    if ($existingRecord === false) {
+        throw new RuntimeException('Payment record not found.');
+    }
+
     wallos_update_subscription_payment_record(
         $db,
         $userId,
@@ -38,7 +43,15 @@ try {
         $note
     );
 
-    wallos_recalculate_subscription_next_payment_from_history($db, $subscriptionId, $userId);
+    wallos_recalculate_subscription_next_payment_from_history(
+        $db,
+        $subscriptionId,
+        $userId,
+        [
+            $existingRecord['due_date'] ?? '',
+            $dueDate !== '' ? $dueDate : $paidAt,
+        ]
+    );
 
     echo json_encode([
         'success' => true,

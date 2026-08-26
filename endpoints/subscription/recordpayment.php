@@ -45,7 +45,12 @@ try {
         $note
     );
 
-    wallos_recalculate_subscription_next_payment_from_history($db, $subscriptionId, $userId);
+    wallos_recalculate_subscription_next_payment_from_history(
+        $db,
+        $subscriptionId,
+        $userId,
+        [$dueDate !== '' ? $dueDate : $paidAt]
+    );
 
     echo json_encode([
         'success' => true,

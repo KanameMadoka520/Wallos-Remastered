@@ -189,10 +189,38 @@ try {
     wallos_ledger_print_ok('新增历史实付后自动推进下次扣费');
 
     $db->exec("DELETE FROM subscription_payment_records WHERE id = 103");
-    wallos_recalculate_subscription_next_payment_from_history($db, 9, 1);
+    wallos_recalculate_subscription_next_payment_from_history($db, 9, 1, ['2026-03-01']);
     $nextPayment = $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 9');
     wallos_ledger_assert_equal($nextPayment, '2026-03-01', '删除历史实付后应回退到对应未支付账期');
     wallos_ledger_print_ok('删除历史实付后自动回退下次扣费');
+
+    $db->exec("INSERT INTO subscriptions (id, user_id, name, price, currency_id, cycle, frequency, start_date, next_payment, payment_method_id)
+        VALUES (15, 1, 'Partial Ledger Subscription', 60, 1, 3, 1, '2020-01-01', '2026-09-01', 1)");
+    wallos_record_subscription_payment($db, 1, 15, '2025-01-01', '2025-01-01', 60, 1, 1);
+    $partialLedgerCurrentRecordId = wallos_record_subscription_payment(
+        $db,
+        1,
+        15,
+        '2026-09-01',
+        '2026-09-01',
+        60,
+        1,
+        1
+    );
+    wallos_recalculate_subscription_next_payment_from_history($db, 15, 1, ['2026-09-01']);
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 15'),
+        '2026-10-01',
+        '部分账本只能从当前未付账期向前推进，不能退回订阅开始年份'
+    );
+    wallos_delete_subscription_payment_record($db, $partialLedgerCurrentRecordId, 15, 1);
+    wallos_recalculate_subscription_next_payment_from_history($db, 15, 1, ['2026-09-01']);
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 15'),
+        '2026-09-01',
+        '删除当前付款时应只回退被重新打开的连续账期'
+    );
+    wallos_ledger_print_ok('多年老订阅的部分付款账本不会造成历史账期倒退');
 
     $recordsBeforeInvalidInsert = (int) $db->querySingle('SELECT COUNT(*) FROM subscription_payment_records');
     wallos_ledger_assert_throws(
@@ -395,7 +423,7 @@ try {
         '2 月末付款后必须恢复到 3 月 31 日'
     );
     wallos_delete_subscription_payment_record($db, $februaryMonthEndRecordId, 13, 1);
-    wallos_recalculate_subscription_next_payment_from_history($db, 13, 1);
+    wallos_recalculate_subscription_next_payment_from_history($db, 13, 1, ['2026-02-28']);
     wallos_ledger_assert_equal(
         $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 13'),
         '2026-02-28',
