@@ -14,4 +14,10 @@ images/uploads/logos/
 .env
 .env.*
 .tmp/
+.planning/
+node_modules/
+tests/
+screenshots/
+playwright-report/
+test-results/
 *.log

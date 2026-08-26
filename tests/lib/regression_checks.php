@@ -117,7 +117,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
     $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
     $remasteredVersionValid = strpos($versionPhp, '$version = "v5.4.5";') !== false
-        && strpos($versionPhp, '$remasteredVersion = "v5.4.5-remastered.2";') !== false
+        && strpos($versionPhp, '$remasteredVersion = "v5.4.5-remastered.3";') !== false
         && strpos($aboutPhp, 'Current running remastered build.') !== false
         && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= htmlspecialchars($version') !== false
         && strpos($aboutPhp, 'Remastered update scope') !== false;
@@ -147,7 +147,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'return [$nextPaymentDate];',
         '$date >= $subscriptionStartDate',
     )) && wallos_regression_text_has_all($oneTimeMigrationPhp, array(
-        'INSERT OR IGNORE INTO cycles',
+        "querySingle('SELECT id, days, name FROM cycles WHERE id = 5'",
+        "throw new RuntimeException('Cycle id 5",
         'VALUES (5, 0, \'One-time\')',
     )) && wallos_regression_text_has_all($listSubscriptionsPhp, array(
         'case 5:',
@@ -174,19 +175,29 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
 
     $icalFeedPhp = wallos_regression_read_repo_file($config, 'api/subscriptions/get_ical_feed.php');
     $icalHelperPhp = wallos_regression_read_repo_file($config, 'includes/ical_helper.php');
-    $icalContractValid = wallos_regression_text_has_all($icalFeedPhp, array(
+    $icalConversionValid = wallos_regression_text_has_all($icalFeedPhp, array(
+        "require_once '../../includes/currency_rates.php';",
         "require_once '../../includes/ical_helper.php';",
-        'function getPriceConverted($price, $currency, $database, $userId)',
-        'WHERE id = :currency AND user_id = :userId',
         "\$subscriptionToReturn['currency_id'] = \$userCurrencyId;",
         'foreach ($subscriptionsToReturn as $subscription)',
-        'icalEscape(html_entity_decode',
+        'wallos_convert_price(',
+        '$currency = icalEscape(',
+        "Price: {\$currency}{\$subscription['price']}",
     )) && wallos_regression_text_has_all($icalHelperPhp, array(
         "str_replace('\\\\', '\\\\\\\\', \$value)",
         "str_replace([\"\\r\\n\", \"\\r\", \"\\n\"], '\\\\n', \$value)",
         "str_replace(',', '\\\\,', \$value)",
         "str_replace(';', '\\\\;', \$value)",
     ));
+    $singleIcalPhp = wallos_regression_read_repo_file($config, 'endpoints/subscription/exportcalendar.php');
+    $icalContractValid = $icalConversionValid
+        && wallos_regression_text_has_all($singleIcalPhp, array(
+            "require_once '../../includes/ical_helper.php';",
+            'icalEscape(html_entity_decode',
+            'icalEscape(isset($subscription[\'url\'])',
+            '$currency = icalEscape(',
+            "Price: {\$currency}{\$subscription['price']}",
+        ));
     $results[] = wallos_regression_make_result(
         $icalContractValid ? 'PASS' : 'FAIL',
         'static',
@@ -422,7 +433,9 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         '@filemtime(__DIR__ . \'/../scripts/common.js\')',
         '@filemtime(__DIR__ . \'/../service-worker.js\')',
     )) && wallos_regression_text_has_all($serviceWorkerJs, array(
-        "static-cache-v18",
+        "static-cache-v19",
+        "pages-cache-v19",
+        "logos-cache-v19",
         "WALLOS_CLEAR_CACHES",
         "WALLOS_CACHE_STATUS",
         "currentCaches",
@@ -902,6 +915,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     );
 
     $ssrfHelperPhp = wallos_regression_read_repo_file($config, 'includes/ssrf_helper.php');
+    $logoSearchHttpPhp = wallos_regression_read_repo_file($config, 'includes/logo_search_http.php');
     $logoSearchPhp = wallos_regression_read_repo_file($config, 'endpoints/logos/search.php');
     $paymentSearchPhp = wallos_regression_read_repo_file($config, 'endpoints/payments/search.php');
     $subscriptionAddPhp = wallos_regression_read_repo_file($config, 'endpoints/subscription/add.php');
@@ -915,14 +929,19 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'function is_url_safe_for_ssrf($url, $db, $userId = null)',
     )) && wallos_regression_text_has_all($logoSearchPhp, array(
         "require_once '../../includes/ssrf_helper.php';",
-        'is_cgnat_ip($ip)',
-        'CURLOPT_RESOLVE',
-        'CURLOPT_MAXREDIRS',
+        "require_once '../../includes/logo_search_http.php';",
+        'wallos_logo_search_http_get(',
     )) && wallos_regression_text_has_all($paymentSearchPhp, array(
         "require_once '../../includes/ssrf_helper.php';",
-        'is_cgnat_ip($ip)',
+        "require_once '../../includes/logo_search_http.php';",
+        'wallos_logo_search_http_get(',
+    )) && wallos_regression_text_has_all($logoSearchHttpPhp, array(
+        "require_once __DIR__ . '/ssrf_helper.php';",
+        'wallos_ip_is_private_or_reserved($address)',
+        'CURLOPT_FOLLOWLOCATION, false',
         'CURLOPT_RESOLVE',
-        'CURLOPT_MAXREDIRS',
+        'CURLOPT_MAXREDIRS, 0',
+        'wallos_logo_search_resolve_redirect_url(',
     )) && wallos_regression_text_has_all($subscriptionAddPhp, array(
         "require_once '../../includes/ssrf_helper.php';",
         'is_cgnat_ip($ip)',
