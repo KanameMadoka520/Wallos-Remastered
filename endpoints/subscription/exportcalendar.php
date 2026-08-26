@@ -3,6 +3,7 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/getdbkeys.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/ical_helper.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -34,13 +35,18 @@ if ($subscription) {
 
     // Create ICS from subscription information
     $uid = 'wallos-subscription-' . $subscription['id'] . '@wallos';
-    $summary = html_entity_decode($subscription['name'], ENT_QUOTES, 'UTF-8');
-    $description = "Price: {$subscription['currency']}{$subscription['price']}\nCategory: {$subscription['category']}\nPayment Method: {$subscription['payment_method']}\nPayer: {$subscription['payer_user']}\n\nNotes: {$subscription['notes']}";
+    $summary = icalEscape(html_entity_decode((string) $subscription['name'], ENT_QUOTES, 'UTF-8'));
+    $notes = icalEscape(html_entity_decode((string) ($subscription['notes'] ?? ''), ENT_QUOTES, 'UTF-8'));
+    $category = icalEscape($subscription['category'] ?? '');
+    $paymentMethod = icalEscape($subscription['payment_method'] ?? '');
+    $payer = icalEscape($subscription['payer_user'] ?? '');
+    $currency = icalEscape(html_entity_decode((string) ($subscription['currency'] ?? ''), ENT_QUOTES, 'UTF-8'));
+    $description = "Price: {$currency}{$subscription['price']}\\nCategory: {$category}\\nPayment Method: {$paymentMethod}\\nPayer: {$payer}\\n\\nNotes: {$notes}";
 
     $dtstamp = gmdate('Ymd\THis\Z');
     $dtstart = (new DateTime($subscription['next_payment']))->format('Ymd');
     $dtend = (new DateTime($subscription['next_payment']))->format('Ymd');
-    $location = isset($subscription['url']) ? $subscription['url'] : '';
+    $location = icalEscape(isset($subscription['url']) ? $subscription['url'] : '');
     $alarm_trigger = '-P' . $subscription['trigger'] . 'D';
 
     $icsContent = <<<ICS

@@ -10,6 +10,7 @@ It returns a downloadable VCAL file with the active subscriptions
 
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/currency_rates.php';
 require_once '../../includes/ical_helper.php';
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -30,18 +31,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
     function getPriceConverted($price, $currency, $database, $userId)
     {
-        $query = "SELECT rate FROM currencies WHERE id = :currency AND user_id = :userId";
-        $stmt = $database->prepare($query);
-        $stmt->bindParam(':currency', $currency, SQLITE3_INTEGER);
-        $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
-
-        $exchangeRate = $result->fetchArray(SQLITE3_ASSOC);
-        if ($exchangeRate === false || !is_numeric($exchangeRate['rate']) || (float) $exchangeRate['rate'] <= 0) {
-            return (float) $price;
-        }
-
-        return (float) $price / (float) $exchangeRate['rate'];
+        return wallos_convert_price($price, $currency, $database, $userId);
     }
 
     // Get user from API key
@@ -176,7 +166,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         $category = icalEscape($subscription['category']);
         $paymentMethod = icalEscape($subscription['payment_method']);
         $payer = icalEscape($subscription['payer_user']);
-        $description = "Price: {$subscription['currency']}{$subscription['price']}\\nCategory: {$category}\\nPayment Method: {$paymentMethod}\\nPayer: {$payer}\\nNotes: {$notes}";
+        $currency = icalEscape(html_entity_decode((string) ($subscription['currency'] ?? ''), ENT_QUOTES, 'UTF-8'));
+        $description = "Price: {$currency}{$subscription['price']}\\nCategory: {$category}\\nPayment Method: {$paymentMethod}\\nPayer: {$payer}\\nNotes: {$notes}";
         $dtstamp = gmdate('Ymd\THis\Z');
         $dtstart = (new DateTime($subscription['next_payment']))->format('Ymd');
         $dtend = (new DateTime($subscription['next_payment']))->format('Ymd');

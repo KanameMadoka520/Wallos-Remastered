@@ -25,10 +25,16 @@ function saveBudget() {
   const budget = document.getElementById("budget").value;
   const yearlyBudgetInput = document.getElementById("yearly_budget");
   const yearlyBudget = yearlyBudgetInput ? yearlyBudgetInput.value : 0;
+  const periodBudgetInput = document.getElementById("period_budget");
+  const periodTypeInput = document.getElementById("budget_period_type");
+  const periodAnchorInput = document.getElementById("budget_period_anchor_date");
 
   window.WallosApi.postJson('endpoints/user/budget.php', {
     budget: budget,
     yearly_budget: yearlyBudget,
+    period_budget: periodBudgetInput ? periodBudgetInput.value : 0,
+    budget_period_type: periodTypeInput ? periodTypeInput.value : 'monthly',
+    budget_period_anchor_date: periodAnchorInput ? periodAnchorInput.value : '',
   })
     .then(data => {
       if (data.success) {

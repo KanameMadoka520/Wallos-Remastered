@@ -18,6 +18,13 @@ function wallos_calendar_test_assert_dates(array $timestamps, array $expected, $
 }
 
 try {
+    $monthlyCostApiSource = file_get_contents(__DIR__ . '/../api/subscriptions/get_monthly_cost.php');
+    wallos_calendar_test_assert(
+        is_string($monthlyCostApiSource)
+        && strpos($monthlyCostApiSource, 'wallos_calendar_get_payment_dates(') !== false,
+        'The monthly-cost API must use the shared recurrence projection'
+    );
+
     $recurring = [
         'next_payment' => '2026-08-10',
         'start_date' => '2026-08-15',
@@ -50,6 +57,15 @@ try {
         wallos_calendar_get_payment_dates($monthEnd, 2026, 4, 1),
         ['2026-04-30'],
         'Monthly month-end anchors must remain at the target month end'
+    );
+
+    $advancedMonthEnd = $monthEnd;
+    $advancedMonthEnd['start_date'] = '2026-01-31';
+    $advancedMonthEnd['next_payment'] = '2026-02-28';
+    wallos_calendar_test_assert_dates(
+        wallos_calendar_get_payment_dates($advancedMonthEnd, 2026, 3, 1),
+        ['2026-03-31'],
+        'An advanced short-month payment must recover the original start-date anchor'
     );
 
     $oneTime = [
@@ -101,6 +117,23 @@ try {
         wallos_calendar_get_first_day_offset(strtotime('2026-08-01'), false) === 5
         && wallos_calendar_get_first_day_offset(strtotime('2026-08-01'), true) === 6,
         'First-day offset must honor the Sunday-start preference'
+    );
+
+    wallos_calendar_test_assert(
+        wallos_calendar_parse_date('2026-02-30') === false,
+        'Impossible calendar dates must not be normalized into a later month'
+    );
+
+    $leapAnchor = strtotime('2024-02-29');
+    $shortYear = wallos_calendar_shift_recurring_date($leapAnchor, 4, 1, 1, $leapAnchor);
+    $nextLeapYear = $shortYear;
+    for ($leapStep = 0; $leapStep < 3; $leapStep++) {
+        $nextLeapYear = wallos_calendar_shift_recurring_date($nextLeapYear, 4, 1, 1, $leapAnchor);
+    }
+    wallos_calendar_test_assert(
+        date('Y-m-d', $shortYear) === '2025-02-28'
+        && date('Y-m-d', $nextLeapYear) === '2028-02-29',
+        'Yearly leap-day anchors must clamp and then recover'
     );
 
     echo "[OK] Calendar date compatibility checks passed.\n";

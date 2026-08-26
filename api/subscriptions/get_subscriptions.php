@@ -94,6 +94,7 @@ Example response:
 
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/currency_rates.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -109,19 +110,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         exit;
     }
 
-    function getPriceConverted($price, $currency, $database)
+    function getPriceConverted($price, $currency, $database, $currencyOwnerUserId)
     {
-        $query = "SELECT rate FROM currencies WHERE id = :currency";
-        $stmt = $database->prepare($query);
-        $stmt->bindParam(':currency', $currency, SQLITE3_INTEGER);
-        $result = $stmt->execute();
-        $exchangeRate = $result->fetchArray(SQLITE3_ASSOC);
-        if ($exchangeRate === false) {
-            return $price;
-        } else {
-            $fromRate = (float) ($exchangeRate['rate'] ?? 0);
-            return $fromRate > 0 ? $price / $fromRate : $price;
-        }
+        return wallos_convert_price($price, $currency, $database, $currencyOwnerUserId);
     }
 
     // Get user from API key
@@ -298,7 +289,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     foreach ($subscriptions as $subscription) {
         $subscriptionToReturn = $subscription;
         if (isset($_REQUEST['convert_currency']) && $_REQUEST['convert_currency'] === 'true' && $canConvertCurrency && $subscription['currency_id'] != $userCurrencyId) {
-            $subscriptionToReturn['price'] = getPriceConverted($subscription['price'], $subscription['currency_id'], $db);
+            $subscriptionToReturn['price'] = getPriceConverted(
+                $subscription['price'],
+                $subscription['currency_id'],
+                $db,
+                (int) ($subscription['user_id'] ?? $userId)
+            );
         } else {
             $subscriptionToReturn['price'] = $subscription['price'];
         }

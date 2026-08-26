@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/header.php';
 require_once 'includes/payment_icons.php';
+require_once 'includes/budget_period_calculations.php';
 
 $currencies = array();
 $query = "SELECT * FROM currencies WHERE user_id = :userId";
@@ -12,6 +13,9 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $currencies[$currencyId] = $row;
 }
 $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
+$periodBudgetValue = max(0, (float) ($userData['period_budget'] ?? 0));
+$periodBudgetType = wallos_budget_period_type($userData['budget_period_type'] ?? 'monthly');
+$periodBudgetAnchorDate = wallos_budget_anchor_date($userData['budget_period_anchor_date'] ?? '');
 require_once 'includes/page_navigation.php';
 
 $settingsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/settings.js');
@@ -70,6 +74,30 @@ $pageSections = [
                             placeholder="<?= translate('yearly_budget', $i18n) ?>" min="0" step="0.01">
                     </div>
                 </div>
+                <div class="account-budget-field">
+                    <label for="period_budget"><?= translate('period_budget', $i18n) ?></label>
+                    <div class="form-group-inline">
+                        <label for="period_budget"><?= $userData['currency_symbol'] ?></label>
+                        <input type="number" id="period_budget" name="period_budget" autocomplete="off"
+                            value="<?= $periodBudgetValue ?>" placeholder="<?= translate('period_budget', $i18n) ?>"
+                            min="0" step="0.01">
+                    </div>
+                </div>
+            </div>
+            <div class="account-budget-grid period-budget-options">
+                <div class="account-budget-field">
+                    <label for="budget_period_type"><?= translate('budget_period', $i18n) ?></label>
+                    <select id="budget_period_type" name="budget_period_type">
+                        <option value="weekly" <?= $periodBudgetType === 'weekly' ? 'selected' : '' ?>><?= translate('weekly', $i18n) ?></option>
+                        <option value="fortnightly" <?= $periodBudgetType === 'fortnightly' ? 'selected' : '' ?>><?= translate('fortnightly', $i18n) ?></option>
+                        <option value="monthly" <?= $periodBudgetType === 'monthly' ? 'selected' : '' ?>><?= translate('monthly', $i18n) ?></option>
+                    </select>
+                </div>
+                <div class="account-budget-field">
+                    <label for="budget_period_anchor_date"><?= translate('budget_anchor_date', $i18n) ?></label>
+                    <input type="date" id="budget_period_anchor_date" name="budget_period_anchor_date"
+                        value="<?= htmlspecialchars($periodBudgetAnchorDate, ENT_QUOTES, 'UTF-8') ?>">
+                </div>
             </div>
             <div class="buttons">
                 <input type="submit" value="<?= translate('save', $i18n) ?>" id="saveBudget" onClick="saveBudget()" />
@@ -80,6 +108,9 @@ $pageSections = [
                 </p>
                 <p>
                     <i class="fa-solid fa-circle-info"></i> <?= translate('yearly_budget_info', $i18n) ?>
+                </p>
+                <p>
+                    <i class="fa-solid fa-circle-info"></i> <?= translate('period_budget_info', $i18n) ?>
                 </p>
             </div>
         </div>

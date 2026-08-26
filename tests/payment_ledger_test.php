@@ -25,6 +25,23 @@ function wallos_ledger_assert_float($actual, $expected, $message, $precision = 0
     }
 }
 
+function wallos_ledger_assert_throws(callable $callback, $expectedMessage, $message)
+{
+    try {
+        $callback();
+    } catch (Throwable $throwable) {
+        if ($expectedMessage !== '' && strpos($throwable->getMessage(), $expectedMessage) === false) {
+            throw new RuntimeException(
+                $message . ' | expected exception containing: ' . $expectedMessage
+                . ' got: ' . $throwable->getMessage()
+            );
+        }
+        return;
+    }
+
+    throw new RuntimeException($message . ' | expected an exception but none was thrown');
+}
+
 function wallos_ledger_print_ok($message)
 {
     echo '[OK] ' . $message . PHP_EOL;
@@ -177,6 +194,229 @@ try {
     wallos_ledger_assert_equal($nextPayment, '2026-03-01', '删除历史实付后应回退到对应未支付账期');
     wallos_ledger_print_ok('删除历史实付后自动回退下次扣费');
 
+    $recordsBeforeInvalidInsert = (int) $db->querySingle('SELECT COUNT(*) FROM subscription_payment_records');
+    wallos_ledger_assert_throws(
+        static function () use ($db) {
+            wallos_record_subscription_payment($db, 1, 9, '2026-02-30', '2026-03-01', 100, 1, 1);
+        },
+        'Invalid due date.',
+        '新增付款必须拒绝不存在的日期'
+    );
+    wallos_ledger_assert_equal(
+        (int) $db->querySingle('SELECT COUNT(*) FROM subscription_payment_records'),
+        $recordsBeforeInvalidInsert,
+        '无效日期不得留下付款记录'
+    );
+    $recordBeforeInvalidUpdate = $db->querySingle("SELECT due_date || '|' || paid_at FROM subscription_payment_records WHERE id = 1");
+    wallos_ledger_assert_throws(
+        static function () use ($db) {
+            wallos_update_subscription_payment_record($db, 1, 1, 9, '2026-01-01', '2026-02-30', 100, 1, 1);
+        },
+        'Invalid payment date.',
+        '编辑付款必须拒绝不存在的日期'
+    );
+    wallos_ledger_assert_equal(
+        $db->querySingle("SELECT due_date || '|' || paid_at FROM subscription_payment_records WHERE id = 1"),
+        $recordBeforeInvalidUpdate,
+        '无效编辑不得改写原付款记录'
+    );
+    wallos_ledger_print_ok('付款新增和编辑严格拒绝无效日历日期');
+
+    $db->exec("INSERT INTO subscriptions (id, user_id, name, price, currency_id, cycle, frequency, start_date, next_payment, payment_method_id)
+        VALUES (12, 1, 'One-time Purchase', 80, 1, 5, 1, '2026-09-15', '2026-09-15', 1)");
+    $oneTimeSubscription = [
+        'id' => 12,
+        'price' => 80,
+        'currency_id' => 1,
+        'cycle' => 5,
+        'frequency' => 1,
+        'start_date' => '2026-09-15',
+        'next_payment' => '2026-09-15',
+    ];
+    $oneTimeForecast = wallos_build_subscription_future_payment_forecast(
+        $db,
+        $oneTimeSubscription,
+        1,
+        [],
+        [],
+        [1 => ['code' => 'USD']],
+        ['metric_explanation_regular_price_source' => 'Regular subscription price'],
+        6,
+        new DateTime('2026-09-01'),
+        new DateTime('2027-12-31')
+    );
+    wallos_ledger_assert_equal(count($oneTimeForecast), 1, '未付款的一次性订阅在长预测窗口中也只能出现一次');
+    wallos_ledger_assert_equal($oneTimeForecast[0]['due_date'], '2026-09-15', '一次性订阅必须保留其实际到期日');
+    wallos_ledger_assert_equal(
+        wallos_build_subscription_remaining_value_snapshot(
+            $db,
+            $oneTimeSubscription,
+            1,
+            [],
+            [],
+            [1 => ['code' => 'USD']],
+            [],
+            new DateTime('2026-09-01')
+        )['available'],
+        false,
+        '一次性订阅不得伪造年度剩余价值周期'
+    );
+
+    $oneTimeRecordId = wallos_record_subscription_payment(
+        $db,
+        1,
+        12,
+        '2026-09-15',
+        '2026-09-15',
+        80,
+        1,
+        1
+    );
+    wallos_recalculate_subscription_next_payment_from_history($db, 12, 1);
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 12'),
+        '2026-09-15',
+        '记录一次性付款后不得把下次付款推进一年'
+    );
+    $oneTimeRecords = wallos_get_subscription_payment_records($db, 12, 1, 0);
+    $paidOneTimeForecast = wallos_build_subscription_future_payment_forecast(
+        $db,
+        $oneTimeSubscription,
+        1,
+        [],
+        wallos_get_subscription_paid_due_dates_from_records($oneTimeRecords),
+        [1 => ['code' => 'USD']],
+        ['metric_explanation_regular_price_source' => 'Regular subscription price'],
+        6,
+        new DateTime('2026-09-01'),
+        new DateTime('2027-12-31')
+    );
+    wallos_ledger_assert_equal($paidOneTimeForecast, [], '已付款的一次性订阅不得继续出现在预测中');
+
+    wallos_update_subscription_payment_record(
+        $db,
+        1,
+        $oneTimeRecordId,
+        12,
+        '2026-09-15',
+        '2026-09-16',
+        80,
+        1,
+        1
+    );
+    wallos_recalculate_subscription_next_payment_from_history($db, 12, 1);
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 12'),
+        '2026-09-15',
+        '编辑一次性付款后不得制造续费日期'
+    );
+    wallos_delete_subscription_payment_record($db, $oneTimeRecordId, 12, 1);
+    wallos_recalculate_subscription_next_payment_from_history($db, 12, 1);
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 12'),
+        '2026-09-15',
+        '删除一次性付款后仍应保留原始到期日'
+    );
+    wallos_ledger_print_ok('一次性付款的记录、编辑、删除和预测都不会伪造年度续费');
+
+    $db->exec("INSERT INTO subscriptions (id, user_id, name, price, currency_id, cycle, frequency, start_date, next_payment, payment_method_id)
+        VALUES (13, 1, 'Month-end Subscription', 100, 1, 3, 1, '2026-01-31', '2026-01-31', 1)");
+    $januaryMonthEndRecordId = wallos_record_subscription_payment(
+        $db,
+        1,
+        13,
+        '2026-01-31',
+        '2026-01-31',
+        25,
+        1,
+        1
+    );
+    wallos_recalculate_subscription_next_payment_from_history($db, 13, 1);
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 13'),
+        '2026-02-28',
+        '1 月 31 日月付应夹紧到 2 月末'
+    );
+    $monthEndSubscription = [
+        'id' => 13,
+        'price' => 100,
+        'currency_id' => 1,
+        'cycle' => 3,
+        'frequency' => 1,
+        'start_date' => '2026-01-31',
+        'next_payment' => '2026-02-28',
+    ];
+    $monthEndRules = [
+        [
+            'rule_type' => 'first_n_cycles',
+            'price' => 25,
+            'currency_id' => 1,
+            'max_cycles' => 2,
+            'enabled' => 1,
+        ],
+    ];
+    $monthEndForecast = wallos_build_subscription_future_payment_forecast(
+        $db,
+        $monthEndSubscription,
+        1,
+        $monthEndRules,
+        [],
+        [1 => ['code' => 'USD']],
+        [
+            'metric_explanation_regular_price_source' => 'Regular subscription price',
+            'subscription_price_rule_first_cycles_summary' => '%s for first %d cycles',
+        ],
+        6,
+        new DateTime('2026-02-01'),
+        new DateTime('2026-04-30')
+    );
+    wallos_ledger_assert_equal(
+        array_column($monthEndForecast, 'due_date'),
+        ['2026-02-28', '2026-03-31', '2026-04-30'],
+        '月末预测应在短月夹紧并在长月恢复原始日'
+    );
+    wallos_ledger_assert_float($monthEndForecast[0]['amount_main'], 25, '月末第 2 期仍应命中 first-N 特殊价格');
+    wallos_ledger_assert_float($monthEndForecast[1]['amount_main'], 100, '月末第 3 期应恢复常规定价');
+
+    $februaryMonthEndRecordId = wallos_record_subscription_payment(
+        $db,
+        1,
+        13,
+        '2026-02-28',
+        '2026-02-28',
+        25,
+        1,
+        1
+    );
+    wallos_recalculate_subscription_next_payment_from_history($db, 13, 1);
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 13'),
+        '2026-03-31',
+        '2 月末付款后必须恢复到 3 月 31 日'
+    );
+    wallos_delete_subscription_payment_record($db, $februaryMonthEndRecordId, 13, 1);
+    wallos_recalculate_subscription_next_payment_from_history($db, 13, 1);
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 13'),
+        '2026-02-28',
+        '删除 2 月付款后必须回退到 2 月末而不是漂移到 3 月'
+    );
+    wallos_ledger_assert_equal($januaryMonthEndRecordId > 0, true, '月末首期付款必须成功写入账本');
+    wallos_ledger_print_ok('月末付款推进、删除回退和特殊价格期次保持稳定');
+
+    $db->exec("INSERT INTO subscriptions (id, user_id, name, price, currency_id, cycle, frequency, start_date, next_payment, payment_method_id)
+        VALUES (14, 1, 'Leap-day Subscription', 120, 1, 4, 1, '2024-02-29', '2024-02-29', 1)");
+    foreach (['2024-02-29', '2025-02-28', '2026-02-28', '2027-02-28'] as $leapDueDate) {
+        wallos_record_subscription_payment($db, 1, 14, $leapDueDate, $leapDueDate, 120, 1, 1);
+        wallos_recalculate_subscription_next_payment_from_history($db, 14, 1);
+    }
+    wallos_ledger_assert_equal(
+        $db->querySingle('SELECT next_payment FROM subscriptions WHERE id = 14'),
+        '2028-02-29',
+        '闰日年付在平年夹紧后必须于闰年恢复到 2 月 29 日'
+    );
+    wallos_ledger_print_ok('闰日年付账期在短年夹紧并于闰年恢复');
+
     $subscription = [
         'id' => 9,
         'price' => 100,
@@ -234,6 +474,28 @@ try {
     wallos_ledger_assert_equal(count($shortRangeForecast), 1, '较短预测范围应只保留窗口内账期');
     wallos_ledger_assert_equal($shortRangeForecast[0]['due_date'], '2026-04-01', '较短预测范围应命中窗口内的应付日期');
     wallos_ledger_print_ok('预测范围切换会影响未来账期列表');
+
+    $db->exec("INSERT INTO subscription_payment_records (id, user_id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot, main_currency_code_snapshot, fx_rate_to_main_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at)
+        VALUES (104, 1, 11, '2027-01-15', '2026-08-01', 50, 1, 'USD', 'USD', 1, 50, 1, 'paid', '', '2026-08-01 00:00:00')");
+    $prepaidFutureDueDates = wallos_get_paid_due_dates_map(
+        $db,
+        1,
+        '2027-01-01',
+        '2027-01-31',
+        true,
+        [11]
+    );
+    wallos_ledger_assert_equal(
+        !empty($prepaidFutureDueDates[11]['2027-01-15']),
+        true,
+        '提前支付的未来账期必须按 due_date 从预测中排除'
+    );
+    wallos_ledger_assert_equal(
+        wallos_get_paid_due_dates_map($db, 1, '2027-01-01', '2027-01-31', true, [9]),
+        [],
+        '未来已付账期映射仍必须尊重订阅筛选范围'
+    );
+    wallos_ledger_print_ok('提前支付记录按到期日排除且保持订阅隔离');
 
     $records = wallos_get_subscription_payment_records($db, 9, 1, 0);
     $availableYears = wallos_build_subscription_payment_history_available_years($subscription, $records, new DateTime('2026-03-15'));

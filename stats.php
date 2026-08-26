@@ -56,7 +56,7 @@ foreach ($paymentMethodsCount as $paymentMethod) {
 }
 
 $showPaymentMethodsGraph = count($paymentMethodDataPoints) > 1;
-$showStatsGraphs = $showCategoryCostGraph || $showMemberCostGraph || $showPaymentMethodsGraph || $showTotalMonthlyCostGraph || $showVsBudgetGraph || $showYearlyBudgetGraph;
+$showStatsGraphs = $showCategoryCostGraph || $showMemberCostGraph || $showPaymentMethodsGraph || $showTotalMonthlyCostGraph || $showVsBudgetGraph || $showYearlyBudgetGraph || $showVsPeriodBudgetGraph || $showProjectionGraph;
 
 $pageSections = [
   ['id' => 'stats-overview', 'label' => translate('general_statistics', $i18n)],
@@ -328,6 +328,32 @@ if ($showStatsGraphs) {
       </div>
       <?php
     }
+    if ($showVsPeriodBudgetGraph) {
+      ?>
+      <div class="statistic">
+        <span><?= number_format($periodBudgetUsed, 2) ?>%</span>
+        <div class="title"><?= translate('period_budget_used', $i18n) ?></div>
+        <div class="subtitle"><?= htmlspecialchars($periodBudgetPeriod['label'], ENT_QUOTES, 'UTF-8') ?></div>
+      </div>
+      <div class="statistic">
+        <span><?= CurrencyFormatter::format($periodBudgetAmount, $code) ?></span>
+        <div class="title"><?= translate('period_amount_needed', $i18n) ?></div>
+        <div class="subtitle"><?= htmlspecialchars($periodBudgetPeriod['label'], ENT_QUOTES, 'UTF-8') ?></div>
+      </div>
+      <div class="statistic">
+        <span><?= CurrencyFormatter::format($periodBudgetLeft, $code) ?></span>
+        <div class="title"><?= translate('period_budget_remaining', $i18n) ?></div>
+        <div class="subtitle"><?= htmlspecialchars($periodBudgetPeriod['label'], ENT_QUOTES, 'UTF-8') ?></div>
+      </div>
+      <?php if ($periodOverBudgetAmount > 0): ?>
+      <div class="statistic">
+        <span><?= CurrencyFormatter::format($periodOverBudgetAmount, $code) ?></span>
+        <div class="title"><?= translate('period_amount_over_budget', $i18n) ?></div>
+        <div class="subtitle"><?= htmlspecialchars($periodBudgetPeriod['label'], ENT_QUOTES, 'UTF-8') ?></div>
+      </div>
+      <?php endif; ?>
+      <?php
+    }
     if ($inactiveSubscriptions > 0) {
       ?>
       <div class="statistic">
@@ -432,6 +458,30 @@ if ($showStatsGraphs) {
         <?php
       }
 
+      if ($showVsPeriodBudgetGraph) {
+        ?>
+        <section class="graph">
+          <header>
+            <?= translate('cost_vs_period_budget', $i18n) ?>
+            <div class="sub-header"><?= htmlspecialchars($periodBudgetPeriod['label'], ENT_QUOTES, 'UTF-8') ?> (<?= CurrencyFormatter::format($periodBudget, $code) ?>)</div>
+          </header>
+          <canvas id="periodBudgetVsCostChart" style="height: 370px; width: 100%;"></canvas>
+        </section>
+        <?php
+      }
+
+      if ($showProjectionGraph) {
+        ?>
+        <section class="graph x2">
+          <header>
+            <?= translate('rolling_projection', $i18n) ?>
+            <div class="sub-header"><?= translate('rolling_projection_info', $i18n) ?></div>
+          </header>
+          <canvas id="rollingProjectionChart" style="height: 370px; width: 100%; max-height: 370px;"></canvas>
+        </section>
+        <?php
+      }
+
       ?>
           </div>
         </section>
@@ -455,6 +505,8 @@ if ($showStatsGraphs) {
       loadGraph("paymentMethidSplitChart", <?php echo json_encode($paymentMethodDataPoints, JSON_NUMERIC_CHECK); ?>, "", <?= $showPaymentMethodsGraph ?>);
       loadGraph("budgetVsCostChart", <?php echo json_encode($vsBudgetDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showVsBudgetGraph ?>);
       loadBudgetBreakdownGraph("yearlyBudgetBreakdownChart", <?php echo json_encode($yearlyBudgetDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showYearlyBudgetGraph ?>);
+      loadGraph("periodBudgetVsCostChart", <?php echo json_encode($vsPeriodBudgetDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showVsPeriodBudgetGraph ?>);
+      loadLineGraph("rollingProjectionChart", <?php echo json_encode($projectionDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", "<?= $showProjectionGraph ?>");
     }
   </script>
   <?php
