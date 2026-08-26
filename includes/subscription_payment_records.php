@@ -321,7 +321,35 @@ function wallos_get_subscription_payment_total_summary_map($db, $userId)
     return $totals;
 }
 
-function wallos_get_subscription_payment_records_for_period($db, $userId, $dateFrom, $dateTo, $respectExcludeFromStats = true)
+function wallos_subscription_payment_scope_clause($subscriptionIds, &$bindings)
+{
+    if ($subscriptionIds === null) {
+        return '';
+    }
+
+    $normalizedIds = [];
+    foreach ((array) $subscriptionIds as $subscriptionId) {
+        $subscriptionId = (int) $subscriptionId;
+        if ($subscriptionId > 0) {
+            $normalizedIds[$subscriptionId] = $subscriptionId;
+        }
+    }
+
+    if (empty($normalizedIds)) {
+        return ' AND 1 = 0';
+    }
+
+    $placeholders = [];
+    foreach (array_values($normalizedIds) as $index => $subscriptionId) {
+        $placeholder = ':subscription_scope_' . $index;
+        $placeholders[] = $placeholder;
+        $bindings[$placeholder] = $subscriptionId;
+    }
+
+    return ' AND subscription_payment_records.subscription_id IN (' . implode(', ', $placeholders) . ')';
+}
+
+function wallos_get_subscription_payment_records_for_period($db, $userId, $dateFrom, $dateTo, $respectExcludeFromStats = true, $subscriptionIds = null)
 {
     $sql = '
         SELECT subscription_payment_records.id, subscription_payment_records.subscription_id,
@@ -340,6 +368,9 @@ function wallos_get_subscription_payment_records_for_period($db, $userId, $dateF
           AND subscription_payment_records.paid_at <= :date_to
     ';
 
+    $bindings = [];
+    $sql .= wallos_subscription_payment_scope_clause($subscriptionIds, $bindings);
+
     if ($respectExcludeFromStats) {
         $sql .= ' AND subscriptions.exclude_from_stats = 0';
     }
@@ -351,6 +382,9 @@ function wallos_get_subscription_payment_records_for_period($db, $userId, $dateF
     $stmt->bindValue(':status', 'paid', SQLITE3_TEXT);
     $stmt->bindValue(':date_from', $dateFrom, SQLITE3_TEXT);
     $stmt->bindValue(':date_to', $dateTo, SQLITE3_TEXT);
+    foreach ($bindings as $placeholder => $subscriptionId) {
+        $stmt->bindValue($placeholder, $subscriptionId, SQLITE3_INTEGER);
+    }
     $result = $stmt->execute();
 
     $records = [];
@@ -550,7 +584,7 @@ function wallos_delete_subscription_payment_record($db, $recordId, $subscription
     $stmt->execute();
 }
 
-function wallos_get_subscription_payment_total($db, $userId, $dateFrom, $dateTo, $respectExcludeFromStats = true)
+function wallos_get_subscription_payment_total($db, $userId, $dateFrom, $dateTo, $respectExcludeFromStats = true, $subscriptionIds = null)
 {
     $sql = '
         SELECT COALESCE(SUM(subscription_payment_records.amount_main_snapshot), 0) AS total_amount
@@ -562,6 +596,9 @@ function wallos_get_subscription_payment_total($db, $userId, $dateFrom, $dateTo,
           AND subscription_payment_records.paid_at <= :date_to
     ';
 
+    $bindings = [];
+    $sql .= wallos_subscription_payment_scope_clause($subscriptionIds, $bindings);
+
     if ($respectExcludeFromStats) {
         $sql .= ' AND subscriptions.exclude_from_stats = 0';
     }
@@ -571,13 +608,16 @@ function wallos_get_subscription_payment_total($db, $userId, $dateFrom, $dateTo,
     $stmt->bindValue(':status', 'paid', SQLITE3_TEXT);
     $stmt->bindValue(':date_from', $dateFrom, SQLITE3_TEXT);
     $stmt->bindValue(':date_to', $dateTo, SQLITE3_TEXT);
+    foreach ($bindings as $placeholder => $subscriptionId) {
+        $stmt->bindValue($placeholder, $subscriptionId, SQLITE3_INTEGER);
+    }
     $result = $stmt->execute();
     $row = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
 
     return (float) ($row['total_amount'] ?? 0);
 }
 
-function wallos_get_paid_due_dates_map($db, $userId, $dateFrom, $dateTo, $respectExcludeFromStats = true)
+function wallos_get_paid_due_dates_map($db, $userId, $dateFrom, $dateTo, $respectExcludeFromStats = true, $subscriptionIds = null)
 {
     $sql = '
         SELECT DISTINCT subscription_payment_records.subscription_id, subscription_payment_records.due_date
@@ -589,6 +629,9 @@ function wallos_get_paid_due_dates_map($db, $userId, $dateFrom, $dateTo, $respec
           AND subscription_payment_records.paid_at <= :date_to
     ';
 
+    $bindings = [];
+    $sql .= wallos_subscription_payment_scope_clause($subscriptionIds, $bindings);
+
     if ($respectExcludeFromStats) {
         $sql .= ' AND subscriptions.exclude_from_stats = 0';
     }
@@ -598,6 +641,9 @@ function wallos_get_paid_due_dates_map($db, $userId, $dateFrom, $dateTo, $respec
     $stmt->bindValue(':status', 'paid', SQLITE3_TEXT);
     $stmt->bindValue(':date_from', $dateFrom, SQLITE3_TEXT);
     $stmt->bindValue(':date_to', $dateTo, SQLITE3_TEXT);
+    foreach ($bindings as $placeholder => $subscriptionId) {
+        $stmt->bindValue($placeholder, $subscriptionId, SQLITE3_INTEGER);
+    }
     $result = $stmt->execute();
 
     $map = [];

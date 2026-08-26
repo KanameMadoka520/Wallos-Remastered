@@ -45,6 +45,7 @@ try {
         start_date TEXT,
         next_payment TEXT,
         payment_method_id INTEGER,
+        exclude_from_stats INTEGER DEFAULT 0,
         manual_cycle_used_value_main REAL DEFAULT 0,
         manual_cycle_used_value_cycle_start TEXT DEFAULT ""
     )');
@@ -71,10 +72,35 @@ try {
     $db->exec("INSERT INTO currencies (id, user_id, code, rate) VALUES (2, 1, 'EUR', 0.5)");
     $db->exec("INSERT INTO subscriptions (id, user_id, name, price, currency_id, cycle, frequency, start_date, next_payment, payment_method_id)
         VALUES (9, 1, 'Test Subscription', 100, 1, 3, 1, '2026-01-01', '2026-03-01', 1)");
+    $db->exec("INSERT INTO subscriptions (id, user_id, name, price, currency_id, cycle, frequency, start_date, next_payment, payment_method_id)
+        VALUES (11, 1, 'Scoped Subscription', 50, 1, 3, 1, '2026-01-01', '2026-03-01', 1)");
     $db->exec("INSERT INTO subscription_payment_records (id, user_id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot, main_currency_code_snapshot, fx_rate_to_main_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at)
         VALUES
         (1, 1, 9, '2026-01-01', '2026-01-01', 100, 1, 'USD', 'USD', 1, 100, 1, 'paid', '', '2026-01-01 00:00:00'),
         (2, 1, 9, '2026-02-01', '2026-02-01', 100, 1, 'USD', 'USD', 1, 100, 1, 'paid', '', '2026-02-01 00:00:00')");
+    $db->exec("INSERT INTO subscription_payment_records (id, user_id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot, main_currency_code_snapshot, fx_rate_to_main_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at)
+        VALUES (3, 1, 11, '2026-02-15', '2026-02-15', 50, 1, 'USD', 'USD', 1, 50, 1, 'paid', '', '2026-02-15 00:00:00')");
+
+    wallos_ledger_assert_float(
+        wallos_get_subscription_payment_total($db, 1, '2026-01-01', '2026-12-31', true, [11]),
+        50,
+        '筛选后的实付总额只能包含选中的订阅'
+    );
+    $scopedRecords = wallos_get_subscription_payment_records_for_period(
+        $db,
+        1,
+        '2026-01-01',
+        '2026-12-31',
+        true,
+        [11]
+    );
+    wallos_ledger_assert_equal(count($scopedRecords), 1, '筛选后的实付记录只能返回选中的订阅');
+    wallos_ledger_assert_float(
+        wallos_get_subscription_payment_total($db, 1, '2026-01-01', '2026-12-31', true, []),
+        0,
+        '空筛选结果不应回退为用户全部实付'
+    );
+    wallos_ledger_print_ok('统计筛选后的实际付款范围正确');
 
     $db->exec("INSERT INTO user (id, main_currency) VALUES (2, 22)");
     $db->exec("INSERT INTO currencies (id, user_id, code, rate) VALUES (21, 2, 'EUR', 1.0)");
