@@ -2,15 +2,29 @@ services:
   wallos:
     build:
       context: .
-      dockerfile: Dockerfile.local
-    image: wallos-remastered:latest
+      dockerfile: Dockerfile
+    image: wallos-remastered:v5.4.5-remastered.3
     container_name: wallos-remastered
     ports:
       - "18282:80/tcp"
     environment:
       TZ: 'Asia/Shanghai'
+      WALLOS_REQUIRE_EXISTING_DB: '1'
+      WALLOS_CRON_ENABLED: '1'
     volumes:
-      - './db:/var/www/html/db'
-      - './logos:/var/www/html/images/uploads/logos'
-      - './backups:/var/www/html/backups'
+      - type: bind
+        source: ./db
+        target: /var/www/html/db
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./logos
+        target: /var/www/html/images/uploads/logos
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./backups
+        target: /var/www/html/backups
+        bind:
+          create_host_path: false
     restart: unless-stopped

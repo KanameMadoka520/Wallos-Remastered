@@ -1,6 +1,6 @@
-const STATIC_CACHE = 'static-cache-v18';
-const PAGES_CACHE = 'pages-cache-v18';
-const LOGOS_CACHE = 'logos-cache-v18';
+const STATIC_CACHE = 'static-cache-v19';
+const PAGES_CACHE = 'pages-cache-v19';
+const LOGOS_CACHE = 'logos-cache-v19';
 const WALLOS_CACHE_PREFIXES = ['static-cache-', 'pages-cache-', 'logos-cache-'];
 
 const staticAssets = [
