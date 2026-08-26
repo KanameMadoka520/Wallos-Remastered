@@ -44,6 +44,36 @@ function wallos_calendar_parse_date($value)
 }
 
 /**
+ * Move a date by whole calendar months without allowing month-end anchors to
+ * drift. For example, January 31 becomes February 28 and then March 31.
+ */
+function wallos_calendar_add_months($timestamp, $months, $anchorDay = null)
+{
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', date('Y-m-d', (int) $timestamp));
+    if ($date === false) {
+        return false;
+    }
+
+    $anchorDay = $anchorDay === null ? (int) $date->format('j') : (int) $anchorDay;
+    if ($anchorDay < 1 || $anchorDay > 31) {
+        return false;
+    }
+
+    $months = (int) $months;
+    $target = $date->modify('first day of ' . ($months >= 0 ? '+' : '') . $months . ' months');
+    if ($target === false) {
+        return false;
+    }
+
+    $day = min($anchorDay, (int) $target->format('t'));
+    return $target->setDate(
+        (int) $target->format('Y'),
+        (int) $target->format('n'),
+        $day
+    )->getTimestamp();
+}
+
+/**
  * Project a subscription's payment dates into one calendar month.
  *
  * The returned values are midnight timestamps. This function deliberately
@@ -83,10 +113,9 @@ function wallos_calendar_get_payment_dates(array $subscription, $calendarYear, $
         return [$nextPaymentDate];
     }
 
-    $incrementString = wallos_calendar_get_increment_string(
-        $subscription['cycle'] ?? 0,
-        $subscription['frequency'] ?? 0
-    );
+    $cycle = (int) ($subscription['cycle'] ?? 0);
+    $frequency = (int) ($subscription['frequency'] ?? 0);
+    $incrementString = wallos_calendar_get_increment_string($cycle, $frequency);
     if ($incrementString === null) {
         return [];
     }
@@ -99,9 +128,12 @@ function wallos_calendar_get_payment_dates(array $subscription, $calendarYear, $
 
     // Move back to the first candidate around the requested month. Guard
     // against malformed intervals so an invalid record cannot loop forever.
+    $monthAnchorDay = $cycle === 3 ? (int) date('j', $nextPaymentDate) : null;
     $startDate = $nextPaymentDate;
     while ($startDate > $startOfMonth) {
-        $previousDate = strtotime('-' . ltrim($incrementString, '+'), $startDate);
+        $previousDate = $cycle === 3
+            ? wallos_calendar_add_months($startDate, -$frequency, $monthAnchorDay)
+            : strtotime('-' . ltrim($incrementString, '+'), $startDate);
         if ($previousDate === false || $previousDate >= $startDate) {
             return [];
         }
@@ -114,7 +146,9 @@ function wallos_calendar_get_payment_dates(array $subscription, $calendarYear, $
             $dates[] = $date;
         }
 
-        $nextDate = strtotime($incrementString, $date);
+        $nextDate = $cycle === 3
+            ? wallos_calendar_add_months($date, $frequency, $monthAnchorDay)
+            : strtotime($incrementString, $date);
         if ($nextDate === false || $nextDate <= $date) {
             break;
         }

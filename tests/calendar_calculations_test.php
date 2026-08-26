@@ -30,6 +30,28 @@ try {
         'Recurring payments must not appear before start_date'
     );
 
+    $monthEnd = [
+        'next_payment' => '2026-01-31',
+        'start_date' => '2026-01-01',
+        'cycle' => 3,
+        'frequency' => 1,
+    ];
+    wallos_calendar_test_assert_dates(
+        wallos_calendar_get_payment_dates($monthEnd, 2026, 2, 1),
+        ['2026-02-28'],
+        'Monthly payments anchored on month-end must clamp to February month-end'
+    );
+    wallos_calendar_test_assert_dates(
+        wallos_calendar_get_payment_dates($monthEnd, 2026, 3, 1),
+        ['2026-03-31'],
+        'Monthly month-end anchors must recover the original day in longer months'
+    );
+    wallos_calendar_test_assert_dates(
+        wallos_calendar_get_payment_dates($monthEnd, 2026, 4, 1),
+        ['2026-04-30'],
+        'Monthly month-end anchors must remain at the target month end'
+    );
+
     $oneTime = [
         'next_payment' => '2026-08-20',
         'start_date' => '2026-08-01',
