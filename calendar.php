@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/header.php';
 require_once 'includes/subscription_trash.php';
+require_once 'includes/calendar_calculations.php';
 
 $calendarJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/calendar.js');
 
@@ -103,6 +104,8 @@ $code = $row['code'];
 $yearsToLoad = $calendarYear - $currentYear + 1;
 $calendarSelectableYearEnd = max($calendarSelectableYearEnd, ((int) $calendarYear) + 5);
 $calendarSelectableYears = range((int) $currentYear, $calendarSelectableYearEnd);
+$weekStartsSunday = !empty($settings['week_starts_sunday']);
+$calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
 ?>
 
 <section class="contain">
@@ -178,34 +181,54 @@ $calendarSelectableYears = range((int) $currentYear, $calendarSelectableYearEnd)
     <?php
     $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $calendarMonth, $calendarYear);
     $firstDay = mktime(0, 0, 0, $calendarMonth, 1, $calendarYear);
-    $firstDayOfWeek = date('N', $firstDay) - 1; // Adjusted to make Monday (1) the first day
-    $dayOfWeek = 0;
-    $day = 1;
-    $days = 1;
-    $week = 1;
-    $today = date('Y-m-d');
-    $today = explode('-', $today);
-    $todayYear = $today[0];
-    $todayMonth = $today[1];
-    $todayDay = $today[2];
-    $today = $todayYear . '-' . $todayMonth . '-' . $todayDay;
-    $today = strtotime($today);
+    $firstDayOfWeek = wallos_calendar_get_first_day_offset($firstDay, $weekStartsSunday);
+    $today = strtotime(date('Y-m-d'));
+    $todayDay = (int) date('j');
+    $todayMonth = date('m');
+    $todayYear = date('Y');
+
+    // Project each subscription once, then render the existing custom grid.
+    // This keeps totals and displayed events on the same date calculation.
+    $paymentsByDay = [];
+    foreach ($subscriptions as $subscription) {
+      $paymentDates = wallos_calendar_get_payment_dates(
+        $subscription,
+        $calendarYear,
+        $calendarMonth,
+        $yearsToLoad
+      );
+
+      foreach ($paymentDates as $paymentDate) {
+        $dayNumber = (int) date('j', $paymentDate);
+        $paymentsByDay[$dayNumber][] = $subscription;
+
+        $convertedPrice = getPriceConverted(
+          $subscription['price'],
+          $subscription['currency_id'],
+          $db,
+          $userId
+        );
+        $totalCostThisMonth += $convertedPrice;
+        $numberOfSubscriptionsToPayThisMonth++;
+        // A payment due today is still due; only older dates are paid.
+        if (wallos_calendar_is_due($paymentDate, $today)) {
+          $amountDueThisMonth += $convertedPrice;
+        }
+      }
+    }
     ?>
 
     <div class="calendar">
       <div class="calendar-header">
-        <div class="calendar-cell"><?= translate('mon', $i18n) ?></div>
-        <div class="calendar-cell"><?= translate('tue', $i18n) ?></div>
-        <div class="calendar-cell"><?= translate('wed', $i18n) ?></div>
-        <div class="calendar-cell"><?= translate('thu', $i18n) ?></div>
-        <div class="calendar-cell"><?= translate('fri', $i18n) ?></div>
-        <div class="calendar-cell"><?= translate('sat', $i18n) ?></div>
-        <div class="calendar-cell"><?= translate('sun', $i18n) ?></div>
+        <?php foreach ($calendarWeekDays as $calendarWeekDay): ?>
+          <div class="calendar-cell"><?= translate($calendarWeekDay['key'], $i18n) ?></div>
+        <?php endforeach; ?>
       </div>
       <div class="calendar-body">
         <div class="week calendar-row">
           <?php
-          for ($i = 0; $i < $firstDayOfWeek; $i++) { // Fill empty cells if month doesn't start on Monday
+          $dayOfWeek = 0;
+          for ($i = 0; $i < $firstDayOfWeek; $i++) {
             ?>
             <div class="calendar-cell empty">
               <div class="calendar-cell-header">
@@ -214,149 +237,33 @@ $calendarSelectableYears = range((int) $currentYear, $calendarSelectableYearEnd)
               <div class="calendar-cell-content"></div>
             </div>
             <?php
+            $dayOfWeek++;
           }
-          for ($i = $firstDayOfWeek; $i < 7; $i++) {
-            if ($day <= $daysInMonth) {
-              $dayClass = ($day == $todayDay && $calendarMonth == $todayMonth && $calendarYear == $todayYear) ? "today" : "";
-              ?>
-              <div class="calendar-cell <?= $dayClass ?>">
-                <div class="calendar-cell-header">
-                  <span class="day"><?= $day ?></span>
-                </div>
-                <div class="calendar-cell-content">
-                  <?php
-                  foreach ($subscriptions as $subscription) {
-                    $nextPaymentDate = strtotime($subscription['next_payment']);
-                    $cycle = $subscription['cycle']; // Integer from 1 to 4
-                    $frequency = $subscription['frequency'];
-
-                    $endDate = strtotime("+" . $yearsToLoad . " years", $nextPaymentDate);
-
-                    // Determine the strtotime increment string based on cycle
-                    switch ($cycle) {
-                      case 1: // Days
-                        $incrementString = "+{$frequency} days";
-                        break;
-                      case 2: // Weeks
-                        $incrementString = "+{$frequency} weeks";
-                        break;
-                      case 3: // Months
-                        $incrementString = "+{$frequency} months";
-                        break;
-                      case 4: // Years
-                        $incrementString = "+{$frequency} years";
-                        break;
-                      default:
-                        $incrementString = "+{$frequency} months"; // Default case, if needed
-                    }
-
-                    // Calculate the start of the month
-                    $startOfMonth = strtotime($calendarYear . '-' . str_pad($calendarMonth, 2, '0', STR_PAD_LEFT) . '-01');
-
-                    // Find the first payment date of the month by moving backwards
-                    $startDate = $nextPaymentDate;
-                    while ($startDate > $startOfMonth) {
-                      $startDate = strtotime("-" . $incrementString, $startDate);
-                    }
-
-                    for ($date = $startDate; $date <= $endDate; $date = strtotime($incrementString, $date)) {
-                      if (date('Y-m', $date) == $calendarYear . '-' . str_pad($calendarMonth, 2, '0', STR_PAD_LEFT)) {
-                        if (date('d', $date) == $day) {
-                          $totalCostThisMonth += getPriceConverted($subscription['price'], $subscription['currency_id'], $db, $userId);
-                          $numberOfSubscriptionsToPayThisMonth++;
-                          if ($date > $today) {
-                            $amountDueThisMonth += getPriceConverted($subscription['price'], $subscription['currency_id'], $db, $userId);
-                          }
-                          ?>
-                          <div class="calendar-subscription-title" onClick="openSubscriptionModal(<?= $subscription['id'] ?>)">
-                            <?= htmlspecialchars($subscription['name']) ?>
-                          </div>
-                          <?php
-                        }
-                      }
-                    }
-                  }
-                  ?>
-                </div>
-              </div>
-              <?php
-              $day++;
-            }
-          }
-          while ($day <= $daysInMonth) {
-            if ($dayOfWeek % 7 == 0) {
+          for ($day = 1; $day <= $daysInMonth; $day++) {
+            if ($dayOfWeek > 0 && $dayOfWeek % 7 == 0) {
               ?>
             </div>
             <div class="week calendar-row">
               <?php
             }
-            $dayClass = ($day == $todayDay && $calendarMonth == $todayMonth && $calendarYear == $todayYear) ? "today" : "";
+            $dayClass = ($day == $todayDay && $calendarMonth == $todayMonth && $calendarYear == $todayYear) ? 'today' : '';
             ?>
             <div class="calendar-cell <?= $dayClass ?>">
               <div class="calendar-cell-header">
                 <span class="day"><?= $day ?></span>
               </div>
               <div class="calendar-cell-content">
-                <?php
-                foreach ($subscriptions as $subscription) {
-                  $nextPaymentDate = strtotime($subscription['next_payment']);
-                  $cycle = $subscription['cycle']; // Integer from 1 to 4
-                  $frequency = $subscription['frequency'];
-
-                  $endDate = strtotime("+" . $yearsToLoad . " years", $nextPaymentDate);
-
-                  // Determine the strtotime increment string based on cycle
-                  switch ($cycle) {
-                    case 1: // Days
-                      $incrementString = "+{$frequency} days";
-                      break;
-                    case 2: // Weeks
-                      $incrementString = "+{$frequency} weeks";
-                      break;
-                    case 3: // Months
-                      $incrementString = "+{$frequency} months";
-                      break;
-                    case 4: // Years
-                      $incrementString = "+{$frequency} years";
-                      break;
-                    default:
-                      $incrementString = "+{$frequency} months"; // Default case, if needed
-                  }
-
-                  // Calculate the start of the month
-                  $startOfMonth = strtotime($calendarYear . '-' . str_pad($calendarMonth, 2, '0', STR_PAD_LEFT) . '-01');
-
-                  // Find the first payment date of the month by moving backwards
-                  $startDate = $nextPaymentDate;
-                  while ($startDate > $startOfMonth) {
-                    $startDate = strtotime("-" . $incrementString, $startDate);
-                  }
-
-                  for ($date = $startDate; $date <= $endDate; $date = strtotime($incrementString, $date)) {
-                    if (date('Y-m', $date) == $calendarYear . '-' . str_pad($calendarMonth, 2, '0', STR_PAD_LEFT)) {
-                      if (date('d', $date) == $day) {
-                        $totalCostThisMonth += getPriceConverted($subscription['price'], $subscription['currency_id'], $db, $userId);
-                        $numberOfSubscriptionsToPayThisMonth++;
-                        if ($date > $today) {
-                          $amountDueThisMonth += getPriceConverted($subscription['price'], $subscription['currency_id'], $db, $userId);
-                        }
-                        ?>
-                        <div class="calendar-subscription-title" onClick="openSubscriptionModal(<?= $subscription['id'] ?>)">
-                          <?= $subscription['name'] ?>
-                        </div>
-                        <?php
-                      }
-                    }
-                  }
-                }
-                ?>
+                <?php foreach ($paymentsByDay[$day] ?? [] as $subscription): ?>
+                  <div class="calendar-subscription-title" onClick="openSubscriptionModal(<?= (int) $subscription['id'] ?>)">
+                    <?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>
+                  </div>
+                <?php endforeach; ?>
               </div>
             </div>
             <?php
-            $day++;
             $dayOfWeek++;
           }
-          while ($dayOfWeek % 7 != 0) { // Fill the rest of the week with empty cells
+          while ($dayOfWeek % 7 != 0) {
             ?>
             <div class="calendar-cell empty">
               <div class="calendar-cell-header">
