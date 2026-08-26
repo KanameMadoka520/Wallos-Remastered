@@ -2300,11 +2300,16 @@ function autoFillNextPaymentDate(e) {
     return;
   }
   
-  const today = new Date();  
+  const today = new Date();
   const cycle = cycleSelect.value;
   const frequency = Number(frequencySelect.value);
 
   const nextDate = new Date(startDate.value);
+  if (cycle === '5') {
+    nextPayment.value = startDate.value;
+    return;
+  }
+
   let safetyCounter = 0;
   const maxIterations = 1000;
 

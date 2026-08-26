@@ -15,6 +15,7 @@ $currentDateString = $currentDate->format('Y-m-d');
 
 function getPricePerMonth($cycle, $frequency, $price)
 {
+  $frequency = max(1, (int) $frequency);
   switch ($cycle) {
     case 1:
       $numberOfPaymentsPerMonth = (30 / $frequency);
@@ -28,6 +29,10 @@ function getPricePerMonth($cycle, $frequency, $price)
     case 4:
       $numberOfMonths = (12 * $frequency);
       return $price / $numberOfMonths;
+    case 5:
+      return 0;
+    default:
+      return 0;
   }
 }
 
@@ -43,8 +48,8 @@ function getPriceConverted($price, $currency, $database, $userId)
   if ($exchangeRate === false) {
     return $price;
   } else {
-    $fromRate = $exchangeRate['rate'];
-    return $price / $fromRate;
+    $fromRate = (float) ($exchangeRate['rate'] ?? 0);
+    return $fromRate > 0 ? $price / $fromRate : $price;
   }
 }
 
