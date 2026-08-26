@@ -762,7 +762,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
         : ($subscription['detail_image'] ?? '');
 
       if (isset($settings['convertCurrency']) && $settings['convertCurrency'] === 'true' && $currencyId != $mainCurrencyId) {
-        $print[$id]['price'] = getPriceConverted($print[$id]['price'], $currencyId, $db);
+        $print[$id]['price'] = getPriceConverted($print[$id]['price'], $currencyId, $db, $userId);
         $print[$id]['currency_code'] = $currencies[$mainCurrencyId]['code'];
       }
       if (isset($settings['showMonthlyPrice']) && $settings['showMonthlyPrice'] === 'true') {

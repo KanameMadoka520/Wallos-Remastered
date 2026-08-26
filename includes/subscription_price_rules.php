@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/currency_formatter.php';
+require_once __DIR__ . '/calendar_calculations.php';
 
 function wallos_get_subscription_cycle_interval_spec($cycleId, $frequency)
 {
@@ -22,7 +23,9 @@ function wallos_get_subscription_cycle_interval_spec($cycleId, $frequency)
 
 function wallos_is_valid_local_date($value)
 {
-    return preg_match('/^\d{4}-\d{2}-\d{2}$/', trim((string) $value)) === 1;
+    $value = trim((string) $value);
+    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1
+        && wallos_calendar_parse_date($value) !== false;
 }
 
 function wallos_get_allowed_subscription_price_rule_types()
@@ -266,26 +269,19 @@ function wallos_get_subscription_occurrence_index($subscription, $dueDate)
         return null;
     }
 
-    $startDate = new DateTime($startDateValue);
-    $targetDate = new DateTime($dueDateValue);
-    if ($targetDate < $startDate) {
+    $startTimestamp = wallos_calendar_parse_date($startDateValue);
+    $targetTimestamp = wallos_calendar_parse_date($dueDateValue);
+    if ($startTimestamp === false || $targetTimestamp === false) {
         return null;
     }
 
-    $interval = new DateInterval(wallos_get_subscription_cycle_interval_spec((int) ($subscription['cycle'] ?? 3), (int) ($subscription['frequency'] ?? 1)));
-    $occurrenceDate = clone $startDate;
-    $occurrenceIndex = 1;
-
-    while ($occurrenceDate <= $targetDate && $occurrenceIndex <= 2400) {
-        if ($occurrenceDate->format('Y-m-d') === $dueDateValue) {
-            return $occurrenceIndex;
-        }
-
-        $occurrenceDate->add($interval);
-        $occurrenceIndex++;
-    }
-
-    return null;
+    return wallos_calendar_get_occurrence_index(
+        $startTimestamp,
+        $targetTimestamp,
+        (int) ($subscription['cycle'] ?? 3),
+        (int) ($subscription['frequency'] ?? 1),
+        2400
+    );
 }
 
 function wallos_subscription_price_rule_matches($rule, $subscription, $dueDate)

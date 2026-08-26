@@ -2,30 +2,13 @@
 require_once 'includes/header.php';
 require_once 'includes/subscription_trash.php';
 require_once 'includes/calendar_calculations.php';
+require_once 'includes/currency_rates.php';
 
 $calendarJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/calendar.js');
 
 function getPriceConverted($price, $currency, $database, $userId)
 {
-  $query = "SELECT rate FROM currencies WHERE id = :currency AND user_id = :userId";
-  $stmt = $database->prepare($query);
-  $stmt->bindParam(':currency', $currency, SQLITE3_INTEGER);
-  $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-  $result = $stmt->execute();
-
-  $exchangeRate = $result->fetchArray(SQLITE3_ASSOC);
-  // A missing, malformed, or non-positive rate cannot produce a safe
-  // conversion. Keep the original amount instead of dividing by zero.
-  if (
-    $exchangeRate === false
-    || !isset($exchangeRate['rate'])
-    || !is_numeric($exchangeRate['rate'])
-    || (float) $exchangeRate['rate'] <= 0
-  ) {
-    return (float) $price;
-  }
-
-  return (float) $price / (float) $exchangeRate['rate'];
+  return wallos_convert_price($price, $currency, $database, $userId);
 }
 
 // Get budget from user table

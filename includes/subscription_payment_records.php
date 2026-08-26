@@ -1,5 +1,14 @@
 <?php
 
+require_once __DIR__ . '/calendar_calculations.php';
+
+function wallos_payment_record_is_valid_date($value)
+{
+    $value = trim((string) $value);
+    return preg_match('/^\d{4}-\d{2}-\d{2}$/D', $value) === 1
+        && wallos_calendar_parse_date($value) !== false;
+}
+
 function wallos_get_currency_snapshot($db, $userId, $currencyId)
 {
     $stmt = $db->prepare('SELECT code, rate FROM currencies WHERE id = :currency_id AND user_id = :user_id');
@@ -431,11 +440,11 @@ function wallos_record_subscription_payment(
         $normalizedDueDate = $normalizedPaidAt;
     }
 
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $normalizedPaidAt)) {
+    if (!wallos_payment_record_is_valid_date($normalizedPaidAt)) {
         throw new RuntimeException('Invalid payment date.');
     }
 
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $normalizedDueDate)) {
+    if (!wallos_payment_record_is_valid_date($normalizedDueDate)) {
         throw new RuntimeException('Invalid due date.');
     }
 
@@ -516,7 +525,7 @@ function wallos_update_subscription_payment_record(
     }
 
     $normalizedPaidAt = trim((string) $paidAt);
-    if ($normalizedPaidAt === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $normalizedPaidAt)) {
+    if (!wallos_payment_record_is_valid_date($normalizedPaidAt)) {
         throw new RuntimeException('Invalid payment date.');
     }
 
@@ -524,7 +533,7 @@ function wallos_update_subscription_payment_record(
     if ($normalizedDueDate === '') {
         $normalizedDueDate = $normalizedPaidAt;
     }
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $normalizedDueDate)) {
+    if (!wallos_payment_record_is_valid_date($normalizedDueDate)) {
         throw new RuntimeException('Invalid due date.');
     }
 
@@ -625,8 +634,8 @@ function wallos_get_paid_due_dates_map($db, $userId, $dateFrom, $dateTo, $respec
         INNER JOIN subscriptions ON subscriptions.id = subscription_payment_records.subscription_id
         WHERE subscription_payment_records.user_id = :user_id
           AND subscription_payment_records.status = :status
-          AND subscription_payment_records.paid_at >= :date_from
-          AND subscription_payment_records.paid_at <= :date_to
+          AND subscription_payment_records.due_date >= :date_from
+          AND subscription_payment_records.due_date <= :date_to
     ';
 
     $bindings = [];
@@ -678,36 +687,64 @@ function wallos_get_subscription_interval_spec($cycleId, $frequency)
     if ($cycleId === 3) {
         return 'P' . $frequency . 'M';
     }
+    if ($cycleId === 4) {
+        return 'P' . $frequency . 'Y';
+    }
 
-    return 'P' . $frequency . 'Y';
+    return null;
 }
 
 function wallos_get_cycle_start_value_from_due_date($startDateValue, $dueDateValue, $cycleId, $frequency)
 {
     $startDateValue = trim((string) $startDateValue);
     $dueDateValue = trim((string) $dueDateValue);
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dueDateValue)) {
+    $cycleId = (int) $cycleId;
+    $frequency = (int) $frequency;
+    if (!wallos_payment_record_is_valid_date($dueDateValue)
+        || !in_array($cycleId, [1, 2, 3, 4], true)
+        || $frequency < 1) {
         return '';
     }
 
-    $cycleEnd = new DateTime($dueDateValue);
-    $interval = new DateInterval(wallos_get_subscription_interval_spec((int) $cycleId, (int) $frequency));
-    $cycleStart = (clone $cycleEnd)->sub($interval);
-
-    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDateValue)) {
-        $configuredStartDate = new DateTime($startDateValue);
-        if ($cycleStart < $configuredStartDate) {
-            $cycleStart = $configuredStartDate;
-        }
+    $dueTimestamp = wallos_calendar_parse_date($dueDateValue);
+    $anchorTimestamp = $dueTimestamp;
+    $configuredStartTimestamp = wallos_payment_record_is_valid_date($startDateValue)
+        ? wallos_calendar_parse_date($startDateValue)
+        : false;
+    if ($configuredStartTimestamp !== false
+        && $configuredStartTimestamp <= $dueTimestamp
+        && wallos_calendar_get_occurrence_index(
+            $configuredStartTimestamp,
+            $dueTimestamp,
+            $cycleId,
+            $frequency,
+            10000
+        ) !== null) {
+        $anchorTimestamp = $configuredStartTimestamp;
     }
 
-    return $cycleStart->format('Y-m-d');
+    $cycleStartTimestamp = wallos_calendar_shift_recurring_date(
+        $dueTimestamp,
+        $cycleId,
+        $frequency,
+        -1,
+        $anchorTimestamp
+    );
+    if ($cycleStartTimestamp === false) {
+        return '';
+    }
+
+    if ($configuredStartTimestamp !== false && $cycleStartTimestamp < $configuredStartTimestamp) {
+        $cycleStartTimestamp = $configuredStartTimestamp;
+    }
+
+    return date('Y-m-d', $cycleStartTimestamp);
 }
 
 function wallos_advance_subscription_next_payment_after_record($db, $subscriptionId, $userId, $recordedDueDate)
 {
     $stmt = $db->prepare('
-        SELECT id, next_payment, cycle, frequency
+        SELECT id, start_date, next_payment, cycle, frequency
         FROM subscriptions
         WHERE id = :subscription_id AND user_id = :user_id
     ');
@@ -720,30 +757,58 @@ function wallos_advance_subscription_next_payment_after_record($db, $subscriptio
         return;
     }
 
+    $cycleId = (int) ($subscription['cycle'] ?? 0);
+    $frequency = (int) ($subscription['frequency'] ?? 0);
+    if (!in_array($cycleId, [1, 2, 3, 4], true) || $frequency < 1) {
+        return;
+    }
+
     $currentNextPayment = trim((string) ($subscription['next_payment'] ?? ''));
-    if ($currentNextPayment === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $currentNextPayment)) {
-        return;
-    }
-
     $dueDate = trim((string) $recordedDueDate);
-    if ($dueDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dueDate)) {
+    if (!wallos_payment_record_is_valid_date($currentNextPayment)
+        || !wallos_payment_record_is_valid_date($dueDate)) {
         return;
     }
 
-    $nextPaymentDate = new DateTime($currentNextPayment);
-    $anchorDate = new DateTime($dueDate);
-    $interval = new DateInterval(wallos_get_subscription_interval_spec((int) ($subscription['cycle'] ?? 3), (int) ($subscription['frequency'] ?? 1)));
+    $nextPaymentTimestamp = wallos_calendar_parse_date($currentNextPayment);
+    $recordedDueTimestamp = wallos_calendar_parse_date($dueDate);
+    $anchorTimestamp = $nextPaymentTimestamp;
+    $startDateValue = trim((string) ($subscription['start_date'] ?? ''));
+    $startTimestamp = wallos_payment_record_is_valid_date($startDateValue)
+        ? wallos_calendar_parse_date($startDateValue)
+        : false;
+    if ($startTimestamp !== false
+        && $startTimestamp <= $nextPaymentTimestamp
+        && wallos_calendar_get_occurrence_index(
+            $startTimestamp,
+            $nextPaymentTimestamp,
+            $cycleId,
+            $frequency,
+            10000
+        ) !== null) {
+        $anchorTimestamp = $startTimestamp;
+    }
 
-    if ($nextPaymentDate > $anchorDate) {
+    if ($nextPaymentTimestamp > $recordedDueTimestamp) {
         return;
     }
 
-    while ($nextPaymentDate <= $anchorDate) {
-        $nextPaymentDate->add($interval);
+    while ($nextPaymentTimestamp <= $recordedDueTimestamp) {
+        $nextTimestamp = wallos_calendar_shift_recurring_date(
+            $nextPaymentTimestamp,
+            $cycleId,
+            $frequency,
+            1,
+            $anchorTimestamp
+        );
+        if ($nextTimestamp === false || $nextTimestamp <= $nextPaymentTimestamp) {
+            return;
+        }
+        $nextPaymentTimestamp = $nextTimestamp;
     }
 
     $updateStmt = $db->prepare('UPDATE subscriptions SET next_payment = :next_payment WHERE id = :subscription_id AND user_id = :user_id');
-    $updateStmt->bindValue(':next_payment', $nextPaymentDate->format('Y-m-d'), SQLITE3_TEXT);
+    $updateStmt->bindValue(':next_payment', date('Y-m-d', $nextPaymentTimestamp), SQLITE3_TEXT);
     $updateStmt->bindValue(':subscription_id', $subscriptionId, SQLITE3_INTEGER);
     $updateStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
     $updateStmt->execute();
@@ -766,13 +831,24 @@ function wallos_recalculate_subscription_next_payment_from_history($db, $subscri
         return;
     }
 
+    $cycleId = (int) ($subscription['cycle'] ?? 0);
+    $frequency = (int) ($subscription['frequency'] ?? 0);
+    // A lifetime purchase has no next recurrence. Recording or deleting its
+    // ledger row must not manufacture an annual renewal date.
+    if ($cycleId === 5) {
+        return;
+    }
+    if (!in_array($cycleId, [1, 2, 3, 4], true) || $frequency < 1) {
+        return;
+    }
+
     $startDateValue = trim((string) ($subscription['start_date'] ?? ''));
     $nextPaymentValue = trim((string) ($subscription['next_payment'] ?? ''));
     $anchorValue = '';
 
-    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDateValue)) {
+    if (wallos_payment_record_is_valid_date($startDateValue)) {
         $anchorValue = $startDateValue;
-    } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $nextPaymentValue)) {
+    } elseif (wallos_payment_record_is_valid_date($nextPaymentValue)) {
         $anchorValue = $nextPaymentValue;
     } else {
         return;
@@ -791,27 +867,37 @@ function wallos_recalculate_subscription_next_payment_from_history($db, $subscri
     $paidDueDatesResult = $paidDueDatesStmt->execute();
     while ($paidDueDatesResult && ($row = $paidDueDatesResult->fetchArray(SQLITE3_ASSOC))) {
         $dueDate = trim((string) ($row['due_date'] ?? ''));
-        if ($dueDate !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dueDate)) {
+        if (wallos_payment_record_is_valid_date($dueDate)) {
             $paidDueDates[$dueDate] = true;
         }
     }
 
-    $cursor = new DateTime($anchorValue);
-    $interval = new DateInterval(wallos_get_subscription_interval_spec((int) ($subscription['cycle'] ?? 3), (int) ($subscription['frequency'] ?? 1)));
+    $anchorTimestamp = wallos_calendar_parse_date($anchorValue);
+    $cursorTimestamp = $anchorTimestamp;
     $nextUnpaidDueDate = null;
 
     for ($iteration = 0; $iteration < 2400; $iteration++) {
-        $candidate = $cursor->format('Y-m-d');
+        $candidate = date('Y-m-d', $cursorTimestamp);
         if (empty($paidDueDates[$candidate])) {
             $nextUnpaidDueDate = $candidate;
             break;
         }
 
-        $cursor->add($interval);
+        $nextTimestamp = wallos_calendar_shift_recurring_date(
+            $cursorTimestamp,
+            $cycleId,
+            $frequency,
+            1,
+            $anchorTimestamp
+        );
+        if ($nextTimestamp === false || $nextTimestamp <= $cursorTimestamp) {
+            return;
+        }
+        $cursorTimestamp = $nextTimestamp;
     }
 
     if ($nextUnpaidDueDate === null) {
-        $nextUnpaidDueDate = $cursor->format('Y-m-d');
+        return;
     }
 
     $newCycleStart = wallos_get_cycle_start_value_from_due_date(
