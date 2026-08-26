@@ -439,6 +439,13 @@ try {
     await page.locator("#saveBackupSettingsButton").click();
     await waitForButtonEnabled("#saveBackupSettingsButton");
 
+    // The backup handler reloads the page shortly after the download starts.
+    // Register the navigation wait before clicking so the assertion cannot
+    // observe the old server-rendered backup list during that short window.
+    const reloadPromise = page.waitForNavigation({
+      waitUntil: "domcontentloaded",
+      timeout: 180000,
+    }).catch(() => null);
     const downloadPromise = page.waitForEvent("download", { timeout: 180000 }).catch(() => null);
     await page.locator("#backupDB").click();
     await expectVisible("#backupProgressCard", "backup progress card", 20000);
@@ -453,8 +460,18 @@ try {
       await download.delete().catch(() => {});
     }
 
-    await page.waitForLoadState("domcontentloaded", { timeout: 30000 }).catch(() => null);
+    await reloadPromise;
     await expectVisible(".backup-card", "backup card after backup", 30000);
+    const expectedBackupName = download?.suggestedFilename?.() || "";
+    await page.waitForFunction(({ before, expected }) => {
+      const newestCode = document.querySelector(".backup-card code");
+      const newestName = newestCode?.textContent?.trim() || "";
+      if (!newestName) {
+        return false;
+      }
+
+      return expected ? newestName === expected : !before || newestName !== before;
+    }, { before: backupNameBefore, expected: expectedBackupName }, { timeout: 30000 });
     const backupNameAfter = (await page.locator(".backup-card code").first().textContent())?.trim() || "";
 
     if (!backupNameAfter) {
