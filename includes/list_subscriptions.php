@@ -7,6 +7,8 @@ require_once __DIR__ . '/subscription_price_rules.php';
 
 function getBillingCycle($cycle, $frequency, $i18n)
 {
+    $cycle = (int) $cycle;
+    $frequency = max(1, (int) $frequency);
     switch ($cycle) {
         case 1:
             return $frequency == 1 ? translate('Daily', $i18n) : $frequency . " " . translate('days', $i18n);
@@ -16,11 +18,25 @@ function getBillingCycle($cycle, $frequency, $i18n)
             return $frequency == 1 ? translate('Monthly', $i18n) : $frequency . " " . translate('months', $i18n);
         case 4:
             return $frequency == 1 ? translate('Yearly', $i18n) : $frequency . " " . translate('years', $i18n);
+        case 5:
+            return function_exists('wallos_translate_with_fallback')
+                ? wallos_translate_with_fallback('One-time', 'One-time', $i18n)
+                : translate('One-time', $i18n);
+        default:
+            return function_exists('wallos_translate_with_fallback')
+                ? wallos_translate_with_fallback('unknown', 'Unknown', $i18n)
+                : 'Unknown';
     }
 }
 
 function getSubscriptionProgress($cycle, $frequency, $next_payment)
 {
+    $cycle = (int) $cycle;
+    $frequency = max(1, (int) $frequency);
+    if ($cycle === 5) {
+        return 0;
+    }
+
     $nextPaymentDate = new DateTime($next_payment);
     $currentDate = new DateTime('now');
 
@@ -51,6 +67,7 @@ function getSubscriptionProgress($cycle, $frequency, $next_payment)
 
 function getPricePerMonth($cycle, $frequency, $price)
 {
+    $frequency = max(1, (int) $frequency);
     switch ($cycle) {
         case 1:
             $numberOfPaymentsPerMonth = (30 / $frequency);
@@ -64,6 +81,10 @@ function getPricePerMonth($cycle, $frequency, $price)
         case 4:
             $numberOfMonths = (12 * $frequency);
             return $price / $numberOfMonths;
+        case 5:
+            return 0;
+        default:
+            return 0;
     }
 }
 
@@ -79,8 +100,8 @@ function getPriceConverted($price, $currency, $database)
     if ($exchangeRate === false) {
         return $price;
     } else {
-        $fromRate = $exchangeRate['rate'];
-        return $price / $fromRate;
+        $fromRate = (float) ($exchangeRate['rate'] ?? 0);
+        return $fromRate > 0 ? $price / $fromRate : $price;
     }
 }
 
@@ -172,10 +193,27 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
         }
     }
 
+    // One-time purchases are lifetime items rather than recurring renewals.
+    // Keep them visible, but render them after recurring subscriptions.
+    usort($subscriptions, function ($a, $b) {
+        return ((int) !empty($a['one_time'])) <=> ((int) !empty($b['one_time']));
+    });
+
     $currentCategory = 0;
     $currentPayerUserId = 0;
     $currentPaymentMethodId = 0;
+    $oneTimeSectionShown = false;
     foreach ($subscriptions as $subscription) {
+        if (!empty($subscription['one_time']) && !$oneTimeSectionShown) {
+            ?>
+            <div class="subscription-list-title">
+                <?= function_exists('wallos_translate_with_fallback')
+                    ? wallos_translate_with_fallback('lifetime_purchases', 'Lifetime Purchases', $i18n)
+                    : 'Lifetime Purchases' ?>
+            </div>
+            <?php
+            $oneTimeSectionShown = true;
+        }
         if ($sort == "category_id" && $subscription['category_id'] != $currentCategory) {
             ?>
             <div class="subscription-list-title">
@@ -222,7 +260,7 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                         Delete
                     </button>
                     <?php
-                    if ($subscription['auto_renew'] != 1) {
+                    if ($subscription['auto_renew'] != 1 && empty($subscription['one_time'])) {
                         ?>
                         <button class="mobile-action-renew" data-subscription-action="renew-subscription" data-subscription-id="<?= (int) $subscription['id'] ?>">
                             <?php include $imagePath . "images/siteicons/svg/mobile-menu/renew.php"; ?>
@@ -245,6 +283,9 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
             }
             if ($subscription['auto_renew'] != 1) {
                 $subscriptionExtraClasses .= " manual";
+            }
+            if (!empty($subscription['one_time'])) {
+                $subscriptionExtraClasses .= " one-time";
             }
             if (!empty($subscription['exclude_from_stats'])) {
                 $subscriptionExtraClasses .= " no-stats";
@@ -286,11 +327,13 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                         </span>
                     <?php endif; ?>
                     <span class="cycle"
-                        title="<?= $subscription['auto_renew'] ? translate("automatically_renews", $i18n) : translate("manual_renewal", $i18n) ?>">
+                        title="<?= !empty($subscription['one_time'])
+                            ? (function_exists('wallos_translate_with_fallback') ? wallos_translate_with_fallback('One-time', 'One-time', $i18n) : 'One-time')
+                            : ($subscription['auto_renew'] ? translate("automatically_renews", $i18n) : translate("manual_renewal", $i18n)) ?>">
                         <?php
-                        if ($subscription['auto_renew']) {
+                        if (empty($subscription['one_time']) && $subscription['auto_renew']) {
                             include $imagePath . "images/siteicons/svg/automatic.php";
-                        } else {
+                        } elseif (empty($subscription['one_time'])) {
                             include $imagePath . "images/siteicons/svg/manual.php";
                         }
                         ?>
@@ -346,7 +389,7 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                             <?= translate('clone', $i18n) ?>
                         </li>
                         <?php
-                        if ($subscription['auto_renew'] != 1) {
+                        if ($subscription['auto_renew'] != 1 && empty($subscription['one_time'])) {
                             ?>
                             <li class="renew" title="<?= translate('renew', $i18n) ?>" data-subscription-action="renew-subscription"
                                 data-subscription-id="<?= (int) $subscription['id'] ?>">

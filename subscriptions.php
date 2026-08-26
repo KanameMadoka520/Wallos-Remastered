@@ -711,6 +711,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       $cycle = $subscription['cycle'];
       $frequency = $subscription['frequency'];
       $print[$id]['billing_cycle'] = getBillingCycle($cycle, $frequency, $i18n);
+      $print[$id]['one_time'] = ((int) $cycle === 5);
       $paymentMethodId = $subscription['payment_method_id'];
       $print[$id]['currency_code'] = $currencies[$subscription['currency_id']]['code'];
       $currencyId = $subscription['currency_id'];

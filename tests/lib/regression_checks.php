@@ -130,6 +130,34 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected version.php and About to identify the v5.4.5 Remastered compatibility baseline.'
     );
 
+    $statsCalculationsPhp = wallos_regression_read_repo_file($config, 'includes/stats_calculations.php');
+    $calendarCalculationsPhp = wallos_regression_read_repo_file($config, 'includes/calendar_calculations.php');
+    $oneTimeMigrationPhp = wallos_regression_read_repo_file($config, 'migrations/000076.php');
+    $listSubscriptionsPhp = wallos_regression_read_repo_file($config, 'includes/list_subscriptions.php');
+    $oneTimeCompatibilityValid = wallos_regression_text_has_all($statsCalculationsPhp, array(
+        'case 5:',
+        'return 0;',
+        'if ((int) $cycle !== 5)',
+    )) && wallos_regression_text_has_all($calendarCalculationsPhp, array(
+        'if ((int) ($subscription[\'cycle\'] ?? 0) === 5)',
+        'return [$nextPaymentDate];',
+        '$date >= $subscriptionStartDate',
+    )) && wallos_regression_text_has_all($oneTimeMigrationPhp, array(
+        'INSERT OR IGNORE INTO cycles',
+        'VALUES (5, 0, \'One-time\')',
+    )) && wallos_regression_text_has_all($listSubscriptionsPhp, array(
+        'case 5:',
+        "'one_time'",
+    ));
+    $results[] = wallos_regression_make_result(
+        $oneTimeCompatibilityValid ? 'PASS' : 'FAIL',
+        'static',
+        'one-time-subscription-compatibility-contract',
+        $oneTimeCompatibilityValid
+            ? 'One-time subscriptions have a repeatable migration, non-recurring statistics, calendar date handling, and list rendering support.'
+            : 'Expected cycle 5 compatibility across migration, statistics, calendar calculations, and subscription list rendering.'
+    );
+
     $icalFeedPhp = wallos_regression_read_repo_file($config, 'api/subscriptions/get_ical_feed.php');
     $icalHelperPhp = wallos_regression_read_repo_file($config, 'includes/ical_helper.php');
     $icalContractValid = wallos_regression_text_has_all($icalFeedPhp, array(

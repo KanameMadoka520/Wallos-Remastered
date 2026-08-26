@@ -119,8 +119,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         if ($exchangeRate === false) {
             return $price;
         } else {
-            $fromRate = $exchangeRate['rate'];
-            return $price / $fromRate;
+            $fromRate = (float) ($exchangeRate['rate'] ?? 0);
+            return $fromRate > 0 ? $price / $fromRate : $price;
         }
     }
 
@@ -305,6 +305,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         $subscriptionToReturn['category_name'] = isset($categories[$subscription['category_id']]) ? $categories[$subscription['category_id']] : 'No category';
         $subscriptionToReturn['payer_user_name'] = isset($members[$subscription['payer_user_id']]) ? $members[$subscription['payer_user_id']] : 'Unknown member';
         $subscriptionToReturn['payment_method_name'] = isset($paymentMethods[$subscription['payment_method_id']]) ? $paymentMethods[$subscription['payment_method_id']] : 'Unknown payment method';
+        $subscriptionToReturn['one_time'] = ((int) ($subscription['cycle'] ?? 0) === 5);
         $subscriptionsToReturn[] = $subscriptionToReturn;
     }
 

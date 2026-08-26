@@ -118,8 +118,12 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   }
 
   if (isset($_GET['renewalType']) && $_GET['renewalType'] != "") {
-    $sql .= " AND auto_renew = :auto_renew";
-    $params[':auto_renew'] = $_GET['renewalType'];
+    if ($_GET['renewalType'] === 'onetime') {
+      $sql .= " AND cycle = 5";
+    } elseif (in_array((string) $_GET['renewalType'], ['0', '1'], true)) {
+      $sql .= " AND auto_renew = :auto_renew AND cycle != 5";
+      $params[':auto_renew'] = (int) $_GET['renewalType'];
+    }
   }
 
   if (isset($_COOKIE['sortOrder']) && $_COOKIE['sortOrder'] != "") {
@@ -200,6 +204,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $cycle = $subscription['cycle'];
     $frequency = $subscription['frequency'];
     $print[$id]['billing_cycle'] = getBillingCycle($cycle, $frequency, $i18n);
+    $print[$id]['one_time'] = ((int) $cycle === 5);
     $paymentMethodId = $subscription['payment_method_id'];
     $print[$id]['currency_code'] = $currencies[$subscription['currency_id']]['code'];
     $currencyId = $subscription['currency_id'];

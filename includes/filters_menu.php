@@ -110,6 +110,7 @@
     <div class="filtermenu-submenu-content" id="filter-renewal_type">
       <div class="filter-item capitalize" data-renewaltype="1"><?= translate("auto_renewal", $i18n) ?></div>
       <div class="filter-item capitalize" data-renewaltype="0"><?= translate("manual_renewal", $i18n) ?></div>
+      <div class="filter-item capitalize" data-renewaltype="onetime"><?= function_exists('wallos_translate_with_fallback') ? wallos_translate_with_fallback('One-time', 'One-time', $i18n) : 'One-time' ?></div>
     </div>
   </div>
 
