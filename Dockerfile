@@ -29,13 +29,16 @@ RUN rm -rf /var/www/html/nginx.conf && \
 # Keep the entrypoint executable when the repository was edited on Windows.
 RUN sed -i 's/\r$//' /var/www/html/startup.sh
 
-# Copy the custom crontab file
-COPY cronjobs /etc/cron.d/cronjobs
+# Stage the cron jobs outside dcron's system schedule directory. The file is
+# installed as root's per-user crontab below and must not remain in both
+# locations, otherwise dcron executes every job twice.
+COPY cronjobs /tmp/wallos-cronjobs
 
 # Convert the line endings, allow read access to the cron file, and create cron log folder
-RUN dos2unix /etc/cron.d/cronjobs && \
-    chmod 0644 /etc/cron.d/cronjobs && \
-    /usr/bin/crontab /etc/cron.d/cronjobs && \
+RUN dos2unix /tmp/wallos-cronjobs && \
+    chmod 0600 /tmp/wallos-cronjobs && \
+    /usr/bin/crontab /tmp/wallos-cronjobs && \
+    rm -f /tmp/wallos-cronjobs && \
     mkdir /var/log/cron && \
     chown -R www-data:www-data /var/www/html && \
     chmod +x /var/www/html/startup.sh && \

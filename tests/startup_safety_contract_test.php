@@ -80,6 +80,13 @@ try {
             && strpos($dockerfile, 'imagick-3.8.1') !== false,
         'Production build inputs must keep the audited base and PECL version pinned.'
     );
+    wallos_startup_contract_assert(
+        strpos($dockerfile, 'COPY cronjobs /tmp/wallos-cronjobs') !== false
+            && strpos($dockerfile, '/usr/bin/crontab /tmp/wallos-cronjobs') !== false
+            && strpos($dockerfile, 'rm -f /tmp/wallos-cronjobs') !== false
+            && strpos($dockerfile, 'COPY cronjobs /etc/cron.d/cronjobs') === false,
+        'Cron jobs must be installed once instead of being loaded as both system and user schedules.'
+    );
 
     $dockerIgnore = wallos_startup_contract_source('.dockerignore');
     foreach (['node_modules/', 'tests/', 'screenshots/', '.planning/'] as $ignoredPath) {

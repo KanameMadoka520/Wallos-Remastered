@@ -247,6 +247,15 @@ try {
         'The automatic renewal writer must use the shared anchored helper'
     );
     wallos_calendar_test_assert(
+        strpos($cronWriteSource, 'enableExceptions(true)') !== false
+        && strpos($cronWriteSource, 'BEGIN IMMEDIATE') !== false
+        && strpos($cronWriteSource, 'COMMIT') !== false
+        && strpos($cronWriteSource, 'ROLLBACK') !== false
+        && strpos($cronWriteSource, '$pendingUpdates[]') !== false
+        && strpos($cronWriteSource, 'exit(1)') !== false,
+        'The automatic renewal writer must update dates and its completion marker atomically'
+    );
+    wallos_calendar_test_assert(
         is_string($manualWriteSource)
         && preg_match(
             '/wallos_calendar_advance_subscription_next_payment\\(\\s*\\$subscriptionToRenew,\\s*\\$currentDate->format\\([^)]*\\),\\s*1\\s*\\)/s',
