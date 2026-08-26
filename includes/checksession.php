@@ -14,10 +14,21 @@ function wallos_logout_trashed_session_and_redirect(array $userData)
 // Handle OIDC first
 wallos_auth_start_session();
 
-if (isset($_GET['code']) && isset($_GET['state'])) {
+if (isset($_GET['code'])) {
     // This request is coming from the OIDC login flow
     $code = $_GET['code'];
-    $state = $_GET['state'];
+    $state = (string) ($_GET['state'] ?? '');
+
+    $expectedOidcState = (string) ($_SESSION['oidc_state'] ?? '');
+    $issuedAt = (int) ($_SESSION['oidc_state_issued_at'] ?? 0);
+    unset($_SESSION['oidc_state'], $_SESSION['oidc_state_issued_at']);
+
+    if ($expectedOidcState === '' || !hash_equals($expectedOidcState, (string) $state)
+        || $issuedAt <= 0 || (time() - $issuedAt) > 600) {
+        $db->close();
+        header('Location: login.php?error=oidc_state_invalid');
+        exit();
+    }
 
     require_once 'includes/oidc/handle_oidc_callback.php';
 

@@ -310,9 +310,10 @@ if ($result) {
 
                 // Check if it has a replacement subscription and if it was not already counted
                 if ($replacementSubscriptionId && !in_array($replacementSubscriptionId, $replacementSubscriptions)) {
-                    $query = "SELECT price, currency_id, cycle, frequency FROM subscriptions WHERE id = :replacementSubscriptionId AND lifecycle_status = :lifecycle_status AND exclude_from_stats = 0";
+                    $query = "SELECT price, currency_id, cycle, frequency FROM subscriptions WHERE id = :replacementSubscriptionId AND user_id = :userId AND lifecycle_status = :lifecycle_status AND exclude_from_stats = 0";
                     $stmt = $db->prepare($query);
                     $stmt->bindValue(':replacementSubscriptionId', $replacementSubscriptionId, SQLITE3_INTEGER);
+                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
                     $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
                     $result = $stmt->execute();
                     $replacementSubscription = $result->fetchArray(SQLITE3_ASSOC);

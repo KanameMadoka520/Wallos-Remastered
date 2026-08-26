@@ -114,6 +114,30 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             : 'Expected purple theme defaults and Blue Archive transition defaults in settings/theme helpers.'
     );
 
+    $icalFeedPhp = wallos_regression_read_repo_file($config, 'api/subscriptions/get_ical_feed.php');
+    $icalHelperPhp = wallos_regression_read_repo_file($config, 'includes/ical_helper.php');
+    $icalContractValid = wallos_regression_text_has_all($icalFeedPhp, array(
+        "require_once '../../includes/ical_helper.php';",
+        'function getPriceConverted($price, $currency, $database, $userId)',
+        'WHERE id = :currency AND user_id = :userId',
+        "\$subscriptionToReturn['currency_id'] = \$userCurrencyId;",
+        'foreach ($subscriptionsToReturn as $subscription)',
+        'icalEscape(html_entity_decode',
+    )) && wallos_regression_text_has_all($icalHelperPhp, array(
+        "str_replace('\\\\', '\\\\\\\\', \$value)",
+        "str_replace([\"\\r\\n\", \"\\r\", \"\\n\"], '\\\\n', \$value)",
+        "str_replace(',', '\\\\,', \$value)",
+        "str_replace(';', '\\\\;', \$value)",
+    ));
+    $results[] = wallos_regression_make_result(
+        $icalContractValid ? 'PASS' : 'FAIL',
+        'static',
+        'upstream-5-4-5-ical-contract',
+        $icalContractValid
+            ? 'iCalendar export keeps user isolation, converted currency output, and RFC 5545 escaping.'
+            : 'Expected iCalendar export to use user-scoped conversion, converted currency IDs, and property escaping.'
+    );
+
     $subscriptionsPhp = wallos_regression_read_repo_file($config, 'subscriptions.php');
     $subscriptionDomNeedles = array(
         'id="main-actions"',
@@ -867,6 +891,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
 
     $profilePhp = wallos_regression_read_repo_file($config, 'profile.php');
     $settingsPhp = wallos_regression_read_repo_file($config, 'settings.php');
+    $profileApiKeyEscapingValid = strpos($profilePhp, "htmlspecialchars(\$userData['api_key'], ENT_QUOTES, 'UTF-8')") !== false
+        || strpos($profilePhp, "htmlspecialchars(\$userData['api_key'] ?? '', ENT_QUOTES, 'UTF-8')") !== false;
     $selfXssEscapingValid = wallos_regression_text_has_all($adminPhp, array(
         "htmlspecialchars(\$settings['server_url'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$user['email'], ENT_QUOTES, 'UTF-8')",
@@ -875,14 +901,13 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     )) && wallos_regression_text_has_all($profilePhp, array(
         "htmlspecialchars(\$userData['username'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$userData['email'], ENT_QUOTES, 'UTF-8')",
-        "htmlspecialchars(\$userData['api_key'], ENT_QUOTES, 'UTF-8')",
     )) && wallos_regression_text_has_all($settingsPhp, array(
         "htmlspecialchars(\$notificationsEmail['smtp_password'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$notificationsDiscord['webhook_url'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$notificationsWebhook['payload'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$category['name'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$payment['name'], ENT_QUOTES, 'UTF-8')",
-    ));
+    )) && $profileApiKeyEscapingValid;
     $results[] = wallos_regression_make_result(
         $selfXssEscapingValid ? 'PASS' : 'FAIL',
         'static',

@@ -46,16 +46,21 @@ $demoMode = getenv('DEMO_MODE');
 
 $cookieExpire = time() + (30 * 24 * 60 * 60);
 $invalidTotp = false;
+$totpLocked = false;
 
 if (isset($_POST['one-time-code'])) {
-    $totp_code = $_POST['one-time-code'];
+    $totp_code = trim((string) $_POST['one-time-code']);
 
-    $statement = $db->prepare('SELECT totp_secret, backup_codes FROM totp WHERE user_id = :id');
+    $statement = $db->prepare('SELECT totp_secret, backup_codes, last_totp_used, failed_attempts, lockout_until FROM totp WHERE user_id = :id');
     $statement->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
     $result = $statement->execute();
     $row = $result->fetchArray(SQLITE3_ASSOC);
-    $totp_secret = $row['totp_secret'];
-    $backupCodes = json_decode($row['backup_codes'], true);
+    $totp_secret = $row['totp_secret'] ?? '';
+    $backupCodes = json_decode($row['backup_codes'] ?? '[]', true);
+    $backupCodes = is_array($backupCodes) ? $backupCodes : [];
+    $failedAttempts = (int) ($row['failed_attempts'] ?? 0);
+    $lockoutUntil = (int) ($row['lockout_until'] ?? 0);
+    $totpLocked = $lockoutUntil > time();
 
     require_once 'libs/OTPHP/FactoryInterface.php';
     require_once 'libs/OTPHP/Factory.php';
@@ -70,33 +75,71 @@ if (isset($_POST['one-time-code'])) {
     require_once 'libs/constant_time_encoding/EncoderInterface.php';
     require_once 'libs/constant_time_encoding/Base32.php';
 
-    $clock = new OTPHP\InternalClock();
+    $valid = false;
+    $matchedStep = null;
 
-    $totp = OTPHP\TOTP::createFromSecret($totp_secret, $clock);
-    $totp->setPeriod(30);
-    $valid = $totp->verify($totp_code, null, 15);
+    if (!$totpLocked && $totp_secret !== '') {
+        $clock = new OTPHP\InternalClock();
+        $totp = OTPHP\TOTP::createFromSecret($totp_secret, $clock);
+        $totp->setPeriod(30);
 
-    // If totp is not valid check backup codes
-    if (!$valid) {
-        if (in_array($totp_code, $backupCodes)) {
-            $key = array_search($totp_code, $backupCodes);
+        // Check the normal +/-15 second window while retaining the matched
+        // step so a code cannot be replayed in the same window.
+        $currentStep = intdiv(time(), 30);
+        $lastUsedStep = (int) ($row['last_totp_used'] ?? 0);
+        if ($lastUsedStep > $currentStep) {
+            // Older installs stored a Unix timestamp instead of a step.
+            $lastUsedStep = intdiv($lastUsedStep, 30);
+        }
+
+        foreach ([time() - 15, time(), time() + 15] as $candidate) {
+            if ($candidate >= 0 && hash_equals($totp->at($candidate), $totp_code)) {
+                $matchedStep = intdiv($candidate, 30);
+                break;
+            }
+        }
+
+        $valid = $matchedStep !== null && $matchedStep > $lastUsedStep;
+        if ($valid) {
+            $statement = $db->prepare('UPDATE totp SET last_totp_used = :last_totp_used WHERE user_id = :id');
+            $statement->bindValue(':last_totp_used', $matchedStep, SQLITE3_INTEGER);
+            $statement->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
+            $statement->execute();
+        }
+
+        if (!$valid && in_array($totp_code, $backupCodes, true)) {
+            $key = array_search($totp_code, $backupCodes, true);
             unset($backupCodes[$key]);
             $backupCodes = array_values($backupCodes);
-
             $statement = $db->prepare('UPDATE totp SET backup_codes = :backup_codes WHERE user_id = :id');
             $statement->bindValue(':backup_codes', json_encode($backupCodes), SQLITE3_TEXT);
             $statement->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
             $statement->execute();
-
             $valid = true;
+        }
+    }
+
+    if ($valid) {
+        $counterStmt = $db->prepare('UPDATE totp SET failed_attempts = 0, lockout_until = 0 WHERE user_id = :id');
+        $counterStmt->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
+        $counterStmt->execute();
+    } elseif (!$totpLocked) {
+        $invalidTotp = true;
+        $failedAttempts++;
+        if ($failedAttempts >= 5) {
+            $counterStmt = $db->prepare('UPDATE totp SET failed_attempts = 0, lockout_until = :lockout_until WHERE user_id = :id');
+            $counterStmt->bindValue(':lockout_until', time() + 30, SQLITE3_INTEGER);
+            $counterStmt->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
+            $counterStmt->execute();
+            $totpLocked = true;
         } else {
-            $invalidTotp = true;
+            $counterStmt = $db->prepare('UPDATE totp SET failed_attempts = :failed_attempts WHERE user_id = :id');
+            $counterStmt->bindValue(':failed_attempts', $failedAttempts, SQLITE3_INTEGER);
+            $counterStmt->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
+            $counterStmt->execute();
         }
     } else {
-        $statement = $db->prepare('UPDATE totp SET last_totp_used = :last_totp_used WHERE user_id = :id');
-        $statement->bindValue(':last_totp_used', time(), SQLITE3_INTEGER);
-        $statement->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
-        $statement->execute();
+        $invalidTotp = true;
     }
 
     if ($valid) {
@@ -105,6 +148,8 @@ if (isset($_POST['one-time-code'])) {
         $stmt->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
         $result = $stmt->execute();
         $user = $result->fetchArray(SQLITE3_ASSOC);
+
+        session_regenerate_id(true);
 
         $_SESSION['username'] = $user['username'];
         $_SESSION['loggedin'] = true;
