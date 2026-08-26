@@ -33,6 +33,15 @@ function adminGetText(url, options = {}) {
   });
 }
 
+function adminPostText(url, options = {}) {
+  return window.WallosApi.requestText(url, {
+    method: "POST",
+    body: "",
+    fallbackErrorMessage: translate("error"),
+    ...options,
+  });
+}
+
 function adminTranslateWithFallback(key, fallback) {
   if (typeof translateWithFallback === "function") {
     return translateWithFallback(key, fallback);
@@ -1722,7 +1731,7 @@ function toggleUpdateNotification() {
       if (data.success) {
         showSuccessMessage(data.message);
         if (notificationEnabled === 1) {
-          adminGetText('endpoints/cronjobs/checkforupdates.php').catch(() => {
+          adminPostText('endpoints/cronjobs/checkforupdates.php').catch(() => {
             // Keep this trigger fire-and-forget.
           });
         }
@@ -1738,7 +1747,7 @@ function executeCronJob(job) {
   const url = `endpoints/cronjobs/${job}.php`;
   const resultTextArea = document.getElementById('cronjobResult');
 
-  adminGetText(url)
+  adminPostText(url)
     .then(data => {
       const formattedData = data.replace(/<br\s*\/?>/gi, '\n');
       resultTextArea.value = formattedData;

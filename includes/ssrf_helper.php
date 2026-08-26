@@ -221,6 +221,129 @@ function is_url_safe_for_ssrf($url, $db, $userId = null) {
 }
 
 /**
+ * Validate an SMTP host before PHPMailer opens a socket.
+ *
+ * User-configured SMTP values are outbound destinations just like webhooks.
+ * Resolve the host at validation time and reject private/reserved addresses
+ * unless an administrator explicitly allowed the host/IP (optionally with
+ * the configured port). The same check is repeated by cron immediately
+ * before sending to reduce DNS-rebinding exposure.
+ *
+ * @param string  $host Hostname or IP address
+ * @param int     $port SMTP port
+ * @param SQLite3 $db   Wallos database connection
+ * @return bool
+ */
+function wallos_resolve_smtp_target($host, $port, $db)
+{
+    $host = trim((string) $host);
+    $port = filter_var($port, FILTER_VALIDATE_INT);
+
+    if ($host === '' || $port === false || $port < 1 || $port > 65535) {
+        return false;
+    }
+
+    // Reject control/whitespace characters before DNS resolution or passing
+    // the value to PHPMailer. Bracketed IPv6 is accepted for compatibility
+    // with PHPMailer, but the brackets are not part of the DNS name.
+    if (preg_match('/[\x00-\x20\x7f]/', $host)) {
+        return false;
+    }
+    $lookupHost = $host;
+    if (strlen($lookupHost) > 2 && $lookupHost[0] === '[' && substr($lookupHost, -1) === ']') {
+        $lookupHost = substr($lookupHost, 1, -1);
+    }
+
+    $addresses = [];
+    if (filter_var($lookupHost, FILTER_VALIDATE_IP) !== false) {
+        $addresses[] = $lookupHost;
+    } else {
+        $recordType = 0;
+        if (defined('DNS_A')) {
+            $recordType |= DNS_A;
+        }
+        if (defined('DNS_AAAA')) {
+            $recordType |= DNS_AAAA;
+        }
+        $records = $recordType !== 0 && function_exists('dns_get_record')
+            ? @dns_get_record($lookupHost, $recordType)
+            : false;
+        if (is_array($records)) {
+            foreach ($records as $record) {
+                $address = $record['ip'] ?? $record['ipv6'] ?? null;
+                if ($address !== null && filter_var($address, FILTER_VALIDATE_IP) !== false) {
+                    $addresses[] = $address;
+                }
+            }
+        }
+
+        // Keep compatibility with minimal PHP/DNS environments that do not
+        // expose dns_get_record(), while still rejecting unresolved names.
+        if (!$addresses) {
+            $ipv4 = gethostbyname($lookupHost);
+            if ($ipv4 !== $lookupHost && filter_var($ipv4, FILTER_VALIDATE_IP) !== false) {
+                $addresses[] = $ipv4;
+            }
+        }
+    }
+
+    $addresses = array_values(array_unique($addresses));
+    if (!$addresses) {
+        return false;
+    }
+
+    $allowlist = wallos_get_effective_ssrf_allowlist($db);
+    $hostWithPort = $host . ':' . $port;
+    foreach ($addresses as $ip) {
+        $ipWithPort = $ip . ':' . $port;
+        $isPrivate = wallos_ip_is_private_or_reserved($ip);
+        $allowed = in_array($host, $allowlist, true)
+            || in_array($lookupHost, $allowlist, true)
+            || in_array($ip, $allowlist, true)
+            || in_array($hostWithPort, $allowlist, true)
+            || in_array($lookupHost . ':' . $port, $allowlist, true)
+            || in_array($ipWithPort, $allowlist, true);
+
+        // Choose the first public address. A mixed public/private DNS answer
+        // must not force a harmless public SMTP host to fail, but a private
+        // address is never used unless the administrator explicitly allowed it.
+        if (!$isPrivate || $allowed) {
+            $connectHost = strpos($ip, ':') !== false ? '[' . $ip . ']' : $ip;
+            return [
+                'host' => $host,
+                'ip' => $ip,
+                'connect_host' => $connectHost,
+                'port' => (int) $port,
+                'peer_name' => $lookupHost,
+            ];
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Boolean compatibility wrapper for callers that only need validation.
+ */
+function validate_smtp_host($host, $port, $db)
+{
+    return wallos_resolve_smtp_target($host, $port, $db) !== false;
+}
+
+/**
+ * Apply a resolved SMTP target to PHPMailer and preserve TLS hostname checks.
+ */
+function wallos_configure_smtp_target($mail, array $target)
+{
+    $mail->Host = $target['connect_host'];
+    $mail->Port = (int) $target['port'];
+    $mail->SMTPOptions['ssl']['peer_name'] = $target['peer_name'];
+    $mail->SMTPOptions['ssl']['SNI_enabled'] = true;
+    $mail->SMTPOptions['ssl']['verify_peer'] = true;
+    $mail->SMTPOptions['ssl']['verify_peer_name'] = true;
+}
+
+/**
  * Validates an administrator-configured OIDC endpoint and returns a
  * DNS-pinned target for cURL. Private destinations require the same explicit
  * allowlist as webhook and notification endpoints.

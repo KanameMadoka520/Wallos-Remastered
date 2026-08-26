@@ -2,6 +2,7 @@
 
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint_admin.php';
+require_once '../../includes/ssrf_helper.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -17,6 +18,21 @@ if (empty($smtpAddress) || empty($smtpPort)) {
     die(json_encode([
         "success" => false,
         "message" => translate('fill_all_fields', $i18n)
+    ]));
+}
+
+$smtpPortInt = filter_var($smtpPort, FILTER_VALIDATE_INT);
+if ($smtpPortInt === false || $smtpPortInt < 1 || $smtpPortInt > 65535) {
+    die(json_encode([
+        "success" => false,
+        "message" => translate('fill_all_fields', $i18n)
+    ]));
+}
+
+if (!validate_smtp_host($smtpAddress, $smtpPortInt, $db)) {
+    die(json_encode([
+        "success" => false,
+        "message" => "Security Error: SMTP host must not target link-local or loopback addresses."
     ]));
 }
 

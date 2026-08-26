@@ -1,59 +1,13 @@
 <?php
 require_once '../../includes/ssrf_helper.php';
+require_once '../../includes/logo_search_http.php';
 
 if (isset($_GET['search'])) {
-    function applyProxy($ch) {
-        $proxy = getenv('https_proxy')
-            ?: getenv('HTTPS_PROXY')
-            ?: getenv('http_proxy')
-            ?: getenv('HTTP_PROXY')
-            ?: null;
-
-        if ($proxy) {
-            curl_setopt($ch, CURLOPT_PROXY, $proxy);
-        }
-    }
-
-    function curlGet($url, $headers = []) {
-        $allowedHosts = ['duckduckgo.com', 'search.brave.com'];
-
-        $parsedUrl = parse_url($url);
-        $host = $parsedUrl['host'] ?? '';
-        $port = $parsedUrl['port'] ?? (($parsedUrl['scheme'] ?? 'http') === 'https' ? 443 : 80);
-        if (!in_array($host, $allowedHosts, true)) {
-            return null;
-        }
-
-        $ip = gethostbyname($host);
-        $is_private = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false || is_cgnat_ip($ip);
-        if ($is_private) {
-            return null;
-        }
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
-        curl_setopt($ch, CURLOPT_RESOLVE, ["{$host}:{$port}:{$ip}"]);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
-
-        if (!empty($headers)) {
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        }
-
-        applyProxy($ch);
-        $response = curl_exec($ch);
-        unset($ch);
-
-        return $response ?: null;
-    }
-
     $searchTermRaw = $_GET['search'] . " logo";
     $searchTerm    = urlencode($searchTermRaw);
 
     function getVqdToken($query) {
-        $html = curlGet("https://duckduckgo.com/?q={$query}&ia=images");
+        $html = wallos_logo_search_http_get("https://duckduckgo.com/?q={$query}&ia=images");
         if ($html && preg_match('/vqd="?([\d-]+)"?/', $html, $matches)) {
             return $matches[1];
         }
@@ -70,7 +24,7 @@ if (isset($_GET['search'])) {
             'p'   => '1',      // safesearch on
         ]);
 
-        $response = curlGet("https://duckduckgo.com/i.js?{$params}", [
+        $response = wallos_logo_search_http_get("https://duckduckgo.com/i.js?{$params}", [
             'Accept: application/json',
             'Referer: https://duckduckgo.com/',
         ]);
@@ -85,7 +39,7 @@ if (isset($_GET['search'])) {
 
     function fetchBraveImages($query) {
         $url  = "https://search.brave.com/images?q={$query}";
-        $html = curlGet($url, [
+        $html = wallos_logo_search_http_get($url, [
             'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language: en-US,en;q=0.5',
             'Referer: https://search.brave.com/',

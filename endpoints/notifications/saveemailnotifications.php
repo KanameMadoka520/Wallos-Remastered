@@ -1,6 +1,7 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
+require_once '../../includes/ssrf_helper.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -26,6 +27,30 @@ if (
     $smtpPassword = $data["smtppassword"];
     $fromEmail = $data["fromemail"];
     $otherEmails = $data["otheremails"];
+
+    $smtpPortInt = filter_var($smtpPort, FILTER_VALIDATE_INT);
+    if ($smtpPortInt === false || $smtpPortInt < 1 || $smtpPortInt > 65535) {
+        die(json_encode([
+            "success" => false,
+            "message" => translate('fill_mandatory_fields', $i18n)
+        ]));
+    }
+
+    $existingStmt = $db->prepare('SELECT smtp_address, smtp_port FROM email_notifications WHERE user_id = :userId LIMIT 1');
+    $existingStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+    $existingResult = $existingStmt->execute();
+    $existingSettings = $existingResult ? $existingResult->fetchArray(SQLITE3_ASSOC) : false;
+    $isDisablingUnchangedTarget = (int) $enabled === 0
+        && $existingSettings !== false
+        && trim((string) ($existingSettings['smtp_address'] ?? '')) === trim((string) $smtpAddress)
+        && (int) ($existingSettings['smtp_port'] ?? 0) === $smtpPortInt;
+
+    if (!$isDisablingUnchangedTarget && !validate_smtp_host($smtpAddress, $smtpPortInt, $db)) {
+        die(json_encode([
+            "success" => false,
+            "message" => "Security Error: SMTP host must not target link-local or loopback addresses."
+        ]));
+    }
 
     $query = "SELECT COUNT(*) FROM email_notifications WHERE user_id = :userId";
     $stmt = $db->prepare($query);
@@ -53,7 +78,7 @@ if (
         $stmt = $db->prepare($query);
         $stmt->bindValue(':enabled', $enabled, SQLITE3_INTEGER);
         $stmt->bindValue(':smtpAddress', $smtpAddress, SQLITE3_TEXT);
-        $stmt->bindValue(':smtpPort', $smtpPort, SQLITE3_INTEGER);
+        $stmt->bindValue(':smtpPort', $smtpPortInt, SQLITE3_INTEGER);
         $stmt->bindValue(':smtpUsername', $smtpUsername, SQLITE3_TEXT);
         $stmt->bindValue(':smtpPassword', $smtpPassword, SQLITE3_TEXT);
         $stmt->bindValue(':fromEmail', $fromEmail, SQLITE3_TEXT);

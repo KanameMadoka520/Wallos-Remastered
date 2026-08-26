@@ -5,6 +5,7 @@ use PHPMailer\PHPMailer\Exception;
 
 require_once 'validate.php';
 require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
+require_once __DIR__ . '/../../includes/ssrf_helper.php';
 
 require 'settimezone.php';
 
@@ -33,7 +34,7 @@ if ($rows) {
     if ($admin['smtp_address'] && $admin['smtp_port'] && $admin['smtp_username'] && $admin['smtp_password'] && $admin['encryption']) {
         // There are SMTP settings
         $smtpAddress = $admin['smtp_address'];
-        $smtpPort = $admin['smtp_port'];
+        $smtpPort = filter_var($admin['smtp_port'], FILTER_VALIDATE_INT);
         $smtpUsername = $admin['smtp_username'];
         $smtpPassword = $admin['smtp_password'];
         $fromEmail = empty($admin['from_email']) ? 'wallos@wallosapp.com' : $admin['from_email'];
@@ -41,13 +42,21 @@ if ($rows) {
         $server_url = $admin['server_url'];
         $smtpAuth = (isset($admin["smtp_username"]) && $admin["smtp_username"] != "") || (isset($admin["smtp_password"]) && $admin["smtp_password"] != "");
 
+        $smtpTarget = ($smtpPort === false || $smtpPort < 1 || $smtpPort > 65535)
+            ? false
+            : wallos_resolve_smtp_target($smtpAddress, $smtpPort, $db);
+        if ($smtpTarget === false) {
+            echo "SSRF attempt detected or invalid SMTP settings. Verification emails not sent.";
+            exit();
+        }
+
         require __DIR__ . '/../../libs/PHPMailer/PHPMailer.php';
         require __DIR__ . '/../../libs/PHPMailer/SMTP.php';
         require __DIR__ . '/../../libs/PHPMailer/Exception.php';
 
         $mail = new PHPMailer(true);
         $mail->isSMTP();
-        $mail->Host = $smtpAddress;
+        wallos_configure_smtp_target($mail, $smtpTarget);
         $mail->SMTPAuth = $smtpAuth;
         if ($smtpAuth) {
           $mail->Username = $smtpUsername;
@@ -56,7 +65,6 @@ if ($rows) {
         if ($encryption != "none") {
           $mail->SMTPSecure = $encryption;
         }
-        $mail->Port = $smtpPort;
         $mail->setFrom($fromEmail);
 
         try {
