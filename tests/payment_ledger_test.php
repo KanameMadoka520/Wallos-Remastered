@@ -399,6 +399,7 @@ try {
         'currency_id' => 1,
         'cycle' => 3,
         'frequency' => 1,
+        'auto_renew' => 1,
         'start_date' => '2026-01-31',
         'next_payment' => '2026-02-28',
     ];
@@ -479,6 +480,7 @@ try {
         'currency_id' => 1,
         'cycle' => 3,
         'frequency' => 1,
+        'auto_renew' => 1,
         'start_date' => '2026-01-01',
         'next_payment' => '2026-03-01',
     ];
@@ -530,6 +532,69 @@ try {
     wallos_ledger_assert_equal(count($shortRangeForecast), 1, '较短预测范围应只保留窗口内账期');
     wallos_ledger_assert_equal($shortRangeForecast[0]['due_date'], '2026-04-01', '较短预测范围应命中窗口内的应付日期');
     wallos_ledger_print_ok('预测范围切换会影响未来账期列表');
+
+    $manualRenewalSubscription = $subscription;
+    $manualRenewalSubscription['auto_renew'] = 0;
+    $manualRenewalSubscription['next_payment'] = '2026-04-01';
+    $manualRenewalForecast = wallos_build_subscription_future_payment_forecast(
+        $db,
+        $manualRenewalSubscription,
+        1,
+        [],
+        [],
+        [1 => ['code' => 'USD']],
+        ['metric_explanation_regular_price_source' => 'Regular subscription price'],
+        12,
+        new DateTime('2026-03-15'),
+        new DateTime('2027-03-31')
+    );
+    wallos_ledger_assert_equal(
+        array_column($manualRenewalForecast, 'due_date'),
+        ['2026-04-01'],
+        '手动续费在长预测窗口中也只能显示明确保存的下一期'
+    );
+    $paidManualRenewalForecast = wallos_build_subscription_future_payment_forecast(
+        $db,
+        $manualRenewalSubscription,
+        1,
+        [],
+        ['2026-04-01' => true],
+        [1 => ['code' => 'USD']],
+        ['metric_explanation_regular_price_source' => 'Regular subscription price'],
+        12,
+        new DateTime('2026-03-15'),
+        new DateTime('2027-03-31')
+    );
+    wallos_ledger_assert_equal(
+        $paidManualRenewalForecast,
+        [],
+        '手动续费的明确账期已付款后不得继续制造后续账期'
+    );
+    unset($manualRenewalSubscription['auto_renew']);
+    $missingRenewalForecast = wallos_build_subscription_future_payment_forecast(
+        $db,
+        $manualRenewalSubscription,
+        1,
+        [],
+        [],
+        [1 => ['code' => 'USD']],
+        ['metric_explanation_regular_price_source' => 'Regular subscription price'],
+        12,
+        new DateTime('2026-03-15'),
+        new DateTime('2027-03-31')
+    );
+    wallos_ledger_assert_equal(
+        array_column($missingRenewalForecast, 'due_date'),
+        ['2026-04-01'],
+        '缺少续费字段时必须保守地停在明确保存的账期'
+    );
+    $paymentHistoryEndpoint = file_get_contents(__DIR__ . '/../endpoints/subscription/paymenthistory.php');
+    wallos_ledger_assert_equal(
+        preg_match('/SELECT\\s+id,.*\\bauto_renew\\b.*FROM subscriptions/s', (string) $paymentHistoryEndpoint),
+        1,
+        '付款历史接口必须读取续费模式'
+    );
+    wallos_ledger_print_ok('手动续费和缺失续费字段不会被无限预测');
 
     $db->exec("INSERT INTO subscription_payment_records (id, user_id, subscription_id, due_date, paid_at, amount_original, currency_id, currency_code_snapshot, main_currency_code_snapshot, fx_rate_to_main_snapshot, amount_main_snapshot, payment_method_id, status, note, created_at)
         VALUES (104, 1, 11, '2027-01-15', '2026-08-01', 50, 1, 'USD', 'USD', 1, 50, 1, 'paid', '', '2026-08-01 00:00:00')");
