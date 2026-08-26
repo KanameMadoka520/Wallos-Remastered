@@ -40,24 +40,41 @@ $db->exec('CREATE TABLE IF NOT EXISTS notification_settings (
     days INTEGER DEFAULT 0
 )');
 
-// Check if old email notifications table has data and migrate it
-$result = $db->query('SELECT COUNT(*) as count FROM notifications');
-$row = $result->fetchArray(SQLITE3_ASSOC);
+// Preserve the legacy table as an archive. Existing target rows make the
+// state ambiguous, so stop instead of guessing which settings should win.
+$legacyTableExists = $db->querySingle(
+    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'notifications' LIMIT 1"
+) !== null;
+$archiveTableExists = $db->querySingle(
+    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'notifications_legacy_000016' LIMIT 1"
+) !== null;
 
-if ($row['count'] > 0) {
-    // Copy data from notifications to email_notifications
-    $db->exec('INSERT INTO email_notifications (enabled, smtp_address, smtp_port, smtp_username, smtp_password, from_email, encryption)
-               SELECT enabled, smtp_address, smtp_port, smtp_username, smtp_password, from_email, encryption FROM notifications');
-
-    // Copy data from notifications to notification_settings
-    $db->exec('INSERT INTO notification_settings (days)
-               SELECT days FROM notifications');
-
-    if ($db->changes() > 0) {
-        $db->exec('DROP TABLE IF EXISTS notifications');
+if ($legacyTableExists) {
+    if ($archiveTableExists) {
+        throw new RuntimeException('Both notifications and notifications_legacy_000016 exist; refusing an ambiguous migration.');
     }
-} else {
-    $db->exec('DROP TABLE IF EXISTS notifications');
-}
 
+    $legacyCount = (int) $db->querySingle('SELECT COUNT(*) FROM notifications');
+    $emailCount = (int) $db->querySingle('SELECT COUNT(*) FROM email_notifications');
+    $settingsCount = (int) $db->querySingle('SELECT COUNT(*) FROM notification_settings');
+
+    if ($legacyCount > 0 && ($emailCount > 0 || $settingsCount > 0)) {
+        throw new RuntimeException('Notification targets already contain data; refusing to overwrite or duplicate settings.');
+    }
+
+    if ($legacyCount > 0) {
+        $db->exec('INSERT INTO email_notifications (enabled, smtp_address, smtp_port, smtp_username, smtp_password, from_email, encryption)
+                   SELECT enabled, smtp_address, smtp_port, smtp_username, smtp_password, from_email, encryption FROM notifications');
+        $db->exec('INSERT INTO notification_settings (days) SELECT days FROM notifications');
+
+        if (
+            (int) $db->querySingle('SELECT COUNT(*) FROM email_notifications') !== $legacyCount
+            || (int) $db->querySingle('SELECT COUNT(*) FROM notification_settings') !== $legacyCount
+        ) {
+            throw new RuntimeException('Notification settings copy verification failed.');
+        }
+    }
+
+    $db->exec('ALTER TABLE notifications RENAME TO notifications_legacy_000016');
+}
 ?>

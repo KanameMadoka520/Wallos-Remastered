@@ -10,7 +10,7 @@ if (!in_array('user_group', $userColumns, true)) {
     $db->exec('ALTER TABLE user ADD COLUMN user_group TEXT DEFAULT "free"');
 }
 
-$db->exec("UPDATE user SET user_group = 'free' WHERE user_group IS NULL OR TRIM(user_group) = '' OR user_group NOT IN ('free', 'trusted')");
+$db->exec("UPDATE user SET user_group = 'free' WHERE user_group IS NULL OR TRIM(user_group) = ''");
 
 $subscriptionColumns = [];
 $subscriptionColumnsResult = $db->query("PRAGMA table_info(subscriptions)");

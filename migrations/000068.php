@@ -35,9 +35,20 @@ if ($tableExists) {
             continue;
         }
 
-        $normalizedConfig = wallos_decode_rate_limit_preset_config($row['config_json'] ?? '{}');
+        $decodedConfig = json_decode((string) ($row['config_json'] ?? ''), true);
+        if (!is_array($decodedConfig)) {
+            continue;
+        }
+
+        $normalizedConfig = wallos_normalize_rate_limit_preset_config($decodedConfig);
+        $preservedConfig = array_merge($decodedConfig, $normalizedConfig);
+        $encodedConfig = json_encode($preservedConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($encodedConfig === false) {
+            throw new RuntimeException('Unable to preserve rate limit preset JSON.');
+        }
+
         $updateStmt = $db->prepare('UPDATE rate_limit_presets SET config_json = :config_json, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
-        $updateStmt->bindValue(':config_json', wallos_encode_rate_limit_preset_config($normalizedConfig), SQLITE3_TEXT);
+        $updateStmt->bindValue(':config_json', $encodedConfig, SQLITE3_TEXT);
         $updateStmt->bindValue(':id', $presetId, SQLITE3_INTEGER);
         $updateStmt->execute();
     }

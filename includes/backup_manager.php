@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/timezone_settings.php';
+require_once __DIR__ . '/database_runtime_lock.php';
 
 define('WALLOS_BACKUP_DEFAULT_RETENTION_DAYS', 14);
 define('WALLOS_BACKUP_MAX_RETENTION_DAYS', 365);
@@ -815,45 +816,307 @@ function wallos_clear_directory_contents($directory)
     }
 }
 
-function wallos_run_migrations_after_restore($projectRoot, $databasePath)
+function wallos_restore_table_exists(SQLite3 $db, $tableName)
 {
-    $db = new SQLite3($databasePath);
-    $db->busyTimeout(10000);
-    $db->exec('PRAGMA foreign_keys = ON');
+    $stmt = $db->prepare('SELECT 1 FROM sqlite_master WHERE type = :type AND name = :name LIMIT 1');
+    $stmt->bindValue(':type', 'table', SQLITE3_TEXT);
+    $stmt->bindValue(':name', (string) $tableName, SQLITE3_TEXT);
+    $result = $stmt->execute();
 
-    $db->exec('CREATE TABLE IF NOT EXISTS migrations (id INTEGER PRIMARY KEY, migration TEXT NOT NULL, migrated_at DATETIME DEFAULT CURRENT_TIMESTAMP)');
-    $completed = [];
-    $result = $db->query('SELECT migration FROM migrations');
-    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
-        $completed[(string) $row['migration']] = true;
+    return $result->fetchArray(SQLITE3_NUM) !== false;
+}
+
+function wallos_restore_table_columns(SQLite3 $db, $tableName)
+{
+    $quotedTableName = str_replace("'", "''", (string) $tableName);
+    $result = $db->query("PRAGMA table_info('{$quotedTableName}')");
+    $columns = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $columnName = (string) ($row['name'] ?? '');
+        if ($columnName !== '') {
+            $columns[] = $columnName;
+        }
     }
 
-    $migrations = glob(rtrim($projectRoot, '/\\') . '/migrations/*.php') ?: [];
-    sort($migrations, SORT_STRING);
-    foreach ($migrations as $migrationPath) {
-        $migrationName = 'migrations/' . basename($migrationPath);
-        if (isset($completed[$migrationName])) {
+    return $columns;
+}
+
+function wallos_restore_index_columns(SQLite3 $db, $indexName)
+{
+    $quotedIndexName = str_replace("'", "''", (string) $indexName);
+    $result = $db->query("PRAGMA index_info('{$quotedIndexName}')");
+    $columns = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $columnName = (string) ($row['name'] ?? '');
+        if ($columnName !== '') {
+            $columns[] = $columnName;
+        }
+    }
+
+    return $columns;
+}
+
+function wallos_restore_index_table(SQLite3 $db, $indexName)
+{
+    $stmt = $db->prepare('SELECT tbl_name FROM sqlite_master WHERE type = :type AND name = :name LIMIT 1');
+    $stmt->bindValue(':type', 'index', SQLITE3_TEXT);
+    $stmt->bindValue(':name', (string) $indexName, SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+
+    return $row === false ? null : (string) ($row['tbl_name'] ?? '');
+}
+
+function wallos_restore_normalize_migration_marker($migrationMarker)
+{
+    $migrationMarker = str_replace('\\', '/', trim((string) $migrationMarker));
+    if (!preg_match('#^(?:\.\./\.\./)?migrations/([0-9]{6}\.php)$#D', $migrationMarker, $matches)) {
+        return null;
+    }
+
+    return 'migrations/' . $matches[1];
+}
+
+function wallos_restore_migration_catalog($projectRoot)
+{
+    $migrationPaths = glob(rtrim((string) $projectRoot, '/\\') . '/migrations/*.php') ?: [];
+    sort($migrationPaths, SORT_STRING);
+    if (!$migrationPaths) {
+        throw new RuntimeException('No migration files are available for restored database validation');
+    }
+
+    $catalog = [];
+    $expectedNumber = 1;
+    foreach ($migrationPaths as $migrationPath) {
+        $fileName = basename($migrationPath);
+        if (!preg_match('/^([0-9]{6})\.php$/D', $fileName, $matches)) {
+            throw new RuntimeException('Unexpected migration file name: ' . $fileName);
+        }
+
+        $migrationNumber = (int) $matches[1];
+        if ($migrationNumber !== $expectedNumber) {
+            throw new RuntimeException(sprintf(
+                'Migration source is not continuous: expected %06d.php, found %s',
+                $expectedNumber,
+                $fileName
+            ));
+        }
+
+        $catalog['migrations/' . $fileName] = $migrationPath;
+        $expectedNumber++;
+    }
+
+    return $catalog;
+}
+
+function wallos_restore_read_completed_migrations(SQLite3 $db, array $catalog)
+{
+    if (!wallos_restore_table_exists($db, 'migrations')) {
+        return [];
+    }
+
+    $completed = [];
+    $result = $db->query('SELECT migration FROM migrations ORDER BY id ASC');
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $rawMarker = (string) ($row['migration'] ?? '');
+        $migrationName = wallos_restore_normalize_migration_marker($rawMarker);
+        if ($migrationName === null) {
+            throw new RuntimeException('Restored database contains an invalid migration marker: ' . $rawMarker);
+        }
+        if (!isset($catalog[$migrationName])) {
+            throw new RuntimeException('Restored database was created by an unknown migration: ' . $migrationName);
+        }
+
+        $completed[$migrationName] = true;
+    }
+
+    return $completed;
+}
+
+function wallos_restore_assert_migration_prefix(array $catalog, array $completed)
+{
+    $firstMissingMigration = null;
+    foreach ($catalog as $migrationName => $migrationPath) {
+        if (!isset($completed[$migrationName])) {
+            if ($firstMissingMigration === null) {
+                $firstMissingMigration = $migrationName;
+            }
             continue;
         }
 
-        require $migrationPath;
-        $stmt = $db->prepare('INSERT INTO migrations (migration) VALUES (:migration)');
-        $stmt->bindValue(':migration', $migrationName, SQLITE3_TEXT);
-        if (!$stmt->execute()) {
-            throw new RuntimeException('Failed to record restored database migration');
+        if ($firstMissingMigration !== null) {
+            throw new RuntimeException(
+                'Restored database migration history has a gap at ' . $firstMissingMigration
+            );
+        }
+    }
+}
+
+function wallos_restore_assert_database_integrity(SQLite3 $db)
+{
+    $integrityResult = $db->query('PRAGMA integrity_check');
+    $integrityRows = 0;
+    while ($row = $integrityResult->fetchArray(SQLITE3_NUM)) {
+        $integrityRows++;
+        if (strtolower(trim((string) ($row[0] ?? ''))) !== 'ok') {
+            throw new RuntimeException('Restored database integrity check failed');
+        }
+    }
+    if ($integrityRows === 0) {
+        throw new RuntimeException('Restored database integrity check returned no result');
+    }
+
+    $foreignKeyResult = $db->query('PRAGMA foreign_key_check');
+    if ($foreignKeyResult->fetchArray(SQLITE3_NUM) !== false) {
+        throw new RuntimeException('Restored database foreign key check failed');
+    }
+}
+
+function wallos_restore_assert_latest_schema(SQLite3 $db, array $catalog)
+{
+    $requiredColumns = [
+        'migrations' => ['id', 'migration', 'migrated_at'],
+        'admin' => [],
+        'user' => ['period_budget', 'budget_period_type', 'budget_period_anchor_date'],
+        'subscriptions' => ['user_id', 'inactive', 'next_payment', 'notify'],
+        'currencies' => [],
+        'settings' => ['week_starts_sunday'],
+        'cycles' => ['id', 'days', 'name'],
+    ];
+
+    foreach ($requiredColumns as $tableName => $columns) {
+        if (!wallos_restore_table_exists($db, $tableName)) {
+            throw new RuntimeException('Restored database is missing required table: ' . $tableName);
+        }
+
+        $actualColumns = wallos_restore_table_columns($db, $tableName);
+        foreach ($columns as $columnName) {
+            if (!in_array($columnName, $actualColumns, true)) {
+                throw new RuntimeException(
+                    'Restored database is missing required column: ' . $tableName . '.' . $columnName
+                );
+            }
         }
     }
 
-    $integrity = (string) $db->querySingle('PRAGMA integrity_check');
-    if (strtolower($integrity) !== 'ok') {
-        throw new RuntimeException('Restored database integrity check failed');
-    }
-    $foreignKeyResult = $db->query('PRAGMA foreign_key_check');
-    if ($foreignKeyResult && $foreignKeyResult->fetchArray(SQLITE3_NUM) !== false) {
-        throw new RuntimeException('Restored database foreign key check failed');
+    $requiredIndexes = [
+        'idx_subscriptions_user_inactive_next_payment' => [
+            'table' => 'subscriptions',
+            'columns' => ['user_id', 'inactive', 'next_payment'],
+        ],
+        'idx_subscriptions_user_notify_inactive' => [
+            'table' => 'subscriptions',
+            'columns' => ['user_id', 'notify', 'inactive'],
+        ],
+    ];
+    foreach ($requiredIndexes as $indexName => $expectedIndex) {
+        if (wallos_restore_index_table($db, $indexName) !== $expectedIndex['table']
+            || wallos_restore_index_columns($db, $indexName) !== $expectedIndex['columns']) {
+            throw new RuntimeException('Restored database is missing or has an invalid index: ' . $indexName);
+        }
     }
 
-    $db->close();
+    $oneTimeCycle = $db->querySingle('SELECT days, name FROM cycles WHERE id = 5', true);
+    if (!is_array($oneTimeCycle)
+        || !array_key_exists('days', $oneTimeCycle)
+        || (int) $oneTimeCycle['days'] !== 0
+        || strcasecmp(trim((string) ($oneTimeCycle['name'] ?? '')), 'One-time') !== 0) {
+        throw new RuntimeException('Restored database has an invalid one-time billing cycle');
+    }
+
+    $completed = wallos_restore_read_completed_migrations($db, $catalog);
+    foreach ($catalog as $migrationName => $migrationPath) {
+        if (!isset($completed[$migrationName])) {
+            throw new RuntimeException('Restored database is missing migration marker: ' . $migrationName);
+        }
+    }
+}
+
+function wallos_run_migrations_after_restore($projectRoot, $databasePath)
+{
+    $projectRoot = rtrim((string) $projectRoot, '/\\');
+    $databasePath = (string) $databasePath;
+    if (!is_file($databasePath) || filesize($databasePath) <= 0) {
+        throw new RuntimeException('Restored database file is missing or empty');
+    }
+
+    $catalog = wallos_restore_migration_catalog($projectRoot);
+    $db = null;
+
+    try {
+        $db = new SQLite3($databasePath, SQLITE3_OPEN_READWRITE);
+        $db->enableExceptions(true);
+        $db->busyTimeout(10000);
+        $db->exec('PRAGMA foreign_keys = ON');
+        if ((int) $db->querySingle('PRAGMA foreign_keys') !== 1) {
+            throw new RuntimeException('Cannot enable foreign key enforcement for restored database');
+        }
+
+        wallos_restore_assert_database_integrity($db);
+
+        $hasMigrationTable = wallos_restore_table_exists($db, 'migrations');
+        if (!$hasMigrationTable) {
+            foreach (['admin', 'user', 'subscriptions', 'settings'] as $existingSchemaTable) {
+                if (wallos_restore_table_exists($db, $existingSchemaTable)) {
+                    throw new RuntimeException(
+                        'Restored database has application data but no migration history'
+                    );
+                }
+            }
+        }
+
+        $completed = wallos_restore_read_completed_migrations($db, $catalog);
+        wallos_restore_assert_migration_prefix($catalog, $completed);
+
+        foreach ($catalog as $migrationName => $migrationPath) {
+            if (isset($completed[$migrationName])) {
+                continue;
+            }
+
+            $transactionStarted = false;
+            try {
+                $db->exec('BEGIN IMMEDIATE');
+                $transactionStarted = true;
+
+                (static function ($path, SQLite3 $migrationDatabase) {
+                    $db = $migrationDatabase;
+                    require $path;
+                })($migrationPath, $db);
+
+                $stmt = $db->prepare('INSERT INTO migrations (migration) VALUES (:migration)');
+                $stmt->bindValue(':migration', $migrationName, SQLITE3_TEXT);
+                $insertResult = $stmt->execute();
+                if ($insertResult instanceof SQLite3Result) {
+                    $insertResult->finalize();
+                }
+
+                $db->exec('COMMIT');
+                $transactionStarted = false;
+                $completed[$migrationName] = true;
+            } catch (Throwable $throwable) {
+                if ($transactionStarted) {
+                    try {
+                        $db->exec('ROLLBACK');
+                    } catch (Throwable $rollbackError) {
+                        // Preserve the original migration failure.
+                    }
+                }
+
+                throw new RuntimeException(
+                    'Restored database migration ' . $migrationName . ' failed: ' . $throwable->getMessage(),
+                    0,
+                    $throwable
+                );
+            }
+        }
+
+        wallos_restore_assert_database_integrity($db);
+        wallos_restore_assert_latest_schema($db, $catalog);
+    } finally {
+        if ($db instanceof SQLite3) {
+            $db->close();
+        }
+    }
 }
 
 function wallos_extract_backup_archive_to_workspace($archivePath, $workspace)
@@ -934,22 +1197,69 @@ function wallos_extract_backup_archive_to_workspace($archivePath, $workspace)
     }
 }
 
+function wallos_restore_remove_database_bundle($databasePath)
+{
+    foreach ([$databasePath, $databasePath . '-wal', $databasePath . '-shm', $databasePath . '-journal'] as $path) {
+        if ((is_file($path) || is_link($path)) && !@unlink($path)) {
+            throw new RuntimeException('Cannot remove database restore file: ' . basename($path));
+        }
+    }
+}
+
+function wallos_restore_checkpoint_database($databasePath)
+{
+    if (!is_file($databasePath)) {
+        return;
+    }
+
+    $db = new SQLite3($databasePath, SQLITE3_OPEN_READWRITE);
+    $db->enableExceptions(true);
+    $db->busyTimeout(10000);
+    try {
+        $result = $db->query('PRAGMA wal_checkpoint(TRUNCATE)');
+        $row = $result->fetchArray(SQLITE3_NUM);
+        if ($row === false || (int) ($row[0] ?? 1) !== 0) {
+            throw new RuntimeException('Cannot checkpoint the current database before restore');
+        }
+    } finally {
+        $db->close();
+    }
+
+    clearstatcache();
+    foreach ([$databasePath . '-wal', $databasePath . '-shm', $databasePath . '-journal'] as $sidecarPath) {
+        if (file_exists($sidecarPath) || is_link($sidecarPath)) {
+            throw new RuntimeException(
+                'Database restore refused because an active SQLite sidecar remains: ' . basename($sidecarPath)
+            );
+        }
+    }
+}
+
 function wallos_restore_backup_archive($archivePath, $projectRoot)
 {
     $projectRoot = rtrim((string) $projectRoot, '/\\');
     $workspace = wallos_create_backup_workspace($projectRoot, 'restore');
+    $keepWorkspace = false;
+    $exclusiveRuntimeLock = null;
 
     try {
         $extractedBackup = wallos_extract_backup_archive_to_workspace($archivePath, $workspace);
 
         $databaseDirectory = $projectRoot . DIRECTORY_SEPARATOR . 'db';
         $databasePath = $databaseDirectory . DIRECTORY_SEPARATOR . 'wallos.db';
-        $databaseBackupPath = $databaseDirectory . DIRECTORY_SEPARATOR . 'wallos.restore.previous.db';
+        $databaseBackupPath = $databaseDirectory . DIRECTORY_SEPARATOR
+            . '.wallos.restore.previous-' . bin2hex(random_bytes(6)) . '.db';
         $logosDirectory = $projectRoot . DIRECTORY_SEPARATOR . 'images' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'logos';
+        $logosBackupDirectory = $workspace . DIRECTORY_SEPARATOR . 'logos.previous';
+        $databaseInstalled = false;
+        $logosPreserved = false;
 
         if (!is_dir($databaseDirectory)) {
             mkdir($databaseDirectory, 0755, true);
         }
+
+        $exclusiveRuntimeLock = wallos_database_acquire_exclusive_runtime_lock($databasePath);
+        wallos_restore_checkpoint_database($databasePath);
 
         if (is_file($databasePath) && !@rename($databasePath, $databaseBackupPath)) {
             throw new RuntimeException('Cannot replace current database');
@@ -961,45 +1271,72 @@ function wallos_restore_backup_archive($archivePath, $projectRoot)
             }
             throw new RuntimeException('Cannot install restored database');
         }
+        $databaseInstalled = true;
 
         try {
             wallos_run_migrations_after_restore($projectRoot, $databasePath);
-        } catch (Throwable $throwable) {
-            @unlink($databasePath);
-            if (is_file($databaseBackupPath)) {
-                @rename($databaseBackupPath, $databasePath);
+            wallos_restore_checkpoint_database($databasePath);
+
+            if (is_dir($logosDirectory)) {
+                if (!@rename($logosDirectory, $logosBackupDirectory)) {
+                    throw new RuntimeException('Cannot preserve current logos before restore');
+                }
+                $logosPreserved = true;
             }
-            throw $throwable;
-        }
 
-        $logosBackupDirectory = $workspace . DIRECTORY_SEPARATOR . 'logos.previous';
-        if (is_dir($logosDirectory) && !@rename($logosDirectory, $logosBackupDirectory)) {
-            throw new RuntimeException('Cannot preserve current logos before restore');
-        }
-
-        try {
             if (is_dir($extractedBackup['logos_path'])) {
                 wallos_copy_directory_tree($extractedBackup['logos_path'], $logosDirectory);
             } else {
-                mkdir($logosDirectory, 0755, true);
+                if (!mkdir($logosDirectory, 0755, true) && !is_dir($logosDirectory)) {
+                    throw new RuntimeException('Cannot create the restored logos directory');
+                }
             }
             if (is_file($databaseBackupPath)) {
                 @unlink($databaseBackupPath);
             }
             wallos_delete_directory_tree($logosBackupDirectory);
         } catch (Throwable $throwable) {
-            wallos_delete_directory_tree($logosDirectory);
-            if (is_dir($logosBackupDirectory)) {
-                @rename($logosBackupDirectory, $logosDirectory);
+            $rollbackErrors = [];
+
+            if ($logosPreserved) {
+                wallos_delete_directory_tree($logosDirectory);
+                if (!@rename($logosBackupDirectory, $logosDirectory)) {
+                    $rollbackErrors[] = 'current logos could not be restored';
+                }
             }
-            @unlink($databasePath);
-            if (is_file($databaseBackupPath)) {
-                @rename($databaseBackupPath, $databasePath);
+
+            if ($databaseInstalled) {
+                try {
+                    wallos_restore_remove_database_bundle($databasePath);
+                } catch (Throwable $databaseCleanupError) {
+                    $rollbackErrors[] = $databaseCleanupError->getMessage();
+                }
             }
+            if (is_file($databaseBackupPath) && !@rename($databaseBackupPath, $databasePath)) {
+                $rollbackErrors[] = 'previous database could not be restored';
+            }
+
+            if ($rollbackErrors) {
+                $keepWorkspace = true;
+                if (is_array($exclusiveRuntimeLock)) {
+                    $exclusiveRuntimeLock['retain_maintenance'] = true;
+                }
+                throw new RuntimeException(
+                    $throwable->getMessage()
+                    . '; rollback incomplete: ' . implode('; ', $rollbackErrors)
+                    . '; recovery workspace retained at ' . $workspace,
+                    0,
+                    $throwable
+                );
+            }
+
             throw $throwable;
         }
     } finally {
-        wallos_delete_directory_tree($workspace);
+        wallos_database_release_exclusive_runtime_lock($exclusiveRuntimeLock);
+        if (!$keepWorkspace) {
+            wallos_delete_directory_tree($workspace);
+        }
     }
 }
 

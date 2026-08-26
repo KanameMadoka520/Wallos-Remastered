@@ -1,7 +1,16 @@
 <?php
 require_once __DIR__ . '/../../includes/backup_manager.php';
+require_once __DIR__ . '/../../includes/database_runtime_lock.php';
 
-$db = new SQLite3(__DIR__ . '/../../db/wallos.db');
+$databaseFile = __DIR__ . '/../../db/wallos.db';
+try {
+    wallos_database_acquire_shared_runtime_lock($databaseFile);
+} catch (Throwable $throwable) {
+    fwrite(STDERR, $throwable->getMessage() . PHP_EOL);
+    exit(1);
+}
+
+$db = new SQLite3($databaseFile);
 $db->busyTimeout(5000);
 $db->exec('PRAGMA journal_mode = WAL');
 $db->exec('PRAGMA synchronous = NORMAL');

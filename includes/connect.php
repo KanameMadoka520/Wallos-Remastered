@@ -1,7 +1,30 @@
 <?php
 require_once __DIR__ . '/timezone_settings.php';
+require_once __DIR__ . '/database_runtime_lock.php';
 
 $databaseFile = __DIR__ . '/../db/wallos.db';
+
+try {
+    wallos_database_acquire_shared_runtime_lock($databaseFile);
+} catch (Throwable $throwable) {
+    $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? $_SERVER['SCRIPT_FILENAME'] ?? ''));
+    $isEndpointRequest = strpos($scriptName, '/endpoints/') !== false;
+    http_response_code(503);
+    header('Retry-After: 5');
+
+    if ($isEndpointRequest) {
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode([
+            'success' => false,
+            'code' => 'database_maintenance',
+            'error' => 'database_maintenance',
+            'message' => 'Database maintenance is in progress.',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    die('Database maintenance is in progress.');
+}
 
 $db = new SQLite3($databaseFile);
 $db->busyTimeout(5000);
