@@ -5,10 +5,8 @@ require_once __DIR__ . '/../includes/default_user_seed.php';
 $userQuery = $db->query("SELECT id, language FROM user WHERE language IN ('zh_cn', 'zh_tw')");
 
 if (!$userQuery) {
-    return;
+    throw new RuntimeException('Unable to read users for localized default-data migration.');
 }
-
-$db->exec('BEGIN IMMEDIATE');
 
 $categoryUpdate = $db->prepare('UPDATE categories SET name = :new_name WHERE user_id = :user_id AND name = :old_name');
 $paymentUpdate = $db->prepare('UPDATE payment_methods SET name = :new_name WHERE user_id = :user_id AND name = :old_name');
@@ -66,5 +64,3 @@ while ($user = $userQuery->fetchArray(SQLITE3_ASSOC)) {
         $currencyUpdate->execute();
     }
 }
-
-$db->exec('COMMIT');

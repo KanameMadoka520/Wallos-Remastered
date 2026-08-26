@@ -4,6 +4,7 @@ require_once '../../includes/subscription_media.php';
 require_once '../../includes/security_rate_limits.php';
 require_once '../../includes/auth_session.php';
 require_once '../../includes/i18n/languages.php';
+require_once '../../includes/database_runtime_lock.php';
 
 function wallos_media_deny($statusCode = 403)
 {
@@ -35,7 +36,18 @@ if ($imageId <= 0) {
     wallos_media_deny(404);
 }
 
-$db = new SQLite3(__DIR__ . '/../../db/wallos.db');
+$databaseFile = __DIR__ . '/../../db/wallos.db';
+try {
+    wallos_database_acquire_shared_runtime_lock($databaseFile);
+} catch (Throwable $throwable) {
+    http_response_code(503);
+    header('Retry-After: 5');
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo 'Database maintenance is in progress.';
+    exit;
+}
+
+$db = new SQLite3($databaseFile);
 $db->busyTimeout(5000);
 $db->exec('PRAGMA journal_mode = WAL');
 $db->exec('PRAGMA synchronous = NORMAL');

@@ -5,60 +5,53 @@
  * avatars based on whether the instance is single-tenant or multi-tenant.
  */
 
-// Check if the table already exists to prevent duplicate migration runs
-$tableCheck = $db->querySingle("SELECT name FROM sqlite_master WHERE type='table' AND name='uploaded_avatars'");
+$db->exec("
+    CREATE TABLE IF NOT EXISTS uploaded_avatars (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        path TEXT NOT NULL
+    )
+");
 
-if (!$tableCheck) {
-    // Create the uploaded_avatars table
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS uploaded_avatars (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            path TEXT NOT NULL
-        )
-    ");
+$insertAvatar = $db->prepare(
+    'INSERT INTO uploaded_avatars (user_id, path)
+     SELECT :user_id, :path
+     WHERE NOT EXISTS (
+         SELECT 1 FROM uploaded_avatars WHERE user_id = :existing_user_id AND path = :existing_path
+     )'
+);
+$recordAvatar = static function ($userId, $path) use ($insertAvatar) {
+    $insertAvatar->bindValue(':user_id', (int) $userId, SQLITE3_INTEGER);
+    $insertAvatar->bindValue(':path', (string) $path, SQLITE3_TEXT);
+    $insertAvatar->bindValue(':existing_user_id', (int) $userId, SQLITE3_INTEGER);
+    $insertAvatar->bindValue(':existing_path', (string) $path, SQLITE3_TEXT);
+    $insertAvatar->execute();
+};
 
-    // Check if solo user or multiple users
-    $userCount = $db->querySingle("SELECT COUNT(*) FROM user");
+$userCount = (int) $db->querySingle("SELECT COUNT(*) FROM user");
+if ($userCount === 1) {
+    $userId = (int) $db->querySingle("SELECT id FROM user LIMIT 1");
+    $avatarDir = __DIR__ . '/../images/uploads/logos/avatars';
 
-    if ($userCount === 1) {
-        // SOLO USER MIGRATION
-        $userId = $db->querySingle("SELECT id FROM user LIMIT 1");
-        
-        $avatarDir = '../../images/uploads/logos/avatars';
-        
-        if (is_dir($avatarDir)) {
-            $files = scandir($avatarDir);
-            
-            $stmt = $db->prepare("INSERT INTO uploaded_avatars (user_id, path) VALUES (:user_id, :path)");
-            
-            foreach ($files as $file) {
-                // Skip directories and hidden files (like .gitkeep or .htaccess)
-                if ($file !== '.' && $file !== '..' && is_file($avatarDir . '/' . $file)) {
-                    // Store the path exactly as the app expects it in the database
-                    $relativePath = 'images/uploads/logos/avatars/' . $file;
-                    
-                    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-                    $stmt->bindValue(':path', $relativePath, SQLITE3_TEXT);
-                    $stmt->execute();
-                }
-            }
+    if (is_dir($avatarDir)) {
+        $files = scandir($avatarDir);
+        if ($files === false) {
+            throw new RuntimeException('Unable to scan the uploaded avatar directory.');
         }
-    } elseif ($userCount > 1) {
-        // MULTI-USER MIGRATION
-        $results = $db->query("SELECT id, avatar FROM user");
-        
-        $stmt = $db->prepare("INSERT INTO uploaded_avatars (user_id, path) VALUES (:user_id, :path)");
-        
-        while ($row = $results->fetchArray(SQLITE3_ASSOC)) {
-            $userId = $row['id'];
-            $avatarPath = $row['avatar'];
-            
-            if (strpos($avatarPath, 'images/uploads/logos/avatars/') === 0) {
-                $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-                $stmt->bindValue(':path', $avatarPath, SQLITE3_TEXT);
-                $stmt->execute();
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..' || !is_file($avatarDir . '/' . $file)) {
+                continue;
             }
+            $recordAvatar($userId, 'images/uploads/logos/avatars/' . $file);
+        }
+    }
+} elseif ($userCount > 1) {
+    $results = $db->query("SELECT id, avatar FROM user");
+    while ($row = $results->fetchArray(SQLITE3_ASSOC)) {
+        $avatarPath = (string) ($row['avatar'] ?? '');
+        if (strpos($avatarPath, 'images/uploads/logos/avatars/') === 0) {
+            $recordAvatar((int) $row['id'], $avatarPath);
         }
     }
 }

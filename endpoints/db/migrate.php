@@ -2,79 +2,109 @@
 
 $projectRoot = dirname(__DIR__, 2);
 
-// Migrations run from the container entrypoint through CLI.  A browser may
-// only invoke this endpoint when an authenticated administrator is present.
 if (PHP_SAPI !== 'cli') {
-    require_once $projectRoot . '/includes/connect_endpoint.php';
-    if ((int) ($userId ?? 0) !== 1) {
-        http_response_code(403);
-        header('Content-Type: application/json; charset=UTF-8');
-        echo json_encode([
-            'success' => false,
-            'message' => 'Administrator access required.',
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        exit;
+    http_response_code(404);
+    exit;
+}
+
+try {
+    $preflightProcess = proc_open(
+        [PHP_BINARY, $projectRoot . '/endpoints/db/verify.php', '--pre-migration'],
+        [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ],
+        $preflightPipes,
+        $projectRoot
+    );
+    if (!is_resource($preflightProcess)) {
+        throw new RuntimeException('Unable to start the read-only database preflight.');
     }
-} 
 
-function errorHandler($severity, $message, $file, $line)
-{
-    throw new ErrorException($message, 0, $severity, $file, $line);
-}
-
-// Set the custom error handler
-set_error_handler('errorHandler');
-chdir($projectRoot);
-/** @var \SQLite3 $db */
-if (PHP_SAPI === 'cli') {
-    try {
-        require_once $projectRoot . '/includes/connect_endpoint_crontabs.php';
-    } catch (Exception $e) {
-        require_once $projectRoot . '/includes/connect_endpoint.php';
+    fclose($preflightPipes[0]);
+    $preflightOutput = stream_get_contents($preflightPipes[1]);
+    $preflightError = stream_get_contents($preflightPipes[2]);
+    fclose($preflightPipes[1]);
+    fclose($preflightPipes[2]);
+    $preflightStatus = proc_close($preflightProcess);
+    if ($preflightStatus !== 0) {
+        throw new RuntimeException(
+            'Read-only database preflight failed: ' . trim((string) $preflightError)
+        );
     }
-}
-restore_error_handler();
-
-
-$completedMigrations = [];
-
-$migrationTableExists = $db
-    ->query('SELECT name FROM sqlite_master WHERE type="table" AND name="migrations"')
-    ->fetchArray(SQLITE3_ASSOC) !== false;
-
-if ($migrationTableExists) {
-    $migrationQuery = $db->query('SELECT migration FROM migrations');
-    while ($row = $migrationQuery->fetchArray(SQLITE3_ASSOC)) {
-        $completedMigrations[] = $row['migration'];
+    if (trim((string) $preflightOutput) !== '') {
+        echo trim((string) $preflightOutput) . PHP_EOL;
     }
-}
 
-$allMigrations = glob($projectRoot . '/migrations/*.php');
+    chdir($projectRoot);
+    require_once $projectRoot . '/includes/connect_endpoint_crontabs.php';
 
-$allMigrations = array_map(function ($migration) {
-    return 'migrations/' . basename($migration);
-}, $allMigrations);
+    /** @var SQLite3 $db */
+    $db->enableExceptions(true);
+    $db->busyTimeout(10000);
+    $db->exec('PRAGMA foreign_keys = ON');
 
-$completedMigrations = array_map(function ($migration) {
-    return str_replace('../../', '', $migration);
-}, $completedMigrations);
+    $completedMigrations = [];
+    $migrationTableExists = $db->querySingle(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'migrations' LIMIT 1"
+    ) !== null;
 
-$requiredMigrations = array_diff($allMigrations, $completedMigrations);
-
-if (count($requiredMigrations) === 0) {
-    echo "No migrations to run.\n";
-}
-
-foreach ($requiredMigrations as $migration) {
-    $migrationPath = $projectRoot . '/' . $migration;
-    if (!file_exists($migrationPath)) {
-        continue;
+    if ($migrationTableExists) {
+        $migrationQuery = $db->query('SELECT migration FROM migrations');
+        while ($row = $migrationQuery->fetchArray(SQLITE3_ASSOC)) {
+            $rawMigration = str_replace('\\', '/', trim((string) ($row['migration'] ?? '')));
+            if (preg_match('#(?:^|/)migrations/(\d{6}\.php)$#', $rawMigration, $matches) === 1) {
+                $completedMigrations['migrations/' . $matches[1]] = true;
+            }
+        }
     }
-    require_once $migrationPath;
 
-    $stmtInsert = $db->prepare('INSERT INTO migrations (migration) VALUES (:migration)');
-    $stmtInsert->bindParam(':migration', $migration, SQLITE3_TEXT);
-    $stmtInsert->execute();
+    $migrationFiles = glob($projectRoot . '/migrations/*.php') ?: [];
+    sort($migrationFiles, SORT_STRING);
+    $requiredMigrations = array_values(array_filter($migrationFiles, static function ($migrationPath) use ($completedMigrations) {
+        return !isset($completedMigrations['migrations/' . basename($migrationPath)]);
+    }));
 
-    echo sprintf("Migration %s completed successfully.\n", $migration);
+    if (!$requiredMigrations) {
+        echo "No migrations to run.\n";
+    }
+
+    foreach ($requiredMigrations as $migrationPath) {
+        $migration = 'migrations/' . basename($migrationPath);
+        $runnerTransaction = false;
+
+        try {
+            $db->exec('BEGIN IMMEDIATE');
+            $runnerTransaction = true;
+
+            require $migrationPath;
+
+            $stmt = $db->prepare('INSERT INTO migrations (migration) VALUES (:migration)');
+            $stmt->bindValue(':migration', $migration, SQLITE3_TEXT);
+            $stmt->execute();
+            $db->exec('COMMIT');
+            $runnerTransaction = false;
+
+            echo sprintf("Migration %s completed successfully.\n", $migration);
+        } catch (Throwable $throwable) {
+            if ($runnerTransaction) {
+                try {
+                    $db->exec('ROLLBACK');
+                } catch (Throwable $rollbackError) {
+                    // Preserve the original migration failure.
+                }
+            }
+            throw new RuntimeException(
+                'Migration ' . $migration . ' failed: ' . $throwable->getMessage(),
+                0,
+                $throwable
+            );
+        }
+    }
+} catch (Throwable $throwable) {
+    fwrite(STDERR, $throwable->getMessage() . PHP_EOL);
+    exit(1);
 }
+
+?>

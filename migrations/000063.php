@@ -15,5 +15,4 @@ if (!in_array('page_transition_style', $settingsColumns, true)) {
 }
 
 $db->exec('UPDATE settings SET page_transition_enabled = 1 WHERE page_transition_enabled IS NULL');
-$db->exec("UPDATE settings SET page_transition_style = 'bluearchive_theme' WHERE page_transition_style IS NULL");
-$db->exec("UPDATE settings SET page_transition_style = 'shutter' WHERE page_transition_style NOT IN ('shutter', 'bluearchive', 'bluearchive_theme')");
+$db->exec("UPDATE settings SET page_transition_style = 'bluearchive_theme' WHERE page_transition_style IS NULL OR TRIM(page_transition_style) = ''");

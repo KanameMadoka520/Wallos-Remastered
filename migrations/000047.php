@@ -49,7 +49,7 @@ if (!in_array('scheduled_delete_at', $userColumns, true)) {
     $db->exec('ALTER TABLE user ADD COLUMN scheduled_delete_at TEXT DEFAULT ""');
 }
 
-$db->exec("UPDATE user SET account_status = 'active' WHERE account_status IS NULL OR TRIM(account_status) = '' OR account_status NOT IN ('active', 'trashed')");
+$db->exec("UPDATE user SET account_status = 'active' WHERE account_status IS NULL OR TRIM(account_status) = ''");
 $db->exec("UPDATE user SET trash_reason = '' WHERE trash_reason IS NULL");
 $db->exec("UPDATE user SET trashed_at = '' WHERE trashed_at IS NULL");
 $db->exec("UPDATE user SET scheduled_delete_at = '' WHERE scheduled_delete_at IS NULL");

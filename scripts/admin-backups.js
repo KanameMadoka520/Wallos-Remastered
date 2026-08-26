@@ -13,13 +13,7 @@
   }
 
   function runPostRestoreActions() {
-    fetch('endpoints/db/migrate.php')
-      .then(() => {
-        window.location.href = 'logout.php';
-      })
-      .catch(() => {
-        window.location.href = 'logout.php';
-      });
+    window.location.href = 'logout.php';
   }
 
   function updateBackupCardStatus(button, statusLabel, statusTone = 'pending') {
