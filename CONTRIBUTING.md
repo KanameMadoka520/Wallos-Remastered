@@ -70,17 +70,27 @@ curl http://127.0.0.1:18282/health.php
   - 纯二进制媒体流
 - 如果你改动了高风险链路，请至少跑一次：
 
+正式镜像通过 `.dockerignore` 排除了 `tests/`，不要假设运行中的生产容器含有测试源码。在 Linux 主机的仓库根目录，用只读源码挂载运行：
+
 ```bash
-docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-url=http://127.0.0.1
+docker run --rm --network host --entrypoint php \
+  -v "$PWD:/work:ro" \
+  wallos-remastered:v5.4.5-remastered.4 \
+  /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
+
+`--network host` 是 Linux Docker 示例；Docker Desktop 需要改用平台提供的宿主机地址。
 
 这套 runner 当前包含公共页面、登录态 endpoint、静态契约和既有 PHP 逻辑回归。静态契约会检查主题默认值、订阅页关键 DOM、订阅页脚本加载顺序、共享请求层、API key 传输约定、订阅图片大小显示槽位、管理后台系统总览、系统总览局部刷新、管理后台运行可观测性、慢请求观测、慢接口排行、慢接口日志筛选入口、维护建议面板、维护建议刷新 E2E、日志内容安全渲染、维护区存储占用统计、日志增长活动指标、图片审计状态卡、图片审计 CSV 导出、SQLite 维护指标、索引健康检查入口和 `database_busy` 错误契约；既有 PHP 逻辑回归会检查关键 SQLite 索引迁移可重复执行，并验证健康检查 helper 可以发现缺失/异常索引。这样可以提前发现“按钮事件漂移”“局部刷新返回格式漂移”“主题默认值被改回蓝色”“日志内容污染后台页面”“维护工具误删数据”“维护建议丢失”“系统总览卡片丢失”“索引迁移漏列或不可幂等”“数据库锁等待变成未知错误”“慢接口没有可观测字段”“慢接口排行聚合丢失”等问题。
 
 如需覆盖登录态页面，请提供专用测试账号：
 
 ```bash
-docker exec wallos-local php /var/www/html/tests/regression_runner.php \
-  --base-url=http://127.0.0.1 \
+docker run --rm --network host --entrypoint php \
+  -v "$PWD:/work:ro" \
+  wallos-remastered:v5.4.5-remastered.4 \
+  /work/tests/regression_runner.php \
+  --base-url=http://127.0.0.1:18282 \
   --username=你的测试账号 \
   --password=你的测试密码
 ```
@@ -90,11 +100,17 @@ docker exec wallos-local php /var/www/html/tests/regression_runner.php \
 订阅页 UI 变动后，建议额外运行浏览器级 E2E：
 
 ```bash
-npm install
+npm ci
 WALLOS_BASE_URL=http://127.0.0.1:18282 \
 WALLOS_TEST_USERNAME=你的测试账号 \
 WALLOS_TEST_PASSWORD=你的测试密码 \
 npm run e2e:subscriptions
+```
+
+修改 PHP/JavaScript 翻译键、语言选择器或 RTL 样式时，先运行无需账号的语言浏览器检查：
+
+```bash
+WALLOS_BASE_URL=http://127.0.0.1:18282 npm run e2e:i18n
 ```
 
 该脚本会真实点击订阅分页、三点菜单、编辑弹窗、新增保存、实际支付记录、记录支付弹窗、图片预览、单/双/三列切换、成本与价值显示开关、动态壁纸相关按钮和 CSRF 持久提醒。脚本会创建临时订阅并自动清理，同时恢复测试前的订阅页显示偏好。
