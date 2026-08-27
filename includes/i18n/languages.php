@@ -3,6 +3,7 @@
 $languages = [
     // English first
     "en" => ["name" => "English", "dir" => "ltr"],
+    "ar" => ["name" => "العربية", "dir" => "rtl"],
     // Remaining sorted alphabetically by language code
     "ca" => ["name" => "Català", "dir" => "ltr"],
     "cs" => ["name" => "Čeština", "dir" => "ltr"],
@@ -11,6 +12,7 @@ $languages = [
     "el" => ["name" => "Ελληνικά", "dir" => "ltr"],
     "es" => ["name" => "Español", "dir" => "ltr"],
     "fr" => ["name" => "Français", "dir" => "ltr"],
+    "hu" => ["name" => "Magyar", "dir" => "ltr"],
     "id" => ["name" => "bahasa indonesia", "dir" => "ltr"],
     "it" => ["name" => "Italiano", "dir" => "ltr"],
     "jp" => ["name" => "日本語", "dir" => "ltr"],

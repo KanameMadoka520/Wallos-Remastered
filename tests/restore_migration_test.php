@@ -62,10 +62,16 @@ function wallos_restore_migration_test_create_latest_schema(SQLite3 $db)
         user_id INTEGER,
         inactive INTEGER,
         next_payment TEXT,
-        notify INTEGER
+        notify INTEGER,
+        logo_text_color TEXT,
+        logo_variant TEXT
     )');
     $db->exec('CREATE TABLE currencies (id INTEGER PRIMARY KEY)');
     $db->exec('CREATE TABLE settings (id INTEGER PRIMARY KEY, week_starts_sunday INTEGER DEFAULT 0)');
+    $db->exec('CREATE TABLE notification_settings (
+        id INTEGER PRIMARY KEY,
+        period_summary_at_period_start INTEGER DEFAULT 0
+    )');
     $db->exec('CREATE TABLE cycles (id INTEGER PRIMARY KEY, days INTEGER NOT NULL, name TEXT NOT NULL)');
     $db->exec("INSERT INTO cycles (id, days, name) VALUES (5, 0, 'One-time')");
     $db->exec('CREATE INDEX idx_subscriptions_user_inactive_next_payment

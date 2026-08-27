@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
     // Tableau de bord
     error_reloading_subscription: "Erreur lors du rechargement de l'abonnement :",
     error_fetching_image_results: "Erreur lors de la récupération des résultats d'images :",
@@ -41,9 +41,8 @@ let i18n = {
     copied_to_clipboard: "Copié dans le presse-papiers",
     // Calendar
     price: "Prix",
-    category: "Catégorie",
     paid_by: "Payé par",
     payment_method: "Méthode de paiement",
     notes: "Notes",
     export: "Exporter",
-};
+});

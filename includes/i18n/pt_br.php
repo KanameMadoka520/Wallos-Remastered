@@ -1,6 +1,8 @@
 <?php
 
-$i18n = [
+require __DIR__ . '/en.php';
+
+$i18n = array_replace($i18n, [
     // Registration page
     "create_account" => "É necessário criar uma conta antes de poder se logar",
     "username" => "Usuário",
@@ -380,7 +382,7 @@ $i18n = [
     "delete_user_info" => "Excluir um usuário também excluirá todas as assinaturas e dados associados",
     "create_user" => "Criar usuário",
     "oidc_settings" => "Configurações OIDC",
-    "oidc_auth_enabled" => "Habilitar autenticação OIDC",
+    "oidc_oauth_enabled" => "Habilitar autenticação OIDC",
     "create_user_automatically" => "Criar usuário automaticamente",
     "disable_password_login" => "Desativar login por senha",
     "smtp_settings" => "Configurações SMTP",
@@ -396,7 +398,7 @@ $i18n = [
     "latest_version" =>"Última versão",
     "on_current_version" => "Você está na última versão do Wallos.",
     "show_update_notification" => "Mostrar notificação de atualização no dashboard",
-    "Cronjobs" => "Cronjobs",
+    "cronjobs" => "Cronjobs",
     // Email Verification
     "email_verified" => "Email verificado",
     "email_verification_failed" => "Falha na verificação do email",
@@ -427,7 +429,7 @@ $i18n = [
     // TOTP Page
     "insert_totp_code" => "Insira o código TOTP",
 
-];
+]);
 
 
 ?>

@@ -2,6 +2,8 @@
 !/db/wallos.empty.db
 /images/uploads/logos/*
 !/images/uploads/logos/wallos.png
+/logos/*
+!/logos/.gitkeep
 /backups/*
 !/backups/.gitkeep
 .env

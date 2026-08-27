@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "Napaka pri ponovnem nalaganju naročnine:",
   error_fetching_image_results: "Napaka pri pridobivanju rezultatov slik:",
@@ -41,9 +41,8 @@ let i18n = {
   copied_to_clipboard: "Kopirano v odložišče",
   // Calendar
   price: "Cena",
-  category: "Kategorija",
   paid_by: "Plačal/a",
   payment_method: "Način plačila",
   notes: "Opombe",
   export: "Izvozi",
-}
+});

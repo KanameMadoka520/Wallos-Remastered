@@ -1801,6 +1801,7 @@ function saveOidcSettingsButton() {
   const oidcAuthStyle = document.getElementById("oidcAuthStyle").value;
   const oidcAutoCreateUser = document.getElementById("oidcAutoCreateUser").checked ? 1 : 0;
   const oidcPasswordLoginDisabled = document.getElementById("oidcPasswordLoginDisabled").checked ? 1 : 0;
+  const oidcRequireEmailVerified = document.getElementById("oidcRequireEmailVerified").checked ? 1 : 0;
 
   const data = {
     oidcName: oidcName,
@@ -1815,7 +1816,8 @@ function saveOidcSettingsButton() {
     oidcScopes: oidcScopes,
     oidcAuthStyle: oidcAuthStyle,
     oidcAutoCreateUser: oidcAutoCreateUser,
-    oidcPasswordLoginDisabled: oidcPasswordLoginDisabled
+    oidcPasswordLoginDisabled: oidcPasswordLoginDisabled,
+    oidcRequireEmailVerified: oidcRequireEmailVerified
   };
 
 

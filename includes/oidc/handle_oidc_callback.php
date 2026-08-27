@@ -1,6 +1,8 @@
 <?php
 
+require_once __DIR__ . '/../oidc_settings.php';
 require_once __DIR__ . '/../ssrf_helper.php';
+require_once __DIR__ . '/../user_status.php';
 
 function generate_username_from_email($email)
 {
@@ -12,15 +14,12 @@ function generate_username_from_email($email)
     return $username;
 }
 
-// get OIDC settings
-$stmt = $db->prepare('SELECT * FROM oauth_settings WHERE id = 1');
-$result = $stmt->execute();
-$oidcSettings = $result->fetchArray(SQLITE3_ASSOC);
-
-if (!$oidcSettings) {
+$oidcConfiguration = wallos_get_effective_oidc_configuration($db);
+if ($oidcConfiguration['enabled'] !== 1 || !$oidcConfiguration['is_configured']) {
     header('Location: login.php?error=oidc_not_configured');
     exit();
 }
+$oidcSettings = $oidcConfiguration['settings'];
 
 $tokenUrl = $oidcSettings['token_url'];
 $redirectUri = $oidcSettings['redirect_url'];

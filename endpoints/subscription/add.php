@@ -12,6 +12,7 @@ require_once '../../includes/subscription_payment_records.php';
 require_once '../../includes/subscription_payment_history.php';
 require_once '../../includes/subscription_price_rules.php';
 require_once '../../includes/subscription_pages.php';
+require_once '../../includes/logo_theme_variant.php';
 require_once '../../includes/user_groups.php';
 require_once '../../includes/security_rate_limits.php';
 if (!file_exists('../../images/uploads/logos')) {
@@ -94,6 +95,8 @@ function getLogoFromUrl($url, $uploadDir, $name, $settings, $i18n)
                 unset($ch);
                 return ['success' => true, 'filename' => $fileName];
             }
+            unset($ch);
+            return ['success' => false, 'message' => translate('error_saving_logo', $i18n)];
         }
 
         $error = curl_error($ch);
@@ -111,31 +114,45 @@ function saveLogo($imageData, $uploadFile, $name, $settings)
 
     if ($image !== false) {
         $tempFile = tempnam(sys_get_temp_dir(), 'logo');
+        if ($tempFile === false) {
+            imagedestroy($image);
+            return false;
+        }
 
         imagealphablending($image, false);
         imagesavealpha($image, true);
-        imagepng($image, $tempFile);
+        if (!imagepng($image, $tempFile)) {
+            imagedestroy($image);
+            @unlink($tempFile);
+            return false;
+        }
         imagedestroy($image);
 
+        $written = false;
+
         if (extension_loaded('imagick')) {
-            $imagick = new Imagick($tempFile);
+            try {
+                $imagick = new Imagick($tempFile);
 
-            if ($removeBackground) {
-                $imagick->setImageAlphaChannel(Imagick::ALPHACHANNEL_ACTIVATE);
+                if ($removeBackground) {
+                    $imagick->setImageAlphaChannel(Imagick::ALPHACHANNEL_ACTIVATE);
 
-                $pixel = $imagick->getImagePixelColor(0, 0);
-                $color = $pixel->getColor();
-                if ($color['a'] > 0) {
-                    $bgColor = "rgb({$color['r']},{$color['g']},{$color['b']})";
-                    $fuzz = Imagick::getQuantum() * 0.1;
-                    $imagick->transparentPaintImage($bgColor, 0, $fuzz, false);
+                    $pixel = $imagick->getImagePixelColor(0, 0);
+                    $color = $pixel->getColor();
+                    if ($color['a'] > 0) {
+                        $bgColor = "rgb({$color['r']},{$color['g']},{$color['b']})";
+                        $fuzz = Imagick::getQuantum() * 0.1;
+                        $imagick->transparentPaintImage($bgColor, 0, $fuzz, false);
+                    }
                 }
-            }
 
-            $imagick->setImageFormat('png');
-            $imagick->writeImage($uploadFile);
-            $imagick->clear();
-            $imagick->destroy();
+                $imagick->setImageFormat('png');
+                $written = (bool) $imagick->writeImage($uploadFile);
+                $imagick->clear();
+                $imagick->destroy();
+            } catch (Throwable $throwable) {
+                $written = false;
+            }
 
         } else {
             $newImage = imagecreatefrompng($tempFile);
@@ -148,7 +165,7 @@ function saveLogo($imageData, $uploadFile, $name, $settings)
                     imagefill($newImage, 0, 0, $transparent);
                 }
 
-                imagepng($newImage, $uploadFile);
+                $written = imagepng($newImage, $uploadFile);
                 imagedestroy($newImage);
             } else {
                 unlink($tempFile);
@@ -157,7 +174,10 @@ function saveLogo($imageData, $uploadFile, $name, $settings)
         }
 
         unlink($tempFile);
-        return true;
+        if (!$written) {
+            @unlink($uploadFile);
+        }
+        return $written;
     }
 
     return false;
@@ -170,7 +190,7 @@ function resizeAndUploadLogo($uploadedFile, $uploadDir, $name, $settings)
 
     $timestamp = time();
     $originalFileName = $uploadedFile['name'];
-    $fileExtension = pathinfo($originalFileName, PATHINFO_EXTENSION);
+    $fileExtension = strtolower(pathinfo($originalFileName, PATHINFO_EXTENSION));
     $fileExtension = validateFileExtension($fileExtension) ? $fileExtension : 'png';
     $fileName = $timestamp . '-' . sanitizeFilename($name) . '.' . $fileExtension;
     $uploadFile = $uploadDir . $fileName;
@@ -191,6 +211,12 @@ function resizeAndUploadLogo($uploadedFile, $uploadDir, $name, $settings)
             } elseif ($fileExtension === 'webp') {
                 $image = imagecreatefromwebp($uploadFile);
             } else {
+                @unlink($uploadFile);
+                return "";
+            }
+
+            if ($image === false) {
+                @unlink($uploadFile);
                 return "";
             }
 
@@ -218,22 +244,32 @@ function resizeAndUploadLogo($uploadedFile, $uploadDir, $name, $settings)
             imagecopyresampled($resizedImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
 
             if ($fileExtension === 'png') {
-                imagepng($resizedImage, $uploadFile);
+                $written = imagepng($resizedImage, $uploadFile);
             } elseif ($fileExtension === 'jpg' || $fileExtension === 'jpeg') {
-                imagejpeg($resizedImage, $uploadFile);
+                $written = imagejpeg($resizedImage, $uploadFile);
             } elseif ($fileExtension === 'gif') {
-                imagegif($resizedImage, $uploadFile);
+                $written = imagegif($resizedImage, $uploadFile);
             } elseif ($fileExtension === 'webp') {
-                imagewebp($resizedImage, $uploadFile);
+                $written = imagewebp($resizedImage, $uploadFile);
             } else {
+                imagedestroy($image);
+                imagedestroy($resizedImage);
+                @unlink($uploadFile);
                 return "";
             }
 
             imagedestroy($image);
             imagedestroy($resizedImage);
 
+            if (!$written) {
+                @unlink($uploadFile);
+                return "";
+            }
+
             return $fileName;
         }
+
+        @unlink($uploadFile);
     }
 
     return "";
@@ -256,6 +292,9 @@ $url = validate($_POST['url']);
 $logoUrl = validate($_POST['logo-url']);
 $logo = "";
 $logoError = "";
+$logoTextColor = null;
+$logoVariant = null;
+$createdLogoFiles = [];
 $notify = isset($_POST['notifications']) ? true : false;
 $notifyDaysBefore = $_POST['notify_days_before'];
 $inactive = isset($_POST['inactive']) ? true : false;
@@ -388,6 +427,7 @@ if ($logoUrl !== "") {
     $result = getLogoFromUrl($logoUrl, '../../images/uploads/logos/', $name, $settings, $i18n);
     if ($result['success']) {
         $logo = $result['filename'];
+        $createdLogoFiles[] = '../../images/uploads/logos/' . $logo;
     } else {
         $logoError = $result['message'];
     }
@@ -398,6 +438,24 @@ if ($logoUrl !== "") {
             subscription_error_response(translate("fill_all_fields", $i18n));
         }
         $logo = resizeAndUploadLogo($_FILES['logo'], '../../images/uploads/logos/', $name, $settings);
+        if ($logo === '') {
+            $logoError = translate('error_saving_logo', $i18n);
+        } else {
+            $createdLogoFiles[] = '../../images/uploads/logos/' . $logo;
+        }
+    }
+}
+
+$removeBackgroundEnabled = isset($settings['removeBackground']) && $settings['removeBackground'] === 'true';
+if ($logo !== '' && $removeBackgroundEnabled) {
+    $variantResult = wallos_create_logo_theme_variant(
+        '../../images/uploads/logos/' . $logo,
+        $logo
+    );
+    $logoTextColor = $variantResult['text_color'];
+    $logoVariant = $variantResult['variant'];
+    if ($logoVariant !== null) {
+        $createdLogoFiles[] = '../../images/uploads/logos/' . $logoVariant;
     }
 }
 
@@ -411,13 +469,15 @@ try {
                             payment_method_id, payer_user_id, category_id, notify, inactive, url,
                             notify_days_before, user_id, cancellation_date, replacement_subscription_id,
                             auto_renew, start_date, detail_image, detail_image_urls, sort_order, subscription_page_id,
-                            lifecycle_status, exclude_from_stats, manual_cycle_used_value_main, manual_cycle_used_value_cycle_start
+                            lifecycle_status, exclude_from_stats, manual_cycle_used_value_main, manual_cycle_used_value_cycle_start,
+                            logo_text_color, logo_variant
                         ) VALUES (
                             :name, :logo, :price, :currencyId, :nextPayment, :cycle, :frequency, :notes,
                             :paymentMethodId, :payerUserId, :categoryId, :notify, :inactive, :url,
                             :notifyDaysBefore, :userId, :cancellationDate, :replacement_subscription_id,
                             :autoRenew, :startDate, '', :detailImageUrls, :sortOrder, :subscriptionPageId,
-                            :lifecycleStatus, :excludeFromStats, :manualCycleUsedValueMain, :manualCycleUsedValueCycleStart
+                            :lifecycleStatus, :excludeFromStats, :manualCycleUsedValueMain, :manualCycleUsedValueCycleStart,
+                            :logoTextColor, :logoVariant
                         )";
     } else {
         $sql = "UPDATE subscriptions SET
@@ -447,7 +507,7 @@ try {
                             manual_cycle_used_value_cycle_start = :manualCycleUsedValueCycleStart";
 
         if ($logo != "") {
-            $sql .= ", logo = :logo";
+            $sql .= ", logo = :logo, logo_text_color = :logoTextColor, logo_variant = :logoVariant";
         }
 
         $sql .= " WHERE id = :id AND user_id = :userId";
@@ -457,6 +517,10 @@ try {
     $stmt->bindParam(':name', $name, SQLITE3_TEXT);
     if ($logo != "") {
         $stmt->bindParam(':logo', $logo, SQLITE3_TEXT);
+    }
+    if (!$isEdit || $logo !== '') {
+        $stmt->bindValue(':logoTextColor', $logoTextColor, $logoTextColor === null ? SQLITE3_NULL : SQLITE3_TEXT);
+        $stmt->bindValue(':logoVariant', $logoVariant, $logoVariant === null ? SQLITE3_NULL : SQLITE3_TEXT);
     }
     $stmt->bindParam(':price', $price, SQLITE3_FLOAT);
     $stmt->bindParam(':currencyId', $currencyId, SQLITE3_INTEGER);
@@ -576,6 +640,12 @@ try {
 
     foreach ($storedUploadedImages as $storedImage) {
         wallos_delete_subscription_image_related_files(__DIR__ . '/../../', $storedImage);
+    }
+
+    foreach ($createdLogoFiles as $createdLogoFile) {
+        if (is_file($createdLogoFile)) {
+            @unlink($createdLogoFile);
+        }
     }
 
     subscription_error_response($throwable->getMessage());

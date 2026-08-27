@@ -1,6 +1,6 @@
-const STATIC_CACHE = 'static-cache-v19';
-const PAGES_CACHE = 'pages-cache-v19';
-const LOGOS_CACHE = 'logos-cache-v19';
+const STATIC_CACHE = 'static-cache-v20';
+const PAGES_CACHE = 'pages-cache-v20';
+const LOGOS_CACHE = 'logos-cache-v20';
 const WALLOS_CACHE_PREFIXES = ['static-cache-', 'pages-cache-', 'logos-cache-'];
 
 const staticAssets = [
@@ -51,6 +51,8 @@ const staticAssets = [
     'scripts/decorative-background.js',
     'scripts/dynamic-wallpaper.js',
     'scripts/metric-explanations.js',
+    'scripts/i18n/ar.js',
+    'scripts/i18n/ca.js',
     'scripts/i18n/cs.js',
     'scripts/i18n/da.js',
     'scripts/i18n/de.js',
@@ -58,6 +60,7 @@ const staticAssets = [
     'scripts/i18n/en.js',
     'scripts/i18n/es.js',
     'scripts/i18n/fr.js',
+    'scripts/i18n/hu.js',
     'scripts/i18n/id.js',
     'scripts/i18n/it.js',
     'scripts/i18n/jp.js',

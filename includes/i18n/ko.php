@@ -1,6 +1,8 @@
 <?php
 
-$i18n = [
+require __DIR__ . '/en.php';
+
+$i18n = array_replace($i18n, [
     // Registration page
     "create_account" => "로그인 하기 전에 회원가입을 진행해야 합니다.",
     "username" => "유저명",
@@ -380,7 +382,7 @@ $i18n = [
     "delete_user_info" => "사용자를 삭제하면 모든 구독 및 설정도 삭제됩니다.",
     "create_user" => "유저 생성",
     "oidc_settings" => "OIDC 설정",
-    "oidc_auth_enabled" => "OIDC 인증 활성화",
+    "oidc_oauth_enabled" => "OIDC 인증 활성화",
     "create_user_automatically" => "사용자 자동 생성",
     "disable_password_login" => "비밀번호 로그인 비활성화",
     "smtp_settings" => "SMTP 설정",
@@ -427,7 +429,7 @@ $i18n = [
     // TOTP Page
     "insert_totp_code" => "2단계 인증 코드를 입력하세요",
 
-];
+]);
 
 
 ?>

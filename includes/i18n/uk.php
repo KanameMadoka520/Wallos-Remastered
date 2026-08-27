@@ -1,6 +1,8 @@
 <?php
 
-$i18n = [
+require __DIR__ . '/en.php';
+
+$i18n = array_replace($i18n, [
     // Registration page
     "create_account" => "Вам необхідно створити обліковий запис, перш ніж ви зможете увійти в систему",
     "username" => "Ім'я користувача",
@@ -277,7 +279,7 @@ $i18n = [
     "payment_methods" => "Способи оплати",
     "payment_methods_info" => "Натисніть на спосіб оплати, щоб відключити/включити його.",
     "rename_payment_methods_info" => "Натисніть на назву способу оплати, щоб перейменувати його.",
-    "cant_delete_payment_method_in use" => "Неможливо відключити використовуваний спосіб оплати",
+    "cant_delete_payment_method_in_use" => "Неможливо відключити використовуваний спосіб оплати",
     "add_custom_payment" => "Додати власний спосіб оплати",
     "payment_method_name" => "Назва способу оплати",
     "payment_method_added_successfuly" => "Спосіб оплати успішно додано",
@@ -381,7 +383,7 @@ $i18n = [
     "create_user" => "Створити користувача",
     "smtp_settings" => "Налаштування SMTP",
     "oidc_settings" => "Налаштування OIDC",
-    "oidc_auth_enabled" => "Увімкнути OIDC автентифікацію",
+    "oidc_oauth_enabled" => "Увімкнути OIDC автентифікацію",
     "create_user_automatically" => "Автоматично створювати користувача при вході",
     "disable_password_login" => "Відключити вхід за паролем",
     "smtp_usage_info" => "Буде використовуватися для відновлення пароля та інших системних листів.",
@@ -427,6 +429,6 @@ $i18n = [
     // TOTP Page
     "insert_totp_code" => "Введіть код TOTP",
 
-];
+]);
 
 ?>

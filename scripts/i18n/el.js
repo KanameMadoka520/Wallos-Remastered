@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "Σφάλμα επαναφόρτωσης συνδρομής:",
   error_fetching_image_results: "Σφάλμα λήψης αποτελεσμάτων εικόνας:",
@@ -41,9 +41,8 @@ let i18n = {
   copied_to_clipboard: "Αντιγράφηκε στο πρόχειρο",
   // Calendar
   price: "Τιμή",
-  category: "Κατηγορία",
   paid_by: "Πληρώθηκε από",
   payment_method: "Μέθοδος πληρωμής",
   notes: "Σημειώσεις",
   export: "Εξαγωγή",
-}
+});

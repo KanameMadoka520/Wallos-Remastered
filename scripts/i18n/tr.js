@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "Abonelik yeniden yüklenirken hata oluştu:",
   error_fetching_image_results: "Görüntü sonuçları alınırken hata oluştu:",
@@ -41,12 +41,11 @@ let i18n = {
   copied_to_clipboard: "Panoya kopyalandı",
   // Calendar
   price: "Price",
-  category: "Category",
   paid_by: "Paid by",
   payment_method: "Payment method",
   notes: "Notes",
   export: "Export",
-}
+});
 
 
 

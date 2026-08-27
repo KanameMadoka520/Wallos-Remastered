@@ -1,6 +1,8 @@
 <?php
 
-$i18n = [
+require __DIR__ . '/en.php';
+
+$i18n = array_replace($i18n, [
     // Registration page
     "create_account" => "Bạn cần tạo tài khoản trước khi có thể đăng nhập",
     "username" => "Tên người dùng",
@@ -381,7 +383,7 @@ $i18n = [
     "delete_user_info" => "Xóa một người dùng cũng sẽ xóa tất cả các đăng ký và cài đặt của họ.",
     "create_user" => "Tạo người dùng",
     "oidc_settings" => "Cài đặt OIDC",
-    "oidc_auth_enabled" => "Xác thực OIDC đã được bật",
+    "oidc_oauth_enabled" => "Xác thực OIDC đã được bật",
     "create_user_automatically" => "Tạo người dùng tự động",
     "disable_password_login" => "Vô hiệu hóa đăng nhập bằng mật khẩu",
     "smtp_settings" => "Cài đặt SMTP",
@@ -427,6 +429,6 @@ $i18n = [
     "over_budget_warning" => "Bạn đang vượt quá ngân sách",
     // TOTP Page
     "insert_totp_code" => "Nhập mã TOTP",
-];
+]);
 
 ?>

@@ -7034,17 +7034,22 @@ body.details-open {
 }
 
 /* Keep themed logo variants in sync with the rest of the subscription UI. */
-.details-logo img.logo-theme-variant {
+.details-logo img.logo-theme-variant,
+.subscription-main .logo img.logo-theme-variant {
   display: none;
 }
 
 body.dark .details-logo img.logo-theme-original[data-native-theme="light"],
-body.light .details-logo img.logo-theme-original[data-native-theme="dark"] {
+body.light .details-logo img.logo-theme-original[data-native-theme="dark"],
+body.dark .subscription-main .logo img.logo-theme-original[data-native-theme="light"],
+body.light .subscription-main .logo img.logo-theme-original[data-native-theme="dark"] {
   display: none;
 }
 
 body.dark .details-logo img.logo-theme-variant[data-native-theme="light"],
-body.light .details-logo img.logo-theme-variant[data-native-theme="dark"] {
+body.light .details-logo img.logo-theme-variant[data-native-theme="dark"],
+body.dark .subscription-main .logo img.logo-theme-variant[data-native-theme="light"],
+body.light .subscription-main .logo img.logo-theme-variant[data-native-theme="dark"] {
   display: revert;
 }
 

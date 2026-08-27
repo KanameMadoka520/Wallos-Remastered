@@ -301,8 +301,20 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                     <span class="logo <?= !$hasLogo ? 'hideOnMobile' : '' ?>">
                         <?php
                         if ($hasLogo) {
+                            $nativeTheme = strtolower((string) ($subscription['logo_text_color'] ?? '')) === 'dark'
+                                ? 'light'
+                                : 'dark';
                             ?>
-                            <img src="<?= htmlspecialchars($subscription['logo'], ENT_QUOTES, 'UTF-8') ?>">
+                            <img src="<?= htmlspecialchars($subscription['logo'], ENT_QUOTES, 'UTF-8') ?>"
+                                class="<?= !empty($subscription['logo_variant']) ? 'logo-theme-original' : '' ?>"
+                                <?= !empty($subscription['logo_variant'])
+                                    ? 'data-native-theme="' . htmlspecialchars($nativeTheme, ENT_QUOTES, 'UTF-8') . '"'
+                                    : '' ?>>
+                            <?php if (!empty($subscription['logo_variant'])): ?>
+                                <img src="<?= htmlspecialchars($subscription['logo_variant'], ENT_QUOTES, 'UTF-8') ?>"
+                                    class="logo-theme-variant"
+                                    data-native-theme="<?= htmlspecialchars($nativeTheme, ENT_QUOTES, 'UTF-8') ?>">
+                            <?php endif; ?>
                             <?php
                         } else {
                             include $imagePath . "images/siteicons/svg/logo.php";

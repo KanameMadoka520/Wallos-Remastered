@@ -2,9 +2,19 @@
 
 require_once __DIR__ . '/../theme_cookie_sync.php';
 require_once __DIR__ . '/../request_security.php';
+require_once __DIR__ . '/../auth_session.php';
+require_once __DIR__ . '/../user_status.php';
 
 if (!isset($userData)) {
     die("User data missing for OIDC login.");
+}
+
+if (wallos_is_user_trashed($userData['account_status'] ?? WALLOS_USER_STATUS_ACTIVE)) {
+    $redirectQuery = wallos_prepare_trashed_login_redirect_query($userData);
+    wallos_auth_reset_login_state();
+    $db->close();
+    header('Location: login.php?' . $redirectQuery);
+    exit();
 }
 
 if (session_status() === PHP_SESSION_ACTIVE) {

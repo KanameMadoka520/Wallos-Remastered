@@ -6,8 +6,13 @@ function wallos_regression_run_legacy_suite(array $config, array $suiteDefinitio
         'budget-regression' => 'tests/budget_regression_test.php',
         'budget-period' => 'tests/budget_period_test.php',
         'currency-rates' => 'tests/currency_rates_test.php',
+        'currency-update-schedule' => 'tests/currency_update_schedule_test.php',
         'ical-helper' => 'tests/ical_helper_test.php',
         'migration-079' => 'tests/migration_079_test.php',
+        'migration-080' => 'tests/migration_080_test.php',
+        'declarative-oidc' => 'tests/oidc_declarative_test.php',
+        'period-summary-notifications' => 'tests/period_summary_notifications_test.php',
+        'themed-logo-variants' => 'tests/logo_theme_variant_test.php',
         'one-time-migration' => 'tests/one_time_migration_test.php',
         'subscription-index' => 'tests/subscription_index_test.php',
         'smtp-ssrf' => 'tests/ssrf_smtp_test.php',
@@ -27,6 +32,8 @@ function wallos_regression_run_legacy_suite(array $config, array $suiteDefinitio
         'sqlite-index-contract' => 'tests/sqlite_index_contract_test.php',
         'maintenance-action-log-contract' => 'tests/maintenance_action_log_contract_test.php',
         'database-busy-contract' => 'tests/database_busy_contract_test.php',
+        'subscription-empty-sort' => 'tests/subscription_empty_sort_test.php',
+        'i18n-contract' => 'tests/i18n_contract_test.php',
     );
 
     $results = array();

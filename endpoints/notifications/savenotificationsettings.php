@@ -14,6 +14,7 @@ if (!isset($data["days"]) || $data['days'] == "") {
     echo json_encode($response);
 } else {
     $days = $data["days"];
+    $periodSummaryAtPeriodStart = !empty($data['period_summary_at_period_start']) ? 1 : 0;
     $query = "SELECT COUNT(*) FROM notification_settings WHERE user_id = :userId";
     $stmt = $db->prepare($query);
     $stmt->bindParam(":userId", $userId, SQLITE3_INTEGER);
@@ -29,14 +30,17 @@ if (!isset($data["days"]) || $data['days'] == "") {
         $row = $result->fetchArray();
         $count = $row[0];
         if ($count == 0) {
-            $query = "INSERT INTO notification_settings (days, user_id)
-                              VALUES (:days, :userId)";
+            $query = "INSERT INTO notification_settings (days, period_summary_at_period_start, user_id)
+                              VALUES (:days, :period_summary_at_period_start, :userId)";
         } else {
-            $query = "UPDATE notification_settings SET days = :days WHERE user_id = :userId";
+            $query = "UPDATE notification_settings
+                      SET days = :days, period_summary_at_period_start = :period_summary_at_period_start
+                      WHERE user_id = :userId";
         }
 
         $stmt = $db->prepare($query);
         $stmt->bindValue(':days', $days, SQLITE3_INTEGER);
+        $stmt->bindValue(':period_summary_at_period_start', $periodSummaryAtPeriodStart, SQLITE3_INTEGER);
         $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
 
         if ($stmt->execute()) {

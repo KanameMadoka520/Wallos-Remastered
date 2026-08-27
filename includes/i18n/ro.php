@@ -1,6 +1,8 @@
 <?php
 
-$i18n = [
+require __DIR__ . '/en.php';
+
+$i18n = array_replace($i18n, [
     // Registration page
     "create_account" => "Trebuie să creezi un cont înainte de a te putea conecta.",
     "username" => "Nume utilizator",
@@ -429,7 +431,7 @@ $i18n = [
     "insert_totp_code" => "Inserează codul TOTP",
 
 
-];
+]);
 
 
 ?>

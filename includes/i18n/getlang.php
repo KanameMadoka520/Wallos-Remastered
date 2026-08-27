@@ -30,14 +30,18 @@ function translate($text, $translations)
 {
     if (array_key_exists($text, $translations)) {
         return $translations[$text];
-    } else {
-        require 'en.php';
-        if (array_key_exists($text, $i18n)) {
-            return $i18n[$text];
-        } else {
-            return "[i18n String Missing]";
-        }
     }
+
+    static $englishTranslations = null;
+    if ($englishTranslations === null) {
+        $i18n = [];
+        require __DIR__ . '/en.php';
+        $englishTranslations = $i18n;
+    }
+
+    return array_key_exists($text, $englishTranslations)
+        ? $englishTranslations[$text]
+        : "[i18n String Missing]";
 }
 
 ?>
