@@ -9,7 +9,7 @@ try {
     fwrite(STDERR, $throwable->getMessage() . PHP_EOL);
     exit(1);
 }
-$db = new SQLite3($databaseFile);
+$db = new SQLite3($databaseFile, SQLITE3_OPEN_READWRITE);
 $db->busyTimeout(5000);
 $db->exec('PRAGMA journal_mode = WAL');
 $db->exec('PRAGMA synchronous = NORMAL');

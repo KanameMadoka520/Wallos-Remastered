@@ -280,6 +280,43 @@ function wallos_restore_migration_test_schema_rejection($testRoot)
     );
 }
 
+function wallos_restore_migration_test_logo_context($testRoot)
+{
+    $projectRoot = $testRoot . '/logo-context';
+    $logosRoot = $projectRoot . '/restored-logos';
+    mkdir($logosRoot . '/avatars', 0700, true);
+    file_put_contents($logosRoot . '/avatars/restored-avatar.png', 'avatar-fixture');
+    wallos_restore_migration_test_write_migration(
+        $projectRoot,
+        1,
+        <<<'PHP'
+if (!isset($wallosRestoreLogosDirectory)
+    || !is_file($wallosRestoreLogosDirectory . '/avatars/restored-avatar.png')) {
+    throw new RuntimeException('Restore migration did not receive the extracted Logo root.');
+}
+wallos_restore_migration_test_create_latest_schema($db);
+$db->exec('CREATE TABLE restore_logo_context (value TEXT NOT NULL)');
+$stmt = $db->prepare('INSERT INTO restore_logo_context (value) VALUES (:value)');
+$stmt->bindValue(':value', $wallosRestoreLogosDirectory, SQLITE3_TEXT);
+$stmt->execute();
+PHP
+    );
+
+    $databasePath = $projectRoot . '/wallos.db';
+    $emptyDatabase = new SQLite3($databasePath);
+    $emptyDatabase->exec('PRAGMA user_version = 1');
+    $emptyDatabase->close();
+    wallos_run_migrations_after_restore($projectRoot, $databasePath, $logosRoot);
+
+    wallos_restore_migration_test_assert(
+        (string) wallos_restore_migration_test_database_value(
+            $databasePath,
+            'SELECT value FROM restore_logo_context LIMIT 1'
+        ) === $logosRoot,
+        'Restore migration used the live Logo root instead of the extracted backup context.'
+    );
+}
+
 $testRoot = sys_get_temp_dir() . '/wallos-restore-migration-' . bin2hex(random_bytes(8));
 mkdir($testRoot, 0700, true);
 $testExitCode = 0;
@@ -299,6 +336,9 @@ try {
 
     wallos_restore_migration_test_schema_rejection($testRoot);
     echo "[PASS] incomplete latest schema rejection\n";
+
+    wallos_restore_migration_test_logo_context($testRoot);
+    echo "[PASS] restored Logo migration context\n";
 } catch (Throwable $throwable) {
     fwrite(STDERR, '[FAIL] ' . $throwable->getMessage() . PHP_EOL);
     $testExitCode = 1;

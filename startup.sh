@@ -10,6 +10,8 @@ READY_FILE=${WALLOS_READY_FILE:-$RUN_DIR/ready}
 STARTUP_LOG=${WALLOS_STARTUP_LOG:-/var/log/startup.log}
 CRON_LOG_DIR=${WALLOS_CRON_LOG_DIR:-/var/log/cron}
 DATABASE_FILE=$APP_ROOT/db/wallos.db
+RESTORE_TRANSACTION_FILE=$APP_ROOT/db/.wallos-restore-transaction
+DATABASE_MAINTENANCE_FILE=${WALLOS_DATABASE_MAINTENANCE_FILE:-$APP_ROOT/.tmp/database-maintenance.lock}
 DB_ENDPOINT_DIR=$APP_ROOT/endpoints/db
 PUID=${PUID:-82}
 PGID=${PGID:-82}
@@ -31,6 +33,20 @@ if [ "$SHUTDOWN_TIMEOUT" -lt 1 ] || [ "$SHUTDOWN_TIMEOUT" -gt 60 ]; then
   exit 1
 fi
 
+case "$PUID:$PGID" in
+  *[!0-9:]*|:*|*:)
+    echo "PUID and PGID must be positive numeric IDs." >&2
+    exit 1
+    ;;
+esac
+NGINX_UID=$(id -u nginx)
+NGINX_GID=$(id -g nginx)
+if [ "$PUID" -eq 0 ] || [ "$PGID" -eq 0 ] \
+  || [ "$PUID" -eq "$NGINX_UID" ] || [ "$PGID" -eq "$NGINX_GID" ]; then
+  echo "PUID and PGID must not use root or the reserved Nginx worker IDs." >&2
+  exit 1
+fi
+
 mkdir -p "$RUN_DIR"
 rm -f "$READY_FILE"
 echo "Startup preflight is running..." > "$STARTUP_LOG"
@@ -46,9 +62,22 @@ EOF
 
 groupmod -o -g "$PGID" www-data
 usermod -o -u "$PUID" www-data
+# Alpine's nginx package adds the web worker to the PHP data group. Remove that
+# supplementary membership before either service starts so a compromised web
+# worker cannot read SQLite, WAL, or backup contents.
+delgroup nginx www-data 2>/dev/null || true
 
 # Never interpret an empty database file as a new installation. For an
 # existing database, all checks before the migration runner are read-only.
+if [ -e "$RESTORE_TRANSACTION_FILE" ] || [ -L "$RESTORE_TRANSACTION_FILE" ]; then
+  echo "Refusing to start: an incomplete database restore transaction requires recovery." >&2
+  exit 1
+fi
+if [ -e "$DATABASE_MAINTENANCE_FILE" ] || [ -L "$DATABASE_MAINTENANCE_FILE" ]; then
+  echo "Refusing to start: a stale database maintenance marker requires recovery." >&2
+  exit 1
+fi
+
 if [ -e "$DATABASE_FILE" ]; then
   if [ ! -f "$DATABASE_FILE" ] || [ ! -s "$DATABASE_FILE" ]; then
     echo "Refusing to start: wallos.db exists but is not a non-empty regular file." >&2
@@ -71,13 +100,20 @@ fi
 
 mkdir -p "$APP_ROOT/images/uploads/logos/avatars"
 mkdir -p "$APP_ROOT/backups"
+mkdir -p "$APP_ROOT/.tmp"
 mkdir -p "$CRON_LOG_DIR"
 
-# Database and backup mounts contain private data. Keep them inaccessible to
-# unrelated container users while retaining write access for PHP.
+# Database and backup mounts contain private data. Preserve the configured
+# PUID/PGID sharing model while keeping the Nginx worker out of that group.
 chown -R www-data:www-data "$APP_ROOT/db" "$APP_ROOT/backups"
 find "$APP_ROOT/db" "$APP_ROOT/backups" -type d -exec chmod 0770 {} +
 find "$APP_ROOT/db" "$APP_ROOT/backups" -type f -exec chmod 0660 {} +
+# Nginx may traverse (but not list or modify) only the DB mount root so it can
+# stat the fixed restore journal. The reserved-ID check and group removal above
+# keep database files inaccessible to the worker.
+chmod 0771 "$APP_ROOT/db"
+chown www-data:www-data "$APP_ROOT/.tmp"
+chmod 0711 "$APP_ROOT/.tmp"
 
 # Uploaded logos are public assets served by Nginx, so they remain readable
 # but never executable. Do not recursively alter the shared /tmp directory.

@@ -35,6 +35,12 @@ try {
         wallos_database_throwable_is_busy($throwable),
         'Expected busy throwable detection to work.'
     );
+    $closedDatabase = new SQLite3(':memory:');
+    $closedDatabase->close();
+    wallos_database_busy_contract_assert(
+        wallos_database_get_last_error_message($closedDatabase) === '',
+        'Busy detection must tolerate a connection closed for maintenance lock upgrade.'
+    );
 
     $payload = wallos_database_build_busy_payload($i18n);
     wallos_database_busy_contract_assert($payload['success'] === false, 'Busy payload must be an error.');

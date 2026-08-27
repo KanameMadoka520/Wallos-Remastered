@@ -120,7 +120,7 @@ For an identity provider on a private network, add the exact host or `host:port`
 
 The admin UI creates, downloads, verifies, and restores backups and controls automatic retention (14 days by default). A Remastered archive contains the SQLite database, logos/avatars/subscription images, and a verification manifest.
 
-Restore validates and migrates the archive in isolation, then replaces the database and logos under an exclusive runtime lock. It attempts a compensating rollback if replacement fails. These protections do not replace off-host backups: periodically download an archive, restore it into a test instance, and inspect subscriptions and images.
+Restore verifies every archived file, fully stages the new database and media inside their respective Docker volumes, migrates them, and marks the transaction committed only after joint verification. A pre-commit failure restores the old state; if rollback cannot finish, a durable journal keeps requests and container startup fail-closed instead of serving half-restored data. Public media returns maintenance status during the short cutover window rather than exposing a mixed tree. These protections do not replace off-host backups: periodically download an archive, restore it into a test instance, and inspect subscriptions and images.
 
 `/db/`, `/backups/`, and private subscription media must not be served as static paths. If the database is damaged or the container cannot start, copy the complete state before doing anything else; do not unpack files over a running instance. First restore into an empty instance is restricted to a direct local request to prevent public takeover.
 
