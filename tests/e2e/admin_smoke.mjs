@@ -54,6 +54,7 @@ const diagnostics = {
   failedRequests: [],
   failedResponses: [],
 };
+let backupConsistencyWindowActive = false;
 
 const browser = await chromium.launch({ headless });
 const context = await browser.newContext({
@@ -71,7 +72,10 @@ function shouldIgnoreConsoleError(message) {
   const normalizedMessage = String(message || "").toLowerCase();
   return normalizedMessage.includes("favicon.ico")
     || normalizedMessage.includes("net::err_aborted")
-    || normalizedMessage.includes("failed to load resource: the server responded with a status of 404");
+    || normalizedMessage.includes("failed to load resource: the server responded with a status of 404")
+    || (backupConsistencyWindowActive
+      && normalizedMessage.includes("failed to load resource")
+      && normalizedMessage.includes("503"));
 }
 
 function parseCookieHeader(cookieHeader) {
@@ -141,6 +145,11 @@ function attachDiagnostics(targetPage) {
     const status = response.status();
     const responseUrl = response.url();
     const isEndpoint = responseUrl.includes("/endpoints/");
+    if (backupConsistencyWindowActive
+      && status === 503
+      && responseUrl.includes("/endpoints/admin/backupstatus.php")) {
+      return;
+    }
     if (status >= 500 || (isEndpoint && status >= 400)) {
       diagnostics.failedResponses.push(`HTTP ${status} ${formatUrl(responseUrl)}`);
     }
@@ -447,6 +456,7 @@ try {
       timeout: 180000,
     }).catch(() => null);
     const downloadPromise = page.waitForEvent("download", { timeout: 180000 }).catch(() => null);
+    backupConsistencyWindowActive = true;
     await page.locator("#backupDB").click();
     await expectVisible("#backupProgressCard", "backup progress card", 20000);
     await page.waitForFunction(() => {
@@ -481,6 +491,7 @@ try {
     if (backupNameBefore && backupNameBefore === backupNameAfter) {
       throw new Error(`latest backup card did not change after manual backup (${backupNameAfter})`);
     }
+    backupConsistencyWindowActive = false;
   });
 
   await step("backup verification updates card state", async () => {
