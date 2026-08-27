@@ -1,6 +1,7 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
+require_once '../../includes/currency_update_schedule.php';
 
 $shouldUpdate = true;
 
@@ -12,13 +13,8 @@ if (isset($_POST['force']) && $_POST['force'] === "true") {
     $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
     $result = $stmt->execute();
 
-    if ($result) {
-        $lastUpdateDate = new DateTime($result);
-        $currentDate = new DateTime();
-        $lastUpdateDateString = $lastUpdateDate->format('Y-m-d');
-        $currentDateString = $currentDate->format('Y-m-d');
-        $shouldUpdate = $lastUpdateDateString < $currentDateString;
-    }
+    $lastUpdateRow = $result ? $result->fetchArray(SQLITE3_ASSOC) : false;
+    $shouldUpdate = wallos_currency_rates_should_update($lastUpdateRow['date'] ?? null);
 
     if (!$shouldUpdate) {
         echo "Rates are current, no need to update.";

@@ -1,6 +1,8 @@
 <?php
 
-$i18n = [
+require __DIR__ . '/en.php';
+
+$i18n = array_replace($i18n, [
     // Registration page
     "create_account" => "Preden se lahko prijavite, morate ustvariti račun",
     "username" => "Uporabniško ime",
@@ -373,7 +375,7 @@ $i18n = [
     "delete_user_info" => "Če izbrišete uporabnika, boste izbrisali tudi vse njegove naročnine in nastavitve.",
     "create_user" => "Ustvari uporabnika",
     "oidc_settings" => "OIDC nastavitve",
-    "oidc_auth_enabled" => "Omogoči OIDC prijavo",
+    "oidc_oauth_enabled" => "Omogoči OIDC prijavo",
     "create_user_automatically" => "Samodejno ustvari uporabnika",
     "disable_password_login" => "Onemogoči prijavo z geslom",
     "smtp_settings" => "Nastavitve SMTP",
@@ -420,7 +422,7 @@ $i18n = [
     // TOTP Page
     "insert_totp_code" => "Vnesite kodo TOTP",
 
-];
+]);
 
 
 ?>

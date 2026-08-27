@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "고독 새로고침 중 에러가 발생했습니다:",
   error_fetching_image_results: "이미지 가져오기에 실패했습니다:",
@@ -41,9 +41,8 @@ let i18n = {
   copied_to_clipboard: "클립보드에 복사되었습니다",
   // Calendar
   price: "가격",
-  category: "카테고리",
   paid_by: "지불자",
   payment_method: "결제 수단",
   notes: "메모",
   export: "내보내기",
-};
+});

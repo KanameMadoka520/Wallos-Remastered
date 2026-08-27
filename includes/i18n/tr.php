@@ -1,6 +1,8 @@
 <?php
 
-$i18n = [
+require __DIR__ . '/en.php';
+
+$i18n = array_replace($i18n, [
     // Registration page
     "create_account" => "Giriş yapabilmeniz için önce bir hesap oluşturmanız gerekiyor",
     "username" => "Kullanıcı Adı",
@@ -380,7 +382,7 @@ $i18n = [
     "delete_user_info" => "Bir kullanıcının silinmesi aynı zamanda tüm aboneliklerinin ve ayarlarının da silinmesine neden olur.",
     "create_user" => "Kullanıcı Oluştur",
     "oidc_settings" => "OpenID Connect Ayarları",
-    "oidc_auth_enabled" => "OpenID Connect Kimlik Doğrulaması Etkinleştirildi",
+    "oidc_oauth_enabled" => "OpenID Connect Kimlik Doğrulaması Etkinleştirildi",
     "create_user_automatically" => "OpenID Connect ile giriş yapıldığında kullanıcı otomatik olarak oluşturulsun",
     "disable_password_login" => "Parola ile giriş devre dışı bırakılsın",
     "smtp_settings" => "SMTP Ayarları",
@@ -427,7 +429,7 @@ $i18n = [
     // TOTP Page
     "insert_totp_code" => "Lütfen TOTP kodunuzu girin",
 
-];
+]);
 
 
 ?>

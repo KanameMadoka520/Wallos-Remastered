@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "Eroare la reîncărcarea abonamentului:",
   error_fetching_image_results: "Eroare la încărcarea imaginilor:",
@@ -39,11 +39,10 @@ let i18n = {
   this_will_delete_all_data: "Această acțiune va șterge toate datele tale și nu poate fi anulată. Vrei să continui?",
   success: "Succes",
   copied_to_clipboard: "Copiat în clipboard",
-  // Calendar 
+  // Calendar
   price: "Preț",
-  category: "Categorie",
   paid_by: "Plătit de",
   payment_method: ",Metoda de plată",
   notes: "Notițe",
   export: "Export",
-}
+});

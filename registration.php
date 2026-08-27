@@ -20,6 +20,7 @@ require_once 'includes/version.php';
 
 $loginCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/login.css');
 $registrationJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/registration.js');
+$i18nEnglishJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/i18n/en.js');
 $i18nJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/i18n/' . $lang . '.js');
 $i18nGetLangJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/i18n/getlang.js');
 $apiJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/api.js');
@@ -312,7 +313,10 @@ wallos_log_request($db, 0, '');
         window.colorTheme = "<?= $colorTheme ?>";
     </script>
     <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
+    <script type="text/javascript" src="scripts/i18n/en.js?<?= $i18nEnglishJsVersion ?>"></script>
+    <?php if ($lang !== 'en'): ?>
     <script type="text/javascript" src="scripts/i18n/<?= $lang ?>.js?<?= $i18nJsVersion ?>"></script>
+    <?php endif; ?>
     <script type="text/javascript" src="scripts/i18n/getlang.js?<?= $i18nGetLangJsVersion ?>"></script>
     <script type="text/javascript" src="scripts/api.js?<?= $apiJsVersion ?>"></script>
     <script type="text/javascript" src="scripts/registration.js?<?= $registrationJsVersion ?>"></script>

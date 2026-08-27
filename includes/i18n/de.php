@@ -1,6 +1,8 @@
 <?php
 
-$i18n = [
+require __DIR__ . '/en.php';
+
+$i18n = array_replace($i18n, [
     // Registration page
     "create_account" => "Bitte erstelle zunächst einen Account, um dich einloggen zu können",
     "username" => "Benutzername",
@@ -80,7 +82,7 @@ $i18n = [
     "Weekly" => "Wöchentlich",
     "Monthly" => "Monatlich",
     "Yearly" => "Jährlich",
-    "dayly" => "Tag(e)",
+    "daily" => "Tag(e)",
     "weekly" => "Woche(n)",
     "monthly" => "Monat(e)",
     "yearly" => "Jahr(e)",
@@ -427,7 +429,7 @@ $i18n = [
     // TOTP Page
     "insert_totp_code" => "Bitte geben Sie den TOTP-Code ein",
 
-];
+]);
 
 
 ?>

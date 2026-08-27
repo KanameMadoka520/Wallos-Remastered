@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "Fout bij het herladen van abonnement:",
   error_fetching_image_results: "Fout bij het ophalen van afbeeldingsresultaten:",
@@ -39,11 +39,10 @@ let i18n = {
   this_will_delete_all_data: "Dit zal al je gegevens verwijderen en kan niet ongedaan worden gemaakt. Doorgaan?",
   success: "Succes",
   copied_to_clipboard: "Gekopieerd naar klembord",
-  // Calendar 
+  // Calendar
   price: "Prijs",
-  category: "Categorie",
   paid_by: "Betaald door",
   payment_method: "Betaalmethode",
   notes: "Notities",
   export: "Exporteren"
-}
+});

@@ -10,6 +10,7 @@
 .dockerignore
 db/
 backups/
+logos/
 images/uploads/logos/
 .env
 .env.*

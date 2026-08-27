@@ -88,13 +88,33 @@ try {
         'Cron jobs must be installed once instead of being loaded as both system and user schedules.'
     );
 
+    wallos_startup_contract_assert(
+        !file_exists(__DIR__ . '/../Dockerfile.local'),
+        'The obsolete bellamy/wallos:latest Dockerfile.local build path must stay removed.'
+    );
+    foreach (['README.md', 'README_EN.md'] as $readmeName) {
+        $readme = wallos_startup_contract_source($readmeName);
+        wallos_startup_contract_assert(
+            strpos($readme, 'Dockerfile.local') === false,
+            $readmeName . ' must not recommend the obsolete local-image build path.'
+        );
+    }
+
     $dockerIgnore = wallos_startup_contract_source('.dockerignore');
-    foreach (['node_modules/', 'tests/', 'screenshots/', '.planning/'] as $ignoredPath) {
+    foreach (['node_modules/', 'tests/', 'screenshots/', '.planning/', 'db/', 'backups/', 'logos/', 'images/uploads/logos/'] as $ignoredPath) {
         wallos_startup_contract_assert(
             strpos($dockerIgnore, $ignoredPath) !== false,
             'Production image context must exclude ' . $ignoredPath
         );
     }
+
+    $gitIgnore = wallos_startup_contract_source('.gitignore');
+    wallos_startup_contract_assert(
+        strpos($gitIgnore, '/logos/*') !== false
+            && strpos($gitIgnore, '!/logos/.gitkeep') !== false
+            && file_exists(__DIR__ . '/../logos/.gitkeep'),
+        'The root runtime logo mount must exist without allowing real media into Git.'
+    );
 
     echo "Startup and migration safety contracts passed.\n";
 } catch (Throwable $throwable) {

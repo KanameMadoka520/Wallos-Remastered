@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "Chyba při načítání předplatného:",
   error_fetching_image_results: "Chyba při načítání výsledků obrázků:",
@@ -39,11 +39,10 @@ let i18n = {
   this_will_delete_all_data: "Tím se odstraní všechna vaše data a nelze to vrátit zpět. Pokračovat?",
   success: "Úspěch",
   copied_to_clipboard: "Zkopírováno do schránky",
-  // Calendar 
+  // Calendar
   price: "Cena",
-  category: "Kategorie",
   paid_by: "Platí",
   payment_method: "Platební metoda",
   notes: "Poznámky",
   export: "Exportovat",
-}
+});

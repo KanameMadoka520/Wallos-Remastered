@@ -9,6 +9,7 @@ require_once 'includes/timezone_settings.php';
 require_once 'includes/security_rate_limit_presets.php';
 require_once 'includes/runtime_observability.php';
 require_once 'includes/system_maintenance.php';
+require_once 'includes/oidc_settings.php';
 
 if ($isAdmin != 1) {
     header('Location: index.php');
@@ -21,28 +22,21 @@ $result = $stmt->execute();
 $settings = $result->fetchArray(SQLITE3_ASSOC);
 $subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
 
-// get OIDC settings
-$stmt = $db->prepare('SELECT * FROM oauth_settings WHERE id = 1');
-$result = $stmt->execute();
-$oidcSettings = $result->fetchArray(SQLITE3_ASSOC);
+// Resolve database values together with any declarative OIDC overrides.
+$oidcConfiguration = wallos_get_effective_oidc_configuration($db);
+$oidcSettings = wallos_get_oidc_public_settings($oidcConfiguration);
+$oidcManagedFields = $oidcConfiguration['managed_fields'];
+$oidcNotes = $oidcConfiguration['notes'];
 
-if ($oidcSettings === false) {
-    // Table is empty or no row with id=1, set defaults
-    $oidcSettings = [
-        'name' => '',
-        'client_id' => '',
-        'client_secret' => '',
-        'authorization_url' => '',
-        'token_url' => '',
-        'user_info_url' => '',
-        'redirect_url' => '',
-        'logout_url' => '',
-        'user_identifier_field' => 'sub',
-        'scopes' => 'openid email profile',
-        'auth_style' => 'auto',
-        'auto_create_user' => 0,
-        'password_login_disabled' => 0
-    ];
+function wallos_oidc_input_attrs($field, array $managedFields)
+{
+    if (!isset($managedFields[$field])) {
+        return '';
+    }
+
+    return 'disabled data-managed-by="'
+        . htmlspecialchars((string) $managedFields[$field], ENT_QUOTES, 'UTF-8')
+        . '"';
 }
 
 function wallos_format_datetime_local_value($value)
@@ -866,63 +860,94 @@ $pageSections = [
         </header>
         <div class="admin-form">
             <div class="form-group-inline">
-                <input type="checkbox" id="oidcEnabled" <?= $settings['oidc_oauth_enabled'] ? 'checked' : '' ?>
+                <input type="checkbox" id="oidcEnabled" <?= $oidcConfiguration['enabled'] ? 'checked' : '' ?>
+                    <?= wallos_oidc_input_attrs('enabled', $oidcManagedFields) ?>
                     onchange="toggleOidcEnabled()" />
                 <label for="oidcEnabled"><?= translate('oidc_oauth_enabled', $i18n) ?></label>
             </div>
             <div class="form-group">
                 <input type="text" id="oidcName" placeholder="<?= translate('provider_name', $i18n) ?>" autocomplete="off"
-                    value="<?= htmlspecialchars($oidcSettings['name'], ENT_QUOTES, 'UTF-8') ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['name'], ENT_QUOTES, 'UTF-8') ?>"
+                    <?= wallos_oidc_input_attrs('name', $oidcManagedFields) ?> />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcClientId" placeholder="<?= translate('client_id', $i18n) ?>" autocomplete="off"
-                    value="<?= htmlspecialchars($oidcSettings['client_id'], ENT_QUOTES, 'UTF-8') ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['client_id'], ENT_QUOTES, 'UTF-8') ?>"
+                    <?= wallos_oidc_input_attrs('client_id', $oidcManagedFields) ?> />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcClientSecret" placeholder="<?= translate('client_secret', $i18n) ?>" autocomplete="off"
-                    value="<?= htmlspecialchars($oidcSettings['client_secret'], ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="password" id="oidcClientSecret" placeholder="<?= translate('client_secret', $i18n) ?>" autocomplete="new-password"
+                    value="" data-secret-configured="<?= $oidcSettings['client_secret_configured'] ? 'true' : 'false' ?>"
+                    <?= wallos_oidc_input_attrs('client_secret', $oidcManagedFields) ?> />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcAuthUrl" placeholder="<?= translate('auth_url', $i18n) ?>" autocomplete="off"
-                    value="<?= htmlspecialchars($oidcSettings['authorization_url'], ENT_QUOTES, 'UTF-8') ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['authorization_url'], ENT_QUOTES, 'UTF-8') ?>"
+                    <?= wallos_oidc_input_attrs('authorization_url', $oidcManagedFields) ?> />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcTokenUrl" placeholder="<?= translate('token_url', $i18n) ?>" autocomplete="off"
-                    value="<?= htmlspecialchars($oidcSettings['token_url'], ENT_QUOTES, 'UTF-8') ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['token_url'], ENT_QUOTES, 'UTF-8') ?>"
+                    <?= wallos_oidc_input_attrs('token_url', $oidcManagedFields) ?> />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcUserInfoUrl" placeholder="<?= translate('user_info_url', $i18n) ?>" autocomplete="off"
-                    value="<?= htmlspecialchars($oidcSettings['user_info_url'], ENT_QUOTES, 'UTF-8') ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['user_info_url'], ENT_QUOTES, 'UTF-8') ?>"
+                    <?= wallos_oidc_input_attrs('user_info_url', $oidcManagedFields) ?> />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcRedirectUrl" placeholder="<?= translate('redirect_url', $i18n) ?>" autocomplete="off"
-                    value="<?= htmlspecialchars($oidcSettings['redirect_url'], ENT_QUOTES, 'UTF-8') ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['redirect_url'], ENT_QUOTES, 'UTF-8') ?>"
+                    <?= wallos_oidc_input_attrs('redirect_url', $oidcManagedFields) ?> />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcLogoutUrl" placeholder="<?= translate('logout_url', $i18n) ?>" autocomplete="off"
-                    value="<?= htmlspecialchars($oidcSettings['logout_url'], ENT_QUOTES, 'UTF-8') ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['logout_url'], ENT_QUOTES, 'UTF-8') ?>"
+                    <?= wallos_oidc_input_attrs('logout_url', $oidcManagedFields) ?> />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcUserIdentifierField" placeholder="<?= translate('user_identifier_field', $i18n) ?>" autocomplete="off"
-                    value="<?= htmlspecialchars($oidcSettings['user_identifier_field'], ENT_QUOTES, 'UTF-8') ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['user_identifier_field'], ENT_QUOTES, 'UTF-8') ?>"
+                    <?= wallos_oidc_input_attrs('user_identifier_field', $oidcManagedFields) ?> />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcScopes" placeholder="<?= translate('scopes', $i18n) ?>" autocomplete="off"
-                    value="<?= htmlspecialchars($oidcSettings['scopes'], ENT_QUOTES, 'UTF-8') ?>" />
+                    value="<?= htmlspecialchars($oidcSettings['scopes'], ENT_QUOTES, 'UTF-8') ?>"
+                    <?= wallos_oidc_input_attrs('scopes', $oidcManagedFields) ?> />
             </div>
             <div class="form-group">
                 <input type="hidden" id="oidcAuthStyle" placeholder="<?= translate('auth_style', $i18n) ?>" autocomplete="off"
                     value="<?= htmlspecialchars($oidcSettings['auth_style'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group-inline">
-                <input type="checkbox" id="oidcAutoCreateUser" <?= $oidcSettings['auto_create_user'] ? 'checked' : '' ?> />
+                <input type="checkbox" id="oidcAutoCreateUser" <?= $oidcSettings['auto_create_user'] ? 'checked' : '' ?>
+                    <?= wallos_oidc_input_attrs('auto_create_user', $oidcManagedFields) ?> />
                 <label for="oidcAutoCreateUser"><?= translate('create_user_automatically', $i18n) ?></label>
             </div>
             <div class="form-group-inline">
                 <input type="checkbox" id="oidcPasswordLoginDisabled"
-                    <?= $oidcSettings['password_login_disabled'] ? 'checked' : '' ?> />
+                    <?= $oidcSettings['password_login_disabled'] ? 'checked' : '' ?>
+                    <?= wallos_oidc_input_attrs('password_login_disabled', $oidcManagedFields) ?> />
                 <label for="oidcPasswordLoginDisabled"><?= translate('disable_password_login', $i18n) ?></label>
             </div>
+            <div class="form-group-inline">
+                <input type="checkbox" id="oidcRequireEmailVerified"
+                    <?= !empty($oidcSettings['require_email_verified']) ? 'checked' : '' ?>
+                    <?= wallos_oidc_input_attrs('require_email_verified', $oidcManagedFields) ?> />
+                <label for="oidcRequireEmailVerified"><?= translate('require_email_verified_linking', $i18n) ?></label>
+            </div>
+            <?php if (!empty($oidcManagedFields) || !empty($oidcNotes)): ?>
+                <div class="settings-notes">
+                    <?php if (!empty($oidcManagedFields)): ?>
+                        <p><i class="fa-solid fa-circle-info"></i> <?= translate('oidc_env_managed_info', $i18n) ?></p>
+                    <?php endif; ?>
+                    <?php foreach ($oidcNotes as $oidcNote): ?>
+                        <p><i class="fa-solid fa-circle-info"></i>
+                            <?= htmlspecialchars($oidcNote, ENT_QUOTES, 'UTF-8') ?>
+                        </p>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
             <div class="buttons">
                 <input type="submit" class="thin mobile-grow" value="<?= translate('save', $i18n) ?>"
                     id="saveOidcSettingsButton" onClick="saveOidcSettingsButton()" />
@@ -1337,7 +1362,7 @@ $pageSections = [
     // find unused upload logos
 
     // Get all logos in the subscriptions table
-    $query = 'SELECT logo FROM subscriptions';
+    $query = 'SELECT logo, logo_variant FROM subscriptions';
     $stmt = $db->prepare($query);
     $result = $stmt->execute();
 
@@ -1345,6 +1370,7 @@ $pageSections = [
     $logosOnDB = [];
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         $logosOnDB[] = $row['logo'];
+        $logosOnDB[] = $row['logo_variant'] ?? null;
     }
 
     // Get all logos in the payment_methods table

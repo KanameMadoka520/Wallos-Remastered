@@ -1,6 +1,8 @@
 <?php
 
-$i18n = [
+require __DIR__ . '/en.php';
+
+$i18n = array_replace($i18n, [
     // Registration page
     "create_account" => "ログインする前にアカウントを作成する必要があります",
     "username" => "ユーザー名",
@@ -381,7 +383,7 @@ $i18n = [
     "delete_user_info" => "ユーザーを削除すると、そのユーザーのサブスクリプションと設定もすべて削除されます。",
     "create_user" => "ユーザーを作成",
     "oidc_settings" => "OIDC設定",
-    "oidc_auth_enabled" => "OIDC認証を有効にする",
+    "oidc_oauth_enabled" => "OIDC認証を有効にする",
     "create_user_automatically" => "OIDCユーザーを自動的に作成する",
     "disable_password_login" => "パスワードログインを無効にする",
     "smtp_settings" => "SMTP設定",
@@ -429,7 +431,7 @@ $i18n = [
     "insert_totp_code" => "TOTPコードを入力してください",
     
 
-];
+]);
 
 
 ?>

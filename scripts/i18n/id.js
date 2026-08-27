@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "Terjadi kesalahan saat memuat ulang langganan:",
   error_fetching_image_results: "Terjadi kesalahan saat mengambil hasil gambar:",
@@ -41,9 +41,8 @@ let i18n = {
   copied_to_clipboard: "Disalin ke papan klip",
   // Calendar
   price: "Harga",
-  category: "Kategori", // Kunci ini sudah ada di bagian "Settings", namun karena konteksnya bisa berbeda (misalnya di tampilan Kalender), saya tetap menerjemahkannya di sini juga.
   paid_by: "Dibayar oleh",
   payment_method: "Metode pembayaran",
   notes: "Catatan",
   export: "Ekspor",
-}
+});

@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: wallos-remastered:v5.4.5-remastered.3
+    image: wallos-remastered:v5.4.5-remastered.4
     container_name: wallos-remastered
     ports:
       - "18282:80/tcp"

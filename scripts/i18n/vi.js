@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "Lỗi tải lại đăng ký:",
   error_fetching_image_results: "Lỗi khi tìm nạp kết quả hình ảnh:",
@@ -39,11 +39,10 @@ let i18n = {
   this_will_delete_all_data: "Điều này sẽ xóa tất cả dữ liệu của bạn và không thể hoàn tác. Tiếp tục?",
   success: "Thành công",
   copied_to_clipboard: "Đã sao chép vào bảng tạm",
-  // Calendar 
+  // Calendar
   price: "Giá",
-  category: "Danh mục",
   paid_by: "Người thanh toán",
   payment_method: "Phương thức thanh toán",
   notes: "Ghi chú",
   export: "Xuất",
-}
+});

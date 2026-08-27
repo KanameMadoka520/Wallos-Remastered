@@ -1,6 +1,8 @@
 <?php
 
-$i18n = [
+require __DIR__ . '/en.php';
+
+$i18n = array_replace($i18n, [
     // Registration
     "create_account" => 'Devi creare un account prima di poter accedere',
     "username" => 'Nome utente',
@@ -399,7 +401,7 @@ $i18n = [
     "delete_user_info" => "L'eliminazione di un utente eliminerà anche tutte le sue iscrizioni e impostazioni.",
     "create_user" => "Crea utente",
     "oidc_settings" => "Impostazioni OIDC",
-    "oidc_auth_enabled" => "Autenticazione OIDC abilitata",
+    "oidc_oauth_enabled" => "Autenticazione OIDC abilitata",
     "create_user_automatically" => "Crea utente automaticamente",
     "disable_password_login" => "Disabilita la connessione con password",
     "smtp_settings" => "Impostazioni SMTP",
@@ -448,6 +450,6 @@ $i18n = [
 
     // TOTP Page
     "insert_totp_code" => "Inserisci il codice TOTP",
-];
+]);
 
 ?>

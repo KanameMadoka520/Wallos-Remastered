@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "Грешка при освежавању претплате:",
   error_fetching_image_results: "Грешка при преузимању резултата слика:",
@@ -41,9 +41,8 @@ let i18n = {
   copied_to_clipboard: "Копирано у привремену меморију",
   // Calendar
   price: "Цена",
-  category: "Категорија",
   paid_by: "Плаћено од стране",
   payment_method: "Метод плаћања",
   notes: "Белешке",
   export: "Извоз",
-}
+});

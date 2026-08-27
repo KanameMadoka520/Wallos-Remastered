@@ -117,7 +117,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
     $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
     $remasteredVersionValid = strpos($versionPhp, '$version = "v5.4.5";') !== false
-        && strpos($versionPhp, '$remasteredVersion = "v5.4.5-remastered.3";') !== false
+        && strpos($versionPhp, '$remasteredVersion = "v5.4.5-remastered.4";') !== false
         && strpos($aboutPhp, 'Current running remastered build.') !== false
         && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= htmlspecialchars($version') !== false
         && strpos($aboutPhp, 'Remastered update scope') !== false;
@@ -128,6 +128,101 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         $remasteredVersionValid
             ? 'About identifies the current v5.4.5 compatibility baseline and keeps the Remastered scope visible.'
             : 'Expected version.php and About to identify the v5.4.5 Remastered compatibility baseline.'
+    );
+
+    $oidcSettingsPhp = wallos_regression_read_repo_file($config, 'includes/oidc_settings.php');
+    $oidcAdminPhp = wallos_regression_read_repo_file($config, 'admin.php');
+    $oidcLoginPhp = wallos_regression_read_repo_file($config, 'login.php');
+    $oidcCallbackPhp = wallos_regression_read_repo_file($config, 'includes/oidc/handle_oidc_callback.php');
+    $oidcApiPhp = wallos_regression_read_repo_file($config, 'api/admin/get_oidc_settings.php');
+    $oidcSavePhp = wallos_regression_read_repo_file($config, 'endpoints/admin/saveoidcsettings.php');
+    $oidcLogoutPhp = wallos_regression_read_repo_file($config, 'logout.php');
+    $declarativeOidcValid = wallos_regression_text_has_all($oidcSettingsPhp, array(
+        "'OIDC_ENABLED'",
+        "'OIDC_ISSUER'",
+        "'OIDC_CLIENT_SECRET_FILE'",
+        "'OIDC_REQUIRE_EMAIL_VERIFIED'",
+        'wallos_fetch_oidc_discovery_document',
+        'validate_oidc_endpoint_url($url, $db)',
+        'CURLOPT_FOLLOWLOCATION, false',
+        'CURLOPT_RESOLVE',
+        'wallos_get_oidc_public_settings',
+        "\$settings['client_secret'] = \$configured ? '********' : '';",
+        'wallos_merge_oidc_submitted_settings',
+    )) && wallos_regression_text_has_all($oidcAdminPhp, array(
+        'wallos_get_effective_oidc_configuration($db)',
+        'wallos_get_oidc_public_settings($oidcConfiguration)',
+        'type="password" id="oidcClientSecret"',
+        "wallos_oidc_input_attrs('client_secret'",
+    )) && strpos($oidcAdminPhp, "htmlspecialchars(\$oidcSettings['client_secret']") === false
+        && wallos_regression_text_has_all($oidcLoginPhp, array(
+            'wallos_get_effective_oidc_configuration($db)',
+            "\$oidcConfiguration['is_configured']",
+            "\$_SESSION['oidc_state_issued_at'] = time();",
+        )) && wallos_regression_text_has_all($oidcCallbackPhp, array(
+            'wallos_get_effective_oidc_configuration($db)',
+            "\$oidcConfiguration['enabled'] !== 1",
+            'validate_oidc_endpoint_url($tokenUrl, $db)',
+        )) && wallos_regression_text_has_all($oidcApiPhp, array(
+            'wallos_get_oidc_public_settings($oidcConfiguration)',
+            'managed_fields',
+        )) && strpos($oidcApiPhp, "\$oidcConfiguration['settings']") === false
+        && wallos_regression_text_has_all($oidcSavePhp, array(
+            'wallos_merge_oidc_submitted_settings',
+            'validate_oidc_endpoint_url',
+        )) && wallos_regression_text_has_all($oidcLogoutPhp, array(
+            'wallos_oidc_is_http_url($logoutUrl)',
+            "strpos(\$logoutUrl, '?') === false ? '?' : '&'",
+            'http_build_query([',
+        ));
+    $results[] = wallos_regression_make_result(
+        $declarativeOidcValid ? 'PASS' : 'FAIL',
+        'static',
+        'declarative-oidc-contract',
+        $declarativeOidcValid
+            ? 'Declarative OIDC keeps managed overrides, pinned discovery, and secret-safe presentation paths.'
+            : 'Expected OIDC env/issuer overrides, SSRF-pinned discovery, managed inputs, and secret redaction.'
+    );
+
+    $periodMigrationPhp = wallos_regression_read_repo_file($config, 'migrations/000080.php');
+    $periodNotificationsPhp = wallos_regression_read_repo_file($config, 'includes/period_summary_notifications.php');
+    $periodSettingsPhp = wallos_regression_read_repo_file($config, 'settings.php');
+    $notificationEndpointPhp = wallos_regression_read_repo_file($config, 'endpoints/notifications/savenotificationsettings.php');
+    $notificationCronPhp = wallos_regression_read_repo_file($config, 'endpoints/cronjobs/sendnotifications.php');
+    $notificationsJs = wallos_regression_read_repo_file($config, 'scripts/notifications.js');
+    $periodSummaryValid = wallos_regression_text_has_all($periodMigrationPhp, array(
+        "PRAGMA table_info('notification_settings')",
+        'period_summary_at_period_start INTEGER DEFAULT 0',
+        'WHERE period_summary_at_period_start IS NULL',
+    )) && wallos_regression_text_has_all($periodNotificationsPhp, array(
+        'function wallos_get_period_summary_snapshot',
+        'wallos_budget_period_amount',
+        'wallos_get_subscription_price_rules_map',
+        'function wallos_build_notification_message',
+        "'is_period_start'",
+    )) && wallos_regression_text_has_all($periodSettingsPhp, array(
+        'id="period_summary_at_period_start"',
+        "translate('send_period_summary_at_period_start'",
+    )) && wallos_regression_text_has_all($notificationsJs, array(
+        "getElementById('period_summary_at_period_start')",
+        'period_summary_at_period_start: periodSummaryAtPeriodStart',
+    )) && wallos_regression_text_has_all($notificationEndpointPhp, array(
+        'period_summary_at_period_start = :period_summary_at_period_start',
+        "bindValue(':period_summary_at_period_start'",
+    )) && wallos_regression_text_has_all($notificationCronPhp, array(
+        'wallos_get_period_summary_snapshot',
+        'wallos_build_notification_message',
+        '$periodSummaryPayerId = array_key_first($household)',
+        'foreach ($notify as $payerUserId => $perUser)',
+        '{{period_summary}}',
+    )) && strpos($notificationCronPhp, 'foreach ($notify as $userId => $perUser)') === false;
+    $results[] = wallos_regression_make_result(
+        $periodSummaryValid ? 'PASS' : 'FAIL',
+        'static',
+        'period-summary-notification-contract',
+        $periodSummaryValid
+            ? 'Payment-period summaries keep additive migration, UI persistence, Remastered calculations, and one-recipient delivery.'
+            : 'Expected migration 000080, settings persistence, summary calculations, and summary-aware notification channels.'
     );
 
     $statsCalculationsPhp = wallos_regression_read_repo_file($config, 'includes/stats_calculations.php');
@@ -433,9 +528,9 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         '@filemtime(__DIR__ . \'/../scripts/common.js\')',
         '@filemtime(__DIR__ . \'/../service-worker.js\')',
     )) && wallos_regression_text_has_all($serviceWorkerJs, array(
-        "static-cache-v19",
-        "pages-cache-v19",
-        "logos-cache-v19",
+        "static-cache-v20",
+        "pages-cache-v20",
+        "logos-cache-v20",
         "WALLOS_CLEAR_CACHES",
         "WALLOS_CACHE_STATUS",
         "currentCaches",
@@ -970,10 +1065,12 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $settingsPhp = wallos_regression_read_repo_file($config, 'settings.php');
     $profileApiKeyEscapingValid = strpos($profilePhp, "htmlspecialchars(\$userData['api_key'], ENT_QUOTES, 'UTF-8')") !== false
         || strpos($profilePhp, "htmlspecialchars(\$userData['api_key'] ?? '', ENT_QUOTES, 'UTF-8')") !== false;
+    $oidcSecretPresentationSafe = strpos($adminPhp, 'type="password" id="oidcClientSecret"') !== false
+        && strpos($adminPhp, 'value="" data-secret-configured=') !== false
+        && strpos($adminPhp, "htmlspecialchars(\$oidcSettings['client_secret']") === false;
     $selfXssEscapingValid = wallos_regression_text_has_all($adminPhp, array(
         "htmlspecialchars(\$settings['server_url'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$user['email'], ENT_QUOTES, 'UTF-8')",
-        "htmlspecialchars(\$oidcSettings['client_secret'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$settings['smtp_password'], ENT_QUOTES, 'UTF-8')",
     )) && wallos_regression_text_has_all($profilePhp, array(
         "htmlspecialchars(\$userData['username'], ENT_QUOTES, 'UTF-8')",
@@ -984,7 +1081,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         "htmlspecialchars(\$notificationsWebhook['payload'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$category['name'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$payment['name'], ENT_QUOTES, 'UTF-8')",
-    )) && $profileApiKeyEscapingValid;
+    )) && $profileApiKeyEscapingValid && $oidcSecretPresentationSafe;
     $results[] = wallos_regression_make_result(
         $selfXssEscapingValid ? 'PASS' : 'FAIL',
         'static',

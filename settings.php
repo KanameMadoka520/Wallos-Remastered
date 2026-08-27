@@ -88,7 +88,7 @@ $pageSections = [
                 <div class="account-budget-field">
                     <label for="budget_period_type"><?= translate('budget_period', $i18n) ?></label>
                     <select id="budget_period_type" name="budget_period_type">
-                        <option value="weekly" <?= $periodBudgetType === 'weekly' ? 'selected' : '' ?>><?= translate('weekly', $i18n) ?></option>
+                        <option value="weekly" <?= $periodBudgetType === 'weekly' ? 'selected' : '' ?>><?= translate('budget_period_weekly', $i18n) ?></option>
                         <option value="fortnightly" <?= $periodBudgetType === 'fortnightly' ? 'selected' : '' ?>><?= translate('fortnightly', $i18n) ?></option>
                         <option value="monthly" <?= $periodBudgetType === 'monthly' ? 'selected' : '' ?>><?= translate('monthly', $i18n) ?></option>
                     </select>
@@ -203,6 +203,9 @@ $pageSections = [
 
     if ($rowCount == 0) {
         $notifications['days'] = 1;
+        $notifications['period_summary_at_period_start'] = 0;
+    } elseif (!isset($notifications['period_summary_at_period_start'])) {
+        $notifications['period_summary_at_period_start'] = 0;
     }
 
     // Email notifications
@@ -470,6 +473,13 @@ $pageSections = [
                     </select>
                     <input type="submit" class="thin" value="<?= translate('save', $i18n) ?>" id="saveNotifications"
                         onClick="saveNotifications()" />
+                </div>
+                <div class="form-group-inline">
+                    <input type="checkbox" id="period_summary_at_period_start" name="period_summary_at_period_start"
+                        <?= !empty($notifications['period_summary_at_period_start']) ? 'checked' : '' ?>>
+                    <label for="period_summary_at_period_start">
+                        <?= translate('send_period_summary_at_period_start', $i18n) ?>
+                    </label>
                 </div>
             </section>
             <section class="account-notifications-section">

@@ -59,7 +59,7 @@ function wallos_database_safety_run_php($script, array $arguments = [])
 
 function wallos_database_safety_write_migration_inventory($projectRoot)
 {
-    for ($number = 1; $number <= 79; $number++) {
+    for ($number = 1; $number <= 80; $number++) {
         $path = $projectRoot . '/migrations/' . sprintf('%06d.php', $number);
         if (file_put_contents($path, "<?php\n") === false) {
             throw new RuntimeException('Unable to create test migration inventory.');
@@ -97,13 +97,20 @@ function wallos_database_safety_create_current_database($databaseFile)
             notify INTEGER DEFAULT 0,
             auto_renew INTEGER DEFAULT 1,
             lifecycle_status TEXT DEFAULT "active",
-            sort_order INTEGER DEFAULT 0
+            sort_order INTEGER DEFAULT 0,
+            logo_text_color TEXT,
+            logo_variant TEXT
         )');
         $db->exec('CREATE TABLE categories (id INTEGER PRIMARY KEY)');
         $db->exec('CREATE TABLE currencies (id INTEGER PRIMARY KEY)');
         $db->exec('CREATE TABLE payment_methods (id INTEGER PRIMARY KEY)');
         $db->exec('CREATE TABLE cycles (id INTEGER PRIMARY KEY, days INTEGER NOT NULL, name TEXT NOT NULL)');
         $db->exec('CREATE TABLE settings (user_id INTEGER, week_starts_sunday INTEGER DEFAULT 0)');
+        $db->exec('CREATE TABLE notification_settings (
+            user_id INTEGER,
+            days INTEGER DEFAULT 1,
+            period_summary_at_period_start INTEGER DEFAULT 0
+        )');
         $db->exec('CREATE TABLE migrations (migration TEXT NOT NULL)');
         $db->exec('CREATE INDEX idx_subscriptions_user_inactive_next_payment
                    ON subscriptions(user_id, inactive, next_payment)');
@@ -112,9 +119,9 @@ function wallos_database_safety_create_current_database($databaseFile)
         $db->exec("INSERT INTO cycles (id, days, name) VALUES (5, 0, 'One-time')");
 
         $marker = $db->prepare('INSERT INTO migrations (migration) VALUES (:migration)');
-        for ($number = 1; $number <= 79; $number++) {
+        for ($number = 1; $number <= 80; $number++) {
             $migration = sprintf('migrations/%06d.php', $number);
-            if ($number === 79) {
+            if ($number === 80) {
                 $migration = '../../' . $migration;
             }
             $marker->bindValue(':migration', $migration, SQLITE3_TEXT);
@@ -150,6 +157,13 @@ try {
     wallos_database_safety_assert(copy($bootstrapSource, $bootstrapScript), 'Unable to copy bootstrap script.');
     wallos_database_safety_assert(copy($verifySource, $verifyScript), 'Unable to copy verification script.');
     wallos_database_safety_write_migration_inventory($temporaryRoot);
+
+    $verifySourceText = file_get_contents($verifySource);
+    wallos_database_safety_assert(
+        is_string($verifySourceText)
+            && strpos($verifySourceText, 'WALLOS_REQUIRED_MIGRATION_PREFIX = 80') !== false,
+        'Database verification minimum migration prefix must track migration 000080.'
+    );
 
     $bootstrapSourceText = file_get_contents($bootstrapSource);
     wallos_database_safety_assert(
@@ -219,7 +233,7 @@ try {
     $formalResult = wallos_database_safety_run_php($verifyScript);
     wallos_database_safety_assert(
         $formalResult['exit_code'] === 0
-            && strpos($formalResult['stdout'], '79 contiguous migrations') !== false,
+            && strpos($formalResult['stdout'], '80 contiguous migrations') !== false,
         'Formal verification rejected a valid current schema or legacy marker: ' . $formalResult['stderr']
     );
 

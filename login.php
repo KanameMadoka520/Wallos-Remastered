@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/connect.php';
 require_once 'includes/checkuser.php';
+require_once 'includes/oidc_settings.php';
 
 require_once 'includes/i18n/languages.php';
 require_once 'includes/i18n/getlang.php';
@@ -20,6 +21,9 @@ require_once 'includes/version.php';
 
 $loginCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/login.css');
 $loginJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/login.js');
+$i18nEnglishJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/i18n/en.js');
+$i18nJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/i18n/' . $lang . '.js');
+$i18nGetLangJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/i18n/getlang.js');
 $decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/decorative-background.css');
 $decorativeBackgroundJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/decorative-background.js');
 $publicEntryTransitionCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/public-entry-transition.css');
@@ -132,47 +136,29 @@ $publicPageBranding = wallos_get_public_page_branding($db);
 $decorativeBackgroundEnabled = wallos_is_public_decorative_background_enabled();
 $decorativeBackgroundClass = $decorativeBackgroundEnabled ? 'decorative-background-enabled' : 'decorative-background-disabled';
 
-// Check if OIDC is Enabled
+// Resolve database settings together with declarative OIDC overrides.
 $password_login_disabled = false;
 $oidcEnabled = false;
-$oidcQuery = "SELECT oidc_oauth_enabled FROM admin";
-$oidcResult = $db->query($oidcQuery);
-$oidcRow = $oidcResult->fetchArray(SQLITE3_ASSOC);
-if ($oidcRow) {
-    $oidcEnabled = $oidcRow['oidc_oauth_enabled'] == 1;
-    if ($oidcEnabled) {
-        // Fetch OIDC settings
-        $oidcSettingsQuery = "SELECT * FROM oauth_settings WHERE id = 1";
-        $oidcSettingsResult = $db->query($oidcSettingsQuery);
-        $oidcSettings = $oidcSettingsResult->fetchArray(SQLITE3_ASSOC);
-        if (!$oidcSettings) {
-            $oidcEnabled = false;
-        } else {
-            $oidc_name = $oidcSettings['name'] ?? '';
-            $password_login_disabled = $oidcSettings['password_login_disabled'] == 1;
+$oidcConfiguration = wallos_get_effective_oidc_configuration($db);
+$oidcEnabled = $oidcConfiguration['enabled'] === 1 && $oidcConfiguration['is_configured'];
+if ($oidcEnabled) {
+    $oidcSettings = $oidcConfiguration['settings'];
+    $oidc_name = $oidcSettings['name'] ?? '';
+    $password_login_disabled = (int) ($oidcSettings['password_login_disabled'] ?? 0) === 1;
 
-            // Generate a CSRF-protecting state string
-            $secondsInMonth = 30 * 24 * 60 * 60;
-            if (session_status() === PHP_SESSION_NONE) {
-                session_set_cookie_params(wallos_build_session_cookie_params($secondsInMonth));
-                session_start();
-            }
-            $state = bin2hex(random_bytes(16));
-            $_SESSION['oidc_state'] = $state;
-            $_SESSION['oidc_state_issued_at'] = time();
+    $state = bin2hex(random_bytes(16));
+    $_SESSION['oidc_state'] = $state;
+    $_SESSION['oidc_state_issued_at'] = time();
 
-            // Build the OIDC authorization URL
-            $params = http_build_query([
-                'response_type' => 'code',
-                'client_id' => $oidcSettings['client_id'],
-                'redirect_uri' => $oidcSettings['redirect_url'],
-                'scope' => $oidcSettings['scopes'],
-                'state' => $state,
-            ]);
-
-            $oidc_auth_url = rtrim($oidcSettings['authorization_url'], '?') . '?' . $params;
-        }
-    }
+    $params = http_build_query([
+        'response_type' => 'code',
+        'client_id' => $oidcSettings['client_id'],
+        'redirect_uri' => $oidcSettings['redirect_url'],
+        'scope' => $oidcSettings['scopes'],
+        'state' => $state,
+    ]);
+    $authorizationUrl = rtrim((string) $oidcSettings['authorization_url'], '?&');
+    $oidc_auth_url = $authorizationUrl . (strpos($authorizationUrl, '?') === false ? '?' : '&') . $params;
 }
 
 $loginFailed = false;
@@ -386,6 +372,11 @@ wallos_log_request($db, 0, '');
         window.color_theme = "<?= $colorTheme ?>";
     </script>
     <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
+    <script type="text/javascript" src="scripts/i18n/en.js?<?= $i18nEnglishJsVersion ?>"></script>
+    <?php if ($lang !== 'en'): ?>
+    <script type="text/javascript" src="scripts/i18n/<?= $lang ?>.js?<?= $i18nJsVersion ?>"></script>
+    <?php endif; ?>
+    <script type="text/javascript" src="scripts/i18n/getlang.js?<?= $i18nGetLangJsVersion ?>"></script>
     <script type="text/javascript" src="scripts/login.js?<?= $loginJsVersion ?>"></script>
     <script type="text/javascript" src="scripts/public-entry-transition.js?<?= $publicEntryTransitionJsVersion ?>"></script>
 </head>

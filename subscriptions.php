@@ -700,6 +700,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       'MMM d, yyyy'
     );
 
+    $print = [];
     foreach ($subscriptions as $subscription) {
       if ($subscription['inactive'] == 1 && isset($settings['hideDisabledSubscriptions']) && $settings['hideDisabledSubscriptions'] === 'true') {
         continue;
@@ -707,6 +708,10 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       $id = $subscription['id'];
       $print[$id]['id'] = $id;
       $print[$id]['logo'] = $subscription['logo'] != "" ? "images/uploads/logos/" . $subscription['logo'] : "";
+      $print[$id]['logo_variant'] = !empty($subscription['logo_variant'])
+        ? "images/uploads/logos/" . $subscription['logo_variant']
+        : "";
+      $print[$id]['logo_text_color'] = $subscription['logo_text_color'] ?? null;
       $print[$id]['name'] = $subscription['name'];
       $cycle = $subscription['cycle'];
       $frequency = $subscription['frequency'];

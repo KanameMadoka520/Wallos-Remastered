@@ -1,4 +1,4 @@
-let i18n = {
+globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
   // Dashboard
   error_reloading_subscription: "定期購入の再読み込みエラー:",
   error_fetching_image_results: "画像取得結果エラー:",
@@ -41,9 +41,8 @@ let i18n = {
   copied_to_clipboard: "クリップボードにコピーされました",
   // Calendar
   price: "価格",
-  category: "カテゴリ",
   paid_by: "支払い者",
   payment_method: "支払い方法",
   notes: "メモ",
   export: "エクスポート",
-}
+});

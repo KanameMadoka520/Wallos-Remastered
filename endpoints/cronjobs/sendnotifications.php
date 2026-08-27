@@ -13,6 +13,7 @@ require __DIR__ . '/../../libs/PHPMailer/SMTP.php';
 require __DIR__ . '/../../libs/PHPMailer/Exception.php';
 
 require __DIR__ . '/../../includes/currency_formatter.php';
+require __DIR__ . '/../../includes/period_summary_notifications.php';
 
 require 'settimezone.php';
 
@@ -58,6 +59,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
     }
 
     $days = 1;
+    $periodSummaryAtPeriodStart = 0;
     $emailNotificationsEnabled = false;
     $gotifyNotificationsEnabled = false;
     $telegramNotificationsEnabled = false;
@@ -70,13 +72,15 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
     $serverchanNotificationsEnabled = false;
 
     // Get notification settings (how many days before the subscription ends should the notification be sent)
-    $query = "SELECT days FROM notification_settings WHERE user_id = :userId";
+    $query = "SELECT days, period_summary_at_period_start
+              FROM notification_settings WHERE user_id = :userId";
     $stmt = $db->prepare($query);
     $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
     $result = $stmt->execute();
 
     if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         $days = $row['days'];
+        $periodSummaryAtPeriodStart = (int) ($row['period_summary_at_period_start'] ?? 0);
     }
 
     // Check if email notifications are enabled and get the settings
@@ -254,6 +258,14 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             $categories[$rowCategory['id']] = $rowCategory;
         }
 
+        $currentDate = new DateTime('now');
+        $periodSummary = wallos_get_period_summary_snapshot($db, $userId, $currentDate, $i18n);
+        $sendPeriodStartSummary = $periodSummaryAtPeriodStart === 1
+            && is_array($periodSummary)
+            && !empty($periodSummary['is_period_start']);
+        $periodSummaryLine = $sendPeriodStartSummary ? (string) ($periodSummary['line'] ?? '') : '';
+        $periodSummaryPayerId = array_key_first($household);
+
         $query = "SELECT * FROM subscriptions WHERE user_id = :user_id AND notify = :notify AND inactive = :inactive AND lifecycle_status = :lifecycle_status ORDER BY payer_user_id ASC";
         $stmt = $db->prepare($query);
         $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
@@ -264,7 +276,6 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
         $notify = [];
         $i = 0;
-        $currentDate = new DateTime('now');
         while ($rowSubscription = $resultSubscriptions->fetchArray(SQLITE3_ASSOC)) {
             if ($rowSubscription['notify_days_before'] !== -1) {
                 $daysToCompare = $rowSubscription['notify_days_before'];
@@ -298,6 +309,13 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             }
         }
 
+        // Route the account-wide summary through exactly one household entry,
+        // avoiding duplicate summaries when several members have renewals.
+        if ($sendPeriodStartSummary && $periodSummaryPayerId !== null
+            && !array_key_exists($periodSummaryPayerId, $notify)) {
+            $notify[$periodSummaryPayerId] = [];
+        }
+
         if (!empty($notify)) {
 
             // Email notifications if enabled
@@ -318,14 +336,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                     $defaultEmail = $defaultUser['email'];
                     $defaultName = $defaultUser['username'];
 
-                    foreach ($notify as $userId => $perUser) {
-                        $message = "The following subscriptions are up for renewal:\n";
-
-                        foreach ($perUser as $subscription) {
-                            $dayText = getDaysText($subscription['days']);
-                            $message .= $subscription['name'] . " for " . $subscription['formatted_price'] . " (" . $dayText . ")\n";
-                        }
-
+                    foreach ($notify as $payerUserId => $perUser) {
                         $smtpAuth = (isset($email["smtpUsername"]) && $email["smtpUsername"] != "") || (isset($email["smtpPassword"]) && $email["smtpPassword"] != "");
 
                         $mail = new PHPMailer(true);
@@ -348,12 +359,21 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                         }
 
                         $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                        $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                        $stmt->bindValue(':userId', $payerUserId, SQLITE3_INTEGER);
                         $result = $stmt->execute();
                         $user = $result->fetchArray(SQLITE3_ASSOC);
 
                         $emailaddress = !empty($user['email']) ? $user['email'] : $defaultEmail;
                         $name = !empty($user['name']) ? $user['name'] : $defaultName;
+                        $message = wallos_build_notification_message(
+                            '',
+                            $perUser,
+                            $periodSummaryLine,
+                            $sendPeriodStartSummary && (int) $payerUserId === (int) $periodSummaryPayerId
+                        );
+                        if ($message === '') {
+                            continue;
+                        }
 
                         $mail->setFrom($email['fromEmail'], 'Wallos App');
                         $mail->addAddress($emailaddress, $name);
@@ -390,24 +410,23 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                 if (!$ssrf) {
                     echo "SSRF attempt detected for Discord webhook URL. Notifications not sent.<br />";
                 } else {
-                    foreach ($notify as $userId => $perUser) {
+                    foreach ($notify as $payerUserId => $perUser) {
                         // Get name of user from household table
                         $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                        $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                        $stmt->bindValue(':userId', $payerUserId, SQLITE3_INTEGER);
                         $result = $stmt->execute();
                         $user = $result->fetchArray(SQLITE3_ASSOC);
 
                         $title = translate('wallos_notification', $i18n);
 
-                        if ($user['name']) {
-                            $message = $user['name'] . ", the following subscriptions are up for renewal:\n";
-                        } else {
-                            $message = "The following subscriptions are up for renewal:\n";
-                        }
-
-                        foreach ($perUser as $subscription) {
-                            $dayText = getDaysText($subscription['days']);
-                            $message .= $subscription['name'] . " for " . $subscription['formatted_price'] . " (" . $dayText . ")\n";
+                        $message = wallos_build_notification_message(
+                            $user['name'] ?? '',
+                            $perUser,
+                            $periodSummaryLine,
+                            $sendPeriodStartSummary && (int) $payerUserId === (int) $periodSummaryPayerId
+                        );
+                        if ($message === '') {
+                            continue;
                         }
 
                         $postfields = [
@@ -437,7 +456,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
                         $response = curl_exec($ch);
 
-                        if ($result === false) {
+                        if ($response === false) {
                             echo "Error sending notifications: " . curl_error($ch) . "<br />";
                         } else {
                             echo "Discord Notifications sent<br />";
@@ -454,22 +473,21 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                 if (!$ssrf) {
                     echo "SSRF attempt detected for Gotify server URL. Notifications not sent.<br />";
                 } else {
-                    foreach ($notify as $userId => $perUser) {
+                    foreach ($notify as $payerUserId => $perUser) {
                         // Get name of user from household table
                         $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                        $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                        $stmt->bindValue(':userId', $payerUserId, SQLITE3_INTEGER);
                         $result = $stmt->execute();
                         $user = $result->fetchArray(SQLITE3_ASSOC);
 
-                        if ($user['name']) {
-                            $message = $user['name'] . ", the following subscriptions are up for renewal:\n";
-                        } else {
-                            $message = "The following subscriptions are up for renewal:\n";
-                        }
-
-                        foreach ($perUser as $subscription) {
-                            $dayText = getDaysText($subscription['days']);
-                            $message .= $subscription['name'] . " for " . $subscription['formatted_price'] . " (" . $dayText . ")\n";
+                        $message = wallos_build_notification_message(
+                            $user['name'] ?? '',
+                            $perUser,
+                            $periodSummaryLine,
+                            $sendPeriodStartSummary && (int) $payerUserId === (int) $periodSummaryPayerId
+                        );
+                        if ($message === '') {
+                            continue;
                         }
 
                         $data = array(
@@ -512,22 +530,21 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Telegram notifications if enabled
             if ($telegramNotificationsEnabled) {
-                foreach ($notify as $userId => $perUser) {
+                foreach ($notify as $payerUserId => $perUser) {
                     // Get name of user from household table
                     $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                    $stmt->bindValue(':userId', $payerUserId, SQLITE3_INTEGER);
                     $result = $stmt->execute();
                     $user = $result->fetchArray(SQLITE3_ASSOC);
 
-                    if ($user['name']) {
-                        $message = $user['name'] . ", the following subscriptions are up for renewal:\n";
-                    } else {
-                        $message = "The following subscriptions are up for renewal:\n";
-                    }
-
-                    foreach ($perUser as $subscription) {
-                        $dayText = getDaysText($subscription['days']);
-                        $message .= $subscription['name'] . " for " . $subscription['formatted_price'] . " (" . $dayText . ")\n";
+                    $message = wallos_build_notification_message(
+                        $user['name'] ?? '',
+                        $perUser,
+                        $periodSummaryLine,
+                        $sendPeriodStartSummary && (int) $payerUserId === (int) $periodSummaryPayerId
+                    );
+                    if ($message === '') {
+                        continue;
                     }
 
                     $data = array(
@@ -562,24 +579,22 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // PushPlus notifications if enabled
             if ($pushplusNotificationsEnabled) {
-                foreach ($notify as $userId => $perUser) {
+                foreach ($notify as $payerUserId => $perUser) {
                     // Get name of user from household table
                     $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                    $stmt->bindValue(':userId', $payerUserId, SQLITE3_INTEGER);
                     $result = $stmt->execute();
                     $user = $result->fetchArray(SQLITE3_ASSOC);
 
                     // Build Message Content
-                    $messageContent = "";
-                    if ($user['name']) {
-                        $messageContent = $user['name'] . ", the following subscriptions are up for renewal:\n";
-                    } else {
-                        $messageContent = "The following subscriptions are up for renewal:\n";
-                    }
-
-                    foreach ($perUser as $subscription) {
-                        $dayText = getDaysText($subscription['days']);
-                        $messageContent .= $subscription['name'] . " for " . $subscription['formatted_price'] . " (" . $dayText . ")\n";
+                    $messageContent = wallos_build_notification_message(
+                        $user['name'] ?? '',
+                        $perUser,
+                        $periodSummaryLine,
+                        $sendPeriodStartSummary && (int) $payerUserId === (int) $periodSummaryPayerId
+                    );
+                    if ($messageContent === '') {
+                        continue;
                     }
 
                     // Prepare PushPlus Data
@@ -628,24 +643,22 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                 if (!$ssrf) {
                     echo "SSRF attempt detected for Mattermost webhook URL. Notifications not sent.<br />";
                 } else {
-                    foreach ($notify as $userId => $perUser) {
+                    foreach ($notify as $payerUserId => $perUser) {
                         // Get name of user from household table
                         $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                        $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                        $stmt->bindValue(':userId', $payerUserId, SQLITE3_INTEGER);
                         $result = $stmt->execute();
                         $user = $result->fetchArray(SQLITE3_ASSOC);
 
                         // Build Message Content
-                        $messageContent = "";
-                        if ($user['name']) {
-                            $messageContent = $user['name'] . ", the following subscriptions are up for renewal:\n";
-                        } else {
-                            $messageContent = "The following subscriptions are up for renewal:\n";
-                        }
-
-                        foreach ($perUser as $subscription) {
-                            $dayText = getDaysText($subscription['days']);
-                            $messageContent .= $subscription['name'] . " for " . $subscription['formatted_price'] . " (" . $dayText . ")\n";
+                        $messageContent = wallos_build_notification_message(
+                            $user['name'] ?? '',
+                            $perUser,
+                            $periodSummaryLine,
+                            $sendPeriodStartSummary && (int) $payerUserId === (int) $periodSummaryPayerId
+                        );
+                        if ($messageContent === '') {
+                            continue;
                         }
 
                         // Prepare Mattermost Data
@@ -695,22 +708,21 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Pushover notifications if enabled
             if ($pushoverNotificationsEnabled) {
-                foreach ($notify as $userId => $perUser) {
+                foreach ($notify as $payerUserId => $perUser) {
                     // Get name of user from household table
                     $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                    $stmt->bindValue(':userId', $payerUserId, SQLITE3_INTEGER);
                     $result = $stmt->execute();
                     $user = $result->fetchArray(SQLITE3_ASSOC);
 
-                    if ($user['name']) {
-                        $message = $user['name'] . ", the following subscriptions are up for renewal:\n";
-                    } else {
-                        $message = "The following subscriptions are up for renewal:\n";
-                    }
-
-                    foreach ($perUser as $subscription) {
-                        $dayText = getDaysText($subscription['days']);
-                        $message .= $subscription['name'] . " for " . $subscription['formatted_price'] . " (" . $dayText . ")\n";
+                    $message = wallos_build_notification_message(
+                        $user['name'] ?? '',
+                        $perUser,
+                        $periodSummaryLine,
+                        $sendPeriodStartSummary && (int) $payerUserId === (int) $periodSummaryPayerId
+                    );
+                    if ($message === '') {
+                        continue;
                     }
 
                     $ch = curl_init();
@@ -741,22 +753,21 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                 if (!$ssrf) {
                     echo "SSRF attempt detected for Ntfy host URL. Notifications not sent.<br />";
                 } else {
-                    foreach ($notify as $userId => $perUser) {
+                    foreach ($notify as $payerUserId => $perUser) {
                         // Get name of user from household table
                         $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                        $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                        $stmt->bindValue(':userId', $payerUserId, SQLITE3_INTEGER);
                         $result = $stmt->execute();
                         $user = $result->fetchArray(SQLITE3_ASSOC);
 
-                        if ($user['name']) {
-                            $message = $user['name'] . ", the following subscriptions are up for renewal:\n";
-                        } else {
-                            $message = "The following subscriptions are up for renewal:\n";
-                        }
-
-                        foreach ($perUser as $subscription) {
-                            $dayText = getDaysText($subscription['days']);
-                            $message .= $subscription['name'] . " for " . $subscription['formatted_price'] . " (" . $dayText . ")\n";
+                        $message = wallos_build_notification_message(
+                            $user['name'] ?? '',
+                            $perUser,
+                            $periodSummaryLine,
+                            $sendPeriodStartSummary && (int) $payerUserId === (int) $periodSummaryPayerId
+                        );
+                        if ($message === '') {
+                            continue;
                         }
 
                         $headers = json_decode($ntfy["headers"], true);
@@ -806,17 +817,35 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                 if (!$ssrf) {
                     echo "SSRF attempt detected for webhook URL. Notifications not sent.<br />";;
                 } else {
-                    foreach ($notify as $userId => $perUser) {
+                    foreach ($notify as $payerUserId => $perUser) {
                         // Get name of user from household table
                         $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                        $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                        $stmt->bindValue(':userId', $payerUserId, SQLITE3_INTEGER);
                         $result = $stmt->execute();
                         $user = $result->fetchArray(SQLITE3_ASSOC);
                 
-                        if ($user['name']) {
-                            $payer = $user['name'];
+                        $payer = $user['name'] ?? '';
+                        $includePeriodSummary = $sendPeriodStartSummary
+                            && (int) $payerUserId === (int) $periodSummaryPayerId;
+
+                        // Webhook payloads are subscription-oriented. A
+                        // summary-only request is opt-in via {{period_summary}},
+                        // and the summary placeholder is filled only once.
+                        if (!$perUser && $includePeriodSummary
+                            && strpos((string) $webhook['payload'], '{{period_summary}}') !== false) {
+                            $perUser[] = [
+                                'name' => '',
+                                'formatted_price' => '',
+                                'currency' => '',
+                                'category' => '',
+                                'date' => '',
+                                'days' => 0,
+                                'url' => '',
+                                'notes' => '',
+                            ];
                         }
-                
+                        $periodSummaryPending = $includePeriodSummary;
+
                         foreach ($perUser as $subscription) {
                             // Ensure the payload is reset for each subscription
                             $payload = $webhook['payload'];
@@ -830,6 +859,8 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                             $payload = str_replace("{{subscription_days_until_payment}}", $subscription['days'], $payload);
                             $payload = str_replace("{{subscription_url}}", $subscription['url'], $payload);
                             $payload = str_replace("{{subscription_notes}}", $subscription['notes'], $payload);
+                            $payload = str_replace("{{period_summary}}", $periodSummaryPending ? $periodSummaryLine : '', $payload);
+                            $periodSummaryPending = false;
                 
                             // Initialize cURL for each subscription
                             $ch = curl_init();
@@ -874,23 +905,22 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
             // Serverchan notifications if enabled
             if ($serverchanNotificationsEnabled) {
-                foreach ($notify as $userId => $perUser) {
+                foreach ($notify as $payerUserId => $perUser) {
                     // Get name of user from household table
                     $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                    $stmt->bindValue(':userId', $payerUserId, SQLITE3_INTEGER);
                     $result = $stmt->execute();
                     $user = $result->fetchArray(SQLITE3_ASSOC);
 
                     $title = 'Wallos Notification';
-                    if ($user['name']) {
-                        $message = $user['name'] . ", the following subscriptions are up for renewal:\n";
-                    } else {
-                        $message = "The following subscriptions are up for renewal:\n";
-                    }
-
-                    foreach ($perUser as $subscription) {
-                        $dayText = getDaysText($subscription['days']);
-                        $message .= $subscription['name'] . " for " . $subscription['formatted_price'] . " (" . $dayText . ")\n";
+                    $message = wallos_build_notification_message(
+                        $user['name'] ?? '',
+                        $perUser,
+                        $periodSummaryLine,
+                        $sendPeriodStartSummary && (int) $payerUserId === (int) $periodSummaryPayerId
+                    );
+                    if ($message === '') {
+                        continue;
                     }
 
                     // Build Serverchan request

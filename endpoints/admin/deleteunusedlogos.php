@@ -3,7 +3,7 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint_admin.php';
 
-$query = 'SELECT logo FROM subscriptions';
+$query = 'SELECT logo, logo_variant FROM subscriptions';
 $stmt = $db->prepare($query);
 $result = $stmt->execute();
 
@@ -11,6 +11,7 @@ $logosOnDisk = [];
 $logosOnDB = [];
 while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $logosOnDB[] = $row['logo'];
+    $logosOnDB[] = $row['logo_variant'] ?? null;
 }
 
 $logosOnDB = array_unique($logosOnDB);

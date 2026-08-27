@@ -27,6 +27,7 @@ try {
         'subscriptions',
         'currencies',
         'settings',
+        'notification_settings',
         'cycles',
         'migrations',
     ];
@@ -44,7 +45,7 @@ try {
     $migrationResult = $db->query('SELECT migration FROM migrations');
     while ($row = $migrationResult->fetchArray(SQLITE3_ASSOC)) {
         $migration = str_replace('\\', '/', trim((string) ($row['migration'] ?? '')));
-        if (preg_match('#(?:^|/)' . preg_quote('migrations/000079.php', '#') . '$#', $migration) === 1) {
+        if (preg_match('#(?:^|/)' . preg_quote('migrations/000080.php', '#') . '$#', $migration) === 1) {
             $completedLatestMigration = true;
             break;
         }
@@ -66,6 +67,26 @@ try {
     foreach ($requiredUserColumns as $column) {
         if (!isset($userColumns[$column])) {
             throw new RuntimeException('required column missing');
+        }
+    }
+
+    $notificationColumns = [];
+    $columnResult = $db->query("PRAGMA table_info('notification_settings')");
+    while ($row = $columnResult->fetchArray(SQLITE3_ASSOC)) {
+        $notificationColumns[(string) ($row['name'] ?? '')] = true;
+    }
+    if (!isset($notificationColumns['period_summary_at_period_start'])) {
+        throw new RuntimeException('required notification column missing');
+    }
+
+    $subscriptionColumns = [];
+    $columnResult = $db->query("PRAGMA table_info('subscriptions')");
+    while ($row = $columnResult->fetchArray(SQLITE3_ASSOC)) {
+        $subscriptionColumns[(string) ($row['name'] ?? '')] = true;
+    }
+    foreach (['logo_text_color', 'logo_variant'] as $column) {
+        if (!isset($subscriptionColumns[$column])) {
+            throw new RuntimeException('required subscription logo column missing');
         }
     }
 
