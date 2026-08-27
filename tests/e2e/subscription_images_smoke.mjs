@@ -274,7 +274,7 @@ try {
     await page.goto(`${baseUrl}/subscriptions.php`, { waitUntil: "domcontentloaded" });
     await expectVisible("#subscriptions", "subscriptions container");
     await page.locator("#subscription-page-loading-overlay.is-visible").waitFor({ state: "hidden", timeout: 15000 }).catch(() => null);
-    await page.locator('[data-subscription-action="open-add-subscription"]').first().click();
+    await page.locator('[data-subscription-action="open-add-subscription"]:visible').first().click();
     await expectVisible("#subscription-form.is-open", "add subscription modal");
 
     const canUpload = await page.locator("#subs-form").getAttribute("data-can-upload-detail-image");

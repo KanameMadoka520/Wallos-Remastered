@@ -557,7 +557,7 @@ function wallos_hash_zip_entry(ZipArchive $zip, $entryName)
 
 function wallos_get_backup_manifest(ZipArchive $zip)
 {
-    $manifestRaw = $zip->getFromName('manifest.json', 0, ZipArchive::FL_NODIR);
+    $manifestRaw = $zip->getFromName('manifest.json');
     if ($manifestRaw === false) {
         return null;
     }
@@ -588,7 +588,7 @@ function wallos_verify_backup_archive($archivePath)
     }
 
     try {
-        $wallosDbIndex = $zip->locateName('wallos.db', ZipArchive::FL_NODIR);
+        $wallosDbIndex = $zip->locateName('wallos.db');
         if ($wallosDbIndex === false) {
             $result['errors'][] = 'Missing wallos.db';
             return $result;
@@ -625,7 +625,7 @@ function wallos_verify_backup_archive($archivePath)
                 continue;
             }
 
-            if ($zip->locateName($normalizedEntryName, ZipArchive::FL_NODIR) === false) {
+            if ($zip->locateName($normalizedEntryName) === false) {
                 $result['errors'][] = 'Missing file in archive: ' . $normalizedEntryName;
                 continue;
             }

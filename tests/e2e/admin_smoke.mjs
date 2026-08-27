@@ -495,6 +495,14 @@ try {
         || status.classList.contains("is-warning")
         || status.classList.contains("is-error");
     }, null, { timeout: 30000 });
+
+    const verificationStatus = await page.locator(".backup-card [data-backup-status]").first().evaluate((status) => ({
+      succeeded: status.classList.contains("is-success"),
+      text: String(status.textContent || "").trim(),
+    }));
+    if (!verificationStatus.succeeded) {
+      throw new Error(`new backup did not pass full manifest verification: ${verificationStatus.text || "unknown status"}`);
+    }
   });
 
   assertNoBrowserRuntimeErrors();
