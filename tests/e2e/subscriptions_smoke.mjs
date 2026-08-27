@@ -132,11 +132,16 @@ async function expectVisible(selector, label, timeout = 10000) {
 async function clickFirst(selector, label) {
   const locator = page.locator(selector);
   const count = await locator.count();
-  if (count < 1) {
-    throw new Error(`${label} not found: ${selector}`);
+
+  for (let index = 0; index < count; index += 1) {
+    const candidate = locator.nth(index);
+    if (await candidate.isVisible()) {
+      await candidate.click();
+      return;
+    }
   }
 
-  await locator.first().click();
+  throw new Error(`${label} has no visible match: ${selector}`);
 }
 
 async function clickAndWaitForNavigation(locator, label) {
@@ -152,7 +157,15 @@ async function clickAndWaitForNavigation(locator, label) {
 
 async function waitForSubscriptionsShell() {
   await expectVisible("#subscriptions", "subscriptions container");
-  await expectVisible("#subscription-page-tabs", "subscription page tabs");
+  const tabs = page.locator("#subscription-page-tabs");
+  if (await tabs.isVisible()) {
+    await expectVisible("#subscription-page-tabs", "subscription page tabs");
+  } else {
+    await expectVisible(
+      '.empty-page [data-subscription-action="open-add-subscription"]',
+      "empty-account add subscription action",
+    );
+  }
   await page.locator("#subscription-page-loading-overlay.is-visible").waitFor({ state: "hidden", timeout: 15000 }).catch(() => null);
 }
 
@@ -293,7 +306,7 @@ try {
   });
 
   await step("subscription page tabs navigate and reload cleanly", async () => {
-    const tabs = page.locator('[data-subscription-action="select-page-filter"]');
+    const tabs = page.locator('[data-subscription-action="select-page-filter"]:visible');
     const pageTabCount = await tabs.count();
     if (pageTabCount <= 1) {
       return;

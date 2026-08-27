@@ -84,6 +84,7 @@ function wallos_regression_build_suite_catalog()
                 'legacy-migration-safety' => 'Execute tests/legacy_migration_safety_test.php',
                 'restore-migration' => 'Execute tests/restore_migration_test.php',
                 'restore-atomicity' => 'Execute tests/restore_atomicity_test.php',
+                'backup-manifest-verification' => 'Execute tests/backup_manifest_verification_test.php',
                 'startup-safety' => 'Execute tests/startup_safety_contract_test.php',
                 'startup-process-supervision' => 'Execute tests/startup_process_supervision_test.php',
                 'upstream-security' => 'Execute tests/upstream_security_contract_test.php',

@@ -21,6 +21,7 @@ function wallos_regression_run_legacy_suite(array $config, array $suiteDefinitio
         'legacy-migration-safety' => 'tests/legacy_migration_safety_test.php',
         'restore-migration' => 'tests/restore_migration_test.php',
         'restore-atomicity' => 'tests/restore_atomicity_test.php',
+        'backup-manifest-verification' => 'tests/backup_manifest_verification_test.php',
         'startup-safety' => 'tests/startup_safety_contract_test.php',
         'startup-process-supervision' => 'tests/startup_process_supervision_test.php',
         'upstream-security' => 'tests/upstream_security_contract_test.php',
