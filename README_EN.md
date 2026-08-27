@@ -1,278 +1,192 @@
 # Wallos-Remastered
 
-[简体中文 README](README.md)
+> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.4.5-remastered.4`; upstream compatibility baseline: [`ellite/Wallos v5.4.5`](https://github.com/ellite/Wallos/tree/v5.4.5).
 
-## Overview
+[简体中文 README](README.md) · [Changelog (Chinese)](CHANGELOG.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
-`Wallos-Remastered` is a heavily customized branch based on upstream `Wallos`, designed for stronger admin operations, multi-user governance, controlled media delivery, and backup lifecycle management.
+## What this project is
 
-This repository is no longer identical to official Wallos defaults.
+Wallos-Remastered keeps the core Wallos subscription, statistics, multi-currency, notification, OIDC, and TOTP capabilities. It adds a Chinese-first experience, controlled multi-user operation, and maintenance features intended for a server that stays online for years.
 
-## Major Differences From Official Wallos
+This is not an unmodified copy of the upstream UI or a repackaged official image. Relevant fixes from upstream `v5.4.5` were ported deliberately and integrated with this branch's ledger, media, theme, and admin systems. Its deployment model, database schema, and some interactions therefore differ from official Wallos.
 
-- recommended deployment is a source build from this repository
-- default compose example uses port `18282`
-- persistent runtime directories include:
-  - `db`
-  - `logos`
-  - `backups`
-- stronger admin tooling
-- protected subscription media access
-- automated backups, verification, and restore-from-list
+## Key capabilities
 
-## First Admin Account
+- **Spending follows real payments:** record actual payments, special prices, one-time purchases, and monthly, yearly, or payment-period budgets; calendars and forecasts use the same data.
+- **Renewal dates stay anchored:** month-end, leap-day, manual-renewal, and scheduled updates share one date model. A January 31 renewal temporarily lands at February month-end, then returns to March 31.
+- **Large collections are manageable:** custom pages, drag sorting, one/two/three-column layouts, trash, detail popups, and account-synced display preferences.
+- **Subscription media goes beyond one logo:** store multiple images with thumbnail, preview, and original layers; private media is authenticated, and monochrome text logos can swap variants with the light/dark theme.
+- **Controlled multi-user hosting:** invitation codes, groups, bans and delayed deletion, admin password resets, login rate limits, request logs, and anomaly records.
+- **Backup and maintenance lifecycle:** automatic/manual database and logo backups, verification, download, restore, SQLite maintenance, log review, and image consistency checks.
+- **Container-friendly notifications and SSO:** send a spending summary at the beginning of a payment period and configure an identity provider declaratively with `OIDC_*` variables.
+- **Predictable translation fallback:** upstream language choices remain available; a known term missing in one locale falls back to English instead of exposing `[Translation Missing]`.
+- **Remastered presentation:** dynamic wallpaper, glass effects, custom themes/CSS, page transitions, immersive mode, and account-synced preferences.
 
-When the database is empty:
+## Differences from upstream Wallos v5.4.5
 
-- the app redirects to registration
-- the first successfully registered account becomes the initial admin
-- the current system treats user `id = 1` as the administrator
+| Area | Upstream Wallos | Wallos-Remastered |
+| --- | --- | --- |
+| Focus | General personal subscription tracker | Chinese-first, controlled multi-user, long-running self-hosted branch |
+| Deployment | Commonly uses the official prebuilt image | Builds this repository; defaults to port `18282` and pins the base image and important dependencies |
+| Spending model | Upstream subscription and statistics model | Adds an actual-payment ledger, special prices, value estimates, and several budgets with a shared forecast model |
+| Organization | Standard upstream list and filters | Adds pages, drag sorting, multi-column layout, trash, and detail popups |
+| Media | Primarily the upstream logo workflow | Adds themed logo variants, multi-image storage, three derived layers, authenticated reads, auditing, and bounded cleanup |
+| Administration | Upstream account/admin features | Adds invites, groups, bans, rate limits, access logs, maintenance advice, and action auditing |
+| Backup/restore | Keeps upstream capabilities | Extends them to database + logos, manifest verification, admin restore, runtime locking, and failure rollback |
+| Container SSO | OIDC can be managed in the UI | Keeps UI management and adds `OIDC_*` overrides, issuer discovery, and secret-file loading |
+| UI | Upstream pages and themes | Adds Chinese defaults, dynamic wallpaper, transitions, and account-level theme/layout preferences |
 
-For a fresh deployment, create your own admin account first.
+“Compatibility baseline” means that applicable `v5.4.5` behavior has been incorporated; it does not mean both trees are file-for-file identical. For example, logo search keeps Remastered's DuckDuckGo + Brave path instead of copying upstream's complete Google/selfh.st/Dashboard Icons UI. Do not mix the official and Remastered images or exchange databases without a tested backup.
 
-## Public Page Language Behavior
+## Docker deployment
 
-- login page defaults to Simplified Chinese
-- registration page defaults to Simplified Chinese
-- both pages include a language switcher
-- the current registration page language becomes the new user's initial language
+### Requirements
 
-## Recommended Docker Build Flow
+- Docker Engine 25 or newer
+- Docker Compose V2
+- A Linux host is recommended, with persistent space for the database, media, and backups
 
-Clone the repository and run from the repository root:
+The included Compose file uses strict bind mounts. Missing host paths are not silently created, reducing the risk of a typo starting an apparently empty new instance.
+
+### Fresh installation
 
 ```bash
 git clone https://github.com/KanameMadoka520/Wallos-Remastered.git
-cd Walllos_Remastered
+cd Wallos-Remastered
+mkdir -p logos backups
+cp -n db/wallos.empty.db db/wallos.db
 docker compose up -d --build
 ```
 
-## Default docker-compose Behavior
+Run `cp -n` **only for a fresh installation where `db/wallos.db` does not exist**; `-n` refuses to overwrite an existing file. The template is migrated offline on first startup. Existing instances should skip the initialization block and follow the upgrade procedure below.
 
-The repository root ships with a source-build `docker-compose.yaml`:
+Default persistent paths and port:
 
-```yaml
-services:
-  wallos:
-    build:
-      context: .
-      dockerfile: Dockerfile.local
-    image: wallos-remastered:latest
-    container_name: wallos-remastered
-    restart: unless-stopped
-    ports:
-      - "18282:80"
-    environment:
-      TZ: "Asia/Shanghai"
-    volumes:
-      - "./db:/var/www/html/db"
-      - "./logos:/var/www/html/images/uploads/logos"
-      - "./backups:/var/www/html/backups"
-```
+| Host path | Container purpose |
+| --- | --- |
+| `./db` | SQLite database |
+| `./logos` | Logos, avatars, and subscription images |
+| `./backups` | Automatic and manual backups |
+| `18282` | Web port |
 
-## Health Check
+Verify startup:
 
 ```bash
+docker compose ps
+curl http://127.0.0.1:18282/health.php
+docker compose logs --tail=100 wallos
+```
+
+A healthy endpoint returns `OK`. Open `http://HOST:18282` and register; the first account (`id = 1`) is the initial administrator. Immediately review registration, invitation, login-rate-limit, and backup-retention settings. The About page should show both the Remastered release and the upstream baseline.
+
+### Upgrading an existing Remastered instance
+
+Create and verify a backup in the admin UI first, then copy `db`, `logos`, and `backups` to another disk or machine. After confirming that copy:
+
+```bash
+docker compose down
+git fetch --tags
+git checkout v5.4.5-remastered.4
+docker compose up -d --build
 curl http://127.0.0.1:18282/health.php
 ```
 
-Expected response:
+Before the web server and scheduler start, the entrypoint checks the database, runs migrations offline, and verifies the resulting schema. A missing/empty database, conflicting migration ledger, or unsupported schema stops startup instead of creating a deceptively valid empty database.
+
+Upgrade rules:
+
+- Never copy `wallos.empty.db`, delete existing persistent data, or replace its directories with empty mounts.
+- If you customized `docker-compose.yaml`, merge port, timezone, user-ID, reverse-proxy, secret, and OIDC settings manually.
+- Migrations from official Wallos or an old custom fork must be rehearsed against a database copy. Migration support cannot infer every third-party schema modification.
+- On failure, inspect `docker compose logs wallos`, preserve the original files and backup, and do not retry with an empty database.
+
+### Optional: payment-period start summary
+
+Enable “Send summary at start of each payment period” under Settings → Notifications and configure at least one channel that supports text summaries. In the account timezone, the scheduled job sends the projected amount needed on the first day of each weekly, fortnightly, or monthly period; when the payment-period budget is greater than `0`, it also includes the projected remainder. Normal text channels include it automatically; a custom webhook receives it only when its payload contains `{{period_summary}}`. The option is off by default and only sends a calculated summary—it does not create payment records or change renewal dates.
+
+### Optional: declarative OIDC
+
+OIDC can be configured in the admin UI or in the Compose `environment` section. A supplied `OIDC_*` value overrides its database counterpart at runtime; environment secrets are not copied back into the database.
+
+- `OIDC_ENABLED`, `OIDC_PROVIDER_NAME`, `OIDC_CLIENT_ID`: enablement, display name, and client ID.
+- `OIDC_ISSUER`: loads `/.well-known/openid-configuration`; `OIDC_AUTH_URL`, `OIDC_TOKEN_URL`, and `OIDC_USERINFO_URL` can override individual discovered endpoints.
+- `OIDC_CLIENT_SECRET_FILE`: reads the client secret from a file inside the container and takes priority over `OIDC_CLIENT_SECRET`; prefer a Docker Secret or read-only mount.
+- `OIDC_REDIRECT_URL`, `OIDC_LOGOUT_URL`, `OIDC_USER_IDENTIFIER`, `OIDC_SCOPES`: login-flow details.
+- `OIDC_AUTO_CREATE_USER`, `OIDC_DISABLE_PASSWORD_LOGIN`, `OIDC_REQUIRE_EMAIL_VERIFIED`: account creation, password-login, and verified-email policy.
+
+For an identity provider on a private network, add the exact host or `host:port` to the admin SSRF allowlist, or set `SSRF_ALLOWLIST`. Test a complete administrator login before disabling password authentication. Never commit the client secret in a repository Compose file.
+
+## Backup and restore
+
+The admin UI creates, downloads, verifies, and restores backups and controls automatic retention (14 days by default). A Remastered archive contains the SQLite database, logos/avatars/subscription images, and a verification manifest.
+
+Restore validates and migrates the archive in isolation, then replaces the database and logos under an exclusive runtime lock. It attempts a compensating rollback if replacement fails. These protections do not replace off-host backups: periodically download an archive, restore it into a test instance, and inspect subscriptions and images.
+
+`/db/`, `/backups/`, and private subscription media must not be served as static paths. If the database is damaged or the container cannot start, copy the complete state before doing anything else; do not unpack files over a running instance. First restore into an empty instance is restricted to a direct local request to prevent public takeover.
+
+## Security notes
+
+- Public, FRP, and reverse-proxy deployments must keep normal authentication and enable HTTPS at the edge. “Disable login” bypasses authentication only for a genuine direct-local request.
+- Send API keys in `X-API-Key` or `Authorization: Bearer ...`, not in URLs, logs, or screenshots.
+- Never commit administrator credentials, cookies, GitHub tokens, `.env`, databases, media, backups, or OIDC secrets.
+- Page CSRF tokens have a server-enforced 30-minute lifetime; refresh a long-idle page before submitting a form.
+- External logo, SMTP, webhook, and OIDC destinations are subject to SSRF and redirect controls. Rejection of private or unusual redirect targets can be expected behavior.
+- Expose port `18282` only to a trusted network or reverse proxy and review anomalies, slow requests, image audits, and maintenance actions regularly.
+
+See [SECURITY.md](SECURITY.md) for the full boundary and reporting process. The Chinese [FRP + Nginx + Fail2ban guide](FRP+Nginx+Fail2ban防刷站部署指南.md) covers a public gateway deployment.
+
+## Repository layout
 
 ```text
-OK
+api/, endpoints/          APIs, form actions, scheduled jobs, and database entrypoints
+includes/                 Shared billing, currency, media, backup, and security logic
+migrations/               Ordered SQLite migrations
+scripts/, styles/         Frontend interactions, themes, and styling
+tests/                    PHP/Playwright tests (excluded from the production image)
+db/                       Database template and runtime wallos.db
+logos/                    Runtime media bind mount (create it before first startup)
+backups/                  Runtime backup directory
+Dockerfile                Production source-build image
+docker-compose.yaml       Default single-container deployment
+startup.sh, nginx*.conf   Startup checks, process supervision, and web security boundaries
 ```
 
-## Regression Checks
+Runtime data does not belong in version control, and ignore rules are not a security boundary. Before every release, inspect root `logos/`, `db/wallos.db`, `backups/`, and `git status`; never stage real media, databases, archives, or credentials.
 
-After changing high-risk pages or shared request logic, run:
+## Development and testing
+
+Normal changes should receive PHP/JavaScript syntax checks, a health check, and the regression runner. The production image excludes `tests/` through `.dockerignore`, so `/var/www/html/tests` is not available inside the running app container. From the repository root on a Linux host, mount the source read-only into a temporary container and reuse the built image's PHP environment:
 
 ```bash
-docker exec wallos-local php /var/www/html/tests/regression_runner.php --base-url=http://127.0.0.1
+docker run --rm --network host --entrypoint php \
+  -v "$PWD:/work:ro" \
+  wallos-remastered:v5.4.5-remastered.4 \
+  /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 
-The runner checks public pages, default purple theme behavior, Service Worker cache contracts, unauthenticated endpoint `401` contracts, invalid-CSRF JSON contracts, subscription page JSON/HTML contracts, subscription frontend static contracts, API key transport rules, subscription image size slots, admin runtime observability/log rendering contracts, slow-request observability, admin maintenance recommendation refresh coverage, and the existing PHP logic regressions.
+The `--network host` example uses Linux Docker host networking. On Docker Desktop, choose the platform-specific hostname that reaches the host instead of assuming that container `127.0.0.1` is the application host.
 
-Authenticated smoke checks can log in with a dedicated test account:
+For real create/edit/payment/delete paths, use a dedicated test account and append `--username`, `--password`, and `--mutating-auth-checks`. This mode writes temporary data; do not run it casually with an important production account.
 
-```bash
-docker exec wallos-local php /var/www/html/tests/regression_runner.php \
-  --base-url=http://127.0.0.1 \
-  --username=YOUR_TEST_USER \
-  --password=YOUR_TEST_PASSWORD
-```
-
-The optional mutating flow creates, edits, records a payment for, moves to trash, and permanently deletes a temporary subscription:
+Browser tests require Node.js:
 
 ```bash
-docker exec wallos-local php /var/www/html/tests/regression_runner.php \
-  --base-url=http://127.0.0.1 \
-  --username=YOUR_TEST_USER \
-  --password=YOUR_TEST_PASSWORD \
-  --mutating-auth-checks
-```
-
-For browser-level subscription-page checks, install Playwright locally and run:
-
-```bash
-npm install
+npm ci
 WALLOS_BASE_URL=http://127.0.0.1:18282 \
 WALLOS_TEST_USERNAME=YOUR_TEST_USER \
 WALLOS_TEST_PASSWORD=YOUR_TEST_PASSWORD \
 npm run e2e:subscriptions
 ```
 
-The browser smoke opens the real page and clicks pagination, the three-dot action menu, edit modal, add-subscription save flow, payment history, record-payment modal, image viewer hooks, display-column toggles, cost/value visibility toggles, the dynamic-wallpaper immersive button, and the persistent CSRF refresh reminder. It removes the temporary subscription it creates during the check and restores the subscription-page display preferences that existed before the run.
+Run `e2e:i18n`, `e2e:images`, `e2e:cache`, and `e2e:admin` separately, or `npm run e2e` in sequence. Admin tests require explicit, unexpired credentials. See [CONTRIBUTING.md](CONTRIBUTING.md) and the Chinese [shared request/stability contract](docs/共享请求层与稳定性契约.md) for detailed rules.
 
-Subscription media has a separate browser E2E smoke for upload, preview, and access-control behavior:
+Feature contributions should review migrations, authorization, translations, tests, and docs together. Report reproducible problems in [Issues](https://github.com/KanameMadoka520/Wallos-Remastered/issues), or follow [CONTRIBUTING.md](CONTRIBUTING.md) for code changes.
 
-```bash
-WALLOS_BASE_URL=http://127.0.0.1:18282 \
-WALLOS_TEST_USERNAME=YOUR_TEST_USER \
-WALLOS_TEST_PASSWORD=YOUR_TEST_PASSWORD \
-npm run e2e:images
-```
+## License and links
 
-This smoke uploads a generated PNG through the real add-subscription form, verifies byte-for-byte original passthrough when upload compression is disabled, checks that preview/thumbnail responses are not larger than the original, checks that size metadata has no missing translation marker, verifies anonymous media access is denied, and confirms the media record is no longer readable after the temporary subscription is permanently deleted.
+This branch remains under [GNU GPLv3](LICENSE.md). It is a community remaster; report branch-specific behavior here rather than asking upstream Wallos to support these customizations.
 
-Client cache refresh behavior has its own browser E2E smoke for Service Worker, static-resource versioning, and toast-layout changes:
-
-```bash
-WALLOS_BASE_URL=http://127.0.0.1:18282 \
-WALLOS_TEST_USERNAME=YOUR_TEST_USER \
-WALLOS_TEST_PASSWORD=YOUR_TEST_PASSWORD \
-npm run e2e:cache
-```
-
-This smoke logs in as a normal test user, checks the `WallosClientCache` status helper, verifies that unexpected login-page HTML is normalized as a session-expired error, simulates an administrator cache-refresh marker, and verifies that the refresh notice stays visible until manually closed without missing translations or page-width expansion.
-
-When the browser smoke fails, it writes a screenshot, current HTML, and diagnostics JSON to `screenshots/e2e/`. The diagnostics collect frontend `console.error` messages, page runtime exceptions, failed requests, and abnormal endpoint responses.
-
-Admin browser E2E does not create an extra administrator account and does not reuse the normal test user. To reduce credential exposure, provide explicit admin credentials and an expiry; missing or expired credentials make the admin smoke skip safely:
-
-```bash
-WALLOS_BASE_URL=http://127.0.0.1:18282 \
-WALLOS_ADMIN_USERNAME=YOUR_ID_1_ADMIN \
-WALLOS_ADMIN_PASSWORD=YOUR_ADMIN_PASSWORD \
-WALLOS_ADMIN_AUTH_EXPIRES_AT=$(date -u -d "+30 minutes" +%Y-%m-%dT%H:%M:%SZ) \
-npm run e2e:admin
-```
-
-A short-lived cookie is also supported through `WALLOS_ADMIN_COOKIE="PHPSESSID=..."`, but `WALLOS_ADMIN_AUTH_EXPIRES_AT` is still required. Do not store administrator passwords or cookies in the repository, CI settings, or long-lived scripts.
-
-You can also run the full browser E2E entrypoint. If unexpired admin credentials are not supplied, the admin smoke skips while the subscription smoke still uses the normal test account:
-
-```bash
-npm run e2e
-```
-
-## Highlights
-
-### Admin
-
-- user cards
-- user ID display and copy
-- admin-triggered temporary password reset
-- invite lifecycle management
-- banned user list
-- configurable login rate limit threshold
-
-### Subscription Media
-
-- multiple server-hosted images per subscription
-- original / preview / thumbnail layering
-- when upload compression is disabled, the original file is stored byte-for-byte; when compression is enabled, the stored original is processed once
-- the form shows local file size before upload
-- the image viewer shows thumbnail / preview / original server-side sizes
-- if a generated preview or thumbnail would be larger than the original, that derived layer can reuse the original instead of storing a wasteful larger file
-- protected media endpoint
-- drag-and-drop ordering
-- upload and processing progress
-- original image loading progress
-- one-click generation for missing legacy derived images
-
-### Subscription Organization
-
-- tab-like subscription pages for splitting large subscription lists
-- `All / Unassigned / Custom Pages` page filters on the subscriptions screen
-- page assignment can be changed when creating or editing a subscription
-
-### Backup Lifecycle
-
-- automated `db + logos` backups
-- backup list in admin
-- manual backup and download
-- backup verification
-- cleanup of old backups
-- direct restore from the admin backup list
-
-### Security Tokens
-
-- CSRF tokens now have a server-enforced 30-minute TTL.
-- The footer shows only a short fingerprint of the current page token, not the full token.
-- Footer token times are displayed in the current account timezone.
-- Login sessions can still last up to 30 days when "stay logged in" is used; this is separate from the shorter CSRF form token lifetime.
-- If a page stays open for longer than 30 minutes, refresh the page before submitting forms or other sensitive actions.
-
-### Service Worker Cache Refresh
-
-- Static assets use stricter filemtime-based versions in the page shell.
-- The registered Service Worker URL also carries the `service-worker.js` file version and checks for updates when a page becomes visible again.
-- Versioned CSS/JS requests are network-first with an exact-cache fallback, reducing stale-resource drift after deployments.
-- Private subscription media under `images/uploads/logos/subscription-media/` is explicitly excluded from Service Worker image caching and remains access-controlled by PHP/nginx rules.
-- SQLite busy/locked failures return a standardized `database_busy` JSON payload with a retry hint instead of a generic unknown error.
-- `service-worker.js` exposes a client-cache clear message.
-- The admin page can clear the current browser cache and publish a refresh marker so other clients clear cached static assets on their next page load.
-
-### Maintenance Tools
-
-The admin page includes a maintenance area for long-running deployments:
-
-- retention-policy visibility for request logs, security anomalies, and rate-limit usage
-- system overview cards for service health, maintenance status, SQLite indexes, slow requests, security anomalies, subscription image consistency, and log growth, with a read-only partial refresh button
-- request-log duration/status/completion tracking, plus a 24-hour slow-request summary and filtered export fields
-- top slow-endpoint aggregation for the last 24 hours, grouped by request method and path with hit count, average duration, maximum duration, failures, last-seen time, and a one-click filtered access-log shortcut
-- storage cards for request logs, security anomalies, and rate-limit usage now show retention days, last-24-hour rows, retention-window daily average, and growth risk
-- maintenance action logs record administrator-triggered maintenance tasks, duration, result summaries, recent failures, and slow actions; the list supports summary cards, failed/slow filters, copyable summaries, and filtered CSV export
-- maintenance recommendations that summarize index health, SQLite free pages, orphan subscription images, log growth, slow requests, and backup-directory size into actionable cards
-- storage usage cards for the database, upload root, subscription media, and backup directory
-- log growth risk indicators for request logs, security anomalies, and rate-limit usage
-- subscription image consistency cards for index coverage, orphan files, missing originals/derived files, and oversized derived variants
-- CSV export for the latest subscription image audit, including orphan-file, missing-file, and oversized-variant details
-- one-click cleanup for database-unreferenced orphan subscription image files, limited to the subscription media directory
-- one-click reuse of originals for preview/thumbnail variants that are larger than the original, with cleanup of unreferenced oversized derived files
-- SQLite indexes for hot paths: subscription page filtering/sorting, payment records, subscription-image metadata, request logs, security anomalies, and rate-limit usage
-- one-click health check for required SQLite indexes, so a recorded migration with missing indexes is visible in the admin UI
-- manual SQLite `PRAGMA optimize`, `ANALYZE`, and `VACUUM`, with before/after database size, page-count, and free-page metrics
-
-`VACUUM` can briefly lock writes, so run it during a quiet maintenance window.
-
-## Repository Publication Notes
-
-This public repository has been cleaned up to avoid publishing private deployment details such as:
-
-- private infrastructure descriptions
-- private directory layouts
-- self-hosted banner text
-- environment-specific local path references
-- deployment-specific internal handoff notes
-
-Runtime-only files are also ignored through `.gitignore` and `.dockerignore`.
-
-## Related Documents
-
-- `README.md`
-- `CONTRIBUTING.md`
-- `CHANGELOG.md`
-- `SECURITY.md`
-- `FRP+Nginx+Fail2ban防刷站部署指南.md`
-
-## 2026-04 Security Behavior Changes
-
-The following behavior changes were added to reduce risk on public deployments, FRP tunnels, reverse proxies, and VPS gateway setups:
-
-- `Disable login` is no longer equivalent to “auto-login any visitor as admin”. The bypass now works only for direct local requests.
-- If the instance is exposed through a public domain, FRP, or a reverse proxy, keep normal login enabled and use the regular admin login flow.
-- Initial database restore on an empty instance is now limited to direct local access to prevent hostile first-import takeover on fresh deployments.
-- API keys should no longer be passed through URL query strings. Prefer `X-API-Key` or `Authorization: Bearer ...` headers so keys do not leak into browser history or proxy logs.
-- Payment icon remote fetching now validates redirects more strictly. Some unusual redirect-heavy URLs may be rejected by design.
-
+- [Wallos-Remastered repository](https://github.com/KanameMadoka520/Wallos-Remastered)
+- [Upstream Wallos](https://github.com/ellite/Wallos)
+- [Full Remastered changelog (Chinese)](CHANGELOG.md)
+- [Simplified Chinese README](README.md)
