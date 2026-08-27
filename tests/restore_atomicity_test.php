@@ -95,6 +95,47 @@ try {
     file_put_contents($testRoot . '/images/uploads/logos/current.txt', 'current-logo');
     wallos_restore_atomicity_create_database($testRoot . '/db/wallos.db', 'current', true);
 
+    $mountedSource = $testRoot . '/mounted-source';
+    $mountedTarget = $testRoot . '/mounted-target';
+    mkdir($mountedSource . '/subscription-media/user-7', 0770, true);
+    mkdir($mountedTarget . '/avatars', 0770, true);
+    file_put_contents($mountedSource . '/restored.txt', 'restored-mounted-logo');
+    file_put_contents($mountedSource . '/subscription-media/user-7/image.txt', 'restored-private-media');
+    file_put_contents($mountedTarget . '/current.txt', 'current-mounted-logo');
+    file_put_contents($mountedTarget . '/avatars/current.txt', 'current-avatar');
+    chmod($mountedTarget, 0755);
+    $mountedTargetIdentity = lstat($mountedTarget);
+    $mountedTransaction = [];
+    wallos_restore_prepare_logos_transaction(
+        $mountedTransaction,
+        $mountedSource,
+        $mountedTarget,
+        bin2hex(random_bytes(8)),
+        ['logos_strategy' => 'contents']
+    );
+    wallos_restore_commit_logos_transaction($mountedTransaction);
+    wallos_restore_finalize_logos_transaction($mountedTransaction);
+    wallos_restore_atomicity_assert(
+        file_get_contents($mountedTarget . '/restored.txt') === 'restored-mounted-logo'
+            && file_get_contents($mountedTarget . '/subscription-media/user-7/image.txt') === 'restored-private-media'
+            && !file_exists($mountedTarget . '/current.txt')
+            && !file_exists($mountedTarget . '/avatars/current.txt'),
+        'Mounted logos fallback did not replace directory contents.'
+    );
+    wallos_restore_atomicity_assert(
+        ($mountedTransaction['strategy'] ?? '') === 'contents'
+            && (lstat($mountedTarget)['ino'] ?? -1) === ($mountedTargetIdentity['ino'] ?? -2)
+            && (fileperms($mountedTarget) & 0777) === 0755
+            && (fileperms($mountedTarget . '/subscription-media/user-7') & 0777) === 0755
+            && (fileperms($mountedTarget . '/restored.txt') & 0777) === 0644
+            && (fileperms($mountedTarget . '/subscription-media/user-7/image.txt') & 0777) === 0644,
+        'Restored Logo tree is not traversable and readable by the Nginx worker.'
+    );
+    wallos_restore_atomicity_assert(
+        glob($mountedTarget . '/.wallos.restore.*') === [],
+        'Mounted logos fallback left a recovery workspace after success.'
+    );
+
     $invalidDatabase = $testRoot . '/invalid-restored.db';
     $invalidArchive = $testRoot . '/invalid.zip';
     wallos_restore_atomicity_create_database($invalidDatabase, 'invalid-restored', false);

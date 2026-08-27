@@ -31,7 +31,10 @@ $recordAvatar = static function ($userId, $path) use ($insertAvatar) {
 $userCount = (int) $db->querySingle("SELECT COUNT(*) FROM user");
 if ($userCount === 1) {
     $userId = (int) $db->querySingle("SELECT id FROM user LIMIT 1");
-    $avatarDir = __DIR__ . '/../images/uploads/logos/avatars';
+    $avatarRoot = isset($wallosRestoreLogosDirectory) && is_string($wallosRestoreLogosDirectory)
+        ? rtrim($wallosRestoreLogosDirectory, '/\\')
+        : __DIR__ . '/../images/uploads/logos';
+    $avatarDir = $avatarRoot . '/avatars';
 
     if (is_dir($avatarDir)) {
         $files = scandir($avatarDir);

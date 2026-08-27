@@ -33,7 +33,11 @@ function wallos_database_get_last_error_message($db)
         return '';
     }
 
-    $message = trim((string) @$db->lastErrorMsg());
+    try {
+        $message = trim((string) @$db->lastErrorMsg());
+    } catch (Throwable $throwable) {
+        return '';
+    }
     if ($message === 'not an error') {
         return '';
     }

@@ -35,6 +35,7 @@ $process = null;
 
 try {
     wallos_runtime_lock_assert(mkdir($databaseDirectory, 0770, true), 'Unable to create lock test directory.');
+    $maintenanceParentMode = fileperms($testRoot) & 07777;
     wallos_runtime_lock_assert(file_put_contents($databaseFile, 'fixture') !== false, 'Unable to create lock fixture.');
     putenv('WALLOS_DATABASE_MAINTENANCE_FILE=' . $maintenanceFile);
 
@@ -99,6 +100,11 @@ PHP;
     $process = null;
     wallos_runtime_lock_assert($exitCode === 0, 'Exclusive lock fixture failed: ' . trim($stdout . ' ' . $stderr));
     wallos_runtime_lock_assert(!is_file($maintenanceFile), 'Maintenance marker remained after a successful restore lock.');
+    clearstatcache(true, $testRoot);
+    wallos_runtime_lock_assert(
+        (fileperms($testRoot) & 07777) === $maintenanceParentMode,
+        'Custom maintenance marker handling changed its existing parent directory mode.'
+    );
     wallos_runtime_lock_assert(
         (float) file_get_contents($resultFile) >= 0.1,
         'Exclusive maintenance did not wait for the active shared reader.'
@@ -106,6 +112,84 @@ PHP;
 
     wallos_database_acquire_shared_runtime_lock($databaseFile);
     wallos_database_release_shared_runtime_lock();
+
+    $lockPaths = wallos_database_runtime_lock_paths($databaseFile);
+    wallos_runtime_lock_assert(
+        file_put_contents($lockPaths['restore_transaction'], '{"phase":"ROLLBACK_INCOMPLETE"}') !== false,
+        'Unable to create durable restore transaction fixture.'
+    );
+    $durableReaderRejected = false;
+    try {
+        wallos_database_acquire_shared_runtime_lock($databaseFile, 20);
+    } catch (RuntimeException $runtimeException) {
+        $durableReaderRejected = true;
+    }
+    $durableWriterRejected = false;
+    try {
+        wallos_database_acquire_exclusive_runtime_lock($databaseFile, 20);
+    } catch (RuntimeException $runtimeException) {
+        $durableWriterRejected = true;
+    }
+    wallos_runtime_lock_assert(
+        $durableReaderRejected && $durableWriterRejected,
+        'Durable restore transaction marker did not fail closed for readers and writers.'
+    );
+    @unlink($lockPaths['restore_transaction']);
+
+    $assertMarkerRejectsAccess = static function ($label) use ($databaseFile) {
+        $readerRejected = false;
+        try {
+            wallos_database_acquire_shared_runtime_lock($databaseFile, 20);
+            wallos_database_release_shared_runtime_lock();
+        } catch (RuntimeException $runtimeException) {
+            $readerRejected = true;
+        }
+
+        $writerRejected = false;
+        $unexpectedLock = null;
+        try {
+            $unexpectedLock = wallos_database_acquire_exclusive_runtime_lock($databaseFile, 20);
+        } catch (RuntimeException $runtimeException) {
+            $writerRejected = true;
+        } finally {
+            wallos_database_release_exclusive_runtime_lock($unexpectedLock);
+        }
+
+        wallos_runtime_lock_assert(
+            $readerRejected && $writerRejected,
+            $label . ' did not fail closed for readers and writers.'
+        );
+    };
+
+    wallos_runtime_lock_assert(
+        mkdir($lockPaths['restore_transaction'], 0700),
+        'Unable to create directory-shaped restore transaction marker.'
+    );
+    $assertMarkerRejectsAccess('Directory-shaped restore transaction marker');
+    rmdir($lockPaths['restore_transaction']);
+
+    wallos_runtime_lock_assert(
+        mkdir($maintenanceFile, 0700),
+        'Unable to create directory-shaped maintenance marker.'
+    );
+    $assertMarkerRejectsAccess('Directory-shaped maintenance marker');
+    rmdir($maintenanceFile);
+
+    if (function_exists('posix_mkfifo')) {
+        wallos_runtime_lock_assert(
+            posix_mkfifo($lockPaths['restore_transaction'], 0600),
+            'Unable to create FIFO-shaped restore transaction marker.'
+        );
+        $assertMarkerRejectsAccess('FIFO-shaped restore transaction marker');
+        unlink($lockPaths['restore_transaction']);
+
+        wallos_runtime_lock_assert(
+            posix_mkfifo($maintenanceFile, 0600),
+            'Unable to create FIFO-shaped maintenance marker.'
+        );
+        $assertMarkerRejectsAccess('FIFO-shaped maintenance marker');
+        unlink($maintenanceFile);
+    }
 
     echo "Database runtime lock test passed.\n";
 } catch (Throwable $throwable) {

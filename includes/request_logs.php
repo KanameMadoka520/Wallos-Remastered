@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/database_runtime_lock.php';
+
 if (!defined('WALLOS_SLOW_REQUEST_THRESHOLD_MS')) {
     define('WALLOS_SLOW_REQUEST_THRESHOLD_MS', 1500);
 }
@@ -172,16 +174,50 @@ function wallos_register_request_log_completion_update($logId, $requestStartedAt
         return;
     }
 
+    $databasePath = wallos_request_log_database_path();
+    $databaseIdentity = @lstat($databasePath);
+    if ($databaseIdentity === false || is_link($databasePath) || !is_file($databasePath)) {
+        return;
+    }
+    $expectedDatabaseIdentity = [
+        'dev' => (int) ($databaseIdentity['dev'] ?? -1),
+        'ino' => (int) ($databaseIdentity['ino'] ?? -1),
+    ];
+
     $completionRegistered = true;
-    register_shutdown_function(static function () use ($logId, $requestStartedAt) {
+    register_shutdown_function(static function () use (
+        $logId,
+        $requestStartedAt,
+        $expectedDatabaseIdentity
+    ) {
         $durationMs = max(0, (int) round((microtime(true) - (float) $requestStartedAt) * 1000));
         $statusCode = (int) http_response_code();
         if ($statusCode <= 0) {
             $statusCode = 200;
         }
 
+        $completionDb = null;
+        $completionLock = null;
+        $databasePath = wallos_request_log_database_path();
         try {
-            $completionDb = new SQLite3(wallos_request_log_database_path());
+            // Never create or touch a database after an incomplete restore.
+            // The durable journal is checked both before and after the shared
+            // runtime lock is acquired to close the marker publication race.
+            if (is_link($databasePath) || !is_file($databasePath)) {
+                return;
+            }
+            $completionLock = wallos_database_acquire_shared_runtime_lock($databasePath, 1000);
+            clearstatcache(true, $databasePath);
+            $currentIdentity = @lstat($databasePath);
+            if ($currentIdentity === false
+                || is_link($databasePath)
+                || !is_file($databasePath)
+                || (int) ($currentIdentity['dev'] ?? -2) !== $expectedDatabaseIdentity['dev']
+                || (int) ($currentIdentity['ino'] ?? -2) !== $expectedDatabaseIdentity['ino']) {
+                return;
+            }
+
+            $completionDb = new SQLite3($databasePath, SQLITE3_OPEN_READWRITE);
             $completionDb->busyTimeout(1000);
             $stmt = @$completionDb->prepare('
                 UPDATE request_logs
@@ -196,9 +232,15 @@ function wallos_register_request_log_completion_update($logId, $requestStartedAt
                 $stmt->bindValue(':id', (int) $logId, SQLITE3_INTEGER);
                 @$stmt->execute();
             }
-            $completionDb->close();
         } catch (Throwable $throwable) {
             // Request logging must never break the user-facing response.
+        } finally {
+            if ($completionDb instanceof SQLite3) {
+                $completionDb->close();
+            }
+            if (is_resource($completionLock)) {
+                wallos_database_release_shared_runtime_lock();
+            }
         }
     });
 }

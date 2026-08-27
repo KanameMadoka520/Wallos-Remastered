@@ -175,20 +175,45 @@ try {
 
     foreach (['nginx.conf', 'nginx.default.conf'] as $path) {
         $nginx = wallos_security_contract_source($path);
-        foreach (['/db/', '/backups/', '/.tmp/'] as $privatePath) {
+        foreach (['/db/', '/backups/', '/.tmp/', '/images/uploads/logos/.wallos.restore.', '/images/uploads/.wallos.restore.'] as $privatePath) {
             wallos_security_contract_assert(
                 strpos($nginx, 'location ^~ ' . $privatePath) !== false,
                 $path . ' must deny direct access to ' . $privatePath
             );
         }
+        wallos_security_contract_assert(
+            strpos($nginx, '/images/uploads/logos/') !== false
+                && strpos($nginx, 'database-maintenance.lock') !== false
+                && strpos($nginx, '/db/.wallos-restore-transaction') !== false
+                && strpos($nginx, 'return 503') !== false,
+            $path . ' must hide the public Logo tree for both runtime and durable restore markers.'
+        );
+        $uploadedPhpDenyPosition = strpos($nginx, 'location ~* ^/images/uploads/logos/.*\\.php');
+        $genericPhpPosition = strpos($nginx, 'location ~ \\.php$');
+        wallos_security_contract_assert(
+            $uploadedPhpDenyPosition !== false
+                && $genericPhpPosition !== false
+                && $uploadedPhpDenyPosition < $genericPhpPosition,
+            $path . ' must reject uploaded PHP paths before the generic PHP-FPM location.'
+        );
     }
 
     $runtimeLock = wallos_security_contract_source('includes/database_runtime_lock.php');
     wallos_security_contract_assert(
         strpos($runtimeLock, 'LOCK_SH | LOCK_NB') !== false
             && strpos($runtimeLock, 'LOCK_EX | LOCK_NB') !== false
-            && strpos($runtimeLock, 'database-maintenance.lock') !== false,
+            && strpos($runtimeLock, 'database-maintenance.lock') !== false
+            && strpos($runtimeLock, 'wallos_database_maintenance_marker_exists') !== false
+            && strpos($runtimeLock, '.wallos-restore-transaction') !== false,
         'Live database users and restore operations must coordinate through the runtime lock.'
+    );
+
+    $requestLogs = wallos_security_contract_source('includes/request_logs.php');
+    wallos_security_contract_assert(
+        strpos($requestLogs, 'wallos_database_acquire_shared_runtime_lock') !== false
+            && strpos($requestLogs, 'SQLITE3_OPEN_READWRITE') !== false
+            && strpos($requestLogs, 'wallos_database_release_shared_runtime_lock') !== false,
+        'Shutdown request logging must not bypass restore locks or recreate a missing database.'
     );
 
     echo "Upstream security compatibility contracts passed.\n";

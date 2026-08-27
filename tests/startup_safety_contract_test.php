@@ -23,18 +23,26 @@ try {
     $phpFpmPosition = strpos($startup, 'php-fpm -F &');
     $cronPosition = strpos($startup, 'crond -f &');
     $nginxPosition = strpos($startup, "nginx -g 'daemon off;' &");
+    $restoreTransactionPosition = strpos($startup, '.wallos-restore-transaction');
     wallos_startup_contract_assert(
         $migrationPosition !== false
             && $verificationPosition > $migrationPosition
             && $phpFpmPosition > $verificationPosition
             && $cronPosition > $verificationPosition
-            && $nginxPosition > $verificationPosition,
+            && $nginxPosition > $verificationPosition
+            && $restoreTransactionPosition !== false
+            && $restoreTransactionPosition < $migrationPosition,
         'Database migration and verification must finish before services start.'
     );
     wallos_startup_contract_assert(
         strpos($startup, 'WALLOS_REQUIRE_EXISTING_DB') !== false
             && strpos($startup, 'WALLOS_CRON_ENABLED') !== false
-            && strpos($startup, 'touch "$READY_FILE"') !== false,
+            && strpos($startup, 'touch "$READY_FILE"') !== false
+            && strpos($startup, 'delgroup nginx www-data') !== false
+            && strpos($startup, 'reserved Nginx worker IDs') !== false
+            && strpos($startup, '-type d -exec chmod 0770') !== false
+            && strpos($startup, '-type f -exec chmod 0660') !== false
+            && strpos($startup, 'chmod 0771 "$APP_ROOT/db"') !== false,
         'Startup must enforce production mounts, support isolated validation, and publish readiness.'
     );
     foreach (['updateexchange.php', 'cleanuprequestlogs.php', 'cleanupbannedusers.php', 'cleanuptrashedsubscriptions.php', 'createbackup.php cleanup'] as $forbidden) {
