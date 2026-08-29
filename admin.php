@@ -177,7 +177,6 @@ $slowRequestRecentCount = wallos_count_slow_request_logs($db, 24);
 $serviceWorkerVersions = wallos_parse_service_worker_cache_versions(__DIR__ . '/service-worker.js');
 $serviceWorkerVersionSummary = trim(implode(' | ', array_filter([
     $serviceWorkerVersions['static'] !== '' ? 'static=' . $serviceWorkerVersions['static'] : '',
-    $serviceWorkerVersions['pages'] !== '' ? 'pages=' . $serviceWorkerVersions['pages'] : '',
     $serviceWorkerVersions['logos'] !== '' ? 'logos=' . $serviceWorkerVersions['logos'] : '',
 ])));
 $serviceWorkerVersionSummary = $serviceWorkerVersionSummary !== '' ? $serviceWorkerVersionSummary : '-';
@@ -214,6 +213,7 @@ $adminAccessLogsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admi
 $adminRateLimitJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-rate-limit.js');
 $adminUsersJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-users.js');
 $adminRegistrationJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin-registration.js');
+$adminJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/admin.js');
 require_once 'includes/page_navigation.php';
 
 $pageSections = [
@@ -1828,12 +1828,12 @@ $pageSections = [
         </div>
     </div>
 </section>
-<script src="scripts/admin-backups.js?<?= $adminBackupsJsVersion ?>"></script>
-<script src="scripts/admin-access-logs.js?<?= $adminAccessLogsJsVersion ?>"></script>
-<script src="scripts/admin-rate-limit.js?<?= $adminRateLimitJsVersion ?>"></script>
-<script src="scripts/admin-users.js?<?= $adminUsersJsVersion ?>"></script>
-<script src="scripts/admin-registration.js?<?= $adminRegistrationJsVersion ?>"></script>
-<script src="scripts/admin.js?<?= $version ?>"></script>
+<script defer src="scripts/admin-backups.js?v=<?= $adminBackupsJsVersion ?>"></script>
+<script defer src="scripts/admin-access-logs.js?v=<?= $adminAccessLogsJsVersion ?>"></script>
+<script defer src="scripts/admin-rate-limit.js?v=<?= $adminRateLimitJsVersion ?>"></script>
+<script defer src="scripts/admin-users.js?v=<?= $adminUsersJsVersion ?>"></script>
+<script defer src="scripts/admin-registration.js?v=<?= $adminRegistrationJsVersion ?>"></script>
+<script defer src="scripts/admin.js?v=<?= $adminJsVersion ?>"></script>
 
 <?php
 require_once 'includes/footer.php';

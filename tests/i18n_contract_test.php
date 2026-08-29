@@ -322,12 +322,12 @@ try {
     }
 
     $serviceWorker = file_get_contents($root . '/service-worker.js');
-    foreach ($languageCodes as $languageCode) {
-        wallos_i18n_contract_assert(
-            strpos($serviceWorker, "'scripts/i18n/" . $languageCode . ".js'") !== false,
-            'service-worker.js does not register ' . $languageCode . '.js.'
-        );
-    }
+    wallos_i18n_contract_assert(
+        strpos($serviceWorker, "'scripts/'") !== false
+            && strpos($serviceWorker, 'STATIC_PATH_PREFIXES') !== false
+            && strpos($serviceWorker, 'hasExactAssetFingerprint(url)') !== false,
+        'service-worker.js must runtime-cache requested versioned language scripts through the packaged scripts prefix.'
+    );
 
     echo 'i18n contract checks passed for ' . count($languageCodes)
         . ' languages, ' . count($englishPhp) . ' PHP keys, and '

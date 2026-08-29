@@ -28,6 +28,14 @@ $decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles
 $decorativeBackgroundJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/decorative-background.js');
 $publicEntryTransitionCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/public-entry-transition.css');
 $publicEntryTransitionJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/public-entry-transition.js');
+$themeCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/theme.css');
+$redThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/themes/red.css');
+$greenThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/themes/green.css');
+$yellowThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/themes/yellow.css');
+$purpleThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/themes/purple.css');
+$fontAwesomeCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/font-awesome.min.css');
+$barlowCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/barlow.css');
+$loginDarkThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/login-dark-theme.css');
 
 function validate($value)
 {
@@ -295,32 +303,31 @@ wallos_log_request($db, 0, '');
     <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">
     <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
-    <link rel="stylesheet" href="styles/decorative-background.css?<?= $decorativeBackgroundCssVersion ?>">
-    <link rel="stylesheet" href="styles/login.css?<?= $loginCssVersion ?>">
-    <link rel="stylesheet" href="styles/public-entry-transition.css?<?= $publicEntryTransitionCssVersion ?>">
-    <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
-    <link rel="stylesheet" href="styles/themes/green.css?<?= $version ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
-    <link rel="stylesheet" href="styles/themes/yellow.css?<?= $version ?>" id="yellow-theme" <?= $colorTheme != "yellow" ? "disabled" : "" ?>>
-    <link rel="stylesheet" href="styles/themes/purple.css?<?= $version ?>" id="purple-theme" <?= $colorTheme != "purple" ? "disabled" : "" ?>>
-    <link rel="stylesheet" href="styles/login-dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme == "light" ? "disabled" : "" ?>>
-    <link rel="stylesheet" href="styles/font-awesome.min.css">
-    <link rel="stylesheet" href="styles/brands.css">
-    <link rel="stylesheet" href="styles/barlow.css">
+    <link rel="stylesheet" href="styles/theme.css?v=<?= $themeCssVersion ?>">
+    <link rel="stylesheet" href="styles/decorative-background.css?v=<?= $decorativeBackgroundCssVersion ?>">
+    <link rel="stylesheet" href="styles/login.css?v=<?= $loginCssVersion ?>">
+    <link rel="stylesheet" href="styles/public-entry-transition.css?v=<?= $publicEntryTransitionCssVersion ?>">
+    <link rel="stylesheet" href="styles/themes/red.css?v=<?= $redThemeCssVersion ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
+    <link rel="stylesheet" href="styles/themes/green.css?v=<?= $greenThemeCssVersion ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
+    <link rel="stylesheet" href="styles/themes/yellow.css?v=<?= $yellowThemeCssVersion ?>" id="yellow-theme" <?= $colorTheme != "yellow" ? "disabled" : "" ?>>
+    <link rel="stylesheet" href="styles/themes/purple.css?v=<?= $purpleThemeCssVersion ?>" id="purple-theme" <?= $colorTheme != "purple" ? "disabled" : "" ?>>
+    <link rel="stylesheet" href="styles/login-dark-theme.css?v=<?= $loginDarkThemeCssVersion ?>" id="dark-theme" <?= $theme == "light" ? "disabled" : "" ?>>
+    <link rel="stylesheet" href="styles/font-awesome.min.css?v=<?= $fontAwesomeCssVersion ?>">
+    <link rel="stylesheet" href="styles/barlow.css?v=<?= $barlowCssVersion ?>">
     <script type="text/javascript">
         document.documentElement.classList.add('public-entry-js');
         window.update_theme_settings = <?= $updateThemeSettings ? 'true' : 'false' ?>;
         window.colorTheme = "<?= $colorTheme ?>";
     </script>
-    <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
-    <script type="text/javascript" src="scripts/i18n/en.js?<?= $i18nEnglishJsVersion ?>"></script>
+    <script defer type="text/javascript" src="scripts/decorative-background.js?v=<?= $decorativeBackgroundJsVersion ?>"></script>
+    <script defer type="text/javascript" src="scripts/i18n/en.js?v=<?= $i18nEnglishJsVersion ?>"></script>
     <?php if ($lang !== 'en'): ?>
-    <script type="text/javascript" src="scripts/i18n/<?= $lang ?>.js?<?= $i18nJsVersion ?>"></script>
+    <script defer type="text/javascript" src="scripts/i18n/<?= $lang ?>.js?v=<?= $i18nJsVersion ?>"></script>
     <?php endif; ?>
-    <script type="text/javascript" src="scripts/i18n/getlang.js?<?= $i18nGetLangJsVersion ?>"></script>
-    <script type="text/javascript" src="scripts/api.js?<?= $apiJsVersion ?>"></script>
-    <script type="text/javascript" src="scripts/registration.js?<?= $registrationJsVersion ?>"></script>
-    <script type="text/javascript" src="scripts/public-entry-transition.js?<?= $publicEntryTransitionJsVersion ?>"></script>
+    <script defer type="text/javascript" src="scripts/i18n/getlang.js?v=<?= $i18nGetLangJsVersion ?>"></script>
+    <script defer type="text/javascript" src="scripts/api.js?v=<?= $apiJsVersion ?>"></script>
+    <script defer type="text/javascript" src="scripts/registration.js?v=<?= $registrationJsVersion ?>"></script>
+    <script defer type="text/javascript" src="scripts/public-entry-transition.js?v=<?= $publicEntryTransitionJsVersion ?>"></script>
 </head>
 
 <body class="<?= $languages[$lang]['dir'] ?> public-page registration-page public-entry-pending <?= $decorativeBackgroundClass ?>">

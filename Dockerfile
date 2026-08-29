@@ -20,11 +20,12 @@ COPY . .
 
 # Copy Nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY nginx.default.conf /etc/nginx/http.d/default.conf
+COPY docker/php/zz-wallos-performance.ini /usr/local/etc/php/conf.d/zz-wallos-performance.ini
 
 # Remove nginx conf files from webroot
 RUN rm -rf /var/www/html/nginx.conf && \
-    rm -rf /var/www/html/nginx.default.conf
+    rm -rf /var/www/html/nginx.default.conf && \
+    rm -rf /var/www/html/docker
 
 # Keep the entrypoint executable when the repository was edited on Windows.
 RUN sed -i 's/\r$//' /var/www/html/startup.sh

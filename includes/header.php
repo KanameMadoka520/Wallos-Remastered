@@ -43,6 +43,8 @@ $redThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/themes/r
 $greenThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/themes/green.css');
 $yellowThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/themes/yellow.css');
 $purpleThemeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/themes/purple.css');
+$barlowCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/barlow.css');
+$fontAwesomeCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/font-awesome.min.css');
 $cacheRefreshMarker = wallos_read_cache_refresh_marker(__DIR__ . '/..');
 
 if ($userCount == 0) {
@@ -198,27 +200,26 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
   <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
-  <link rel="stylesheet" href="styles/theme.css?<?= $themeCssVersion ?>">
-  <link rel="stylesheet" href="styles/decorative-background.css?<?= $decorativeBackgroundCssVersion ?>">
-  <link rel="stylesheet" href="styles/dynamic-wallpaper.css?<?= $dynamicWallpaperCssVersion ?>">
-  <link rel="stylesheet" href="styles/page-transitions.css?<?= $pageTransitionsCssVersion ?>">
-  <link rel="stylesheet" href="styles/styles.css?<?= $stylesCssVersion ?>">
-  <link rel="stylesheet" href="styles/dark-theme.css?<?= $darkThemeCssVersion ?>" id="dark-theme" <?= $theme != "dark" ? "disabled" : "" ?>>
-  <link rel="stylesheet" href="styles/themes/red.css?<?= $redThemeCssVersion ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
-  <link rel="stylesheet" href="styles/themes/green.css?<?= $greenThemeCssVersion ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
-  <link rel="stylesheet" href="styles/themes/yellow.css?<?= $yellowThemeCssVersion ?>" id="yellow-theme" <?= $colorTheme != "yellow" ? "disabled" : "" ?>>
-  <link rel="stylesheet" href="styles/themes/purple.css?<?= $purpleThemeCssVersion ?>" id="purple-theme" <?= $colorTheme != "purple" ? "disabled" : "" ?>>
-  <link rel="stylesheet" href="styles/barlow.css">
-  <link rel="stylesheet" href="styles/font-awesome.min.css">
-  <link rel="stylesheet" href="styles/brands.css">
+  <link rel="stylesheet" href="styles/theme.css?v=<?= $themeCssVersion ?>">
+  <link rel="stylesheet" href="styles/decorative-background.css?v=<?= $decorativeBackgroundCssVersion ?>">
+  <link rel="stylesheet" href="styles/dynamic-wallpaper.css?v=<?= $dynamicWallpaperCssVersion ?>">
+  <link rel="stylesheet" href="styles/page-transitions.css?v=<?= $pageTransitionsCssVersion ?>">
+  <link rel="stylesheet" href="styles/styles.css?v=<?= $stylesCssVersion ?>">
+  <link rel="stylesheet" href="styles/dark-theme.css?v=<?= $darkThemeCssVersion ?>" id="dark-theme" <?= $theme != "dark" ? "disabled" : "" ?>>
+  <link rel="stylesheet" href="styles/themes/red.css?v=<?= $redThemeCssVersion ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
+  <link rel="stylesheet" href="styles/themes/green.css?v=<?= $greenThemeCssVersion ?>" id="green-theme" <?= $colorTheme != "green" ? "disabled" : "" ?>>
+  <link rel="stylesheet" href="styles/themes/yellow.css?v=<?= $yellowThemeCssVersion ?>" id="yellow-theme" <?= $colorTheme != "yellow" ? "disabled" : "" ?>>
+  <link rel="stylesheet" href="styles/themes/purple.css?v=<?= $purpleThemeCssVersion ?>" id="purple-theme" <?= $colorTheme != "purple" ? "disabled" : "" ?>>
+  <link rel="stylesheet" href="styles/barlow.css?v=<?= $barlowCssVersion ?>">
+  <link rel="stylesheet" href="styles/font-awesome.min.css?v=<?= $fontAwesomeCssVersion ?>">
   <script>
-    window.WallosServiceWorkerUrl = "service-worker.js?<?= $serviceWorkerJsVersion ?>";
+    window.WallosServiceWorkerUrl = "service-worker.js?v=<?= $serviceWorkerJsVersion ?>";
   </script>
-  <script type="text/javascript" src="scripts/all.js?<?= $allJsVersion ?>"></script>
-  <script type="text/javascript" src="scripts/common.js?<?= $commonJsVersion ?>"></script>
-  <script type="text/javascript" src="scripts/decorative-background.js?<?= $decorativeBackgroundJsVersion ?>"></script>
-  <script type="text/javascript" src="scripts/dynamic-wallpaper.js?<?= $dynamicWallpaperJsVersion ?>"></script>
-  <script type="text/javascript" src="scripts/page-transitions.js?<?= $pageTransitionsJsVersion ?>"></script>
+  <script defer type="text/javascript" src="scripts/all.js?v=<?= $allJsVersion ?>"></script>
+  <script defer type="text/javascript" src="scripts/common.js?v=<?= $commonJsVersion ?>"></script>
+  <script defer type="text/javascript" src="scripts/decorative-background.js?v=<?= $decorativeBackgroundJsVersion ?>"></script>
+  <script defer type="text/javascript" src="scripts/dynamic-wallpaper.js?v=<?= $dynamicWallpaperJsVersion ?>"></script>
+  <script defer type="text/javascript" src="scripts/page-transitions.js?v=<?= $pageTransitionsJsVersion ?>"></script>
   <script type="text/javascript">
     window.theme = "<?= $theme ?>";
     window.update_theme_settings = "<?= $updateThemeSettings ?>";
@@ -281,20 +282,12 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
     <?php
   }
   ?>
-  <script type="text/javascript" src="scripts/i18n/en.js?<?= $i18nEnglishJsVersion ?>"></script>
+  <script defer type="text/javascript" src="scripts/i18n/en.js?v=<?= $i18nEnglishJsVersion ?>"></script>
   <?php if ($lang !== 'en'): ?>
-  <script type="text/javascript" src="scripts/i18n/<?= $lang ?>.js?<?= $i18nJsVersion ?>"></script>
+  <script defer type="text/javascript" src="scripts/i18n/<?= $lang ?>.js?v=<?= $i18nJsVersion ?>"></script>
   <?php endif; ?>
-  <script type="text/javascript" src="scripts/i18n/getlang.js?<?= $i18nGetLangJsVersion ?>"></script>
-  <script type="text/javascript" src="scripts/api.js?<?= $apiJsVersion ?>"></script>
-  <script>
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      if (!sessionStorage.getItem('sw_prefetched')) {
-        navigator.serviceWorker.controller.postMessage({ type: 'PREFETCH_PAGES' });
-        sessionStorage.setItem('sw_prefetched', '1');
-      }
-    }
-  </script>
+  <script defer type="text/javascript" src="scripts/i18n/getlang.js?v=<?= $i18nGetLangJsVersion ?>"></script>
+  <script defer type="text/javascript" src="scripts/api.js?v=<?= $apiJsVersion ?>"></script>
 </head>
 
 <body class="<?= $theme ?> <?= $languages[$lang]['dir'] ?> <?= $mobileNavigation ?> <?= $decorativeBackgroundClass ?> <?= $dynamicWallpaperClass ?> <?= $dynamicWallpaperBlurClass ?>">

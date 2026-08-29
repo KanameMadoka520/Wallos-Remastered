@@ -64,30 +64,32 @@ function wallos_regression_run_public_suite(array $config, array $suiteDefinitio
     $serviceWorkerPath = $config['repo_root'] . DIRECTORY_SEPARATOR . 'service-worker.js';
     $serviceWorkerContents = file_exists($serviceWorkerPath) ? (string) file_get_contents($serviceWorkerPath) : '';
     $hasCacheConstants = strpos($serviceWorkerContents, 'static-cache-v') !== false
-        && strpos($serviceWorkerContents, 'pages-cache-v') !== false
-        && strpos($serviceWorkerContents, 'logos-cache-v') !== false;
+        && strpos($serviceWorkerContents, 'logos-cache-v') !== false
+        && strpos($serviceWorkerContents, 'PAGES_CACHE') === false;
     $results[] = wallos_regression_make_result(
         $hasCacheConstants ? 'PASS' : 'FAIL',
         'public',
         'service-worker-cache-contract',
         file_exists($serviceWorkerPath)
-            ? 'Expected service-worker.js to keep cache version constants for static/pages/logos caches'
+            ? 'Expected service-worker.js to cache static/logo assets without a private-page cache'
             : 'service-worker.js not found'
     );
 
-    $hasEndpointGuard = strpos($serviceWorkerContents, "const isEndpointRequest = isSameOrigin && url.pathname.includes('/endpoints/');") !== false
-        && strpos($serviceWorkerContents, 'if (isEndpointRequest) {') !== false
-        && strpos($serviceWorkerContents, 'event.respondWith(fetch(request));') !== false;
+    $hasEndpointGuard = strpos($serviceWorkerContents, 'const isEndpointRequest =') !== false
+        && strpos($serviceWorkerContents, 'const isPhpRequest =') !== false
+        && strpos($serviceWorkerContents, 'isDocumentRequest || isEndpointRequest || isPhpRequest || isSubscriptionMediaRequest') !== false
+        && strpos($serviceWorkerContents, 'fetchWithoutStore(request)') !== false;
     $hasPrivateMediaGuard = strpos($serviceWorkerContents, 'isSubscriptionMediaRequest') !== false
-        && strpos($serviceWorkerContents, "pathMatchesPrefix(url.pathname, 'images/uploads/logos/subscription-media/')") !== false
-        && strpos($serviceWorkerContents, 'Never put it in shared browser caches') !== false;
-    $hasNoIgnoreSearchFallback = strpos($serviceWorkerContents, 'ignoreSearch: true') === false;
+        && strpos($serviceWorkerContents, "pathMatchesPrefix(url.pathname, 'images/uploads/logos/subscription-media/')") !== false;
+    $hasExactStaticCacheKeys = strpos($serviceWorkerContents, 'hasExactAssetFingerprint(url)') !== false
+        && strpos($serviceWorkerContents, 'caches.match(normalizedPath)') === false
+        && strpos($serviceWorkerContents, 'ignoreSearch: true') === false;
     $results[] = wallos_regression_make_result(
-        ($hasEndpointGuard && $hasPrivateMediaGuard && $hasNoIgnoreSearchFallback) ? 'PASS' : 'FAIL',
+        ($hasEndpointGuard && $hasPrivateMediaGuard && $hasExactStaticCacheKeys) ? 'PASS' : 'FAIL',
         'public',
         'service-worker-dynamic-cache-guard',
         file_exists($serviceWorkerPath)
-            ? 'Expected service-worker.js to keep endpoints/private subscription media network-only and avoid ignoreSearch cache fallbacks for dynamic pages.'
+            ? 'Expected documents, PHP/endpoints and private media to stay no-store while static cache keys remain exact.'
             : 'service-worker.js not found'
     );
 
@@ -117,7 +119,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
     $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
     $remasteredVersionValid = strpos($versionPhp, '$version = "v5.4.5";') !== false
-        && strpos($versionPhp, '$remasteredVersion = "v5.4.5-remastered.4";') !== false
+        && strpos($versionPhp, '$remasteredVersion = "v5.4.5-remastered.5";') !== false
         && strpos($aboutPhp, 'Current running remastered build.') !== false
         && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= htmlspecialchars($version') !== false
         && strpos($aboutPhp, 'Remastered update scope') !== false;
@@ -528,16 +530,16 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         '@filemtime(__DIR__ . \'/../scripts/common.js\')',
         '@filemtime(__DIR__ . \'/../service-worker.js\')',
     )) && wallos_regression_text_has_all($serviceWorkerJs, array(
-        "static-cache-v20",
-        "pages-cache-v20",
-        "logos-cache-v20",
+        "static-cache-v21",
+        "logos-cache-v21",
         "WALLOS_CLEAR_CACHES",
         "WALLOS_CACHE_STATUS",
         "currentCaches",
         "WALLOS_CACHE_PREFIXES",
         "isSubscriptionMediaRequest",
         "cacheOkResponse",
-        "url.search",
+        "hasExactAssetFingerprint",
+        "fetchWithoutStore",
     )) && wallos_regression_text_has_all($allJs, array(
         "WallosServiceWorkerUrl",
         "registration.update",

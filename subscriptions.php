@@ -215,6 +215,7 @@ $subscriptionLayoutJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/s
 $subscriptionPaymentsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-payments.js');
 $subscriptionInteractionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-interactions.js');
 $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscriptions.js');
+$sortableJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/libs/sortable.min.js');
 $subscriptionPagePreferences = wallos_get_subscription_page_preferences_payload($settings);
 $subscriptionDisplayColumns = (int) ($subscriptionPagePreferences['displayColumns'] ?? 1);
 if (!in_array($subscriptionDisplayColumns, [1, 2, 3], true)) {
@@ -1576,21 +1577,23 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     'dragHandleTitle' => $subscriptionPageDragHandleLabel,
   ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>
-<script src="scripts/libs/sortable.min.js"></script>
-<script src="scripts/subscription-pages.js?<?= $subscriptionPagesJsVersion ?>"></script>
-<script src="scripts/subscription-preferences.js?<?= $subscriptionPreferencesJsVersion ?>"></script>
-<script src="scripts/subscription-media.js?<?= $subscriptionMediaJsVersion ?>"></script>
-<script src="scripts/subscription-image-viewer.js?<?= $subscriptionImageViewerJsVersion ?>"></script>
-<script src="scripts/subscription-price-rules.js?<?= $subscriptionPriceRulesJsVersion ?>"></script>
-<script src="scripts/subscription-layout.js?<?= $subscriptionLayoutJsVersion ?>"></script>
-<script src="scripts/subscription-payments.js?<?= $subscriptionPaymentsJsVersion ?>"></script>
-<script src="scripts/subscription-interactions.js?<?= $subscriptionInteractionsJsVersion ?>"></script>
-<script src="scripts/subscriptions.js?<?= $subscriptionsJsVersion ?>"></script>
+<script defer src="scripts/libs/sortable.min.js?v=<?= $sortableJsVersion ?>"></script>
+<script defer src="scripts/subscription-pages.js?v=<?= $subscriptionPagesJsVersion ?>"></script>
+<script defer src="scripts/subscription-preferences.js?v=<?= $subscriptionPreferencesJsVersion ?>"></script>
+<script defer src="scripts/subscription-media.js?v=<?= $subscriptionMediaJsVersion ?>"></script>
+<script defer src="scripts/subscription-image-viewer.js?v=<?= $subscriptionImageViewerJsVersion ?>"></script>
+<script defer src="scripts/subscription-price-rules.js?v=<?= $subscriptionPriceRulesJsVersion ?>"></script>
+<script defer src="scripts/subscription-layout.js?v=<?= $subscriptionLayoutJsVersion ?>"></script>
+<script defer src="scripts/subscription-payments.js?v=<?= $subscriptionPaymentsJsVersion ?>"></script>
+<script defer src="scripts/subscription-interactions.js?v=<?= $subscriptionInteractionsJsVersion ?>"></script>
+<script defer src="scripts/subscriptions.js?v=<?= $subscriptionsJsVersion ?>"></script>
 <?php
 if (isset($_GET['add'])) {
   ?>
   <script>
-    addSubscription();
+    document.addEventListener('DOMContentLoaded', function () {
+      addSubscription();
+    }, { once: true });
   </script>
   <?php
 }

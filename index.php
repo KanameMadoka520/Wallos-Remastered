@@ -8,6 +8,9 @@ require_once 'includes/subscription_media.php';
 require_once 'includes/metric_explanations.php';
 require_once 'includes/page_immersive_toggle.php';
 
+$dashboardJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/dashboard.js');
+$metricExplanationsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/metric-explanations.js');
+
 function formatPrice($price, $currencyCode, $currencies)
 {
     $formattedPrice = CurrencyFormatter::format($price, $currencyCode);
@@ -538,8 +541,8 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 <?php require_once 'includes/subscription_details_popup.php'; ?>
 
 
-<script src="scripts/dashboard.js?<?= $version ?>"></script>
-<script src="scripts/metric-explanations.js?<?= $version . '.' . @filemtime(__DIR__ . '/scripts/metric-explanations.js') ?>"></script>
+<script defer src="scripts/dashboard.js?v=<?= $dashboardJsVersion ?>"></script>
+<script defer src="scripts/metric-explanations.js?v=<?= $metricExplanationsJsVersion ?>"></script>
 
 <?php
 require_once 'includes/footer.php';

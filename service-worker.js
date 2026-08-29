@@ -1,175 +1,27 @@
-const STATIC_CACHE = 'static-cache-v20';
-const PAGES_CACHE = 'pages-cache-v20';
-const LOGOS_CACHE = 'logos-cache-v20';
+const STATIC_CACHE = 'static-cache-v21';
+const LOGOS_CACHE = 'logos-cache-v21';
+
+// Keep the retired pages-cache prefix only so upgrades can delete legacy private-page caches.
 const WALLOS_CACHE_PREFIXES = ['static-cache-', 'pages-cache-', 'logos-cache-'];
 
-const staticAssets = [
+// Installation stays intentionally small. Page-specific assets are cached exactly when used.
+const PRECACHE_ASSETS = [
     'manifest.json',
-    'styles/styles.css',
-    'styles/dark-theme.css',
-    'styles/login.css',
-    'styles/login-dark-theme.css',
-    'styles/decorative-background.css',
-    'styles/public-entry-transition.css',
-    'styles/font-awesome.min.css',
-    'styles/brands.css',
-    'styles/barlow.css',
-    'styles/themes/red.css',
-    'styles/themes/green.css',
-    'styles/themes/yellow.css',
-    'styles/themes/purple.css',
-    'webfonts/fa-solid-900.woff2',
-    'webfonts/fa-solid-900.ttf',
-    'webfonts/fa-brands-400.woff2',
-    'webfonts/fa-brands-400.ttf',
-    'webfonts/fa-regular-400.woff2',
-    'webfonts/fa-regular-400.ttf',
-    'scripts/common.js',
-    'scripts/api.js',
-    'scripts/dashboard.js',
-    'scripts/subscriptions.js',
-    'scripts/subscription-pages.js',
-    'scripts/subscription-preferences.js',
-    'scripts/subscription-media.js',
-    'scripts/subscription-image-viewer.js',
-    'scripts/subscription-price-rules.js',
-    'scripts/subscription-payments.js',
-    'scripts/stats.js',
-    'scripts/settings.js',
-    'scripts/theme.js',
-    'scripts/notifications.js',
-    'scripts/registration.js',
-    'scripts/login.js',
-    'scripts/admin.js',
-    'scripts/admin-backups.js',
-    'scripts/admin-access-logs.js',
-    'scripts/admin-rate-limit.js',
-    'scripts/admin-users.js',
-    'scripts/admin-registration.js',
-    'scripts/calendar.js',
-    'scripts/page-transitions.js',
-    'scripts/decorative-background.js',
-    'scripts/dynamic-wallpaper.js',
-    'scripts/metric-explanations.js',
-    'scripts/i18n/ar.js',
-    'scripts/i18n/ca.js',
-    'scripts/i18n/cs.js',
-    'scripts/i18n/da.js',
-    'scripts/i18n/de.js',
-    'scripts/i18n/el.js',
-    'scripts/i18n/en.js',
-    'scripts/i18n/es.js',
-    'scripts/i18n/fr.js',
-    'scripts/i18n/hu.js',
-    'scripts/i18n/id.js',
-    'scripts/i18n/it.js',
-    'scripts/i18n/jp.js',
-    'scripts/i18n/ko.js',
-    'scripts/i18n/nl.js',
-    'scripts/i18n/pl.js',
-    'scripts/i18n/pt.js',
-    'scripts/i18n/pt_br.js',
-    'scripts/i18n/ro.js',
-    'scripts/i18n/ru.js',
-    'scripts/i18n/sl.js',
-    'scripts/i18n/sr_lat.js',
-    'scripts/i18n/sr.js',
-    'scripts/i18n/tr.js',
-    'scripts/i18n/uk.js',
-    'scripts/i18n/vi.js',
-    'scripts/i18n/zh_cn.js',
-    'scripts/i18n/zh_tw.js',
-    'scripts/i18n/getlang.js',
-    'scripts/libs/chart.js',
-    'scripts/libs/sortable.min.js',
-    'scripts/libs/qrcode.min.js',
     'images/icon/favicon.ico',
     'images/icon/android-chrome-192x192.png',
-    'images/icon/apple-touch-icon-180',
-    'images/icon/apple-touch-icon-152',
-    'images/icon/apple-touch-icon',
-    'images/screenshots/desktop.png',
-    'images/siteicons/wallos.png',
-    'images/siteicons/walloswhite.png',
-    'images/siteimages/empty.png',
-    'images/siteimages/mobilenav.png',
-    'images/siteimages/mobilenavdark.png',
-    'images/avatars/1.svg',
-    'images/avatars/2.svg',
-    'images/avatars/3.svg',
-    'images/avatars/4.svg',
-    'images/avatars/5.svg',
-    'images/avatars/6.svg',
-    'images/avatars/7.svg',
-    'images/avatars/8.svg',
-    'images/avatars/9.svg',
-    'images/siteicons/svg/logo.php',
-    'images/siteicons/svg/category.php',
-    'images/siteicons/svg/check.php',
-    'images/siteicons/svg/delete.php',
-    'images/siteicons/svg/edit.php',
-    'images/siteicons/svg/notes.php',
-    'images/siteicons/svg/payment.php',
-    'images/siteicons/svg/save.php',
-    'images/siteicons/svg/subscription.php',
-    'images/siteicons/svg/web.php',
-    'images/siteicons/svg/websearch.php',
-    'images/siteicons/svg/clone.php',
-    'images/siteicons/svg/mobile-menu/calendar.php',
-    'images/siteicons/svg/mobile-menu/home.php',
-    'images/siteicons/svg/mobile-menu/profile.php',
-    'images/siteicons/svg/mobile-menu/settings.php',
-    'images/siteicons/svg/mobile-menu/statistics.php',
-    'images/siteicons/svg/mobile-menu/subscriptions.php',
-    'images/siteicons/pwa/stats.png',
-    'images/siteicons/pwa/settings.png',
-    'images/siteicons/pwa/about.png',
-    'images/siteicons/pwa/calendar.png',
-    'images/siteicons/pwa/subscriptions.png',
-    'images/siteicons/pwa/dashboard.png',
-    'images/uploads/icons/paypal.png',
-    'images/uploads/icons/creditcard.png',
-    'images/uploads/icons/banktransfer.png',
-    'images/uploads/icons/directdebit.png',
-    'images/uploads/icons/money.png',
-    'images/uploads/icons/googlepay.png',
-    'images/uploads/icons/samsungpay.png',
-    'images/uploads/icons/applepay.png',
-    'images/uploads/icons/crypto.png',
-    'images/uploads/icons/klarna.png',
-    'images/uploads/icons/amazonpay.png',
-    'images/uploads/icons/sepa.png',
-    'images/uploads/icons/skrill.png',
-    'images/uploads/icons/sofort.png',
-    'images/uploads/icons/stripe.png',
-    'images/uploads/icons/affirm.png',
-    'images/uploads/icons/alipay.png',
-    'images/uploads/icons/elo.png',
-    'images/uploads/icons/facebookpay.png',
-    'images/uploads/icons/giropay.png',
-    'images/uploads/icons/ideal.png',
-    'images/uploads/icons/unionpay.png',
-    'images/uploads/icons/interac.png',
-    'images/uploads/icons/wechat.png',
-    'images/uploads/icons/paysafe.png',
-    'images/uploads/icons/poli.png',
-    'images/uploads/icons/qiwi.png',
-    'images/uploads/icons/shoppay.png',
-    'images/uploads/icons/venmo.png',
-    'images/uploads/icons/verifone.png',
-    'images/uploads/icons/webmoney.png',
+    'scripts/i18n/en.js',
 ];
 
-const pagesToPrefetch = [
-    'index.php',
-    'subscriptions.php',
-    'profile.php',
-    'calendar.php',
-    'settings.php',
-    'stats.php',
-    'about.php',
-    'login.php',
-    'admin.php',
+const STATIC_PATH_PREFIXES = [
+    'styles/',
+    'scripts/',
+    'webfonts/',
+    'images/icon/',
+    'images/siteicons/',
+    'images/siteimages/',
+    'images/avatars/',
+    'images/screenshots/',
+    'images/uploads/icons/',
 ];
 
 function normalizePathname(pathname) {
@@ -178,12 +30,20 @@ function normalizePathname(pathname) {
 
 function isStaticAssetPath(pathname) {
     const normalizedPath = normalizePathname(pathname);
-    return staticAssets.some(asset => normalizedPath === asset || normalizedPath.endsWith('/' + asset));
+    if (normalizedPath === 'manifest.json') {
+        return true;
+    }
+
+    return STATIC_PATH_PREFIXES.some(prefix => normalizedPath.startsWith(prefix));
 }
 
 function pathMatchesPrefix(pathname, prefix) {
     const normalizedPath = normalizePathname(pathname);
     return normalizedPath.startsWith(prefix) || normalizedPath.includes('/' + prefix);
+}
+
+function hasExactAssetFingerprint(url) {
+    return /^v=[A-Za-z0-9._-]+$/.test(url.search.slice(1));
 }
 
 function cacheOkResponse(cacheName, cacheKey, response) {
@@ -196,15 +56,21 @@ function cacheOkResponse(cacheName, cacheKey, response) {
     }).catch(() => {});
 }
 
-// Install: cache static assets only
+function fetchWithoutStore(request) {
+    return fetch(request, { cache: 'no-store' });
+}
+
 self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open(STATIC_CACHE).then(function (cache) {
             return Promise.allSettled(
-                staticAssets.map(url =>
+                PRECACHE_ASSETS.map(url =>
                     fetch(url).then(response => {
-                        if (response.ok) cache.put(url, response);
-                    }).catch(() => {}) // silently skip missing files
+                        if (response.ok) {
+                            return cache.put(url, response);
+                        }
+                        return null;
+                    }).catch(() => null)
                 )
             );
         })
@@ -212,13 +78,14 @@ self.addEventListener('install', function (event) {
     self.skipWaiting();
 });
 
-// Activate: clean up old caches
 self.addEventListener('activate', function (event) {
-    const validCaches = [STATIC_CACHE, PAGES_CACHE, LOGOS_CACHE];
+    const validCaches = [STATIC_CACHE, LOGOS_CACHE];
     event.waitUntil(
         caches.keys().then(keys =>
             Promise.all(
-                keys.filter(key => !validCaches.includes(key))
+                keys
+                    .filter(key => WALLOS_CACHE_PREFIXES.some(prefix => key.startsWith(prefix)))
+                    .filter(key => !validCaches.includes(key))
                     .map(key => caches.delete(key))
             )
         )
@@ -226,21 +93,7 @@ self.addEventListener('activate', function (event) {
     self.clients.claim();
 });
 
-// Message: prefetch pages after login
 self.addEventListener('message', function (event) {
-    if (event.data && event.data.type === 'PREFETCH_PAGES') {
-        caches.open(PAGES_CACHE).then(cache => {
-            pagesToPrefetch.forEach(url => {
-                fetch(url).then(response => {
-                    // Only cache if user is actually logged in (no redirect)
-                    if (response.ok && !response.redirected) {
-                        cache.put(url, response);
-                    }
-                }).catch(() => {});
-            });
-        });
-    }
-
     if (event.data && event.data.type === 'WALLOS_CLEAR_CACHES') {
         const replyPort = event.ports && event.ports[0] ? event.ports[0] : null;
         caches.keys()
@@ -274,7 +127,6 @@ self.addEventListener('message', function (event) {
                     success: true,
                     currentCaches: {
                         static: STATIC_CACHE,
-                        pages: PAGES_CACHE,
                         logos: LOGOS_CACHE,
                     },
                     wallosCacheNames: wallosCaches,
@@ -287,29 +139,31 @@ self.addEventListener('message', function (event) {
     }
 });
 
-// Fetch: single handler for all requests
 self.addEventListener('fetch', function (event) {
     const request = event.request;
     const url = new URL(request.url);
     const isSameOrigin = url.origin === self.location.origin;
-    const isEndpointRequest = isSameOrigin && url.pathname.includes('/endpoints/');
-    const normalizedPath = normalizePathname(url.pathname);
+    const isEndpointRequest = isSameOrigin && (url.pathname.includes('/endpoints/') || url.pathname.includes('/api/'));
+    const isPhpRequest = isSameOrigin && /\.php(?:\/|$)/i.test(url.pathname);
     const isSubscriptionMediaRequest = isSameOrigin && pathMatchesPrefix(url.pathname, 'images/uploads/logos/subscription-media/');
     const isLogoUploadRequest = isSameOrigin && pathMatchesPrefix(url.pathname, 'images/uploads/logos/');
     const isStaticAssetRequest = isSameOrigin && isStaticAssetPath(url.pathname);
     const isDocumentRequest = request.mode === 'navigate' || request.destination === 'document';
 
-    // Never intercept non-GET requests (POST, etc.)
-    if (request.method !== 'GET') return;
-
-    // Subscription media is private and access-controlled by PHP endpoints / nginx rules.
-    // Never put it in shared browser caches, otherwise deleted or cross-account media can linger client-side.
-    if (isSubscriptionMediaRequest) {
-        event.respondWith(fetch(request));
+    if (request.method !== 'GET') {
         return;
     }
 
-    // Logo images: cache-first, populate on first load. Subscription media is excluded above.
+    // Documents, PHP/API traffic and access-controlled media always go to the server.
+    // This prevents stale CSRF tokens and cross-account private content in CacheStorage
+    // or in the browser's regular HTTP cache.
+    if (isDocumentRequest || isEndpointRequest || isPhpRequest || isSubscriptionMediaRequest) {
+        event.respondWith(fetchWithoutStore(request));
+        return;
+    }
+
+    // Ordinary uploaded service logos are public presentation assets. Private
+    // subscription media was excluded above and is never cached here.
     if (isLogoUploadRequest) {
         event.respondWith(
             caches.match(request).then(response => {
@@ -322,21 +176,10 @@ self.addEventListener('fetch', function (event) {
         return;
     }
 
-    // Versioned static assets stay network-first so new CSS/JS takes effect immediately after deploy.
-    if (isStaticAssetRequest && url.search) {
-        event.respondWith(
-            fetch(request).then(networkResponse => {
-                cacheOkResponse(STATIC_CACHE, request, networkResponse);
-                return networkResponse;
-            }).catch(() => {
-                return caches.match(request).then(response => response || caches.match(normalizedPath));
-            })
-        );
-        return;
-    }
-
-    // Unversioned static assets are cache-first and repopulate only when the cache version changes.
-    if (isStaticAssetRequest) {
+    // Fingerprinted packaged assets are immutable: use the exact request as the key.
+    // Never ignore or strip the query string, otherwise a new version could receive
+    // an older script or stylesheet.
+    if (isStaticAssetRequest && hasExactAssetFingerprint(url)) {
         event.respondWith(
             caches.match(request).then(response => {
                 return response || fetch(request).then(networkResponse => {
@@ -348,32 +191,17 @@ self.addEventListener('fetch', function (event) {
         return;
     }
 
-    // API / endpoint requests should stay network-only so query-string variants do not bleed into cache.
-    if (isEndpointRequest) {
-        event.respondWith(fetch(request));
-        return;
-    }
-
-    // HTML document navigations: network-first, cache exact URL only.
-    if (isDocumentRequest) {
+    // Unversioned or unexpectedly queried assets revalidate online. Offline fallback
+    // remains exact-key only and therefore cannot blur two versions together.
+    if (isStaticAssetRequest) {
         event.respondWith(
-            fetch(request).then(response => {
-                if (response.ok && !response.redirected) {
-                    const responseClone = response.clone();
-                    caches.open(PAGES_CACHE).then(cache => {
-                        cache.put(request, responseClone);
-                    });
-                }
-                return response;
-            }).catch(() => {
-                return caches.match(request);
-            })
+            fetch(request).then(networkResponse => {
+                cacheOkResponse(STATIC_CACHE, request, networkResponse);
+                return networkResponse;
+            }).catch(() => caches.match(request))
         );
         return;
     }
 
-    // Everything else stays network-first without fuzzy query-string fallbacks.
-    event.respondWith(
-        fetch(request).catch(() => caches.match(request))
-    );
+    event.respondWith(fetch(request));
 });

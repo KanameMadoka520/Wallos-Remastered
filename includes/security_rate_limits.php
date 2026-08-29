@@ -308,14 +308,18 @@ function wallos_build_rate_limit_violation($db, $userId, $username, $i18n, $cate
 
 function wallos_enforce_backend_request_rate_limit($db, $userId, $username, $i18n)
 {
-    $settings = wallos_get_rate_limit_settings($db);
     $path = wallos_get_rate_limit_request_path();
-    if (
-        !$settings['enabled']
-        || wallos_rate_limit_is_exempt_user($userId)
+    $isExemptRequest = (
+        wallos_rate_limit_is_exempt_user($userId)
         || wallos_rate_limit_is_admin_only_path($path)
         || wallos_rate_limit_is_exempt_backend_path($path)
-    ) {
+    );
+    if ($isExemptRequest) {
+        return null;
+    }
+
+    $settings = wallos_get_rate_limit_settings($db);
+    if (!$settings['enabled']) {
         return null;
     }
 

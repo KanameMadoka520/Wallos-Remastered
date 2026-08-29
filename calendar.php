@@ -310,7 +310,7 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
   </div>
 </div>
 
-<script src="scripts/calendar.js?<?= $calendarJsVersion ?>"></script>
+<script defer src="scripts/calendar.js?v=<?= $calendarJsVersion ?>"></script>
 <?php
 require_once 'includes/footer.php';
 ?>

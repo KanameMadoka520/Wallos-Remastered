@@ -8,7 +8,6 @@ function wallos_parse_service_worker_cache_versions($filePath)
 {
     $versions = [
         'static' => '',
-        'pages' => '',
         'logos' => '',
     ];
 
@@ -23,7 +22,6 @@ function wallos_parse_service_worker_cache_versions($filePath)
 
     $patterns = [
         'static' => "/const\\s+STATIC_CACHE\\s*=\\s*'([^']+)'/i",
-        'pages' => "/const\\s+PAGES_CACHE\\s*=\\s*'([^']+)'/i",
         'logos' => "/const\\s+LOGOS_CACHE\\s*=\\s*'([^']+)'/i",
     ];
 
