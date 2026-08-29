@@ -196,6 +196,58 @@ async function waitForSubscriptionsShell() {
   await page.locator("#subscription-page-loading-overlay.is-visible").waitFor({ state: "hidden", timeout: 15000 }).catch(() => null);
 }
 
+async function readSubscriptionCardLayoutHealth() {
+  await page.evaluate(async () => {
+    if (document.fonts?.ready) {
+      await Promise.race([
+        document.fonts.ready.catch(() => null),
+        new Promise((resolve) => window.setTimeout(resolve, 2000)),
+      ]);
+    }
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+
+  return page.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll("#subscriptions .subscription-container[data-id]"))
+      .filter((card) => getComputedStyle(card).display !== "none")
+      .map((card) => ({
+        id: card.dataset.id || "",
+        gridRowEnd: card.style.gridRowEnd,
+        rect: card.getBoundingClientRect(),
+      }));
+    const invalidSpans = cards
+      .filter((card) => !/^span\s+\d+$/.test(card.gridRowEnd))
+      .map((card) => card.id);
+    const overlaps = [];
+
+    for (let left = 0; left < cards.length; left += 1) {
+      for (let right = left + 1; right < cards.length; right += 1) {
+        const first = cards[left];
+        const second = cards[right];
+        const overlapX = Math.min(first.rect.right, second.rect.right) - Math.max(first.rect.left, second.rect.left);
+        const overlapY = Math.min(first.rect.bottom, second.rect.bottom) - Math.max(first.rect.top, second.rect.top);
+        if (overlapX > 1 && overlapY > 1) {
+          overlaps.push(`${first.id}:${second.id}`);
+        }
+      }
+    }
+
+    return {
+      cardCount: cards.length,
+      invalidSpans,
+      overlaps,
+    };
+  });
+}
+
+async function assertSubscriptionCardsDoNotOverlap(label) {
+  const layout = await readSubscriptionCardLayoutHealth();
+  if (layout.cardCount > 0 && (layout.invalidSpans.length > 0 || layout.overlaps.length > 0)) {
+    throw new Error(`${label} layout is invalid: ${JSON.stringify(layout)}`);
+  }
+  return layout;
+}
+
 async function waitForSubscriptionPageFilter(filterValue, timeout = 15000) {
   await page.waitForFunction((expectedFilter) => {
     const tabs = document.getElementById("subscription-page-tabs");
@@ -517,6 +569,43 @@ try {
     await page.goto(`${baseUrl}/subscriptions.php`, { waitUntil: "domcontentloaded" });
     await waitForSubscriptionsShell();
     originalPreferences = await readCurrentPreferences();
+  });
+
+  await step("warm-cache first subscription render has no card overlap", async () => {
+    await page.waitForLoadState("load", { timeout: 15000 });
+    await page.goto(`${baseUrl}/index.php`, { waitUntil: "domcontentloaded" });
+    const desktopNavigationButton = page.locator(".dropbtn").first();
+    if (await desktopNavigationButton.isVisible()) {
+      await desktopNavigationButton.hover();
+    }
+    const subscriptionLinks = page.locator('a[href*="subscriptions.php"]');
+    let visibleSubscriptionLink = null;
+    for (let index = 0; index < await subscriptionLinks.count(); index += 1) {
+      const candidate = subscriptionLinks.nth(index);
+      if (await candidate.isVisible()) {
+        visibleSubscriptionLink = candidate;
+        break;
+      }
+    }
+    if (!visibleSubscriptionLink) {
+      throw new Error("dashboard has no visible subscriptions navigation link");
+    }
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }),
+      visibleSubscriptionLink.click(),
+    ]);
+    await waitForSubscriptionsShell();
+    const layout = await assertSubscriptionCardsDoNotOverlap("warm-cache first render");
+    if (layout.cardCount < 1) {
+      throw new Error("warm-cache layout test requires at least one subscription card");
+    }
+  });
+
+  await step("back-forward restored subscription page has no card overlap", async () => {
+    await page.goto(`${baseUrl}/index.php`, { waitUntil: "domcontentloaded" });
+    await page.goBack({ waitUntil: "domcontentloaded", timeout: 15000 });
+    await waitForSubscriptionsShell();
+    await assertSubscriptionCardsDoNotOverlap("back-forward restored render");
   });
 
   await step("direct add link waits for subscription modules before opening", async () => {

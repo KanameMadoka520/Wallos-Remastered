@@ -359,8 +359,8 @@ function initializeSubscriptionCardSortable() {
   return window.WallosSubscriptionLayout?.initializeSubscriptionCardSortable?.();
 }
 
-function destroySubscriptionCardSortable() {
-  return window.WallosSubscriptionLayout?.destroySubscriptionCardSortable?.();
+function destroySubscriptionCardSortable(options = {}) {
+  return window.WallosSubscriptionLayout?.destroySubscriptionCardSortable?.(options);
 }
 
 function getDetailImageConfig() {
@@ -1878,6 +1878,22 @@ function scheduleSubscriptionLayoutAfterImagesSettle(container, requestId) {
   });
 }
 
+function scheduleSubscriptionLayoutAfterFontsSettle(container, requestId) {
+  if (!document.fonts?.ready) {
+    return;
+  }
+
+  Promise.resolve(document.fonts.ready).then(() => {
+    if (
+      requestId === subscriptionsRequestSequence
+      && container.isConnected
+      && container === document.querySelector("#subscriptions")
+    ) {
+      scheduleSubscriptionMasonryLayout();
+    }
+  }).catch(() => null);
+}
+
 function rehydrateSubscriptionCards(container, requestId, id, event, initiator) {
   initializeSubscriptionInteractions();
   setSwipeElements();
@@ -1894,6 +1910,7 @@ function rehydrateSubscriptionCards(container, requestId, id, event, initiator) 
 
   scheduleSubscriptionMasonryLayout();
   scheduleSubscriptionLayoutAfterImagesSettle(container, requestId);
+  scheduleSubscriptionLayoutAfterFontsSettle(container, requestId);
 
   if (initiator === "clone" && id && event) {
     openEditSubscription(event, id);
@@ -1963,7 +1980,7 @@ function fetchSubscriptions(id, event, initiator, options = {}) {
       }
 
       destroySubscriptionMediaSortables();
-      destroySubscriptionCardSortable();
+      destroySubscriptionCardSortable({ cancelPendingLayout: true });
       subscriptionsContainer.innerHTML = data.html;
 
       applySubscriptionPagesPayload(data, {
@@ -2266,6 +2283,8 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener("keydown", handleSubscriptionImageViewerKeydown);
   window.addEventListener("resize", handleSubscriptionMasonryResize, { passive: true });
   loadSubscriptionValueVisibility();
+  initializeSubscriptionMediaSortables();
+  initializeSubscriptionCardSortable();
   applySubscriptionDisplayColumns();
   applySubscriptionValueVisibility();
   applyAllSubscriptionImageLayoutModes();
@@ -2274,8 +2293,12 @@ document.addEventListener('DOMContentLoaded', function () {
   toggleReplacementSub();
   renderSubscriptionPageTabs();
   closeSubscriptionImageViewer();
-  initializeSubscriptionMediaSortables();
-  initializeSubscriptionCardSortable();
+  const initialSubscriptionsContainer = document.querySelector("#subscriptions");
+  if (initialSubscriptionsContainer) {
+    scheduleSubscriptionMasonryLayout();
+    scheduleSubscriptionLayoutAfterImagesSettle(initialSubscriptionsContainer, subscriptionsRequestSequence);
+    scheduleSubscriptionLayoutAfterFontsSettle(initialSubscriptionsContainer, subscriptionsRequestSequence);
+  }
 });
 
 function searchSubscriptions() {
@@ -2475,4 +2498,20 @@ window.addEventListener('load', () => {
   if (document.querySelector('.subscription')) {
     swipeHintAnimation();
   }
+  scheduleSubscriptionMasonryLayout();
+});
+
+window.addEventListener("pageshow", (event) => {
+  if (!event.persisted) {
+    return;
+  }
+
+  const subscriptionsContainer = document.querySelector("#subscriptions");
+  if (!subscriptionsContainer) {
+    return;
+  }
+
+  scheduleSubscriptionMasonryLayout();
+  scheduleSubscriptionLayoutAfterImagesSettle(subscriptionsContainer, subscriptionsRequestSequence);
+  scheduleSubscriptionLayoutAfterFontsSettle(subscriptionsContainer, subscriptionsRequestSequence);
 });

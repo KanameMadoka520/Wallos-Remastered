@@ -57,10 +57,11 @@ try {
             'requestId !== subscriptionsRequestSequence',
             'signal: requestController.signal',
             'destroySubscriptionMediaSortables()',
-            'destroySubscriptionCardSortable()',
+            'destroySubscriptionCardSortable({ cancelPendingLayout: true })',
             'subscriptionsContainer.innerHTML = data.html',
             'rehydrateSubscriptionCards(',
             'scheduleSubscriptionLayoutAfterImagesSettle(',
+            'scheduleSubscriptionLayoutAfterFontsSettle(',
             'image.decode()',
         ]),
         'Subscription fragments must be a cancellable, latest-response-only JSON update with complete layout rehydration.'
@@ -78,7 +79,7 @@ try {
     $fetchBody = substr($subscriptions, $fetchStart, $fetchEnd - $fetchStart);
     $guardPosition = strpos($fetchBody, 'isSubscriptionsRequestAbort(null, requestController, requestId)');
     $destroyMediaPosition = strpos($fetchBody, 'destroySubscriptionMediaSortables();');
-    $destroyCardsPosition = strpos($fetchBody, 'destroySubscriptionCardSortable();');
+    $destroyCardsPosition = strpos($fetchBody, 'destroySubscriptionCardSortable({ cancelPendingLayout: true });');
     $replacePosition = strpos($fetchBody, 'subscriptionsContainer.innerHTML = data.html;');
     $payloadPosition = strpos($fetchBody, 'applySubscriptionPagesPayload(data, {');
     $rehydratePosition = strpos($fetchBody, 'rehydrateSubscriptionCards(');
@@ -103,12 +104,36 @@ try {
     $columnsPosition = strpos($rehydrateBody, 'applySubscriptionDisplayColumns();');
     $immediateMasonryPosition = strpos($rehydrateBody, 'scheduleSubscriptionMasonryLayout();');
     $settledMasonryPosition = strpos($rehydrateBody, 'scheduleSubscriptionLayoutAfterImagesSettle(');
+    $settledFontsPosition = strpos($rehydrateBody, 'scheduleSubscriptionLayoutAfterFontsSettle(');
     wallos_ajax_pagination_assert(
         $cardSortablePosition !== false
             && $columnsPosition > $cardSortablePosition
             && $immediateMasonryPosition > $columnsPosition
-            && $settledMasonryPosition > $immediateMasonryPosition,
-        'Card rehydration must finish Sortable teardown before scheduling immediate and image-settled Masonry passes.'
+            && $settledMasonryPosition > $immediateMasonryPosition
+            && $settledFontsPosition > $settledMasonryPosition,
+        'Card rehydration must finish Sortable teardown before immediate, image-settled, and font-settled Masonry passes.'
+    );
+    $initialStart = strpos($subscriptions, "document.addEventListener('DOMContentLoaded', function () {");
+    $initialEnd = $initialStart === false ? false : strpos($subscriptions, "\nfunction searchSubscriptions()", $initialStart);
+    wallos_ajax_pagination_assert(
+        $initialStart !== false && $initialEnd !== false,
+        'Unable to isolate the initial subscription-page lifecycle for layout ordering checks.'
+    );
+    $initialBody = substr($subscriptions, $initialStart, $initialEnd - $initialStart);
+    $initialMediaPosition = strpos($initialBody, 'initializeSubscriptionMediaSortables();');
+    $initialCardPosition = strpos($initialBody, 'initializeSubscriptionCardSortable();');
+    $initialColumnsPosition = strpos($initialBody, 'applySubscriptionDisplayColumns();');
+    $initialMasonryPosition = strpos($initialBody, 'scheduleSubscriptionMasonryLayout();', $initialColumnsPosition);
+    $initialImagesPosition = strpos($initialBody, 'scheduleSubscriptionLayoutAfterImagesSettle(', $initialMasonryPosition);
+    $initialFontsPosition = strpos($initialBody, 'scheduleSubscriptionLayoutAfterFontsSettle(', $initialImagesPosition);
+    wallos_ajax_pagination_assert(
+        $initialMediaPosition !== false
+            && $initialCardPosition > $initialMediaPosition
+            && $initialColumnsPosition > $initialCardPosition
+            && $initialMasonryPosition > $initialColumnsPosition
+            && $initialImagesPosition > $initialMasonryPosition
+            && $initialFontsPosition > $initialImagesPosition,
+        'Initial rendering must finish Sortable teardown before immediate, image-settled, and font-settled Masonry passes.'
     );
 
     $endpoint = wallos_ajax_pagination_source('endpoints/subscriptions/get.php');
@@ -141,8 +166,10 @@ try {
     $media = wallos_ajax_pagination_source('scripts/subscription-media.js');
     wallos_ajax_pagination_assert(
         strpos($layout, 'destroySubscriptionCardSortable') !== false
+            && strpos($layout, 'options.cancelPendingLayout === true') !== false
+            && strpos($subscriptions, 'destroySubscriptionCardSortable({ cancelPendingLayout: true })') !== false
             && strpos($media, 'destroySubscriptionMediaSortables') !== false,
-        'Sortable instances must be explicitly destroyed before fragment DOM replacement.'
+        'Sortable instances must be destroyed before replacement without cancelling normal initialization layout work.'
     );
 
     echo "Subscription AJAX pagination contract test passed.\n";
