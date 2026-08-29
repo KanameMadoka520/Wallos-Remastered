@@ -83,11 +83,11 @@
     }
   }
 
-  function destroySubscriptionCardSortable() {
+  function destroySubscriptionCardSortable(options = {}) {
     const container = document.querySelector("#subscriptions");
     container?.classList.remove("is-sorting");
 
-    if (subscriptionMasonryLayoutFrame !== null) {
+    if (options.cancelPendingLayout === true && subscriptionMasonryLayoutFrame !== null) {
       window.cancelAnimationFrame(subscriptionMasonryLayoutFrame);
       subscriptionMasonryLayoutFrame = null;
     }
