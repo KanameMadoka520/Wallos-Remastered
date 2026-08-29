@@ -9,6 +9,10 @@ const username = process.env.WALLOS_TEST_USERNAME || "";
 const password = process.env.WALLOS_TEST_PASSWORD || "";
 const rounds = Math.max(10, Number.parseInt(process.env.WALLOS_PERF_ROUNDS || "10", 10) || 10);
 const outputPath = process.env.WALLOS_PERF_OUTPUT ? path.resolve(process.env.WALLOS_PERF_OUTPUT) : "";
+const baselinePath = process.env.WALLOS_PERF_BASELINE ? path.resolve(process.env.WALLOS_PERF_BASELINE) : "";
+const minimumWarmImprovement = Number.parseFloat(process.env.WALLOS_PERF_MIN_WARM_IMPROVEMENT || "30");
+const maximumPageRegression = Number.parseFloat(process.env.WALLOS_PERF_MAX_PAGE_REGRESSION || "10");
+const maximumNavigationP95 = Number.parseFloat(process.env.WALLOS_PERF_MAX_NAVIGATION_P95 || "100");
 const headless = process.env.WALLOS_E2E_HEADLESS !== "0";
 const targets = ["subscriptions.php", "calendar.php", "stats.php", "settings.php", "about.php"];
 const modes = String(process.env.WALLOS_PERF_MODES || "cold,warm")
@@ -217,6 +221,52 @@ const report = {
   samples,
 };
 
+let comparisonFailed = false;
+if (baselinePath) {
+  const baseline = JSON.parse(await fs.readFile(baselinePath, "utf8"));
+  const baselineWarm = Number(baseline?.summary?.warm?.overall?.load_ms?.median || 0);
+  const currentWarm = Number(summary?.warm?.overall?.load_ms?.median || 0);
+  if (baselineWarm <= 0 || currentWarm <= 0) {
+    throw new Error("Baseline and current reports must both contain warm overall load medians.");
+  }
+
+  const warmImprovementPercent = ((baselineWarm - currentWarm) / baselineWarm) * 100;
+  const pageComparisons = {};
+  for (const target of targets) {
+    const baselineMedian = Number(baseline?.summary?.warm?.pages?.[target]?.load_ms?.median || 0);
+    const currentMedian = Number(summary?.warm?.pages?.[target]?.load_ms?.median || 0);
+    if (baselineMedian <= 0 || currentMedian <= 0) {
+      throw new Error(`Missing warm load median for ${target}.`);
+    }
+
+    const changePercent = ((currentMedian - baselineMedian) / baselineMedian) * 100;
+    pageComparisons[target] = {
+      baseline_load_median_ms: baselineMedian,
+      current_load_median_ms: currentMedian,
+      change_percent: Math.round(changePercent * 100) / 100,
+      passed: changePercent <= maximumPageRegression,
+    };
+    if (changePercent > maximumPageRegression) {
+      comparisonFailed = true;
+    }
+  }
+
+  const navigationP95 = Number(summary?.warm?.overall?.click_to_navigation_ms?.p95 || 0);
+  report.comparison = {
+    baseline_path: baselinePath,
+    minimum_warm_improvement_percent: minimumWarmImprovement,
+    maximum_page_regression_percent: maximumPageRegression,
+    maximum_navigation_p95_ms: maximumNavigationP95,
+    warm_improvement_percent: Math.round(warmImprovementPercent * 100) / 100,
+    navigation_p95_ms: navigationP95,
+    page_comparisons: pageComparisons,
+    passed: warmImprovementPercent >= minimumWarmImprovement
+      && navigationP95 <= maximumNavigationP95
+      && !comparisonFailed,
+  };
+  comparisonFailed = !report.comparison.passed;
+}
+
 for (const mode of modes) {
   const overall = summary[mode].overall;
   console.log(
@@ -234,4 +284,16 @@ if (outputPath) {
   console.log(`Report: ${outputPath}`);
 } else {
   console.log(JSON.stringify(report));
+}
+
+if (report.comparison) {
+  console.log(
+    `comparison: warm improvement=${report.comparison.warm_improvement_percent}%`
+      + ` navigation p95=${report.comparison.navigation_p95_ms}ms`
+      + ` result=${report.comparison.passed ? "PASS" : "FAIL"}`,
+  );
+}
+
+if (comparisonFailed) {
+  process.exitCode = 1;
 }
