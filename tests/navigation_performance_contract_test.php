@@ -298,6 +298,61 @@ try {
         'Authenticated navigation must not wait more than 100ms before starting the next request.'
     );
 
+    $transitionCss = wallos_navigation_contract_source('styles/page-transitions.css');
+    $transitionSelectorCss = preg_replace('/\/\*[\s\S]*?\*\//', '', $transitionCss);
+    wallos_navigation_contract_assert(
+        is_string($transitionSelectorCss),
+        'Unable to normalize page-transition CSS for selector checks.'
+    );
+    wallos_navigation_contract_assert(
+        preg_match(
+            '/(?:^|\})\s*\.wallos-page-transition-center\s*\{'
+                . '(?=[^}]*\binset\s*:\s*50%\s+auto\s+auto\s+50%\s*;)'
+                . '(?=[^}]*\btext-align\s*:\s*center\s*;)[^}]*\}/s',
+            $transitionSelectorCss
+        ) === 1,
+        'The page-transition content group must be anchored to the viewport center.'
+    );
+    wallos_navigation_contract_assert(
+        preg_match(
+            '/html\.wallos-page-transition-loading\s+\.wallos-page-transition-center\s*,'
+                . '\s*html\.wallos-page-transition-leaving\s+\.wallos-page-transition-center\s*\{'
+                . '[^}]*\btransform\s*:\s*translate\(\s*-50%\s*,\s*-50%\s*\)/s',
+            $transitionSelectorCss
+        ) === 1,
+        'The visible page-transition content group must remain centered on both axes.'
+    );
+    wallos_navigation_contract_assert(
+        preg_match(
+            '/html\[data-page-transition-style\^="bluearchive"\]\s+\.wallos-page-transition-center\s*\{'
+                . '(?=[^}]*\btext-align\s*:\s*center\s*;)(?![^}]*\binset\s*:)(?![^}]*\btransform\s*:)[^}]*\}/s',
+            $transitionSelectorCss
+        ) === 1,
+        'Blue Archive transitions must inherit the shared centered position and transform.'
+    );
+    wallos_navigation_contract_assert(
+        preg_match(
+            '/html\[data-page-transition-style\^="bluearchive"\]\s+'
+                . '\.wallos-page-transition-(?:loading|leaving|revealed)\b/',
+            $transitionSelectorCss
+        ) !== 1,
+        'Blue Archive state classes belong on html and must not be written as descendants.'
+    );
+    foreach (['left', 'right'] as $panelSide) {
+        $panelClass = 'wallos-page-transition-ba-panel-' . $panelSide;
+        wallos_navigation_contract_assert(
+            preg_match(
+                '/html\[data-page-transition-style\^="bluearchive"\]'
+                    . '\.wallos-page-transition-loading\s+\.' . preg_quote($panelClass, '/') . '\s*,'
+                    . '\s*html\[data-page-transition-style\^="bluearchive"\]'
+                    . '\.wallos-page-transition-leaving\s+\.' . preg_quote($panelClass, '/') . '\s*\{'
+                    . '[^}]*\bopacity\s*:\s*1\s*;/s',
+                $transitionSelectorCss
+            ) === 1,
+            'The Blue Archive ' . $panelSide . ' decorative panel must be visible during loading and leaving.'
+        );
+    }
+
     $header = wallos_navigation_contract_source('includes/header.php');
     $headerScripts = wallos_navigation_contract_external_scripts($header);
     wallos_navigation_contract_assert(!empty($headerScripts), 'Authenticated header must load its shared scripts.');

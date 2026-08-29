@@ -3,13 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "e2e": "npm run e2e:i18n && npm run e2e:subscriptions && npm run e2e:images && npm run e2e:cache && npm run e2e:admin",
+    "e2e": "npm run e2e:transition-geometry && npm run e2e:i18n && npm run e2e:subscriptions && npm run e2e:images && npm run e2e:cache && npm run e2e:admin",
     "e2e:i18n": "node tests/e2e/i18n_smoke.mjs",
     "e2e:subscriptions": "node tests/e2e/subscriptions_smoke.mjs",
     "e2e:images": "node tests/e2e/subscription_images_smoke.mjs",
     "e2e:cache": "node tests/e2e/client_cache_smoke.mjs",
     "e2e:admin": "node tests/e2e/admin_smoke.mjs",
     "e2e:navigation-resilience": "node tests/e2e/navigation_resilience_smoke.mjs",
+    "e2e:transition-geometry": "node tests/e2e/page_transition_geometry.mjs",
     "e2e:performance": "node tests/e2e/navigation_performance.mjs"
   },
   "devDependencies": {
