@@ -45,7 +45,7 @@ try {
     $migrationResult = $db->query('SELECT migration FROM migrations');
     while ($row = $migrationResult->fetchArray(SQLITE3_ASSOC)) {
         $migration = str_replace('\\', '/', trim((string) ($row['migration'] ?? '')));
-        if (preg_match('#(?:^|/)' . preg_quote('migrations/000080.php', '#') . '$#', $migration) === 1) {
+        if (preg_match('#(?:^|/)' . preg_quote('migrations/000081.php', '#') . '$#', $migration) === 1) {
             $completedLatestMigration = true;
             break;
         }
@@ -68,6 +68,15 @@ try {
         if (!isset($userColumns[$column])) {
             throw new RuntimeException('required column missing');
         }
+    }
+
+    $settingsColumns = [];
+    $columnResult = $db->query("PRAGMA table_info('settings')");
+    while ($row = $columnResult->fetchArray(SQLITE3_ASSOC)) {
+        $settingsColumns[(string) ($row['name'] ?? '')] = true;
+    }
+    if (!isset($settingsColumns['screenshot_privacy_mode'])) {
+        throw new RuntimeException('required screenshot privacy column missing');
     }
 
     $notificationColumns = [];

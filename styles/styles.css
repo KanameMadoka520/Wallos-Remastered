@@ -263,6 +263,85 @@ header .logo .logo-image svg {
   width: 134px;
 }
 
+.wallos-header-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+header .logo .wallos-header-brand .logo-image {
+  margin-right: 0;
+}
+
+.wallos-header-edition {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border: 1px solid rgba(var(--main-color-rgb), 0.42);
+  border-radius: 7px;
+  background: linear-gradient(135deg,
+      rgba(var(--main-color-rgb), 0.18),
+      rgba(var(--accent-color-rgb), 0.12));
+  box-shadow:
+    inset 0 1px 0 rgba(var(--text-color-inverted-rgb), 0.14),
+    0 0 18px rgba(var(--main-color-rgb), 0.12);
+  color: var(--text-color);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  line-height: 1.1;
+  white-space: nowrap;
+  unicode-bidi: isolate;
+}
+
+.wallos-header-brand:hover .wallos-header-edition,
+.wallos-header-brand:focus-visible .wallos-header-edition {
+  border-color: rgba(var(--main-color-rgb), 0.72);
+  background: rgba(var(--main-color-rgb), 0.22);
+  box-shadow: 0 0 22px rgba(var(--main-color-rgb), 0.2);
+}
+
+.wallos-header-brand:focus-visible {
+  outline: 2px solid var(--text-color);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+@media (max-width: 480px) {
+  body>header>.contain {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .wallos-header-brand {
+    gap: 5px;
+  }
+
+  header .logo .logo-image,
+  header .logo .logo-image svg {
+    width: 110px;
+    height: 42px;
+  }
+
+  .wallos-header-edition {
+    padding: 3px 5px;
+    font-size: 9px;
+    letter-spacing: 0.015em;
+  }
+
+  body>header .dropbtn #user,
+  body>header .dropbtn::after {
+    display: none !important;
+  }
+
+  body>header .dropbtn {
+    padding-inline: 7px;
+  }
+}
+
 .button-icon {
   width: 16px;
   height: 16px;
@@ -405,6 +484,27 @@ body.page-ui-fading-in .toast .progress {
   -webkit-tap-highlight-color: transparent;
   -moz-tap-highlight-color: transparent;
   -ms-tap-highlight-color: transparent;
+}
+
+body>header nav,
+body>header .dropdown,
+body>header .dropbtn,
+body>header .dropbtn #user {
+  min-width: 0;
+}
+
+body>header .dropbtn #user {
+  display: block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  body>header .dropbtn #user {
+    max-width: 84px;
+  }
 }
 
 .dropbtn>img {

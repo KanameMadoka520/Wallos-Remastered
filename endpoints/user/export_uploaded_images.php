@@ -4,6 +4,17 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/user_groups.php';
+require_once '../../includes/getsettings.php';
+require_once '../../includes/screenshot_privacy.php';
+
+if (wallos_screenshot_privacy_enabled($settings)) {
+    http_response_code(409);
+    header('Content-Type: application/json; charset=UTF-8');
+    die(json_encode([
+        'success' => false,
+        'message' => translate('screenshot_privacy_mode_blocked', $i18n),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+}
 
 $userStmt = $db->prepare('SELECT username, user_group FROM user WHERE id = :userId');
 $userStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);

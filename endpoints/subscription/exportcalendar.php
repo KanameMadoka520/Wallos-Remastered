@@ -4,6 +4,17 @@ require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/getdbkeys.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/ical_helper.php';
+require_once '../../includes/getsettings.php';
+require_once '../../includes/screenshot_privacy.php';
+
+if (wallos_screenshot_privacy_enabled($settings)) {
+    http_response_code(409);
+    header('Content-Type: application/json; charset=UTF-8');
+    die(json_encode([
+        'success' => false,
+        'message' => translate('screenshot_privacy_mode_blocked', $i18n),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+}
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);

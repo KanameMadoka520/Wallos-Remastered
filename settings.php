@@ -1674,6 +1674,26 @@ $pageSections = [
                     <label for="showsubscriptionprogress"><?= translate('show_subscription_progress', $i18n) ?></label>
                 </div>
             </div>
+            <div class="screenshot-privacy-setting">
+                <div class="form-group-inline">
+                    <input type="checkbox" id="screenshotprivacymode" name="screenshotprivacymode"
+                        onChange="setScreenshotPrivacyMode()" <?= !empty($settings['screenshotPrivacyMode']) ? 'checked' : '' ?>>
+                    <label for="screenshotprivacymode">
+                        <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+                        <?= translate('screenshot_privacy_mode', $i18n) ?>
+                    </label>
+                </div>
+                <div class="settings-notes">
+                    <p>
+                        <i class="fa-solid fa-camera" aria-hidden="true"></i>
+                        <?= translate('screenshot_privacy_mode_info', $i18n) ?>
+                    </p>
+                    <p>
+                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                        <?= translate('screenshot_privacy_mode_warning', $i18n) ?>
+                    </p>
+                </div>
+            </div>
             <div>
                 <div class="form-group-inline">
                     <input type="checkbox" id="weekstartssunday" name="weekstartssunday"

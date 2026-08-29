@@ -33,18 +33,30 @@ $detailsLookups = [
     ],
 ];
 
+$detailsPrivacyEnabled = function_exists('wallos_screenshot_privacy_enabled')
+    && wallos_screenshot_privacy_enabled($settings ?? []);
+$detailsPrivacySeed = $detailsPrivacyEnabled ? wallos_screenshot_privacy_seed() : '';
+
 foreach ($categories as $categoryId => $category) {
-    $detailsLookups['categories']->{$categoryId} = $category['name'];
+    $detailsLookups['categories']->{$categoryId} = $detailsPrivacyEnabled
+        ? wallos_screenshot_privacy_fake_group_label('category', 'category:' . $categoryId, $lang, $userId, $detailsPrivacySeed)
+        : $category['name'];
 }
 foreach ($members as $memberId => $member) {
-    $detailsLookups['members']->{$memberId} = $member['name'];
+    $detailsLookups['members']->{$memberId} = $detailsPrivacyEnabled
+        ? wallos_screenshot_privacy_fake_group_label('member', 'member:' . $memberId, $lang, $userId, $detailsPrivacySeed)
+        : $member['name'];
 }
 foreach ($payment_methods as $paymentMethodId => $paymentMethod) {
     $detailsLookups['paymentMethods']->{$paymentMethodId} = [
-        'name' => $paymentMethod['name'],
-        'icon' => function_exists('wallos_resolve_payment_icon_path')
-            ? wallos_resolve_payment_icon_path($paymentMethod['icon'] ?? '')
-            : (string) ($paymentMethod['icon'] ?? ''),
+        'name' => $detailsPrivacyEnabled
+            ? wallos_screenshot_privacy_fake_group_label('payment', 'payment:' . $paymentMethodId, $lang, $userId, $detailsPrivacySeed)
+            : $paymentMethod['name'],
+        'icon' => $detailsPrivacyEnabled
+            ? wallos_screenshot_privacy_fake_icon('payment:' . $paymentMethodId, $detailsPrivacySeed)
+            : (function_exists('wallos_resolve_payment_icon_path')
+                ? wallos_resolve_payment_icon_path($paymentMethod['icon'] ?? '')
+                : (string) ($paymentMethod['icon'] ?? '')),
     ];
 }
 foreach ($currencies as $currencyId => $currency) {
@@ -56,7 +68,9 @@ foreach ($currencies as $currencyId => $currency) {
 if (isset($subscriptions) && is_array($subscriptions)) {
     foreach ($subscriptions as $detailsSubscription) {
         if (isset($detailsSubscription['id'])) {
-            $detailsLookups['subscriptionNames']->{$detailsSubscription['id']} = $detailsSubscription['name'];
+            $detailsLookups['subscriptionNames']->{$detailsSubscription['id']} = $detailsPrivacyEnabled
+                ? wallos_screenshot_privacy_fake_name($detailsSubscription['id'], $detailsPrivacySeed, $lang)
+                : $detailsSubscription['name'];
         }
     }
 }

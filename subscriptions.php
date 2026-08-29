@@ -178,6 +178,16 @@ $trashedResult = $trashedStmt->execute();
 while ($trashedResult && ($row = $trashedResult->fetchArray(SQLITE3_ASSOC))) {
   $trashedSubscriptions[] = $row;
 }
+if (function_exists('wallos_screenshot_privacy_enabled')
+  && wallos_screenshot_privacy_enabled($settings)
+) {
+  $trashedSubscriptions = wallos_screenshot_privacy_mask_subscriptions(
+    $trashedSubscriptions,
+    wallos_screenshot_privacy_seed(),
+    $lang,
+    'subscription-recycle-bin'
+  );
+}
 
 foreach ($subscriptions as $subscription) {
   $memberId = $subscription['payer_user_id'];
@@ -226,6 +236,49 @@ $subscriptionInteractionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scr
 $subscriptionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/subscriptions.js');
 $sortableJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/libs/sortable.min.js');
 $subscriptionPagePreferences = wallos_get_subscription_page_preferences_payload($settings);
+$displaySubscriptionPages = $subscriptionPages;
+$displayCategories = $categories;
+$displayMembers = $members;
+$displayPaymentMethods = $payment_methods;
+if (function_exists('wallos_screenshot_privacy_enabled')
+  && wallos_screenshot_privacy_enabled($settings)
+) {
+  $subscriptionPagePrivacySeed = wallos_screenshot_privacy_seed();
+  foreach ($displaySubscriptionPages as $displayPageIndex => $displayPage) {
+    $displaySubscriptionPages[$displayPageIndex]['name'] = wallos_screenshot_privacy_fake_name(
+      'subscription-page:' . (string) ($displayPage['id'] ?? $displayPageIndex),
+      $subscriptionPagePrivacySeed,
+      $lang
+    );
+  }
+  foreach ($displayCategories as $displayCategoryId => $displayCategory) {
+    $displayCategories[$displayCategoryId]['name'] = wallos_screenshot_privacy_fake_group_label(
+      'category',
+      'category:' . (string) ($displayCategory['id'] ?? $displayCategoryId),
+      $lang,
+      $userId,
+      $subscriptionPagePrivacySeed
+    );
+  }
+  foreach ($displayMembers as $displayMemberId => $displayMember) {
+    $displayMembers[$displayMemberId]['name'] = wallos_screenshot_privacy_fake_group_label(
+      'member',
+      'member:' . (string) ($displayMember['id'] ?? $displayMemberId),
+      $lang,
+      $userId,
+      $subscriptionPagePrivacySeed
+    );
+  }
+  foreach ($displayPaymentMethods as $displayPaymentId => $displayPaymentMethod) {
+    $displayPaymentMethods[$displayPaymentId]['name'] = wallos_screenshot_privacy_fake_group_label(
+      'payment',
+      'payment:' . (string) ($displayPaymentMethod['id'] ?? $displayPaymentId),
+      $lang,
+      $userId,
+      $subscriptionPagePrivacySeed
+    );
+  }
+}
 $subscriptionDisplayColumns = (int) ($subscriptionPagePreferences['displayColumns'] ?? 1);
 if (!in_array($subscriptionDisplayColumns, [1, 2, 3], true)) {
   $subscriptionDisplayColumns = 1;
@@ -669,7 +722,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
           <span><?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?></span>
           <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['all'] ?? count($subscriptions)) ?></span>
         </button>
-        <?php foreach ($subscriptionPages as $subscriptionPage): ?>
+        <?php foreach ($displaySubscriptionPages as $subscriptionPage): ?>
           <?php
           $pageFilterValue = (string) (int) $subscriptionPage['id'];
           $pageActive = wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) === $pageFilterValue;
@@ -839,9 +892,20 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       });
     }
 
+    if (function_exists('wallos_screenshot_privacy_enabled')
+      && wallos_screenshot_privacy_enabled($settings)
+    ) {
+      $print = wallos_screenshot_privacy_mask_subscriptions(
+        $print,
+        wallos_screenshot_privacy_seed(),
+        $lang,
+        'subscriptions-page'
+      );
+    }
+
     $visibleSubscriptionCount = count($print ?? []);
     if ($visibleSubscriptionCount > 0) {
-      printSubscriptions($print, $sort, $categories, $members, $i18n, $colorTheme, "", $settings['disabledToBottom'], $settings['mobileNavigation'], $settings['showSubscriptionProgress'], $currencies, $lang);
+      printSubscriptions($print, $sort, $displayCategories, $displayMembers, $i18n, $colorTheme, "", $settings['disabledToBottom'], $settings['mobileNavigation'], $settings['showSubscriptionProgress'], $currencies, $lang);
     }
     $db->close();
 
@@ -885,7 +949,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     <?php if (!empty($trashedSubscriptions)): ?>
       <div class="subscription-recycle-bin-list">
         <?php foreach ($trashedSubscriptions as $trashedSubscription): ?>
-          <article class="subscription-trash-card">
+          <article class="subscription-trash-card" data-subscription-id="<?= (int) $trashedSubscription['id'] ?>">
             <div class="subscription-trash-card-header">
               <div>
                 <h3><?= htmlspecialchars($trashedSubscription['name'], ENT_QUOTES, 'UTF-8') ?></h3>
@@ -893,7 +957,10 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
                 <p><?= translate('subscription_recycle_bin_scheduled_delete_at', $i18n) ?>: <?= htmlspecialchars($trashedSubscription['scheduled_delete_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></p>
               </div>
               <?php if (!empty($trashedSubscription['logo'])): ?>
-                <img src="images/uploads/logos/<?= htmlspecialchars($trashedSubscription['logo'], ENT_QUOTES, 'UTF-8') ?>"
+                <?php $trashedLogoSrc = strpos((string) $trashedSubscription['logo'], 'data:image/') === 0
+                  ? (string) $trashedSubscription['logo']
+                  : 'images/uploads/logos/' . (string) $trashedSubscription['logo']; ?>
+                <img src="<?= htmlspecialchars($trashedLogoSrc, ENT_QUOTES, 'UTF-8') ?>"
                   alt="<?= htmlspecialchars($trashedSubscription['name'], ENT_QUOTES, 'UTF-8') ?>">
               <?php endif; ?>
             </div>
@@ -959,7 +1026,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
         <?= wallos_translate_with_fallback('subscription_page_empty', 'No custom pages yet. Create one above.', $i18n) ?>
       </div>
     <?php else: ?>
-      <?php foreach ($subscriptionPages as $subscriptionPage): ?>
+      <?php foreach ($displaySubscriptionPages as $subscriptionPage): ?>
         <div class="subscription-pages-manager-item" data-page-id="<?= (int) $subscriptionPage['id'] ?>">
           <div class="subscription-pages-manager-item-main">
             <button type="button" class="subscription-page-drag-handle"
@@ -1123,7 +1190,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
           <label for="payment_method"><?= translate('payment_method', $i18n) ?></label>
           <select id="payment_method" name="payment_method_id">
             <?php
-            foreach ($payment_methods as $payment) {
+            foreach ($displayPaymentMethods as $payment) {
               ?>
               <option value="<?= $payment['id'] ?>">
                 <?= $payment['name'] ?>
@@ -1137,7 +1204,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
           <label for="payer_user"><?= translate('paid_by', $i18n) ?></label>
           <select id="payer_user" name="payer_user_id">
             <?php
-            foreach ($members as $member) {
+            foreach ($displayMembers as $member) {
               ?>
               <option value="<?= $member['id'] ?>"><?= $member['name'] ?></option>
               <?php
@@ -1152,7 +1219,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       <label for="category"><?= translate('category', $i18n) ?></label>
       <select id="category" name="category_id">
         <?php
-        foreach ($categories as $category) {
+        foreach ($displayCategories as $category) {
           ?>
           <option value="<?= $category['id'] ?>">
             <?= $category['name'] ?>
@@ -1167,7 +1234,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       <label for="subscription_page_id"><?= wallos_translate_with_fallback('subscription_page_field_label', 'Subscription Page', $i18n) ?></label>
       <select id="subscription_page_id" name="subscription_page_id">
         <option value=""><?= wallos_translate_with_fallback('subscription_page_unassigned', 'Unassigned', $i18n) ?></option>
-        <?php foreach ($subscriptionPages as $subscriptionPage): ?>
+        <?php foreach ($displaySubscriptionPages as $subscriptionPage): ?>
           <option value="<?= (int) $subscriptionPage['id'] ?>"><?= htmlspecialchars($subscriptionPage['name'], ENT_QUOTES, 'UTF-8') ?></option>
         <?php endforeach; ?>
       </select>
@@ -1372,8 +1439,12 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
         <?php
         foreach ($orderedSubscriptions as $sub) {
           if ($sub['inactive'] == 0) {
+            $replacementSubscriptionName = function_exists('wallos_screenshot_privacy_enabled')
+              && wallos_screenshot_privacy_enabled($settings)
+                ? wallos_screenshot_privacy_fake_name($sub['id'], wallos_screenshot_privacy_seed(), $lang)
+                : $sub['name'];
             ?>
-            <option value="<?= htmlspecialchars($sub['id']) ?>"><?= htmlspecialchars($sub['name']) ?>
+            <option value="<?= htmlspecialchars($sub['id']) ?>"><?= htmlspecialchars($replacementSubscriptionName) ?>
             </option>
             <?php
           }
@@ -1434,7 +1505,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
         <div class="split50">
           <label for="subscription-payment-method"><?= translate('payment_method', $i18n) ?></label>
           <select id="subscription-payment-method" name="payment_method_id">
-            <?php foreach ($payment_methods as $payment): ?>
+            <?php foreach ($displayPaymentMethods as $payment): ?>
               <option value="<?= (int) $payment['id'] ?>"><?= htmlspecialchars($payment['name'], ENT_QUOTES, 'UTF-8') ?></option>
             <?php endforeach; ?>
           </select>
@@ -1582,7 +1653,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
   window.subscriptionPagePreferences = <?= json_encode($subscriptionPagePreferences, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
   window.subscriptionPageState = <?= json_encode([
     'currentFilter' => wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter),
-    'pages' => $subscriptionPages,
+    'pages' => $displaySubscriptionPages,
     'counts' => $subscriptionPageCounts,
   ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
   window.subscriptionPageStrings = <?= json_encode([

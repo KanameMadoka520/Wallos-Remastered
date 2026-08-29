@@ -963,6 +963,38 @@ function setShowSubscriptionProgress() {
   storeSettingsOnDB('subscription_progress', value);
 }
 
+function setScreenshotPrivacyMode() {
+  const checkbox = document.getElementById("screenshotprivacymode");
+  if (!checkbox) {
+    return;
+  }
+
+  const enabled = checkbox.checked;
+  checkbox.disabled = true;
+
+  settingsPostJson('endpoints/settings/screenshot_privacy_mode.php', { value: enabled }, {
+    fallbackErrorMessage: translate("unknown_error"),
+  })
+    .then((data) => {
+      if (!data.success) {
+        checkbox.checked = !enabled;
+        showErrorMessage(data.message);
+        return;
+      }
+
+      window.WallosScreenshotPrivacy?.setEnabled?.(enabled);
+      showSuccessMessage(data.message);
+      window.setTimeout(() => window.location.reload(), 320);
+    })
+    .catch((error) => {
+      checkbox.checked = !enabled;
+      showErrorMessage(getSettingsRequestErrorMessage(error, translate("unknown_error")));
+    })
+    .finally(() => {
+      checkbox.disabled = false;
+    });
+}
+
 function setWeekStartsSunday() {
   const weekStartsSundayCheckbox = document.querySelector("#weekstartssunday");
   if (!weekStartsSundayCheckbox) {

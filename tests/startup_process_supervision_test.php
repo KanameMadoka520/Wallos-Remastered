@@ -231,8 +231,9 @@ try {
         strpos($dockerfile, 'ENTRYPOINT ["dumb-init", "--single-child", "--"]') !== false,
         'dumb-init must forward signals only to the supervising startup script.'
     );
-    foreach (['000080.php', 'period_budget', 'budget_period_type', 'budget_period_anchor_date',
+    foreach (['000081.php', 'period_budget', 'budget_period_type', 'budget_period_anchor_date',
         'period_summary_at_period_start',
+        'screenshot_privacy_mode',
         'logo_text_color', 'logo_variant',
         'idx_subscriptions_user_inactive_next_payment', 'idx_subscriptions_user_notify_inactive', 'One-time'] as $contract) {
         wallos_supervision_assert(strpos($health, $contract) !== false, 'Health check is missing contract: ' . $contract);

@@ -14,6 +14,7 @@ require_once '../../includes/payment_icons.php';
 include_once '../../includes/list_subscriptions.php';
 
 require_once '../../includes/getsettings.php';
+require_once '../../includes/screenshot_privacy.php';
 
 $theme = "light";
 if (isset($settings['theme'])) {
@@ -322,6 +323,39 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     });
   }
 
+  if (wallos_screenshot_privacy_enabled($settings)) {
+    $print = wallos_screenshot_privacy_mask_subscriptions(
+      $print,
+      wallos_screenshot_privacy_seed(),
+      $lang,
+      'subscriptions-fragment'
+    );
+  }
+
+  $displayCategories = $categories;
+  $displayMembers = $members;
+  if (wallos_screenshot_privacy_enabled($settings)) {
+    $displayPrivacySeed = wallos_screenshot_privacy_seed();
+    foreach ($displayCategories as $displayCategoryId => $displayCategory) {
+      $displayCategories[$displayCategoryId]['name'] = wallos_screenshot_privacy_fake_group_label(
+        'category',
+        'category:' . (string) ($displayCategory['id'] ?? $displayCategoryId),
+        $lang,
+        $userId,
+        $displayPrivacySeed
+      );
+    }
+    foreach ($displayMembers as $displayMemberId => $displayMember) {
+      $displayMembers[$displayMemberId]['name'] = wallos_screenshot_privacy_fake_group_label(
+        'member',
+        'member:' . (string) ($displayMember['id'] ?? $displayMemberId),
+        $lang,
+        $userId,
+        $displayPrivacySeed
+      );
+    }
+  }
+
   $visibleSubscriptionCount = count($print ?? []);
   $fragmentBufferLevel = ob_get_level();
   if ($jsonResponseRequested) {
@@ -330,7 +364,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
   try {
     if ($visibleSubscriptionCount > 0) {
-      printSubscriptions($print, $sort, $categories, $members, $i18n, $colorTheme, "../../", $settings['disabledToBottom'], $settings['mobileNavigation'], $settings['showSubscriptionProgress'], $currencies, $lang);
+      printSubscriptions($print, $sort, $displayCategories, $displayMembers, $i18n, $colorTheme, "../../", $settings['disabledToBottom'], $settings['mobileNavigation'], $settings['showSubscriptionProgress'], $currencies, $lang);
     }
 
     if ($visibleSubscriptionCount === 0) {
@@ -366,6 +400,16 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   if ($jsonResponseRequested) {
     $subscriptionsHtml = (string) ob_get_clean();
     $pagePayload = wallos_get_subscription_pages_payload($db, $userId, $hideDisabledSubscriptions);
+    if (wallos_screenshot_privacy_enabled($settings)) {
+      $pagePrivacySeed = wallos_screenshot_privacy_seed();
+      foreach ($pagePayload['pages'] as $pageIndex => $page) {
+        $pagePayload['pages'][$pageIndex]['name'] = wallos_screenshot_privacy_fake_name(
+          'subscription-page:' . (string) ($page['id'] ?? $pageIndex),
+          $pagePrivacySeed,
+          $lang
+        );
+      }
+    }
 
     header('Content-Type: application/json; charset=UTF-8');
     header('Cache-Control: private, no-store, max-age=0');

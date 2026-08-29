@@ -297,8 +297,41 @@ try {
         (float) $durationMatch[1] >= 0 && (float) $durationMatch[1] <= 100,
         'Authenticated navigation must not wait more than 100ms before starting the next request.'
     );
+    wallos_navigation_contract_assert(
+        strpos($transitions, 'route: target.route') !== false
+            && strpos($transitions, 'scene: target.scene') !== false
+            && strpos($transitions, 'restoreCurrentTransitionIdentity') !== false
+            && strpos($transitions, 'if (leaveInProgress)') !== false,
+        'Page transitions must persist target route/scene, restore BFCache identity, and keep first-click-wins.'
+    );
+
+    $transitionMarkup = wallos_navigation_contract_source('includes/page_transitions.php');
+    wallos_navigation_contract_assert(
+        strpos($transitionMarkup, 'wallos-page-transition-ba-crosshair') === false,
+        'Blue Archive transition markup must not render the removed central crosshair.'
+    );
+    $expectedTransitionScenes = [
+        'index.php' => 'overview',
+        'subscriptions.php' => 'subscriptions',
+        'calendar.php' => 'timeline',
+        'stats.php' => 'analytics',
+        'settings.php' => 'controls',
+        'profile.php' => 'identity',
+        'admin.php' => 'command',
+        'about.php' => 'archive',
+    ];
+    foreach ($expectedTransitionScenes as $route => $scene) {
+        wallos_navigation_contract_assert(
+            strpos($transitionMarkup, "'" . $route . "' => '" . $scene . "'") !== false,
+            'Missing canonical transition scene mapping for ' . $route
+        );
+    }
 
     $transitionCss = wallos_navigation_contract_source('styles/page-transitions.css');
+    wallos_navigation_contract_assert(
+        strpos($transitionCss, 'wallos-page-transition-ba-crosshair') === false,
+        'Blue Archive transition CSS must not retain the removed central crosshair.'
+    );
     $transitionSelectorCss = preg_replace('/\/\*[\s\S]*?\*\//', '', $transitionCss);
     wallos_navigation_contract_assert(
         is_string($transitionSelectorCss),
@@ -354,6 +387,15 @@ try {
     }
 
     $header = wallos_navigation_contract_source('includes/header.php');
+    $sceneBootstrapOffset = strpos($header, 'data-page-transition-scene');
+    $transitionStylesheetOffset = strpos($header, '<link rel="stylesheet" href="styles/page-transitions.css');
+    wallos_navigation_contract_assert(
+        $sceneBootstrapOffset !== false
+            && $transitionStylesheetOffset !== false
+            && $sceneBootstrapOffset < $transitionStylesheetOffset
+            && strpos($header, 'WallosPageTransitionSceneRoutes') !== false,
+        'The current transition scene and canonical route map must be available before transition CSS loads.'
+    );
     $headerScripts = wallos_navigation_contract_external_scripts($header);
     wallos_navigation_contract_assert(!empty($headerScripts), 'Authenticated header must load its shared scripts.');
 

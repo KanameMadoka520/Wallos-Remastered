@@ -29,6 +29,11 @@ assert.doesNotMatch(
   /\]\s+\.wallos-page-transition-leaving\b/,
   "State classes must be attached to html (…].wallos-page-transition-leaving), not selected as descendants",
 );
+assert.doesNotMatch(
+  cssWithoutComments,
+  /wallos-page-transition-ba-crosshair/,
+  "Blue Archive must not retain the removed central circular crosshair design",
+);
 
 const viewports = [
   { name: "desktop", width: 1440, height: 1000 },
@@ -36,6 +41,16 @@ const viewports = [
   { name: "landscape", width: 812, height: 375 },
 ];
 const styles = ["shutter", "bluearchive", "bluearchive_theme"];
+const scenes = [
+  "overview",
+  "subscriptions",
+  "timeline",
+  "analytics",
+  "controls",
+  "identity",
+  "command",
+  "archive",
+];
 const states = ["loading", "leaving"];
 const centerTolerancePx = 2;
 const opacityTolerance = 0.01;
@@ -77,9 +92,6 @@ const overlayMarkup = `
       <div class="wallos-page-transition-ba-hud-card wallos-page-transition-ba-hud-card-right">
         <span class="wallos-page-transition-ba-label">LINK / TACTICAL UI</span>
         <strong>UI</strong>
-      </div>
-      <div class="wallos-page-transition-ba-crosshair">
-        <span></span><span></span><span></span>
       </div>
     </div>
 
@@ -141,7 +153,7 @@ function isApproximately(actual, expected, tolerance = centerTolerancePx) {
 }
 
 function formatCase(testCase) {
-  return `${testCase.style}/${testCase.viewport.name}/${testCase.state}/${testCase.direction}`;
+  return `${testCase.style}/${testCase.scene}/${testCase.viewport.name}/${testCase.state}/${testCase.direction}`;
 }
 
 let browser;
@@ -157,6 +169,7 @@ try {
 }
 
 let completedCases = 0;
+const sceneSignatureGroups = new Map();
 try {
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -165,234 +178,285 @@ try {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
 
     for (const style of styles) {
-      for (const state of states) {
-        const direction = style === "bluearchive_theme" && viewport.name === "phone"
-          ? "rtl"
-          : "ltr";
-        const testCase = { viewport, style, state, direction };
-        const caseName = formatCase(testCase);
+      const styleScenes = style === "shutter" ? ["overview"] : scenes;
+      for (const scene of styleScenes) {
+        for (const state of states) {
+          const direction = style === "bluearchive_theme" && viewport.name === "phone"
+            ? "rtl"
+            : "ltr";
+          const testCase = { viewport, style, scene, state, direction };
+          const caseName = formatCase(testCase);
 
-        await page.setContent(fixtureHtml, { waitUntil: "load" });
-        await page.addStyleTag({ content: transitionCss });
-        await page.addStyleTag({ content: freezeMotionCss });
-        await page.evaluate(({ transitionStyle, transitionState, documentDirection }) => {
-          document.documentElement.dataset.pageTransitionStyle = transitionStyle;
-          document.documentElement.dir = documentDirection;
-          document.documentElement.className = [
-            "wallos-page-transition-enabled",
-            `wallos-page-transition-${transitionState}`,
-          ].join(" ");
-          window.scrollTo(0, 173);
-        }, {
-          transitionStyle: style,
-          transitionState: state,
-          documentDirection: direction,
-        });
-        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve())));
+          await page.setContent(fixtureHtml, { waitUntil: "load" });
+          await page.addStyleTag({ content: transitionCss });
+          await page.addStyleTag({ content: freezeMotionCss });
+          await page.evaluate(({ transitionStyle, transitionScene, transitionState, documentDirection }) => {
+            document.documentElement.dataset.pageTransitionStyle = transitionStyle;
+            document.documentElement.dataset.pageTransitionScene = transitionScene;
+            document.documentElement.dir = documentDirection;
+            document.documentElement.className = [
+              "wallos-page-transition-enabled",
+              `wallos-page-transition-${transitionState}`,
+            ].join(" ");
+            window.scrollTo(0, 173);
+          }, {
+            transitionStyle: style,
+            transitionScene: scene,
+            transitionState: state,
+            documentDirection: direction,
+          });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve())));
 
-        const geometry = await page.evaluate(() => {
-          const overlay = document.querySelector(".wallos-page-transition");
-          const center = document.querySelector(".wallos-page-transition-center");
-          const overlayRect = overlay.getBoundingClientRect();
-          const centerRect = center.getBoundingClientRect();
-          const overlayStyle = getComputedStyle(overlay);
-          const centerStyle = getComputedStyle(center);
-          const viewport = {
-            width: document.documentElement.clientWidth,
-            height: document.documentElement.clientHeight,
-          };
-
-          const inspect = (selector) => {
-            const element = document.querySelector(selector);
-            const rect = element.getBoundingClientRect();
-            const computed = getComputedStyle(element);
-            return {
-              selector,
-              display: computed.display,
-              visibility: computed.visibility,
-              opacity: Number.parseFloat(computed.opacity),
-              rect: {
-                left: rect.left,
-                top: rect.top,
-                right: rect.right,
-                bottom: rect.bottom,
-                width: rect.width,
-                height: rect.height,
-                centerX: rect.left + (rect.width / 2),
-                centerY: rect.top + (rect.height / 2),
-              },
+          const geometry = await page.evaluate(() => {
+            const overlay = document.querySelector(".wallos-page-transition");
+            const center = document.querySelector(".wallos-page-transition-center");
+            const overlayRect = overlay.getBoundingClientRect();
+            const centerRect = center.getBoundingClientRect();
+            const overlayStyle = getComputedStyle(overlay);
+            const centerStyle = getComputedStyle(center);
+            const viewport = {
+              width: document.documentElement.clientWidth,
+              height: document.documentElement.clientHeight,
             };
-          };
 
-          return {
-            viewport,
-            scrollY: window.scrollY,
-            documentScrollWidth: document.documentElement.scrollWidth,
-            bodyScrollWidth: document.body.scrollWidth,
-            overlay: {
-              display: overlayStyle.display,
-              visibility: overlayStyle.visibility,
-              opacity: Number.parseFloat(overlayStyle.opacity),
-              position: overlayStyle.position,
-              rect: {
-                left: overlayRect.left,
-                top: overlayRect.top,
-                right: overlayRect.right,
-                bottom: overlayRect.bottom,
-                width: overlayRect.width,
-                height: overlayRect.height,
-              },
-            },
-            center: {
-              textAlign: centerStyle.textAlign,
-              visibility: centerStyle.visibility,
-              opacity: Number.parseFloat(centerStyle.opacity),
-              rect: {
-                left: centerRect.left,
-                top: centerRect.top,
-                right: centerRect.right,
-                bottom: centerRect.bottom,
-                width: centerRect.width,
-                height: centerRect.height,
-                centerX: centerRect.left + (centerRect.width / 2),
-                centerY: centerRect.top + (centerRect.height / 2),
-              },
-            },
-            blueArchiveLayer: inspect(".wallos-page-transition-bluearchive-layer"),
-            blueArchiveDecorations: [
+            const inspect = (selector) => {
+              const element = document.querySelector(selector);
+              const rect = element.getBoundingClientRect();
+              const computed = getComputedStyle(element);
+              return {
+                selector,
+                display: computed.display,
+                visibility: computed.visibility,
+                opacity: Number.parseFloat(computed.opacity),
+                clipPath: computed.clipPath,
+                rect: {
+                  left: rect.left,
+                  top: rect.top,
+                  right: rect.right,
+                  bottom: rect.bottom,
+                  width: rect.width,
+                  height: rect.height,
+                  centerX: rect.left + (rect.width / 2),
+                  centerY: rect.top + (rect.height / 2),
+                },
+              };
+            };
+
+            const decorationSelectors = [
               ".wallos-page-transition-ba-panel-left",
               ".wallos-page-transition-ba-panel-right",
+              ".wallos-page-transition-ba-header-bar",
+              ".wallos-page-transition-ba-footer-bar",
+              ".wallos-page-transition-ba-gridline-a",
+              ".wallos-page-transition-ba-gridline-b",
               ".wallos-page-transition-ba-hud-card-left",
               ".wallos-page-transition-ba-hud-card-right",
               ".wallos-page-transition-ba-corner-top-left",
               ".wallos-page-transition-ba-corner-top-right",
               ".wallos-page-transition-ba-corner-bottom-left",
               ".wallos-page-transition-ba-corner-bottom-right",
-              ".wallos-page-transition-ba-crosshair",
-            ].map(inspect),
-            shutterRings: Array.from(
-              document.querySelectorAll(".wallos-page-transition-rings span"),
-              (element, index) => {
-                const rect = element.getBoundingClientRect();
-                const computed = getComputedStyle(element);
-                return {
-                  index,
-                  display: computed.display,
-                  visibility: computed.visibility,
-                  opacity: Number.parseFloat(computed.opacity),
-                  rect: {
-                    width: rect.width,
-                    height: rect.height,
-                    centerX: rect.left + (rect.width / 2),
-                    centerY: rect.top + (rect.height / 2),
-                  },
-                };
+              ".wallos-page-transition-ba-triangles",
+              ".wallos-page-transition-ba-datapanel",
+            ];
+
+            return {
+              viewport,
+              scrollY: window.scrollY,
+              documentScrollWidth: document.documentElement.scrollWidth,
+              bodyScrollWidth: document.body.scrollWidth,
+              removedCrosshairCount: document.querySelectorAll(".wallos-page-transition-ba-crosshair").length,
+              overlay: {
+                display: overlayStyle.display,
+                visibility: overlayStyle.visibility,
+                opacity: Number.parseFloat(overlayStyle.opacity),
+                position: overlayStyle.position,
+                rect: {
+                  left: overlayRect.left,
+                  top: overlayRect.top,
+                  right: overlayRect.right,
+                  bottom: overlayRect.bottom,
+                  width: overlayRect.width,
+                  height: overlayRect.height,
+                },
               },
-            ),
-          };
-        });
+              center: {
+                textAlign: centerStyle.textAlign,
+                visibility: centerStyle.visibility,
+                opacity: Number.parseFloat(centerStyle.opacity),
+                rect: {
+                  left: centerRect.left,
+                  top: centerRect.top,
+                  right: centerRect.right,
+                  bottom: centerRect.bottom,
+                  width: centerRect.width,
+                  height: centerRect.height,
+                  centerX: centerRect.left + (centerRect.width / 2),
+                  centerY: centerRect.top + (centerRect.height / 2),
+                },
+              },
+              blueArchiveLayer: inspect(".wallos-page-transition-bluearchive-layer"),
+              blueArchiveDecorations: decorationSelectors.map(inspect),
+              blueArchiveForeground: [
+                ".wallos-page-transition-ba-hud-card-left",
+                ".wallos-page-transition-ba-hud-card-right",
+                ".wallos-page-transition-ba-triangles",
+                ".wallos-page-transition-ba-datapanel",
+              ].map(inspect),
+              shutterRings: Array.from(
+                document.querySelectorAll(".wallos-page-transition-rings span"),
+                (element, index) => {
+                  const rect = element.getBoundingClientRect();
+                  const computed = getComputedStyle(element);
+                  return {
+                    index,
+                    display: computed.display,
+                    visibility: computed.visibility,
+                    opacity: Number.parseFloat(computed.opacity),
+                    rect: {
+                      width: rect.width,
+                      height: rect.height,
+                      centerX: rect.left + (rect.width / 2),
+                      centerY: rect.top + (rect.height / 2),
+                    },
+                  };
+                },
+              ),
+            };
+          });
 
-        const expectedCenterX = geometry.viewport.width / 2;
-        const expectedCenterY = geometry.viewport.height / 2;
+          const expectedCenterX = geometry.viewport.width / 2;
+          const expectedCenterY = geometry.viewport.height / 2;
 
-        assert.ok(geometry.scrollY > 0, `${caseName}: fixture must be scrolled to test fixed positioning`);
-        assert.equal(geometry.overlay.position, "fixed", `${caseName}: overlay must stay fixed to the viewport`);
-        assert.notEqual(geometry.overlay.display, "none", `${caseName}: overlay must be rendered`);
-        assert.equal(geometry.overlay.visibility, "visible", `${caseName}: overlay must be visible`);
-        assert.ok(
-          isApproximately(geometry.overlay.opacity, 1, opacityTolerance),
-          `${caseName}: overlay opacity was ${geometry.overlay.opacity}, expected approximately 1`,
-        );
-        assert.ok(
-          isApproximately(geometry.overlay.rect.left, 0)
-            && isApproximately(geometry.overlay.rect.top, 0)
-            && isApproximately(geometry.overlay.rect.width, geometry.viewport.width)
-            && isApproximately(geometry.overlay.rect.height, geometry.viewport.height),
-          `${caseName}: overlay does not cover the viewport: ${JSON.stringify(geometry.overlay.rect)}`,
-        );
-
-        assert.ok(
-          isApproximately(geometry.center.rect.centerX, expectedCenterX)
-            && isApproximately(geometry.center.rect.centerY, expectedCenterY),
-          `${caseName}: center was (${geometry.center.rect.centerX}, ${geometry.center.rect.centerY}), `
-            + `expected (${expectedCenterX}, ${expectedCenterY}) within ${centerTolerancePx}px`,
-        );
-        assert.equal(geometry.center.textAlign, "center", `${caseName}: transition copy must be center-aligned`);
-        assert.equal(geometry.center.visibility, "visible", `${caseName}: transition copy must be visible`);
-        assert.ok(
-          isApproximately(geometry.center.opacity, 1, opacityTolerance),
-          `${caseName}: transition copy opacity was ${geometry.center.opacity}, expected approximately 1`,
-        );
-        assert.ok(
-          geometry.center.rect.left >= -centerTolerancePx
-            && geometry.center.rect.top >= -centerTolerancePx
-            && geometry.center.rect.right <= geometry.viewport.width + centerTolerancePx
-            && geometry.center.rect.bottom <= geometry.viewport.height + centerTolerancePx,
-          `${caseName}: transition copy escaped the viewport: ${JSON.stringify(geometry.center.rect)}`,
-        );
-        assert.ok(
-          geometry.documentScrollWidth <= geometry.viewport.width + centerTolerancePx
-            && geometry.bodyScrollWidth <= geometry.viewport.width + centerTolerancePx,
-          `${caseName}: overlay created horizontal overflow `
-            + `(document=${geometry.documentScrollWidth}, body=${geometry.bodyScrollWidth}, viewport=${geometry.viewport.width})`,
-        );
-
-        if (style === "shutter") {
-          assert.equal(geometry.shutterRings.length, 3, `${caseName}: shutter must render three rings`);
-          for (const ring of geometry.shutterRings) {
-            assert.notEqual(ring.display, "none", `${caseName}: shutter ring ${ring.index} must render`);
-            assert.equal(ring.visibility, "visible", `${caseName}: shutter ring ${ring.index} must be visible`);
-            assert.ok(ring.opacity > 0, `${caseName}: shutter ring ${ring.index} must have non-zero opacity`);
-            assert.ok(ring.rect.width > 0 && ring.rect.height > 0, `${caseName}: shutter ring ${ring.index} must have size`);
-            assert.ok(
-              isApproximately(ring.rect.centerX, expectedCenterX)
-                && isApproximately(ring.rect.centerY, expectedCenterY),
-              `${caseName}: shutter ring ${ring.index} is not centered: ${JSON.stringify(ring.rect)}`,
-            );
-          }
-        } else {
-          assert.notEqual(
-            geometry.blueArchiveLayer.display,
-            "none",
-            `${caseName}: Blue Archive decoration layer must render`,
-          );
-          assert.equal(
-            geometry.blueArchiveLayer.visibility,
-            "visible",
-            `${caseName}: Blue Archive decoration layer must be visible`,
+          assert.ok(geometry.scrollY > 0, `${caseName}: fixture must be scrolled to test fixed positioning`);
+          assert.equal(geometry.overlay.position, "fixed", `${caseName}: overlay must stay fixed to the viewport`);
+          assert.notEqual(geometry.overlay.display, "none", `${caseName}: overlay must be rendered`);
+          assert.equal(geometry.overlay.visibility, "visible", `${caseName}: overlay must be visible`);
+          assert.ok(
+            isApproximately(geometry.overlay.opacity, 1, opacityTolerance),
+            `${caseName}: overlay opacity was ${geometry.overlay.opacity}, expected approximately 1`,
           );
           assert.ok(
-            isApproximately(geometry.blueArchiveLayer.opacity, 1, opacityTolerance),
-            `${caseName}: Blue Archive layer opacity was ${geometry.blueArchiveLayer.opacity}`,
+            isApproximately(geometry.overlay.rect.left, 0)
+              && isApproximately(geometry.overlay.rect.top, 0)
+              && isApproximately(geometry.overlay.rect.width, geometry.viewport.width)
+              && isApproximately(geometry.overlay.rect.height, geometry.viewport.height),
+            `${caseName}: overlay does not cover the viewport: ${JSON.stringify(geometry.overlay.rect)}`,
           );
 
-          for (const decoration of geometry.blueArchiveDecorations) {
-            assert.notEqual(decoration.display, "none", `${caseName}: ${decoration.selector} must render`);
-            assert.equal(decoration.visibility, "visible", `${caseName}: ${decoration.selector} must be visible`);
-            assert.ok(
-              isApproximately(decoration.opacity, 1, opacityTolerance),
-              `${caseName}: ${decoration.selector} opacity was ${decoration.opacity}, expected approximately 1`,
-            );
-            assert.ok(
-              decoration.rect.width > 0 && decoration.rect.height > 0,
-              `${caseName}: ${decoration.selector} must have visible geometry`,
-            );
-          }
-
-          const crosshair = geometry.blueArchiveDecorations.find(
-            (decoration) => decoration.selector === ".wallos-page-transition-ba-crosshair",
+          assert.ok(
+            isApproximately(geometry.center.rect.centerX, expectedCenterX)
+              && isApproximately(geometry.center.rect.centerY, expectedCenterY),
+            `${caseName}: center was (${geometry.center.rect.centerX}, ${geometry.center.rect.centerY}), `
+              + `expected (${expectedCenterX}, ${expectedCenterY}) within ${centerTolerancePx}px`,
+          );
+          assert.equal(geometry.center.textAlign, "center", `${caseName}: transition copy must be center-aligned`);
+          assert.equal(geometry.center.visibility, "visible", `${caseName}: transition copy must be visible`);
+          assert.ok(
+            isApproximately(geometry.center.opacity, 1, opacityTolerance),
+            `${caseName}: transition copy opacity was ${geometry.center.opacity}, expected approximately 1`,
           );
           assert.ok(
-            isApproximately(crosshair.rect.centerX, expectedCenterX)
-              && isApproximately(crosshair.rect.centerY, expectedCenterY),
-            `${caseName}: Blue Archive crosshair is not centered: ${JSON.stringify(crosshair.rect)}`,
+            geometry.center.rect.left >= -centerTolerancePx
+              && geometry.center.rect.top >= -centerTolerancePx
+              && geometry.center.rect.right <= geometry.viewport.width + centerTolerancePx
+              && geometry.center.rect.bottom <= geometry.viewport.height + centerTolerancePx,
+            `${caseName}: transition copy escaped the viewport: ${JSON.stringify(geometry.center.rect)}`,
           );
+          assert.ok(
+            geometry.documentScrollWidth <= geometry.viewport.width + centerTolerancePx
+              && geometry.bodyScrollWidth <= geometry.viewport.width + centerTolerancePx,
+            `${caseName}: overlay created horizontal overflow `
+              + `(document=${geometry.documentScrollWidth}, body=${geometry.bodyScrollWidth}, viewport=${geometry.viewport.width})`,
+          );
+
+          if (style === "shutter") {
+            assert.equal(geometry.shutterRings.length, 3, `${caseName}: shutter must render three rings`);
+            for (const ring of geometry.shutterRings) {
+              assert.notEqual(ring.display, "none", `${caseName}: shutter ring ${ring.index} must render`);
+              assert.equal(ring.visibility, "visible", `${caseName}: shutter ring ${ring.index} must be visible`);
+              assert.ok(ring.opacity > 0, `${caseName}: shutter ring ${ring.index} must have non-zero opacity`);
+              assert.ok(ring.rect.width > 0 && ring.rect.height > 0, `${caseName}: shutter ring ${ring.index} must have size`);
+              assert.ok(
+                isApproximately(ring.rect.centerX, expectedCenterX)
+                  && isApproximately(ring.rect.centerY, expectedCenterY),
+                `${caseName}: shutter ring ${ring.index} is not centered: ${JSON.stringify(ring.rect)}`,
+              );
+            }
+          } else {
+            assert.equal(geometry.removedCrosshairCount, 0, `${caseName}: removed crosshair unexpectedly rendered`);
+            assert.notEqual(
+              geometry.blueArchiveLayer.display,
+              "none",
+              `${caseName}: Blue Archive decoration layer must render`,
+            );
+            assert.equal(
+              geometry.blueArchiveLayer.visibility,
+              "visible",
+              `${caseName}: Blue Archive decoration layer must be visible`,
+            );
+            assert.ok(
+              isApproximately(geometry.blueArchiveLayer.opacity, 1, opacityTolerance),
+              `${caseName}: Blue Archive layer opacity was ${geometry.blueArchiveLayer.opacity}`,
+            );
+
+            for (const decoration of geometry.blueArchiveDecorations) {
+              assert.notEqual(decoration.display, "none", `${caseName}: ${decoration.selector} must render`);
+              assert.equal(decoration.visibility, "visible", `${caseName}: ${decoration.selector} must be visible`);
+              assert.ok(decoration.opacity > 0, `${caseName}: ${decoration.selector} must have non-zero opacity`);
+              assert.ok(
+                decoration.rect.width > 0 && decoration.rect.height > 0,
+                `${caseName}: ${decoration.selector} must have visible geometry`,
+              );
+            }
+
+            const centralCore = {
+              left: geometry.viewport.width * 0.28,
+              right: geometry.viewport.width * 0.72,
+              top: geometry.viewport.height * 0.24,
+              bottom: geometry.viewport.height * 0.76,
+            };
+            for (const decoration of geometry.blueArchiveForeground) {
+              const centeredInCore = decoration.rect.centerX > centralCore.left
+                && decoration.rect.centerX < centralCore.right
+                && decoration.rect.centerY > centralCore.top
+                && decoration.rect.centerY < centralCore.bottom;
+              assert.equal(
+                centeredInCore,
+                false,
+                `${caseName}: foreground decoration entered the protected center: ${decoration.selector}`,
+              );
+            }
+
+            const signature = JSON.stringify(geometry.blueArchiveDecorations.map((decoration) => ({
+              selector: decoration.selector,
+              clipPath: decoration.clipPath,
+              left: Math.round(decoration.rect.left * 10) / 10,
+              top: Math.round(decoration.rect.top * 10) / 10,
+              width: Math.round(decoration.rect.width * 10) / 10,
+              height: Math.round(decoration.rect.height * 10) / 10,
+            })));
+            const signatureGroupKey = `${style}/${viewport.name}/${state}`;
+            if (!sceneSignatureGroups.has(signatureGroupKey)) {
+              sceneSignatureGroups.set(signatureGroupKey, new Map());
+            }
+            sceneSignatureGroups.get(signatureGroupKey).set(scene, signature);
+          }
+
+          completedCases += 1;
+          console.log(`PASS ${caseName}`);
         }
-
-        completedCases += 1;
-        console.log(`PASS ${caseName}`);
       }
     }
+  }
+
+  for (const [groupName, signatures] of sceneSignatureGroups) {
+    assert.equal(signatures.size, scenes.length, `${groupName}: every Blue Archive scene must be tested`);
+    assert.equal(
+      new Set(signatures.values()).size,
+      scenes.length,
+      `${groupName}: all eight Blue Archive scenes must have distinct geometry/clip-path signatures`,
+    );
+    console.log(`PASS ${groupName}/distinct-scene-compositions`);
   }
 
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -400,6 +464,7 @@ try {
   await page.addStyleTag({ content: transitionCss });
   await page.evaluate(() => {
     document.documentElement.dataset.pageTransitionStyle = "bluearchive_theme";
+    document.documentElement.dataset.pageTransitionScene = "overview";
     document.documentElement.className = [
       "wallos-page-transition-enabled",
       "wallos-page-transition-revealed",
@@ -413,7 +478,6 @@ try {
       ".wallos-page-transition-ba-header-bar",
       ".wallos-page-transition-ba-footer-bar",
       ".wallos-page-transition-ba-hud-card",
-      ".wallos-page-transition-ba-crosshair",
       ".wallos-page-transition-ba-corner",
       ".wallos-page-transition-ba-triangles",
       ".wallos-page-transition-ba-datapanel",
@@ -435,6 +499,37 @@ try {
     );
   }
   console.log("PASS bluearchive/revealed/transition-continuity");
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.evaluate(() => {
+    document.documentElement.className = [
+      "wallos-page-transition-enabled",
+      "wallos-page-transition-loading",
+    ].join(" ");
+  });
+  const reducedMotionTimings = await page.evaluate(() => [
+    ".wallos-page-transition-ba-panel",
+    ".wallos-page-transition-ba-header-bar",
+    ".wallos-page-transition-ba-footer-bar",
+    ".wallos-page-transition-ba-hud-card",
+    ".wallos-page-transition-ba-corner",
+    ".wallos-page-transition-ba-triangles",
+    ".wallos-page-transition-ba-datapanel",
+  ].map((selector) => {
+    const computed = getComputedStyle(document.querySelector(selector));
+    return {
+      selector,
+      durations: computed.transitionDuration,
+      delays: computed.transitionDelay,
+    };
+  }));
+  for (const timing of reducedMotionTimings) {
+    const durations = timing.durations.split(",").map((duration) => Number.parseFloat(duration));
+    const delays = timing.delays.split(",").map((delay) => Number.parseFloat(delay));
+    assert.ok(durations.every((duration) => duration <= 0.16), `${timing.selector}: reduced-motion duration exceeded 160ms`);
+    assert.ok(delays.every((delay) => delay === 0), `${timing.selector}: reduced-motion delay must be zero`);
+  }
+  console.log("PASS bluearchive/reduced-motion");
 
   await context.close();
 } finally {

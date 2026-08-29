@@ -90,6 +90,15 @@
     if (!logoContainer) return;
 
     logoContainer.replaceChildren();
+    if (window.WallosScreenshotPrivacy?.isEnabled?.()) {
+      const image = document.createElement("img");
+      image.src = window.WallosScreenshotPrivacy.fakeIcon(`subscription:${subscription.id}`);
+      image.alt = "";
+      image.className = "screenshot-privacy-demo-icon";
+      logoContainer.appendChild(image);
+      return;
+    }
+
     if (!subscription.logo) {
       const fallback = document.createElement("span");
       fallback.className = "details-logo-fallback";
@@ -119,6 +128,7 @@
   }
 
   function renderSubscriptionDetails(subscription) {
+    subscription = window.WallosScreenshotPrivacy?.sanitizeSubscription?.(subscription, "details") || subscription;
     const strings = window.subscriptionLookups.i18n;
     currentDetailsId = Number(subscription.id);
     renderSubscriptionLogo(subscription);
@@ -202,12 +212,12 @@
     const modal = document.getElementById("subscription-details");
     if (modal) modal.setAttribute("aria-busy", "true");
     const request = window.WallosApi?.getJson
-      ? window.WallosApi.getJson(`endpoints/subscription/get.php?id=${encodeURIComponent(subscriptionId)}`, {
+      ? window.WallosApi.getJson(`endpoints/subscription/get.php?id=${encodeURIComponent(subscriptionId)}&purpose=display`, {
         includeCsrf: false,
         requireOk: true,
         fallbackErrorMessage: detailsTranslate("failed_to_load_subscription", "Failed to load subscription"),
       })
-      : fetch(`endpoints/subscription/get.php?id=${encodeURIComponent(subscriptionId)}`, { headers: { Accept: "application/json" } })
+      : fetch(`endpoints/subscription/get.php?id=${encodeURIComponent(subscriptionId)}&purpose=display`, { headers: { Accept: "application/json" } })
         .then((response) => response.ok ? response.json() : Promise.reject(new Error("request failed")));
     request
       .then((data) => {

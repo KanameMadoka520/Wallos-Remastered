@@ -17,6 +17,51 @@ $code = $row['code'];
 require_once 'includes/stats_calculations.php';
 require_once 'includes/page_navigation.php';
 
+$displayMostExpensiveSubscription = $mostExpensiveSubscription;
+if (function_exists('wallos_screenshot_privacy_enabled')
+  && wallos_screenshot_privacy_enabled($settings)
+) {
+  $statsPrivacySeed = wallos_screenshot_privacy_seed();
+  $displayMostExpensiveSubscription = wallos_screenshot_privacy_mask_subscription(
+    $mostExpensiveSubscription,
+    $statsPrivacySeed,
+    $lang,
+    'stats-most-expensive'
+  );
+
+  $displayStatsSubtitleParts = [];
+  if (isset($_GET['member'])) {
+    $displayStatsSubtitleParts[] = wallos_screenshot_privacy_fake_group_label(
+      'member',
+      'member:' . (string) $_GET['member'],
+      $lang,
+      $userId,
+      $statsPrivacySeed
+    );
+  }
+  if (isset($_GET['category'])) {
+    $displayStatsSubtitleParts[] = wallos_screenshot_privacy_fake_group_label(
+      'category',
+      'category:' . (string) $_GET['category'],
+      $lang,
+      $userId,
+      $statsPrivacySeed
+    );
+  }
+  if (isset($_GET['payment'])) {
+    $displayStatsSubtitleParts[] = wallos_screenshot_privacy_fake_group_label(
+      'payment',
+      'payment:' . (string) $_GET['payment'],
+      $lang,
+      $userId,
+      $statsPrivacySeed
+    );
+  }
+  $statsSubtitle = $displayStatsSubtitleParts
+    ? '(' . implode(', ', $displayStatsSubtitleParts) . ')'
+    : '';
+}
+
 $chartJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/libs/chart.js');
 $statsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/stats.js');
 $metricExplanationsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/metric-explanations.js');
@@ -90,7 +135,7 @@ if ($showStatsGraphs) {
         ?>
         <div class="split-header">
           <h2>
-            <?= translate('general_statistics', $i18n) ?> <span class="header-subtitle"><?= $statsSubtitle ?></span>
+            <?= translate('general_statistics', $i18n) ?> <span class="header-subtitle"><?= htmlspecialchars($statsSubtitle, ENT_QUOTES, 'UTF-8') ?></span>
           </h2>
           <div class="filtermenu">
             <button class="button secondary-button" id="filtermenu-button">
@@ -222,19 +267,23 @@ if ($showStatsGraphs) {
       <div class="title"><?= translate('average_monthly', $i18n) ?></div>
     </div>
     <div class="statistic short">
-      <span><?= CurrencyFormatter::format($mostExpensiveSubscription['price'], $code) ?></span>
+      <span><?= CurrencyFormatter::format($displayMostExpensiveSubscription['price'], $code) ?></span>
       <div class="title"><?= translate('most_expensive', $i18n) ?></div>
       <?php
-      if (isset($mostExpensiveSubscription['logo']) && $mostExpensiveSubscription['logo'] != '') {
+      if (isset($displayMostExpensiveSubscription['logo']) && $displayMostExpensiveSubscription['logo'] != '') {
         ?>
         <div class="subtitle">
-          <img src="images/uploads/logos/<?= $mostExpensiveSubscription['logo'] ?>"
-            alt="<?= $mostExpensiveSubscription['name'] ?>" title="<?= $mostExpensiveSubscription['name'] ?>" />
+          <?php $statsSubscriptionLogo = strpos((string) $displayMostExpensiveSubscription['logo'], 'data:image/') === 0
+            ? (string) $displayMostExpensiveSubscription['logo']
+            : 'images/uploads/logos/' . (string) $displayMostExpensiveSubscription['logo']; ?>
+          <img src="<?= htmlspecialchars($statsSubscriptionLogo, ENT_QUOTES, 'UTF-8') ?>"
+            alt="<?= htmlspecialchars($displayMostExpensiveSubscription['name'], ENT_QUOTES, 'UTF-8') ?>"
+            title="<?= htmlspecialchars($displayMostExpensiveSubscription['name'], ENT_QUOTES, 'UTF-8') ?>" />
         </div>
         <?php
-      } else if (isset($mostExpensiveSubscription['name']) && $mostExpensiveSubscription['name'] != '') {
+      } else if (isset($displayMostExpensiveSubscription['name']) && $displayMostExpensiveSubscription['name'] != '') {
         ?>
-          <div class="subtitle"><?= $mostExpensiveSubscription['name'] ?></div>
+          <div class="subtitle"><?= htmlspecialchars($displayMostExpensiveSubscription['name'], ENT_QUOTES, 'UTF-8') ?></div>
         <?php
       }
       ?>

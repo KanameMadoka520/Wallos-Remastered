@@ -75,7 +75,7 @@ curl http://127.0.0.1:18282/health.php
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.4.5-remastered.5 \
+  wallos-remastered:v5.4.5-remastered.6 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 
@@ -88,7 +88,7 @@ docker run --rm --network host --entrypoint php \
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.4.5-remastered.5 \
+  wallos-remastered:v5.4.5-remastered.6 \
   /work/tests/regression_runner.php \
   --base-url=http://127.0.0.1:18282 \
   --username=你的测试账号 \

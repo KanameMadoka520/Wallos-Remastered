@@ -5,6 +5,8 @@ require_once '../../includes/subscription_trash.php';
 require_once '../../includes/subscription_payment_records.php';
 require_once '../../includes/subscription_payment_history.php';
 require_once '../../includes/subscription_price_rules.php';
+require_once '../../includes/getsettings.php';
+require_once '../../includes/screenshot_privacy.php';
 
 wallos_endpoint_require_authenticated($i18n);
 
@@ -80,6 +82,16 @@ $subscriptionData['remaining_value'] = wallos_build_subscription_remaining_value
 $subscriptionData['detail_image'] = !empty($subscriptionData['uploaded_images'][0]['access_url'])
     ? $subscriptionData['uploaded_images'][0]['access_url']
     : ($row['detail_image'] ?? "");
+
+$displayPurpose = strtolower(trim((string) ($_GET['purpose'] ?? ''))) === 'display';
+if ($displayPurpose && wallos_screenshot_privacy_enabled($settings)) {
+    $subscriptionData = wallos_screenshot_privacy_mask_subscription(
+        $subscriptionData,
+        wallos_screenshot_privacy_seed(),
+        $lang,
+        'subscription-details'
+    );
+}
 
 header('Content-Type: application/json; charset=UTF-8');
 echo json_encode($subscriptionData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

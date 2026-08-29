@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.4.5-remastered.5`；上游兼容基线：[`ellite/Wallos v5.4.5`](https://github.com/ellite/Wallos/tree/v5.4.5)。
+> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.4.5-remastered.6`；上游兼容基线：[`ellite/Wallos v5.4.5`](https://github.com/ellite/Wallos/tree/v5.4.5)。
 
 [English README](README_EN.md) · [变更记录](CHANGELOG.md) · [安全策略](SECURITY.md) · [贡献指南](CONTRIBUTING.md)
 
@@ -20,7 +20,8 @@ Wallos-Remastered 保留 Wallos 的订阅、统计、多币种、通知、OIDC/T
 - **备份与维护有闭环**：可自动或手动备份数据库与 Logo，执行校验、下载和恢复；后台还提供 SQLite、日志和图片一致性检查。
 - **通知和单点登录更适合容器**：可在账期开始时发送支出摘要，也可用 `OIDC_*` 环境变量声明式配置身份提供商。
 - **多语言有可靠兜底**：保留上游语言选择；某种语言尚未翻译的新词条会显示英文原文，而不是直接露出 `[Translation Missing]`。
-- **保留重制视觉体验**：支持动态壁纸、毛玻璃、自定义主题与 CSS、页面转场、沉浸模式，并可让偏好跟随账号。
+- **截图可以隐藏真实订阅**：显示设置中的截图脱敏模式会临时用演示名称、价格、说明和内存图标替代真实订阅内容，不改数据库；关闭后恢复原显示。
+- **保留重制视觉体验**：支持动态壁纸、毛玻璃、自定义主题与 CSS、按目标页面变化的转场场景、沉浸模式，并可让偏好跟随账号。
 
 ## 与上游 Wallos v5.4.5 的区别
 
@@ -34,7 +35,7 @@ Wallos-Remastered 保留 Wallos 的订阅、统计、多币种、通知、OIDC/T
 | 多人运维 | 上游用户与管理能力 | 增加邀请码、分组、封禁、限速、访问日志、维护建议和动作审计 |
 | 备份恢复 | 保留上游能力 | 扩展为数据库 + Logo 备份、清单校验、后台恢复、运行锁和失败回滚 |
 | 容器化认证 | 支持在页面管理 OIDC | 保留页面配置，并补齐 `OIDC_*` 环境变量、Issuer Discovery 和 Secret File |
-| 界面 | 上游主题和页面 | 增加中文默认体验、动态壁纸、转场、账号级主题与布局偏好 |
+| 界面 | 上游主题和页面 | 增加中文默认体验、动态壁纸、页面专属转场、截图脱敏及账号级主题与布局偏好 |
 
 这里的“兼容基线”表示已吸收适合本分支的 `v5.4.5` 行为，不表示两个仓库逐文件相同。例如 Logo 搜索仍保留 Remastered 的 DuckDuckGo + Brave 路线，没有照搬上游 Google/selfh.st/Dashboard Icons 的整套界面。请不要把官方镜像和本仓库镜像混用，也不要跳过备份直接互换数据库。
 
@@ -86,7 +87,7 @@ docker compose logs --tail=100 wallos
 ```bash
 docker compose down
 git fetch --tags
-git checkout v5.4.5-remastered.5
+git checkout v5.4.5-remastered.6
 docker compose up -d --build
 curl http://127.0.0.1:18282/health.php
 ```
@@ -160,7 +161,7 @@ startup.sh、nginx*.conf  启动检查、进程监管与 Web 安全边界
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.4.5-remastered.5 \
+  wallos-remastered:v5.4.5-remastered.6 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 
