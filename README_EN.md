@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.4.5-remastered.5`; upstream compatibility baseline: [`ellite/Wallos v5.4.5`](https://github.com/ellite/Wallos/tree/v5.4.5).
+> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.4.5-remastered.6`; upstream compatibility baseline: [`ellite/Wallos v5.4.5`](https://github.com/ellite/Wallos/tree/v5.4.5).
 
 [简体中文 README](README.md) · [Changelog (Chinese)](CHANGELOG.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
@@ -20,7 +20,8 @@ This is not an unmodified copy of the upstream UI or a repackaged official image
 - **Backup and maintenance lifecycle:** automatic/manual database and logo backups, verification, download, restore, SQLite maintenance, log review, and image consistency checks.
 - **Container-friendly notifications and SSO:** send a spending summary at the beginning of a payment period and configure an identity provider declaratively with `OIDC_*` variables.
 - **Predictable translation fallback:** upstream language choices remain available; a known term missing in one locale falls back to English instead of exposing `[Translation Missing]`.
-- **Remastered presentation:** dynamic wallpaper, glass effects, custom themes/CSS, page transitions, immersive mode, and account-synced preferences.
+- **Screenshot-safe subscription display:** Screenshot Privacy Mode replaces real subscription names, prices, descriptions, and images with generated demo content without changing the database; disabling it restores the original display.
+- **Remastered presentation:** dynamic wallpaper, glass effects, custom themes/CSS, destination-specific transition scenes, immersive mode, and account-synced preferences.
 
 ## Differences from upstream Wallos v5.4.5
 
@@ -34,7 +35,7 @@ This is not an unmodified copy of the upstream UI or a repackaged official image
 | Administration | Upstream account/admin features | Adds invites, groups, bans, rate limits, access logs, maintenance advice, and action auditing |
 | Backup/restore | Keeps upstream capabilities | Extends them to database + logos, manifest verification, admin restore, runtime locking, and failure rollback |
 | Container SSO | OIDC can be managed in the UI | Keeps UI management and adds `OIDC_*` overrides, issuer discovery, and secret-file loading |
-| UI | Upstream pages and themes | Adds Chinese defaults, dynamic wallpaper, transitions, and account-level theme/layout preferences |
+| UI | Upstream pages and themes | Adds Chinese defaults, dynamic wallpaper, destination-specific transitions, screenshot privacy, and account-level theme/layout preferences |
 
 “Compatibility baseline” means that applicable `v5.4.5` behavior has been incorporated; it does not mean both trees are file-for-file identical. For example, logo search keeps Remastered's DuckDuckGo + Brave path instead of copying upstream's complete Google/selfh.st/Dashboard Icons UI. Do not mix the official and Remastered images or exchange databases without a tested backup.
 
@@ -86,7 +87,7 @@ Create and verify a backup in the admin UI first, then copy `db`, `logos`, and `
 ```bash
 docker compose down
 git fetch --tags
-git checkout v5.4.5-remastered.5
+git checkout v5.4.5-remastered.6
 docker compose up -d --build
 curl http://127.0.0.1:18282/health.php
 ```
@@ -160,7 +161,7 @@ Normal changes should receive PHP/JavaScript syntax checks, a health check, and 
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.4.5-remastered.5 \
+  wallos-remastered:v5.4.5-remastered.6 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 

@@ -35,7 +35,11 @@ function wallos_restore_atomicity_create_database($path, $identity, $validCycle 
         logo_variant TEXT
     )');
     $db->exec('CREATE TABLE currencies (id INTEGER PRIMARY KEY)');
-    $db->exec('CREATE TABLE settings (id INTEGER PRIMARY KEY, week_starts_sunday INTEGER)');
+    $db->exec('CREATE TABLE settings (
+        id INTEGER PRIMARY KEY,
+        week_starts_sunday INTEGER,
+        screenshot_privacy_mode INTEGER DEFAULT 0
+    )');
     $db->exec('CREATE TABLE notification_settings (
         id INTEGER PRIMARY KEY,
         period_summary_at_period_start INTEGER DEFAULT 0

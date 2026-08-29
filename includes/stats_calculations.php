@@ -260,6 +260,7 @@ if ($result) {
                     $categoryCost[$categoryId]['cost'] += $price;
                     $paymentMethodsCount[$paymentMethodId]['count'] += 1;
                     if ($price > $mostExpensiveSubscription['price']) {
+                        $mostExpensiveSubscription['id'] = $subscriptionId;
                         $mostExpensiveSubscription['price'] = $price;
                         $mostExpensiveSubscription['name'] = $name;
                         $mostExpensiveSubscription['logo'] = $logo;

@@ -12,6 +12,7 @@ require_once 'i18n/getlang.php';
 require_once 'i18n/' . $lang . '.php';
 
 require_once 'getsettings.php';
+require_once 'screenshot_privacy.php';
 require_once 'decorative_background.php';
 require_once 'dynamic_wallpaper.php';
 require_once 'page_transitions.php';
@@ -22,14 +23,19 @@ require_once 'version.php';
 
 $currentPage = basename($_SERVER['PHP_SELF'] ?? '');
 $pageTransitionTitle = wallos_resolve_page_transition_title($currentPage, $i18n);
+$pageTransitionSceneRoutes = wallos_get_page_transition_scene_routes();
+$pageTransitionCurrentRoute = wallos_normalize_page_transition_route($currentPage);
+$pageTransitionCurrentScene = wallos_resolve_page_transition_scene($currentPage);
 
 $stylesCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/styles.css');
 $decorativeBackgroundCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/decorative-background.css');
 $dynamicWallpaperCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/dynamic-wallpaper.css');
 $pageTransitionsCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/page-transitions.css');
+$screenshotPrivacyCssVersion = $version . '.' . @filemtime(__DIR__ . '/../styles/screenshot-privacy.css');
 $decorativeBackgroundJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/decorative-background.js');
 $dynamicWallpaperJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/dynamic-wallpaper.js');
 $pageTransitionsJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/page-transitions.js');
+$screenshotPrivacyJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/screenshot-privacy.js');
 $i18nEnglishJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/en.js');
 $i18nJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/' . $lang . '.js');
 $i18nGetLangJsVersion = $version . '.' . @filemtime(__DIR__ . '/../scripts/i18n/getlang.js');
@@ -117,6 +123,11 @@ $dynamicWallpaperBlurEnabled = !isset($settings['dynamic_wallpaper_blur']) || (i
 $dynamicWallpaperBlurClass = $dynamicWallpaperBlurEnabled ? "dynamic-wallpaper-blur-enabled" : "dynamic-wallpaper-blur-disabled";
 $pageTransitionEnabled = !empty($settings['pageTransitionEnabled']);
 $pageTransitionStyle = $settings['pageTransitionStyle'] ?? 'shutter';
+$screenshotPrivacyEnabled = wallos_screenshot_privacy_enabled($settings);
+$screenshotPrivacySeed = $screenshotPrivacyEnabled ? wallos_screenshot_privacy_seed() : '';
+$screenshotPrivacyClientSeed = $screenshotPrivacyEnabled
+  ? hash_hmac('sha256', 'browser-display', $screenshotPrivacySeed)
+  : '';
 $metaThemeColor = wallos_resolve_theme_color_value(
   $theme,
   $colorTheme,
@@ -143,10 +154,20 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   'path' => '/',
   'samesite' => 'Lax'
 ]);
+setcookie('wallosScreenshotPrivacy', $screenshotPrivacyEnabled ? '1' : '0', [
+  'expires' => $cookieExpire,
+  'path' => '/',
+  'samesite' => 'Lax'
+]);
 
 ?>
 <!DOCTYPE html>
-<html dir="<?= $languages[$lang]['dir'] ?>">
+<html
+  dir="<?= $languages[$lang]['dir'] ?>"
+  class="<?= $screenshotPrivacyEnabled ? 'wallos-screenshot-privacy-enabled' : '' ?>"
+  data-page-transition-style="<?= htmlspecialchars($pageTransitionStyle, ENT_QUOTES, 'UTF-8') ?>"
+  data-page-transition-scene="<?= htmlspecialchars($pageTransitionCurrentScene, ENT_QUOTES, 'UTF-8') ?>"
+>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -161,26 +182,46 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
       const transitionEnabled = <?= $pageTransitionEnabled ? 'true' : 'false' ?>;
       const transitionStyle = <?= json_encode($pageTransitionStyle, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
       const transitionPageTitle = <?= json_encode($pageTransitionTitle, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+      const transitionSceneRoutes = Object.freeze(<?= json_encode($pageTransitionSceneRoutes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>);
+      const transitionCurrentRoute = <?= json_encode($pageTransitionCurrentRoute, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+      const transitionCurrentScene = <?= json_encode($pageTransitionCurrentScene, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+      const supportedScenes = new Set([...Object.values(transitionSceneRoutes), 'generic']);
       let transitionContext = null;
 
       window.pageTransitionEnabled = transitionEnabled;
       window.pageTransitionStyle = transitionStyle;
       window.pageTransitionTitle = transitionPageTitle;
+      window.pageTransitionCurrentRoute = transitionCurrentRoute;
+      window.pageTransitionCurrentScene = transitionCurrentScene;
+      window.pageTransitionScene = transitionCurrentScene;
+      window.WallosPageTransitionSceneRoutes = transitionSceneRoutes;
       html.dataset.pageTransitionStyle = transitionStyle;
+      html.dataset.pageTransitionScene = transitionCurrentScene;
 
       if (!transitionEnabled) {
+        try {
+          window.sessionStorage.removeItem(contextKey);
+        } catch (error) {
+          // Ignore sessionStorage cleanup failures.
+        }
         return;
       }
 
       try {
         const rawContext = window.sessionStorage.getItem(contextKey);
+        window.sessionStorage.removeItem(contextKey);
         if (rawContext) {
           const parsedContext = JSON.parse(rawContext);
-          if (parsedContext && parsedContext.active && (Date.now() - Number(parsedContext.timestamp || 0)) < 4000) {
+          const expectedScene = transitionSceneRoutes[transitionCurrentRoute] || 'generic';
+          const contextIsValid = parsedContext
+            && parsedContext.active
+            && String(parsedContext.route || '') === transitionCurrentRoute
+            && String(parsedContext.scene || '') === expectedScene
+            && supportedScenes.has(String(parsedContext.scene || ''))
+            && (Date.now() - Number(parsedContext.timestamp || 0)) < 4000;
+          if (contextIsValid) {
             transitionContext = parsedContext;
             window.__wallosPageTransitionContext = parsedContext;
-          } else {
-            window.sessionStorage.removeItem(contextKey);
           }
         }
       } catch (error) {
@@ -189,6 +230,8 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
 
       html.classList.add('wallos-page-transition-enabled', 'wallos-page-transition-loading');
       if (transitionContext) {
+        html.dataset.pageTransitionScene = transitionContext.scene;
+        window.pageTransitionScene = transitionContext.scene;
         html.classList.add('wallos-page-transition-resume');
       } else {
         html.classList.add('wallos-page-transition-initial');
@@ -220,6 +263,7 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   <script defer type="text/javascript" src="scripts/decorative-background.js?v=<?= $decorativeBackgroundJsVersion ?>"></script>
   <script defer type="text/javascript" src="scripts/dynamic-wallpaper.js?v=<?= $dynamicWallpaperJsVersion ?>"></script>
   <script defer type="text/javascript" src="scripts/page-transitions.js?v=<?= $pageTransitionsJsVersion ?>"></script>
+  <script defer type="text/javascript" src="scripts/screenshot-privacy.js?v=<?= $screenshotPrivacyJsVersion ?>"></script>
   <script type="text/javascript">
     window.theme = "<?= $theme ?>";
     window.update_theme_settings = "<?= $updateThemeSettings ?>";
@@ -228,6 +272,11 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
     window.mobileNavigation = "<?= $settings['mobileNavigation'] == "true" ?>";
     window.dynamicWallpaperEnabled = <?= $dynamicWallpaperEnabled ? 'true' : 'false' ?>;
     window.dynamicWallpaperBlurEnabled = <?= $dynamicWallpaperBlurEnabled ? 'true' : 'false' ?>;
+    window.WallosScreenshotPrivacyConfig = {
+      enabled: <?= $screenshotPrivacyEnabled ? 'true' : 'false' ?>,
+      seed: <?= json_encode($screenshotPrivacyClientSeed, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+      blockedMessage: <?= json_encode(translate('screenshot_privacy_mode_blocked', $i18n), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
+    };
     window.WallosDynamicWallpaperConfig = {
       breakpoint: 768,
       desktopIndex: 3,
@@ -282,6 +331,7 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
     <?php
   }
   ?>
+  <link rel="stylesheet" href="styles/screenshot-privacy.css?v=<?= $screenshotPrivacyCssVersion ?>">
   <script defer type="text/javascript" src="scripts/i18n/en.js?v=<?= $i18nEnglishJsVersion ?>"></script>
   <?php if ($lang !== 'en'): ?>
   <script defer type="text/javascript" src="scripts/i18n/<?= $lang ?>.js?v=<?= $i18nJsVersion ?>"></script>
@@ -297,10 +347,12 @@ setcookie('dynamicWallpaperBlur', $dynamicWallpaperBlurEnabled ? '1' : '0', [
   <header>
     <div class="contain">
       <div class="logo">
-        <a href=".">
+        <a href="." class="wallos-header-brand" aria-label="Wallos Remastered"
+          data-transition-label="<?= htmlspecialchars(translate('dashboard', $i18n), ENT_QUOTES, 'UTF-8') ?>">
           <div class="logo-image" title="Wallos - Subscription Tracker">
             <?php include "images/siteicons/svg/logo.php"; ?>
           </div>
+          <span class="wallos-header-edition" lang="en" dir="ltr" aria-hidden="true">[Remastered]</span>
         </a>
       </div>
       <nav>

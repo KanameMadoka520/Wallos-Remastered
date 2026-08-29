@@ -44,6 +44,7 @@ if (!empty($settings)) {
     $settings['mobileNavigation'] = $settings['mobile_nav'] ? 'true': 'false';
     $settings['user_timezone'] = wallos_normalize_timezone_identifier($settings['user_timezone'] ?? '', wallos_get_default_user_timezone());
     $settings['showSubscriptionProgress'] = $settings['show_subscription_progress'] ? 'true': 'false';
+    $settings['screenshotPrivacyMode'] = !empty($settings['screenshot_privacy_mode']);
     $settings['decorativeBackground'] = !isset($settings['decorative_background']) || $settings['decorative_background'] ? 'true' : 'false';
     $settings['dynamicWallpaper'] = !empty($settings['dynamic_wallpaper']) ? 'true' : 'false';
     $settings['dynamicWallpaperBlur'] = !isset($settings['dynamic_wallpaper_blur']) || $settings['dynamic_wallpaper_blur'] ? 'true' : 'false';

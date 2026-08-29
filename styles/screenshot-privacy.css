@@ -1,0 +1,194 @@
+/*
+ * Screenshot privacy is deliberately fail-closed. The server places the root
+ * class before the page paints; sensitive blocks stay hidden until the runtime
+ * has replaced their visible values and adds .wallos-privacy-masked.
+ */
+html.wallos-screenshot-privacy-enabled #subscriptions .subscription:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled .dashboard-subscriptions-list > .subscription-item:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled .budget-visualizer:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled .calendar-subscription-title:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled .over-budget:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled .calendar-monthly-stats .statistic:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled .statistics > .statistic:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled .graphs > .graph:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled #stats-graphs .graph:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled .ai-recommendation-item:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled .subscription-trash-card:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled #subscription-details.is-open:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled #subscriptionModal.is-open #subscriptionModalContent:not(.wallos-privacy-masked),
+html.wallos-screenshot-privacy-enabled #metric-explanation-modal.is-open:not(.wallos-privacy-masked) {
+  visibility: hidden !important;
+}
+
+html.wallos-screenshot-privacy-enabled #subscriptions .subscription img:not(.wallos-privacy-masked-field),
+html.wallos-screenshot-privacy-enabled .dashboard-subscriptions-list .subscription-item img:not(.wallos-privacy-masked-field),
+html.wallos-screenshot-privacy-enabled .subscription-trash-card img:not(.wallos-privacy-masked-field),
+html.wallos-screenshot-privacy-enabled #subscription-details.is-open img:not(.wallos-privacy-masked-field),
+html.wallos-screenshot-privacy-enabled #subscriptionModal.is-open img:not(.wallos-privacy-masked-field),
+html.wallos-screenshot-privacy-enabled .statistic.short .subtitle img:not(.wallos-privacy-masked-field) {
+  visibility: hidden !important;
+}
+
+html.wallos-screenshot-privacy-enabled .filter-item:not(.wallos-privacy-masked-field) {
+  visibility: hidden !important;
+}
+
+html.wallos-screenshot-privacy-enabled .wallos-privacy-replaced > :not(.wallos-privacy-replacement) {
+  display: none !important;
+}
+
+html.wallos-screenshot-privacy-enabled .wallos-privacy-replacement {
+  display: block !important;
+  max-width: 100%;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  overflow-wrap: anywhere;
+}
+
+html.wallos-screenshot-privacy-enabled .wallos-privacy-icon-host > :not([data-wallos-privacy-generated="icon"]) {
+  display: none !important;
+}
+
+html.wallos-screenshot-privacy-enabled .wallos-privacy-generated-icon,
+html.wallos-screenshot-privacy-enabled .screenshot-privacy-demo-icon {
+  display: block !important;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+html.wallos-screenshot-privacy-enabled .graph.wallos-privacy-masked canvas {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.wallos-privacy-chart-placeholder {
+  --wallos-privacy-chart-color: var(--main-color, #6d4aff);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: stretch;
+  gap: clamp(7px, 1.25vw, 16px);
+  width: 100%;
+  height: clamp(220px, 28vw, 330px);
+  min-height: 220px;
+  padding: 28px clamp(14px, 2.5vw, 30px) 24px;
+  border: 1px solid rgba(var(--main-color-rgb, 109, 74, 255), 0.18);
+  border-radius: 16px;
+  box-sizing: border-box;
+  background:
+    repeating-linear-gradient(
+      to top,
+      transparent 0,
+      transparent calc(25% - 1px),
+      rgba(var(--text-color-rgb, 35, 35, 35), 0.08) calc(25% - 1px),
+      rgba(var(--text-color-rgb, 35, 35, 35), 0.08) 25%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(var(--main-color-rgb, 109, 74, 255), 0.08),
+      rgba(var(--accent-color-rgb, 142, 190, 249), 0.04)
+    );
+  overflow: hidden;
+}
+
+.wallos-privacy-chart-placeholder::before {
+  content: "DEMO DATA";
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 14px;
+  color: rgba(var(--text-color-rgb, 35, 35, 35), 0.48);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.wallos-privacy-chart-bar {
+  flex: 1 1 0;
+  min-width: 6px;
+  max-width: 52px;
+  height: var(--wallos-privacy-bar-height, 50%);
+  border-radius: 9px 9px 3px 3px;
+  background: linear-gradient(
+    to top,
+    rgba(var(--main-color-rgb, 109, 74, 255), 0.82),
+    rgba(var(--accent-color-rgb, 142, 190, 249), 0.82)
+  );
+  box-shadow: 0 10px 24px rgba(var(--main-color-rgb, 109, 74, 255), 0.13);
+}
+
+html.wallos-screenshot-privacy-enabled .wallos-privacy-action-blocked {
+  cursor: not-allowed !important;
+  filter: saturate(0.55);
+}
+
+html.wallos-screenshot-privacy-enabled .subscription-drag-handle,
+html.wallos-screenshot-privacy-enabled .subscription-media-item {
+  pointer-events: none !important;
+}
+
+.wallos-privacy-blocked-notice {
+  position: fixed;
+  z-index: 13050;
+  left: 50%;
+  bottom: max(22px, calc(12px + env(safe-area-inset-bottom)));
+  width: min(520px, calc(100vw - 28px));
+  padding: 13px 16px;
+  border: 1px solid rgba(var(--main-color-rgb, 109, 74, 255), 0.36);
+  border-radius: 14px;
+  box-sizing: border-box;
+  background: rgba(var(--header-background-color-rgb, 255, 255, 255), 0.96);
+  color: var(--text-color, #222);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+body.dark .wallos-privacy-chart-placeholder {
+  background:
+    repeating-linear-gradient(
+      to top,
+      transparent 0,
+      transparent calc(25% - 1px),
+      rgba(255, 255, 255, 0.08) calc(25% - 1px),
+      rgba(255, 255, 255, 0.08) 25%
+    ),
+    linear-gradient(145deg, rgba(var(--main-color-rgb, 109, 74, 255), 0.12), rgba(255, 255, 255, 0.025));
+}
+
+body.dark .wallos-privacy-chart-placeholder::before {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 768px) {
+  .wallos-privacy-chart-placeholder {
+    gap: 6px;
+    height: 230px;
+    min-height: 210px;
+    padding: 26px 12px 18px;
+  }
+
+  .wallos-privacy-chart-bar {
+    min-width: 4px;
+    border-radius: 7px 7px 2px 2px;
+  }
+
+  .wallos-privacy-blocked-notice {
+    bottom: max(14px, calc(8px + env(safe-area-inset-bottom)));
+    font-size: 13px;
+  }
+}
+
+@media print {
+  .wallos-privacy-blocked-notice {
+    display: none !important;
+  }
+}

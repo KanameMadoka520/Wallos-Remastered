@@ -31,6 +31,7 @@ function wallos_get_default_settings_payload($userId)
         'mobile_nav' => 0,
         'user_timezone' => wallos_get_default_user_timezone(),
         'show_subscription_progress' => 0,
+        'screenshot_privacy_mode' => 0,
         'decorative_background' => 1,
         'dynamic_wallpaper' => 0,
         'dynamic_wallpaper_blur' => 1,

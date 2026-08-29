@@ -124,7 +124,7 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
         </div>
         <div class="form-group-inline">
             <input id="iCalendarUrl" type="text" value="" readonly>
-            <input type="hidden" id="apiKey" value="<?= $userData['api_key'] ?>">
+            <input type="hidden" id="apiKey" value="<?= $screenshotPrivacyEnabled ? '' : htmlspecialchars((string) ($userData['api_key'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
             <button onclick="copyToClipboard()" class="button tiny"> <?= translate('copy_to_clipboard', $i18n) ?> </button>
         </div>
     </div>
@@ -179,6 +179,9 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
     // Project each subscription once, then render the existing custom grid.
     // This keeps totals and displayed events on the same date calculation.
     $paymentsByDay = [];
+    $calendarPrivacyEnabled = function_exists('wallos_screenshot_privacy_enabled')
+      && wallos_screenshot_privacy_enabled($settings);
+    $calendarPrivacySeed = $calendarPrivacyEnabled ? wallos_screenshot_privacy_seed() : '';
     foreach ($subscriptions as $subscription) {
       $paymentDates = wallos_calendar_get_payment_dates(
         $subscription,
@@ -189,7 +192,14 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
 
       foreach ($paymentDates as $paymentDate) {
         $dayNumber = (int) date('j', $paymentDate);
-        $paymentsByDay[$dayNumber][] = $subscription;
+        $paymentsByDay[$dayNumber][] = $calendarPrivacyEnabled
+          ? wallos_screenshot_privacy_mask_subscription(
+              $subscription,
+              $calendarPrivacySeed,
+              $lang,
+              'calendar'
+            )
+          : $subscription;
 
         $convertedPrice = getPriceConverted(
           $subscription['price'],
@@ -243,7 +253,8 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
               </div>
               <div class="calendar-cell-content">
                 <?php foreach ($paymentsByDay[$day] ?? [] as $subscription): ?>
-                  <div class="calendar-subscription-title" onClick="openSubscriptionModal(<?= (int) $subscription['id'] ?>)">
+                  <div class="calendar-subscription-title" data-subscription-id="<?= (int) $subscription['id'] ?>"
+                    onClick="openSubscriptionModal(<?= (int) $subscription['id'] ?>)">
                     <?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>
                   </div>
                 <?php endforeach; ?>

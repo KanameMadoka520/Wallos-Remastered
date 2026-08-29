@@ -10,6 +10,8 @@ function wallos_regression_run_legacy_suite(array $config, array $suiteDefinitio
         'ical-helper' => 'tests/ical_helper_test.php',
         'migration-079' => 'tests/migration_079_test.php',
         'migration-080' => 'tests/migration_080_test.php',
+        'migration-081' => 'tests/migration_081_test.php',
+        'screenshot-privacy' => 'tests/screenshot_privacy_test.php',
         'declarative-oidc' => 'tests/oidc_declarative_test.php',
         'period-summary-notifications' => 'tests/period_summary_notifications_test.php',
         'themed-logo-variants' => 'tests/logo_theme_variant_test.php',

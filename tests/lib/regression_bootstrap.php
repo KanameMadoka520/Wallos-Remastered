@@ -74,6 +74,8 @@ function wallos_regression_build_suite_catalog()
                 'ical-helper' => 'Execute tests/ical_helper_test.php',
                 'migration-079' => 'Execute tests/migration_079_test.php',
                 'migration-080' => 'Execute tests/migration_080_test.php',
+                'migration-081' => 'Execute tests/migration_081_test.php',
+                'screenshot-privacy' => 'Execute tests/screenshot_privacy_test.php',
                 'declarative-oidc' => 'Execute tests/oidc_declarative_test.php',
                 'period-summary-notifications' => 'Execute tests/period_summary_notifications_test.php',
                 'themed-logo-variants' => 'Execute tests/logo_theme_variant_test.php',

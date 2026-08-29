@@ -80,15 +80,18 @@ function openSubscriptionModal(subscriptionId) {
       })
       .then(data => {
         if (data.success && data.data) {
-          const subscription = data.data;
+          const subscription = window.WallosScreenshotPrivacy?.sanitizeSubscription?.(data.data, "calendar") || data.data;
+          const subscriptionLogo = window.WallosScreenshotPrivacy?.isEnabled?.()
+            ? window.WallosScreenshotPrivacy.fakeIcon(`subscription:${subscription.id}`)
+            : (subscription.logo ? `images/uploads/logos/${subscription.logo}` : "");
           const html = `
             <div class="modal-header">
                 <h3>${subscription.name}</h3>
                 <span class="fa-solid fa-xmark close-modal" onclick="closeSubscriptionModal()"></span>
             </div>
             <div class="modal-body">
-                ${subscription.logo ? `<div class="subscription-logo">
-                <img src="images/uploads/logos/${subscription.logo}" alt="${subscription.name}">
+                ${subscriptionLogo ? `<div class="subscription-logo">
+                <img src="${subscriptionLogo}" alt="${subscription.name}">
                 </div>` : ''}
                 <div class="subscription-info">
                 ${subscription.price ? `<p><strong>${translate('price')}:</strong> ${subscription.currency}${subscription.price}</p>` : ''}
@@ -99,7 +102,8 @@ function openSubscriptionModal(subscriptionId) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="button tiny" onclick="exportCalendar(${subscription.id})">${translate('export')}</button>
+                <button class="button tiny" data-subscription-action="export-subscription-calendar"
+                  onclick="exportCalendar(${subscription.id})">${translate('export')}</button>
             </div>`;
           modalContent.innerHTML = html;
           modal.classList.add('is-open');

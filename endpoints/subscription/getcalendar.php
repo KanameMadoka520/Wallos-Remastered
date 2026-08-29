@@ -3,6 +3,8 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/getdbkeys.php';
 require_once '../../includes/markdown.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/getsettings.php';
+require_once '../../includes/screenshot_privacy.php';
 
 wallos_endpoint_require_authenticated($i18n);
 
@@ -35,6 +37,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $subscription['currency'] = $currencies[$subscription['currency_id']]['symbol'];
         $subscription['price'] = number_format($subscription['price'], 2);
         $subscription['notes_html'] = wallos_render_markdown($subscription['notes'] ?? '');
+
+        if (wallos_screenshot_privacy_enabled($settings)) {
+            $subscription = wallos_screenshot_privacy_mask_subscription(
+                $subscription,
+                wallos_screenshot_privacy_seed(),
+                $lang,
+                'calendar-modal'
+            );
+        }
 
         echo json_encode([
             'success' => true,

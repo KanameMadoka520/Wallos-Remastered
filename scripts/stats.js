@@ -1,5 +1,15 @@
+function statsDisplayDataPoints(container, dataPoints, currency) {
+    const normalizedPoints = Array.isArray(dataPoints) ? dataPoints : [];
+    return window.WallosScreenshotPrivacy?.sanitizeChartData?.(
+        normalizedPoints,
+        container,
+        currency,
+    ) || normalizedPoints;
+}
+
 function loadGraph(container, dataPoints, currency, run) {
     if (run) {
+        dataPoints = statsDisplayDataPoints(container, dataPoints, currency);
         var ctx = document.getElementById(container).getContext('2d');
 
         var chart = new Chart(ctx, {
@@ -47,6 +57,7 @@ function loadGraph(container, dataPoints, currency, run) {
 
 function loadLineGraph(container, dataPoints, currency, run) {
     if (run) {
+        dataPoints = statsDisplayDataPoints(container, dataPoints, currency);
         var ctx = document.getElementById(container).getContext('2d');
 
         var chart = new Chart(ctx, {
@@ -93,6 +104,8 @@ function loadBudgetBreakdownGraph(container, dataPoints, currency, run) {
     if (!run) {
         return;
     }
+
+    dataPoints = statsDisplayDataPoints(container, dataPoints, currency);
 
     const canvas = document.getElementById(container);
     if (!canvas || !Array.isArray(dataPoints) || dataPoints.length === 0) {

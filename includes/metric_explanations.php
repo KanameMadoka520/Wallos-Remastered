@@ -6,7 +6,20 @@ function wallos_render_metric_explanation_trigger($metricKey, array $metricExpla
         return;
     }
 
-    $payload = htmlspecialchars(json_encode($metricExplanations[$metricKey], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+    $payloadData = $metricExplanations[$metricKey];
+    $settings = $GLOBALS['settings'] ?? [];
+    if (function_exists('wallos_screenshot_privacy_enabled')
+        && is_array($settings)
+        && wallos_screenshot_privacy_enabled($settings)
+    ) {
+        $payloadData = wallos_screenshot_privacy_mask_metric_payload(
+            $payloadData,
+            wallos_screenshot_privacy_seed(),
+            (string) ($GLOBALS['lang'] ?? 'en')
+        );
+    }
+
+    $payload = htmlspecialchars(json_encode($payloadData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
     $ariaLabel = htmlspecialchars($label !== '' ? $label : $metricKey, ENT_QUOTES, 'UTF-8');
     ?>
     <button type="button" class="metric-explanation-trigger" data-metric-explanation="<?= $payload ?>"

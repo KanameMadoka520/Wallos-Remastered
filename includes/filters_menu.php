@@ -1,12 +1,16 @@
 <div class="filtermenu-content">
   <?php
-  if (count($members) > 1) {
+  $filterMembers = isset($displayMembers) && is_array($displayMembers) ? $displayMembers : $members;
+  $filterCategories = isset($displayCategories) && is_array($displayCategories) ? $displayCategories : $categories;
+  $filterPaymentMethods = isset($displayPaymentMethods) && is_array($displayPaymentMethods) ? $displayPaymentMethods : $payment_methods;
+
+  if (count($filterMembers) > 1) {
     ?>
     <div class="filtermenu-submenu">
       <div class="filter-title" data-subscription-action="toggle-filter-submenu" data-filter-submenu="member"><?= translate("member", $i18n) ?></div>
       <div class="filtermenu-submenu-content" id="filter-member">
         <?php
-        foreach ($members as $member) {
+        foreach ($filterMembers as $member) {
           if ($member['count'] == 0) {
             continue;
           }
@@ -29,13 +33,13 @@
   }
   ?>
   <?php
-  if (count($categories) > 1) {
+  if (count($filterCategories) > 1) {
     ?>
     <div class="filtermenu-submenu">
       <div class="filter-title" data-subscription-action="toggle-filter-submenu" data-filter-submenu="category"><?= translate("category", $i18n) ?></div>
       <div class="filtermenu-submenu-content" id="filter-category">
         <?php
-        foreach ($categories as $category) {
+        foreach ($filterCategories as $category) {
           if ($category['count'] == 0) {
             continue;
           }
@@ -62,13 +66,13 @@
   }
   ?>
   <?php
-  if (count($payment_methods) > 1) {
+  if (count($filterPaymentMethods) > 1) {
     ?>
     <div class="filtermenu-submenu">
       <div class="filter-title" data-subscription-action="toggle-filter-submenu" data-filter-submenu="payment"><?= translate("payment_method", $i18n) ?></div>
       <div class="filtermenu-submenu-content" id="filter-payment">
         <?php
-        foreach ($payment_methods as $payment) {
+        foreach ($filterPaymentMethods as $payment) {
           if ($payment['count'] == 0) {
             continue;
           }

@@ -1,8 +1,19 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/subscription_trash.php';
+require_once '../../includes/getsettings.php';
+require_once '../../includes/screenshot_privacy.php';
 
 wallos_endpoint_require_authenticated($i18n);
+
+if (wallos_screenshot_privacy_enabled($settings)) {
+    http_response_code(409);
+    header('Content-Type: application/json; charset=UTF-8');
+    die(json_encode([
+        'success' => false,
+        'message' => translate('screenshot_privacy_mode_blocked', $i18n),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+}
 
 require_once '../../includes/getdbkeys.php';
 

@@ -102,6 +102,42 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $aiRecommendations[] = $row;
 }
 
+if (function_exists('wallos_screenshot_privacy_enabled')
+    && wallos_screenshot_privacy_enabled($settings)
+) {
+    $privacySeed = wallos_screenshot_privacy_seed();
+    $upcomingSubscriptions = wallos_screenshot_privacy_mask_subscriptions(
+        $upcomingSubscriptions,
+        $privacySeed,
+        $lang,
+        'dashboard-upcoming'
+    );
+    $overdueSubscriptions = wallos_screenshot_privacy_mask_subscriptions(
+        $overdueSubscriptions,
+        $privacySeed,
+        $lang,
+        'dashboard-overdue'
+    );
+    foreach ($aiRecommendations as $recommendationIndex => $recommendation) {
+        $recommendationIdentity = 'recommendation:' . (string) ($recommendation['id'] ?? $recommendationIndex);
+        $aiRecommendations[$recommendationIndex]['title'] = wallos_screenshot_privacy_fake_name(
+            $recommendationIdentity,
+            $privacySeed,
+            $lang
+        );
+        $aiRecommendations[$recommendationIndex]['description'] = wallos_screenshot_privacy_fake_description(
+            $recommendationIdentity,
+            $lang,
+            (int) $userId,
+            $privacySeed
+        );
+        $aiRecommendations[$recommendationIndex]['savings'] = '¤' . number_format(
+            wallos_screenshot_privacy_fake_amount($recommendationIdentity . ':savings', $privacySeed),
+            2
+        );
+    }
+}
+
 ?>
 
 <section class="contain dashboard" data-page-ui-hide-target>
@@ -164,7 +200,9 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                     <?php
 
                     foreach ($overdueSubscriptions as $subscription) {
-                        $subscriptionLogo = "images/uploads/logos/" . $subscription['logo'];
+                        $subscriptionLogo = strpos((string) ($subscription['logo'] ?? ''), 'data:image/') === 0
+                            ? (string) $subscription['logo']
+                            : "images/uploads/logos/" . $subscription['logo'];
                         $subscriptionName = htmlspecialchars($subscription['name']);
                         $subscriptionPrice = $subscription['price'];
                         $subscriptionCurrency = $subscription['currency_id'];
@@ -214,7 +252,9 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                     <?php
                 } else {
                     foreach ($upcomingSubscriptions as $subscription) {
-                        $subscriptionLogo = "images/uploads/logos/" . $subscription['logo'];
+                        $subscriptionLogo = strpos((string) ($subscription['logo'] ?? ''), 'data:image/') === 0
+                            ? (string) $subscription['logo']
+                            : "images/uploads/logos/" . $subscription['logo'];
                         $subscriptionName = htmlspecialchars($subscription['name']);
                         $subscriptionPrice = $subscription['price'];
                         $subscriptionCurrency = $subscription['currency_id'];

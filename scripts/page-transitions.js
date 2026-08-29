@@ -5,6 +5,11 @@
   const contextStorageKey = "wallos-page-transition-context";
   const enabledClass = "wallos-page-transition-enabled";
   const supportedStyles = new Set(["shutter", "bluearchive", "bluearchive_theme"]);
+  const fallbackScene = "generic";
+  const configuredSceneRoutes = Object.freeze({
+    ...(window.WallosPageTransitionSceneRoutes || {}),
+  });
+  const supportedScenes = new Set([...Object.values(configuredSceneRoutes), fallbackScene]);
   // Give the overlay three frames to become visible, then start the real navigation.
   // The incoming page continues the animation, so holding the network for 520ms only
   // made every click feel slow without improving the effect.
@@ -17,6 +22,34 @@
   let revealScheduled = false;
   let leaveInProgress = false;
   let pageTransitionsInitialized = false;
+
+  function normalizeTransitionRoute(urlValue) {
+    let url;
+    try {
+      url = new URL(String(urlValue || ""), window.location.href);
+    } catch (error) {
+      return "";
+    }
+
+    const normalizedPath = url.pathname.replace(/\/+$/, "");
+    const route = normalizedPath.slice(normalizedPath.lastIndexOf("/") + 1).toLowerCase();
+    return route || "index.php";
+  }
+
+  function normalizeTransitionScene(scene) {
+    const normalizedScene = String(scene || "");
+    return supportedScenes.has(normalizedScene) ? normalizedScene : fallbackScene;
+  }
+
+  function resolveTransitionScene(urlValue) {
+    const route = normalizeTransitionRoute(urlValue);
+    return normalizeTransitionScene(configuredSceneRoutes[route] || fallbackScene);
+  }
+
+  const currentRoute = normalizeTransitionRoute(window.pageTransitionCurrentRoute || window.location.href);
+  const currentScene = normalizeTransitionScene(
+    window.pageTransitionCurrentScene || configuredSceneRoutes[currentRoute] || fallbackScene,
+  );
 
   function hasOverlay() {
     return !!document.getElementById(transitionOverlayId);
@@ -31,6 +64,13 @@
     html.dataset.pageTransitionStyle = resolvedStyle;
     window.pageTransitionStyle = resolvedStyle;
     return resolvedStyle;
+  }
+
+  function applyTransitionScene(scene) {
+    const resolvedScene = normalizeTransitionScene(scene);
+    html.dataset.pageTransitionScene = resolvedScene;
+    window.pageTransitionScene = resolvedScene;
+    return resolvedScene;
   }
 
   function isInternalNavigationLink(anchor) {
@@ -88,11 +128,13 @@
     title.textContent = normalizedLabel;
   }
 
-  function persistTransitionContext(label) {
+  function persistTransitionContext(target) {
     try {
       window.sessionStorage.setItem(contextStorageKey, JSON.stringify({
         active: true,
-        label: String(label || "").replace(/\s+/g, " ").trim(),
+        route: target.route,
+        scene: target.scene,
+        label: String(target.label || "").replace(/\s+/g, " ").trim(),
         timestamp: Date.now(),
       }));
     } catch (error) {
@@ -110,20 +152,31 @@
     }
 
     window.__wallosPageTransitionContext = null;
+    if (!transitionContext
+      || String(transitionContext.route || "") !== currentRoute
+      || String(transitionContext.scene || "") !== currentScene) {
+      return null;
+    }
+
     return transitionContext;
   }
 
-  function startLeaveTransition(onComplete, label = "") {
-    if (leaveInProgress || !hasOverlay() || !window.pageTransitionEnabled) {
+  function startLeaveTransition(onComplete, target) {
+    if (leaveInProgress) {
+      return false;
+    }
+
+    if (!hasOverlay() || !window.pageTransitionEnabled) {
       if (typeof onComplete === "function") {
         onComplete();
       }
-      return;
+      return true;
     }
 
     leaveInProgress = true;
-    persistTransitionContext(label);
-    updateTransitionTitle(label);
+    persistTransitionContext(target);
+    applyTransitionScene(target.scene);
+    updateTransitionTitle(target.label);
     html.classList.remove(revealedClass);
     html.classList.add(loadingClass, leavingClass);
 
@@ -132,14 +185,27 @@
         onComplete();
       }
     }, leaveDurationMs);
+
+    return true;
+  }
+
+  function restoreCurrentTransitionIdentity() {
+    applyTransitionScene(currentScene);
+    updateTransitionTitle(window.pageTransitionTitle || "");
   }
 
   function replayRevealForBfcacheRestore() {
     revealScheduled = false;
     leaveInProgress = false;
-    html.classList.add(enabledClass, loadingClass);
+    restoreCurrentTransitionIdentity();
+
+    if (!window.pageTransitionEnabled) {
+      html.classList.remove(enabledClass, loadingClass, leavingClass, revealedClass, initialClass, resumeClass);
+      return;
+    }
+
     html.classList.remove(leavingClass, revealedClass, initialClass, resumeClass);
-    html.classList.add(resumeClass);
+    html.classList.add(enabledClass, loadingClass, resumeClass);
     scheduleReveal();
   }
 
@@ -154,13 +220,12 @@
 
     if (animateOnInit) {
       html.classList.add(loadingClass);
-      updateTransitionTitle(window.pageTransitionTitle || "");
       const transitionContext = html.classList.contains(resumeClass) ? consumeTransitionContext() : null;
-      if (transitionContext?.label) {
-        updateTransitionTitle(transitionContext.label);
-      }
+      applyTransitionScene(transitionContext?.scene || currentScene);
+      updateTransitionTitle(transitionContext?.label || window.pageTransitionTitle || "");
       scheduleReveal();
     } else {
+      restoreCurrentTransitionIdentity();
       html.classList.remove(loadingClass, leavingClass, revealedClass, initialClass, resumeClass);
     }
 
@@ -175,11 +240,21 @@
       }
 
       event.preventDefault();
+      if (leaveInProgress) {
+        return;
+      }
+
       const nextUrl = anchor.href;
       const nextLabel = anchor.dataset.transitionLabel || anchor.textContent || anchor.getAttribute("title") || "";
+      const nextRoute = normalizeTransitionRoute(nextUrl);
+      const nextScene = resolveTransitionScene(nextUrl);
       startLeaveTransition(() => {
         window.location.href = nextUrl;
-      }, nextLabel);
+      }, {
+        route: nextRoute,
+        scene: nextScene,
+        label: nextLabel,
+      });
     }, true);
 
     window.addEventListener("pageshow", (event) => {
@@ -190,9 +265,19 @@
       replayRevealForBfcacheRestore();
     });
 
-    window.addEventListener("pagehide", () => {
+    window.addEventListener("pagehide", (event) => {
       revealScheduled = false;
       leaveInProgress = false;
+
+      if (event.persisted) {
+        restoreCurrentTransitionIdentity();
+        html.classList.remove(leavingClass, revealedClass, initialClass, resumeClass);
+        if (window.pageTransitionEnabled) {
+          html.classList.add(enabledClass, loadingClass, resumeClass);
+        } else {
+          html.classList.remove(enabledClass, loadingClass);
+        }
+      }
     });
   }
 
@@ -222,6 +307,7 @@
         return;
       }
 
+      restoreCurrentTransitionIdentity();
       html.classList.add(enabledClass);
       if (!pageTransitionsInitialized) {
         initializePageTransitions(false);

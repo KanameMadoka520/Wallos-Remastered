@@ -67,6 +67,45 @@ function wallos_get_page_transition_setting_labels($lang)
     ];
 }
 
+/**
+ * Keep authenticated route-to-scene decisions in one server-owned map. The
+ * same map is serialized into the early header bootstrap for outgoing links,
+ * so PHP and JavaScript cannot silently assign different transition scenes.
+ */
+function wallos_get_page_transition_scene_routes()
+{
+    return [
+        'index.php' => 'overview',
+        'subscriptions.php' => 'subscriptions',
+        'calendar.php' => 'timeline',
+        'stats.php' => 'analytics',
+        'settings.php' => 'controls',
+        'profile.php' => 'identity',
+        'admin.php' => 'command',
+        'about.php' => 'archive',
+    ];
+}
+
+function wallos_normalize_page_transition_route($page)
+{
+    $path = parse_url((string) $page, PHP_URL_PATH);
+    $route = strtolower(basename(is_string($path) ? rtrim($path, '/') : ''));
+
+    if ($route === '' || $route === '.') {
+        return 'index.php';
+    }
+
+    return $route;
+}
+
+function wallos_resolve_page_transition_scene($page)
+{
+    $routes = wallos_get_page_transition_scene_routes();
+    $route = wallos_normalize_page_transition_route($page);
+
+    return $routes[$route] ?? 'generic';
+}
+
 function wallos_resolve_page_transition_title($page, $i18n)
 {
     $map = [
@@ -129,11 +168,6 @@ function wallos_render_page_transition_overlay($lang, $pageTitle)
             <div class="wallos-page-transition-ba-hud-card wallos-page-transition-ba-hud-card-right">
                 <span class="wallos-page-transition-ba-label"><?= htmlspecialchars($labels['bluearchive_channel'], ENT_QUOTES, 'UTF-8') ?></span>
                 <strong>UI</strong>
-            </div>
-            <div class="wallos-page-transition-ba-crosshair">
-                <span></span>
-                <span></span>
-                <span></span>
             </div>
         </div>
 

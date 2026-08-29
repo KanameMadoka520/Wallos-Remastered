@@ -67,7 +67,11 @@ function wallos_restore_migration_test_create_latest_schema(SQLite3 $db)
         logo_variant TEXT
     )');
     $db->exec('CREATE TABLE currencies (id INTEGER PRIMARY KEY)');
-    $db->exec('CREATE TABLE settings (id INTEGER PRIMARY KEY, week_starts_sunday INTEGER DEFAULT 0)');
+    $db->exec('CREATE TABLE settings (
+        id INTEGER PRIMARY KEY,
+        week_starts_sunday INTEGER DEFAULT 0,
+        screenshot_privacy_mode INTEGER DEFAULT 0
+    )');
     $db->exec('CREATE TABLE notification_settings (
         id INTEGER PRIMARY KEY,
         period_summary_at_period_start INTEGER DEFAULT 0

@@ -2021,7 +2021,7 @@ function wallos_restore_assert_latest_schema(SQLite3 $db, array $catalog)
         'user' => ['period_budget', 'budget_period_type', 'budget_period_anchor_date'],
         'subscriptions' => ['user_id', 'inactive', 'next_payment', 'notify', 'logo_text_color', 'logo_variant'],
         'currencies' => [],
-        'settings' => ['week_starts_sunday'],
+        'settings' => ['week_starts_sunday', 'screenshot_privacy_mode'],
         'notification_settings' => ['period_summary_at_period_start'],
         'cycles' => ['id', 'days', 'name'],
     ];
