@@ -100,6 +100,9 @@ function wallos_regression_build_suite_catalog()
                 'database-busy-contract' => 'Execute tests/database_busy_contract_test.php',
                 'subscription-empty-sort' => 'Execute tests/subscription_empty_sort_test.php',
                 'i18n-contract' => 'Execute tests/i18n_contract_test.php',
+                'timezone-settings' => 'Execute tests/timezone_settings_test.php',
+                'backend-rate-limit-exemption' => 'Execute tests/backend_rate_limit_exemption_test.php',
+                'navigation-performance-contract' => 'Execute tests/navigation_performance_contract_test.php',
             ),
         ),
     );

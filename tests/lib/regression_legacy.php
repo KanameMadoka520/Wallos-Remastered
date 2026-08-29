@@ -37,6 +37,9 @@ function wallos_regression_run_legacy_suite(array $config, array $suiteDefinitio
         'database-busy-contract' => 'tests/database_busy_contract_test.php',
         'subscription-empty-sort' => 'tests/subscription_empty_sort_test.php',
         'i18n-contract' => 'tests/i18n_contract_test.php',
+        'timezone-settings' => 'tests/timezone_settings_test.php',
+        'backend-rate-limit-exemption' => 'tests/backend_rate_limit_exemption_test.php',
+        'navigation-performance-contract' => 'tests/navigation_performance_contract_test.php',
     );
 
     $results = array();

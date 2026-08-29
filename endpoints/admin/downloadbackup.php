@@ -26,7 +26,8 @@ if ($safeFallbackName === '') {
 
 header('Content-Type: application/zip');
 header('Content-Length: ' . filesize($backup['path']));
-header('Cache-Control: private, max-age=3600');
+header('Cache-Control: private, no-store, max-age=0');
+header('Pragma: no-cache');
 header('X-Content-Type-Options: nosniff');
 header('Content-Disposition: attachment; filename="' . $safeFallbackName . '"; filename*=UTF-8\'\'' . rawurlencode($downloadName));
 

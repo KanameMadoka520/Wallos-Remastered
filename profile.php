@@ -28,6 +28,8 @@ if ($loginDisabled && !$userData['totp_enabled']) {
 $canExportUploadedImages = wallos_can_upload_subscription_images($isAdmin, $userData['user_group'] ?? WALLOS_USER_GROUP_FREE);
 $userTimezone = wallos_normalize_timezone_identifier($settings['user_timezone'] ?? '', wallos_get_default_user_timezone());
 $timezoneOptions = wallos_get_timezone_options($userTimezone);
+$profileJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/profile.js');
+$qrcodeJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/libs/qrcode.min.js');
 
 require_once 'includes/page_navigation.php';
 
@@ -43,8 +45,7 @@ $pageSections[] = ['id' => 'profile-api', 'label' => translate('api_key', $i18n)
 $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i18n)];
 ?>
 
-<script src="scripts/libs/sortable.min.js"></script>
-<script src="scripts/libs/qrcode.min.js"></script>
+<script defer src="scripts/libs/qrcode.min.js?v=<?= $qrcodeJsVersion ?>"></script>
 <style>
     .logo-preview:after {
         content: '<?= translate('upload_logo', $i18n) ?>';
@@ -389,9 +390,7 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
         </div>
     </div>
 </section>
-<script src="scripts/profile.js?<?= $version ?>"></script>
-<script src="scripts/theme.js?<?= $version ?>"></script>
-<script src="scripts/notifications.js?<?= $version ?>"></script>
+<script defer src="scripts/profile.js?v=<?= $profileJsVersion ?>"></script>
 
 <?php
 require_once 'includes/footer.php';

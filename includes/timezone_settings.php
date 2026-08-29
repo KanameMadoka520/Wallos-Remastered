@@ -13,9 +13,21 @@ function wallos_get_default_backup_timezone()
     return WALLOS_DEFAULT_BACKUP_TIMEZONE;
 }
 
+function wallos_get_supported_timezone_set()
+{
+    static $supportedTimezoneSet = null;
+
+    if ($supportedTimezoneSet === null) {
+        $supportedTimezoneSet = array_fill_keys(timezone_identifiers_list(), true);
+    }
+
+    return $supportedTimezoneSet;
+}
+
 function wallos_is_supported_timezone($timezone)
 {
-    return in_array((string) $timezone, timezone_identifiers_list(), true);
+    $supportedTimezoneSet = wallos_get_supported_timezone_set();
+    return isset($supportedTimezoneSet[(string) $timezone]);
 }
 
 function wallos_normalize_timezone_identifier($timezone, $fallback = null)
@@ -66,9 +78,14 @@ function wallos_fetch_backup_timezone($db)
 function wallos_get_timezone_offset_label($timezone, DateTimeImmutable $referenceDate = null)
 {
     $reference = $referenceDate ?: new DateTimeImmutable('now', new DateTimeZone('UTC'));
-    $timezoneObject = new DateTimeZone(
-        wallos_normalize_timezone_identifier($timezone, wallos_get_default_user_timezone())
-    );
+    $normalizedTimezone = wallos_normalize_timezone_identifier($timezone, wallos_get_default_user_timezone());
+
+    return wallos_get_supported_timezone_offset_label($normalizedTimezone, $reference);
+}
+
+function wallos_get_supported_timezone_offset_label($timezone, DateTimeImmutable $reference)
+{
+    $timezoneObject = new DateTimeZone((string) $timezone);
     $offsetSeconds = $timezoneObject->getOffset($reference);
     $sign = $offsetSeconds >= 0 ? '+' : '-';
     $absoluteSeconds = abs($offsetSeconds);
@@ -81,7 +98,18 @@ function wallos_get_timezone_offset_label($timezone, DateTimeImmutable $referenc
 function wallos_build_timezone_label($timezone, DateTimeImmutable $referenceDate = null)
 {
     $normalizedTimezone = wallos_normalize_timezone_identifier($timezone, wallos_get_default_user_timezone());
-    return sprintf('(%s) %s', wallos_get_timezone_offset_label($normalizedTimezone, $referenceDate), $normalizedTimezone);
+    $reference = $referenceDate ?: new DateTimeImmutable('now', new DateTimeZone('UTC'));
+
+    return wallos_build_supported_timezone_label($normalizedTimezone, $reference);
+}
+
+function wallos_build_supported_timezone_label($timezone, DateTimeImmutable $reference)
+{
+    return sprintf(
+        '(%s) %s',
+        wallos_get_supported_timezone_offset_label($timezone, $reference),
+        $timezone
+    );
 }
 
 function wallos_get_timezone_options($selectedTimezone = null)
@@ -100,12 +128,20 @@ function wallos_get_timezone_options($selectedTimezone = null)
     ];
 
     $orderedTimezones = [];
-    foreach (array_merge($preferredTimezones, $allTimezones) as $timezone) {
+    foreach ($preferredTimezones as $timezone) {
         $normalizedTimezone = wallos_normalize_timezone_identifier($timezone, wallos_get_default_user_timezone());
         $orderedTimezones[$normalizedTimezone] = [
             'value' => $normalizedTimezone,
-            'label' => wallos_build_timezone_label($normalizedTimezone, $reference),
+            'label' => wallos_build_supported_timezone_label($normalizedTimezone, $reference),
             'selected' => $normalizedTimezone === $selected,
+        ];
+    }
+
+    foreach ($allTimezones as $timezone) {
+        $orderedTimezones[$timezone] = [
+            'value' => $timezone,
+            'label' => wallos_build_supported_timezone_label($timezone, $reference),
+            'selected' => $timezone === $selected,
         ];
     }
 

@@ -5,7 +5,10 @@
   const contextStorageKey = "wallos-page-transition-context";
   const enabledClass = "wallos-page-transition-enabled";
   const supportedStyles = new Set(["shutter", "bluearchive", "bluearchive_theme"]);
-  const leaveDurationMs = 520;
+  // Give the overlay three frames to become visible, then start the real navigation.
+  // The incoming page continues the animation, so holding the network for 520ms only
+  // made every click feel slow without improving the effect.
+  const leaveDurationMs = 48;
   const loadingClass = "wallos-page-transition-loading";
   const leavingClass = "wallos-page-transition-leaving";
   const revealedClass = "wallos-page-transition-revealed";

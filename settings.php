@@ -21,6 +21,7 @@ require_once 'includes/page_navigation.php';
 $settingsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/settings.js');
 $themeJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/theme.js');
 $notificationsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/notifications.js');
+$sortableJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/libs/sortable.min.js');
 
 $pageSections = [
     ['id' => 'settings-budget', 'label' => translate('budget', $i18n)],
@@ -38,8 +39,7 @@ $pageSections = [
 
 ?>
 
-<script src="scripts/libs/sortable.min.js"></script>
-<script src="scripts/libs/qrcode.min.js"></script>
+<script defer src="scripts/libs/sortable.min.js?v=<?= $sortableJsVersion ?>"></script>
 <style>
     .logo-preview:after {
         content: '<?= translate('upload_logo', $i18n) ?>';
@@ -1724,9 +1724,9 @@ $pageSections = [
         </div>
     </div>
 </section>
-<script src="scripts/settings.js?<?= $settingsJsVersion ?>"></script>
-<script src="scripts/theme.js?<?= $themeJsVersion ?>"></script>
-<script src="scripts/notifications.js?<?= $notificationsJsVersion ?>"></script>
+<script defer src="scripts/settings.js?v=<?= $settingsJsVersion ?>"></script>
+<script defer src="scripts/theme.js?v=<?= $themeJsVersion ?>"></script>
+<script defer src="scripts/notifications.js?v=<?= $notificationsJsVersion ?>"></script>
 
 <?php
 require_once 'includes/footer.php';

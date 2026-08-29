@@ -17,6 +17,10 @@ $code = $row['code'];
 require_once 'includes/stats_calculations.php';
 require_once 'includes/page_navigation.php';
 
+$chartJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/libs/chart.js');
+$statsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/stats.js');
+$metricExplanationsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/metric-explanations.js');
+
 $categoryDataPoints = [];
 if (isset($categoryCost)) {
   foreach ($categoryCost as $category) {
@@ -496,7 +500,7 @@ if ($showStatsGraphs) {
 <?php
 if ($showStatsGraphs) {
   ?>
-  <script src="scripts/libs/chart.js"></script>
+  <script defer src="scripts/libs/chart.js?v=<?= $chartJsVersion ?>"></script>
   <script type="text/javascript">
     window.onload = function () {
       loadLineGraph("totalMonthlyCostChart", <?php echo json_encode($totalMonthlyCostDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", "<?= $showTotalMonthlyCostGraph ?>");
@@ -512,8 +516,8 @@ if ($showStatsGraphs) {
   <?php
 }
 ?>
-<script src="scripts/stats.js?<?= $version ?>"></script>
-<script src="scripts/metric-explanations.js?<?= $version . '.' . @filemtime(__DIR__ . '/scripts/metric-explanations.js') ?>"></script>
+<script defer src="scripts/stats.js?v=<?= $statsJsVersion ?>"></script>
+<script defer src="scripts/metric-explanations.js?v=<?= $metricExplanationsJsVersion ?>"></script>
 <?php
 require_once 'includes/footer.php';
 ?>

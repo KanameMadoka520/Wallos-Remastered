@@ -8,7 +8,8 @@
     "e2e:subscriptions": "node tests/e2e/subscriptions_smoke.mjs",
     "e2e:images": "node tests/e2e/subscription_images_smoke.mjs",
     "e2e:cache": "node tests/e2e/client_cache_smoke.mjs",
-    "e2e:admin": "node tests/e2e/admin_smoke.mjs"
+    "e2e:admin": "node tests/e2e/admin_smoke.mjs",
+    "e2e:performance": "node tests/e2e/navigation_performance.mjs"
   },
   "devDependencies": {
     "playwright": "^1.59.1"
