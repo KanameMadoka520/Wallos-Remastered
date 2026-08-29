@@ -359,6 +359,15 @@ try {
         'settings.php must not load unused qrcode.min.js.'
     );
 
+    $subscriptionsPhp = wallos_navigation_contract_source('subscriptions.php');
+    $subscriptionsJs = wallos_navigation_contract_source('scripts/subscriptions.js');
+    wallos_navigation_contract_assert(
+        strpos($subscriptionsPhp, 'wallos:subscriptions-ready') !== false
+            && strpos($subscriptionsJs, 'wallos:subscriptions-ready') !== false
+            && strpos($subscriptionsJs, 'WallosSubscriptionsReady = true') !== false,
+        'subscriptions.php?add must wait for deferred subscription modules before opening the form.'
+    );
+
     $serviceWorker = wallos_navigation_contract_source('service-worker.js');
     foreach (['PAGES_CACHE', 'pagesToPrefetch'] as $forbiddenPrivateCacheSymbol) {
         wallos_navigation_contract_assert(
@@ -374,6 +383,10 @@ try {
     wallos_navigation_contract_assert(
         preg_match('/\bconst\s+isPhpRequest\b/', $serviceWorker) === 1,
         'service-worker.js must identify PHP requests before static-cache routing.'
+    );
+    wallos_navigation_contract_assert(
+        strpos($serviceWorker, "normalizedPath.includes('/' + prefix)") !== false,
+        'Service-worker static matching must keep working when Wallos is hosted below an origin subpath.'
     );
 
     $serviceWorkerFunctions = wallos_navigation_contract_function_bodies($serviceWorker);
