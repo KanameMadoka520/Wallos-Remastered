@@ -361,9 +361,17 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'window.WallosHttp.postJson',
         'setPageLoadingState',
         'replaceState',
+        'pushState',
+        'addEventListener("popstate"',
+        'selectionRequestSequence',
+        'fallbackToDocumentNavigation',
     )) && wallos_regression_text_has_all($subscriptionsJs, array(
-        'window.WallosApi.getText',
+        'window.WallosApi.getJson',
         'isSessionFailureError',
+        'subscriptionsRequestController?.abort()',
+        'requestId !== subscriptionsRequestSequence',
+        'rehydrateSubscriptionCards',
+        'scheduleSubscriptionLayoutAfterImagesSettle',
         'WallosSubscriptionInteractions',
         'scheduleSubscriptionMasonryLayout',
     )) && wallos_regression_text_has_all($subscriptionInteractionsJs, array(
@@ -830,7 +838,15 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $subscriptionsE2eValid = wallos_regression_text_has_all($subscriptionsE2e, array(
         'attachDiagnostics',
         'writeFailureArtifacts',
-        'subscription page tabs navigate and reload cleanly',
+        'subscription pages switch without document navigation',
+        'browser back and forward restore subscription pages without reload',
+        'invalid subscription page history is canonicalized without reload',
+        'rapid subscription page switching keeps the latest response',
+        'subscription page state survives a superseding list refresh',
+        'pagination request failure falls back to document navigation',
+        'subscription page interactions are rebound after replacement',
+        'documentNavigationRequests',
+        'cleanupCreatedSubscriptionPages',
         'add subscription saves, closes modal, and refreshes card list',
         'three-dot menu opens edit modal',
         'payment history and record-payment modal open',
@@ -1103,7 +1119,7 @@ function wallos_regression_run_auth_suite(array $config, array $suiteDefinition)
     $guestSubscriptionsResponse = wallos_regression_http_request(
         $guestClient,
         'GET',
-        wallos_regression_build_url($config, 'endpoints/subscriptions/get.php?subscription_page=all')
+        wallos_regression_build_url($config, 'endpoints/subscriptions/get.php?subscription_page=all&format=json')
     );
     $guestSubscriptionsJson = wallos_regression_http_decode_json($guestSubscriptionsResponse);
     $guestSubscriptionsClean = wallos_regression_json_session_expired_contract_is_valid($guestSubscriptionsResponse, $guestSubscriptionsJson);
@@ -1175,12 +1191,14 @@ function wallos_regression_run_auth_suite(array $config, array $suiteDefinition)
     if ($authState['status'] === 'SKIP') {
         $results[] = wallos_regression_make_result('SKIP', 'auth', 'subscription-pages-json', 'Skipped because no auth inputs were provided.');
         $results[] = wallos_regression_make_result('SKIP', 'auth', 'subscriptions-html', 'Skipped because no auth inputs were provided.');
+        $results[] = wallos_regression_make_result('SKIP', 'auth', 'subscriptions-fragment-json', 'Skipped because no auth inputs were provided.');
         return $results;
     }
 
     if ($authState['status'] !== 'PASS') {
         $results[] = wallos_regression_make_result('FAIL', 'auth', 'subscription-pages-json', 'Cannot continue because the login/cookie bootstrap failed.');
         $results[] = wallos_regression_make_result('FAIL', 'auth', 'subscriptions-html', 'Cannot continue because the login/cookie bootstrap failed.');
+        $results[] = wallos_regression_make_result('FAIL', 'auth', 'subscriptions-fragment-json', 'Cannot continue because the login/cookie bootstrap failed.');
         return $results;
     }
 
@@ -1256,13 +1274,54 @@ function wallos_regression_run_auth_suite(array $config, array $suiteDefinition)
         wallos_regression_build_url($config, 'endpoints/subscriptions/get.php?subscription_page=all')
     );
     $subscriptionsHtmlValid = $subscriptionsResponse['status'] === 200
+        && stripos(wallos_regression_http_header($subscriptionsResponse, 'Content-Type'), 'application/json') === false
         && trim((string) $subscriptionsResponse['body']) !== ''
+        && substr(ltrim((string) $subscriptionsResponse['body']), 0, 1) !== '{'
         && !wallos_regression_body_has_php_warning($subscriptionsResponse['body']);
     $results[] = wallos_regression_make_result(
         $subscriptionsHtmlValid ? 'PASS' : 'FAIL',
         'auth',
         'subscriptions-html',
         wallos_regression_build_http_detail($subscriptionsResponse, 'Expected authenticated HTML without warnings or dumped code')
+    );
+
+    $subscriptionsFragmentResponse = wallos_regression_http_request(
+        $authClient,
+        'GET',
+        wallos_regression_build_url($config, 'endpoints/subscriptions/get.php?subscription_page=all&format=json')
+    );
+    $subscriptionsFragmentJson = wallos_regression_http_decode_json($subscriptionsFragmentResponse);
+    $subscriptionsFragmentData = $subscriptionsFragmentJson['ok'] && is_array($subscriptionsFragmentJson['data'])
+        ? $subscriptionsFragmentJson['data']
+        : array();
+    $subscriptionsFragmentHtml = is_string($subscriptionsFragmentData['html'] ?? null)
+        ? $subscriptionsFragmentData['html']
+        : '';
+    preg_match_all('/class="subscription-container"\s+data-id="\d+"/i', $subscriptionsFragmentHtml, $fragmentCardMatches);
+    $fragmentVisibleCount = (int) ($subscriptionsFragmentData['visible_count'] ?? -1);
+    $subscriptionsFragmentValid = $subscriptionsFragmentResponse['status'] === 200
+        && stripos(wallos_regression_http_header($subscriptionsFragmentResponse, 'Content-Type'), 'application/json') !== false
+        && stripos(wallos_regression_http_header($subscriptionsFragmentResponse, 'Cache-Control'), 'no-store') !== false
+        && $subscriptionsFragmentJson['ok']
+        && !empty($subscriptionsFragmentData['success'])
+        && is_string($subscriptionsFragmentData['current_filter'] ?? null)
+        && $subscriptionsFragmentData['current_filter'] === 'all'
+        && is_int($subscriptionsFragmentData['visible_count'] ?? null)
+        && is_array($subscriptionsFragmentData['pages'] ?? null)
+        && is_array($subscriptionsFragmentData['counts'] ?? null)
+        && array_key_exists('all', $subscriptionsFragmentData['counts'])
+        && array_key_exists('unassigned', $subscriptionsFragmentData['counts'])
+        && count($fragmentCardMatches[0]) === $fragmentVisibleCount
+        && ($fragmentVisibleCount > 0 || strpos($subscriptionsFragmentHtml, 'no-matching-subscriptions') !== false)
+        && !wallos_regression_body_has_php_warning($subscriptionsFragmentResponse['body'])
+        && !wallos_regression_body_has_php_warning($subscriptionsFragmentHtml);
+    $results[] = wallos_regression_make_result(
+        $subscriptionsFragmentValid ? 'PASS' : 'FAIL',
+        'auth',
+        'subscriptions-fragment-json',
+        $subscriptionsFragmentValid
+            ? 'Authenticated subscription fragments returned one coherent JSON payload with matching HTML/card counts.'
+            : wallos_regression_build_json_failure_detail($subscriptionsFragmentResponse, $subscriptionsFragmentJson, 'Expected JSON with success/html/current_filter/visible_count/pages/counts and matching card count.')
     );
 
     $subscriptionsHtml = (string) $subscriptionsResponse['body'];

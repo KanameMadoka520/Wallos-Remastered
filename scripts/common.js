@@ -1038,6 +1038,7 @@ async function wallosRequest(url, options = {}) {
     responseType = "json",
     requireOk = false,
     credentials = "same-origin",
+    signal = null,
     fallbackErrorMessage = null,
     allowEmptyJsonResponse = false,
   } = options;
@@ -1054,6 +1055,7 @@ async function wallosRequest(url, options = {}) {
       }),
       body,
       credentials,
+      signal,
     });
 
     let data = null;

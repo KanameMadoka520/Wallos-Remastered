@@ -14,6 +14,8 @@ let currentPaymentHistoryRangeMonths = 12;
 let reopenPaymentHistoryAfterPaymentModalClose = false;
 let currentPaymentModalSubscription = null;
 let currentPaymentModalMode = "create";
+let subscriptionsRequestController = null;
+let subscriptionsRequestSequence = 0;
 
 function toggleOpenSubscription(subId) {
   const subscriptionElement = document.querySelector('.subscription[data-id="' + subId + '"]');
@@ -357,6 +359,10 @@ function initializeSubscriptionCardSortable() {
   return window.WallosSubscriptionLayout?.initializeSubscriptionCardSortable?.();
 }
 
+function destroySubscriptionCardSortable() {
+  return window.WallosSubscriptionLayout?.destroySubscriptionCardSortable?.();
+}
+
 function getDetailImageConfig() {
   return window.WallosSubscriptionMedia?.getDetailImageConfig?.() || {
     canUpload: false,
@@ -387,6 +393,10 @@ function resetDetailImageCompression() {
 
 function initializeSubscriptionMediaSortables() {
   window.WallosSubscriptionMedia?.initializeSubscriptionMediaSortables?.();
+}
+
+function destroySubscriptionMediaSortables() {
+  window.WallosSubscriptionMedia?.destroySubscriptionMediaSortables?.();
 }
 
 function getUploadedImageDisplayName(image) {
@@ -436,7 +446,11 @@ function refreshSubscriptionsPreservingState(options = {}) {
     : getOpenSubscriptionIds();
 
   return fetchSubscriptions(null, null, options.initiator || "refresh")
-    .then(() => {
+    .then((result) => {
+      if (!result?.applied) {
+        return null;
+      }
+
       reopenSubscriptionCards(openSubscriptionIds);
 
       if (options.reopenHistory && Number(options.subscriptionId || 0) > 0) {
@@ -1825,93 +1839,192 @@ function initializeStaticSubscriptionInteractions() {
   document.addEventListener("change", handleStaticSubscriptionChange);
 }
 
-function fetchSubscriptions(id, event, initiator) {
+function isSubscriptionsRequestAbort(error, controller, requestId) {
+  return controller.signal.aborted
+    || requestId !== subscriptionsRequestSequence
+    || error?.name === "AbortError";
+}
+
+function scheduleSubscriptionLayoutAfterImagesSettle(container, requestId) {
+  const images = Array.from(container.querySelectorAll("img"));
+  if (images.length === 0) {
+    scheduleSubscriptionMasonryLayout();
+    return;
+  }
+
+  const imageSettlements = images.map((image) => {
+    if (typeof image.decode === "function") {
+      return image.decode().catch(() => null);
+    }
+
+    if (image.complete) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      image.addEventListener("load", resolve, { once: true });
+      image.addEventListener("error", resolve, { once: true });
+    });
+  });
+
+  Promise.allSettled(imageSettlements).then(() => {
+    if (
+      requestId === subscriptionsRequestSequence
+      && container.isConnected
+      && container === document.querySelector("#subscriptions")
+    ) {
+      scheduleSubscriptionMasonryLayout();
+    }
+  });
+}
+
+function rehydrateSubscriptionCards(container, requestId, id, event, initiator) {
+  initializeSubscriptionInteractions();
+  setSwipeElements();
+  initializeSubscriptionMediaSortables();
+  initializeSubscriptionCardSortable();
+  applySubscriptionDisplayColumns();
+  applySubscriptionValueVisibility();
+  applySubscriptionImageLayoutMode("detail");
+
+  const searchInput = document.querySelector("#search");
+  if (searchInput?.value.trim()) {
+    searchSubscriptions();
+  }
+
+  scheduleSubscriptionMasonryLayout();
+  scheduleSubscriptionLayoutAfterImagesSettle(container, requestId);
+
+  if (initiator === "clone" && id && event) {
+    openEditSubscription(event, id);
+  }
+
+  if (initiator === "add" && document.getElementsByClassName("subscription").length === 1) {
+    setTimeout(() => {
+      swipeHintAnimation();
+    }, 1000);
+  }
+}
+
+function fetchSubscriptions(id, event, initiator, options = {}) {
   const subscriptionsContainer = document.querySelector("#subscriptions");
-  let getSubscriptions = "endpoints/subscriptions/get.php";
-
-  const handleSubscriptionReloadRequired = () => {
-    window.location.reload();
-  };
-
-  if (activeFilters['categories'].length > 0) {
-    getSubscriptions += `?categories=${activeFilters['categories']}`;
-  }
-  if (activeFilters['members'].length > 0) {
-    getSubscriptions += getSubscriptions.includes("?") ? `&members=${activeFilters['members']}` : `?members=${activeFilters['members']}`;
-  }
-  if (activeFilters['payments'].length > 0) {
-    getSubscriptions += getSubscriptions.includes("?") ? `&payments=${activeFilters['payments']}` : `?payments=${activeFilters['payments']}`;
-  }
-  if (activeFilters['state'] !== "") {
-    getSubscriptions += getSubscriptions.includes("?") ? `&state=${activeFilters['state']}` : `?state=${activeFilters['state']}`;
-  }
-  if (activeFilters['renewalType'] !== "") {
-    getSubscriptions += getSubscriptions.includes("?") ? `&renewalType=${activeFilters['renewalType']}` : `?renewalType=${activeFilters['renewalType']}`;
-  }
-  if (getCurrentSubscriptionPageFilter() !== "all") {
-    getSubscriptions += getSubscriptions.includes("?")
-      ? `&subscription_page=${encodeURIComponent(getCurrentSubscriptionPageFilter())}`
-      : `?subscription_page=${encodeURIComponent(getCurrentSubscriptionPageFilter())}`;
+  if (!subscriptionsContainer) {
+    return Promise.reject(new Error(translate("error_reloading_subscription")));
   }
 
-  return window.WallosApi.getText(getSubscriptions, {
+  const requestedPageFilter = normalizeSubscriptionPageFilter(
+    options.subscriptionPageFilter ?? getCurrentSubscriptionPageFilter()
+  );
+  const query = new URLSearchParams({
+    format: "json",
+    subscription_page: requestedPageFilter,
+  });
+
+  if (activeFilters.categories.length > 0) {
+    query.set("categories", activeFilters.categories.join(","));
+  }
+  if (activeFilters.members.length > 0) {
+    query.set("members", activeFilters.members.join(","));
+  }
+  if (activeFilters.payments.length > 0) {
+    query.set("payments", activeFilters.payments.join(","));
+  }
+  if (activeFilters.state !== "") {
+    query.set("state", activeFilters.state);
+  }
+  if (activeFilters.renewalType !== "") {
+    query.set("renewalType", activeFilters.renewalType);
+  }
+
+  const requestUrl = `endpoints/subscriptions/get.php?${query.toString()}`;
+  const requestId = ++subscriptionsRequestSequence;
+  subscriptionsRequestController?.abort();
+  const requestController = new AbortController();
+  subscriptionsRequestController = requestController;
+
+  return window.WallosApi.getJson(requestUrl, {
     includeCsrf: false,
     requireOk: true,
-    fallbackErrorMessage: translate('error_reloading_subscription'),
+    checkSuccess: true,
+    signal: requestController.signal,
+    fallbackErrorMessage: translate("error_reloading_subscription"),
   })
-    .then(data => {
-      if (data) {
-        subscriptionsContainer.innerHTML = data;
-        const mainActions = document.querySelector("#main-actions");
-        if (data.includes("no-matching-subscriptions")) {
-          // mainActions.classList.add("hidden");
-        } else {
-          mainActions.classList.remove("hidden");
-        }
+    .then((data) => {
+      if (isSubscriptionsRequestAbort(null, requestController, requestId)) {
+        return {
+          applied: false,
+          aborted: true,
+          currentFilter: requestedPageFilter,
+        };
       }
 
-      return refreshSubscriptionPages({
+      if (!data || data.success !== true || typeof data.html !== "string") {
+        throw new Error(data?.message || translate("error_reloading_subscription"));
+      }
+
+      destroySubscriptionMediaSortables();
+      destroySubscriptionCardSortable();
+      subscriptionsContainer.innerHTML = data.html;
+
+      applySubscriptionPagesPayload(data, {
         selectedValue: document.querySelector("#subscription_page_id")?.value || getDefaultSubscriptionPageSelection(),
-        silent: true,
-      }).catch((error) => {
-        console.error("Failed to refresh subscription pages.", error);
-        return null;
+        updateUrl: false,
+        renderManager: !document.querySelector("#subscription-pages-manager-modal.is-open"),
+        renderSelect: !document.querySelector("#subscription-form.is-open"),
       });
+
+      const mainActions = document.querySelector("#main-actions");
+      if (mainActions && !data.html.includes("no-matching-subscriptions")) {
+        mainActions.classList.remove("hidden");
+      }
+
+      rehydrateSubscriptionCards(subscriptionsContainer, requestId, id, event, initiator);
+
+      window.WallosSubscriptionPages?.commitAppliedFilter?.(data.current_filter, {
+        requestedFilter: requestedPageFilter,
+      });
+
+      return {
+        applied: true,
+        aborted: false,
+        currentFilter: normalizeSubscriptionPageFilter(data.current_filter),
+        visibleCount: Number(data.visible_count || 0),
+      };
     })
-    .then(() => {
-      if (initiator == "clone" && id && event) {
-        openEditSubscription(event, id);
+    .catch((error) => {
+      if (isSubscriptionsRequestAbort(error, requestController, requestId)) {
+        return {
+          applied: false,
+          aborted: true,
+          currentFilter: requestedPageFilter,
+        };
       }
 
-      initializeSubscriptionInteractions();
-      setSwipeElements();
-      applySubscriptionDisplayColumns();
-      applySubscriptionValueVisibility();
-      applySubscriptionImageLayoutMode("detail");
-      initializeSubscriptionMediaSortables();
-      initializeSubscriptionCardSortable();
-      renderSubscriptionPageTabs();
-      const searchInput = document.querySelector("#search");
-      if (searchInput?.value.trim()) {
-        searchSubscriptions();
+      if (
+        window.WallosApi?.isSessionFailureError?.(error)
+        || Number(error?.status || error?.response?.status || 0) === 401
+      ) {
+        window.location.reload();
+        return {
+          applied: false,
+          reloadRequired: true,
+          currentFilter: requestedPageFilter,
+        };
       }
 
-      if (initiator === "add") {
-        if (document.getElementsByClassName('subscription').length === 1) {
-          setTimeout(() => {
-            swipeHintAnimation();
-          }, 1000);
-        }
+      const paginationFailureHandled = window.WallosSubscriptionPages?.handleFragmentFailure?.(
+        requestedPageFilter,
+        error
+      );
+      if (!paginationFailureHandled) {
+        console.error(translate("error_reloading_subscription"), error);
       }
-    })
-    .catch(error => {
-      if (window.WallosApi?.isSessionFailureError?.(error) || Number(error?.status || error?.response?.status || 0) === 401) {
-        handleSubscriptionReloadRequired();
-        return;
-      }
-
-      console.error(translate('error_reloading_subscription'), error);
       throw error;
+    })
+    .finally(() => {
+      if (subscriptionsRequestController === requestController) {
+        subscriptionsRequestController = null;
+      }
     });
 }
 

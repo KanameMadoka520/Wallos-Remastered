@@ -115,6 +115,15 @@ if (!isset($settings['hideDisabledSubscriptions']) || $settings['hideDisabledSub
   }
 }
 
+if (isset($_GET['renewalType']) && $_GET['renewalType'] != "") {
+  if ($_GET['renewalType'] === 'onetime') {
+    $sql .= " AND cycle = 5";
+  } elseif (in_array((string) $_GET['renewalType'], ['0', '1'], true)) {
+    $sql .= " AND auto_renew = :auto_renew AND cycle != 5";
+    $params[':auto_renew'] = (int) $_GET['renewalType'];
+  }
+}
+
 $orderByClauses = [];
 
 if ($settings['disabledToBottom'] === 'true') {
@@ -249,6 +258,14 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     position: relative;
   }
 
+  #subscriptions {
+    transition: opacity 0.14s ease;
+  }
+
+  #subscriptions.is-page-loading {
+    opacity: 0.72;
+  }
+
   .subscription-page-loading-overlay {
     position: fixed;
     top: max(18px, env(safe-area-inset-top));
@@ -303,6 +320,13 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
   @keyframes subscription-page-loading-spin {
     to {
       transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #subscriptions,
+    .subscription-page-loading-overlay {
+      transition: none;
     }
   }
 

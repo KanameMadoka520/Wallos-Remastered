@@ -30,6 +30,7 @@ function wallos_regression_build_suite_catalog()
                 'subscription-pages-json' => 'subscriptionpages.php returns the expected JSON shape',
                 'subscription-pages-invalid-csrf' => 'subscriptionpages.php returns the standardized invalid_csrf JSON contract',
                 'subscriptions-html' => 'subscriptions/get.php returns HTML for subscription_page=all',
+                'subscriptions-fragment-json' => 'subscriptions/get.php returns the complete JSON fragment contract',
                 'subscription-action-hooks' => 'subscription cards keep action-menu, edit, payment, and image-viewer hooks',
                 'subscription-edit-json' => 'subscription/get.php returns editable JSON for a visible subscription',
                 'subscription-payment-history-json' => 'subscription/paymenthistory.php returns payment-history JSON for a visible subscription',
@@ -103,6 +104,7 @@ function wallos_regression_build_suite_catalog()
                 'timezone-settings' => 'Execute tests/timezone_settings_test.php',
                 'backend-rate-limit-exemption' => 'Execute tests/backend_rate_limit_exemption_test.php',
                 'navigation-performance-contract' => 'Execute tests/navigation_performance_contract_test.php',
+                'subscription-ajax-pagination-contract' => 'Execute tests/subscription_ajax_pagination_contract_test.php',
             ),
         ),
     );

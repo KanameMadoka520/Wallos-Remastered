@@ -83,13 +83,29 @@
     }
   }
 
+  function destroySubscriptionCardSortable() {
+    const container = document.querySelector("#subscriptions");
+    container?.classList.remove("is-sorting");
+
+    if (subscriptionMasonryLayoutFrame !== null) {
+      window.cancelAnimationFrame(subscriptionMasonryLayoutFrame);
+      subscriptionMasonryLayoutFrame = null;
+    }
+
+    if (!subscriptionCardSortable) {
+      isSubscriptionSortDragging = false;
+      return;
+    }
+
+    subscriptionCardSortable.destroy();
+    subscriptionCardSortable = null;
+    isSubscriptionSortDragging = false;
+  }
+
   function initializeSubscriptionCardSortable() {
     const container = document.querySelector("#subscriptions");
 
-    if (subscriptionCardSortable) {
-      subscriptionCardSortable.destroy();
-      subscriptionCardSortable = null;
-    }
+    destroySubscriptionCardSortable();
 
     if (!container || typeof Sortable === "undefined") {
       updateSubscriptionReorderState();
@@ -130,6 +146,7 @@
     scheduleSubscriptionMasonryLayout,
     handleSubscriptionMasonryResize,
     updateSubscriptionReorderState,
+    destroySubscriptionCardSortable,
     initializeSubscriptionCardSortable,
   };
 })();
