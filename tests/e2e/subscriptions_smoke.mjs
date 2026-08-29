@@ -305,6 +305,22 @@ try {
     originalPreferences = await readCurrentPreferences();
   });
 
+  await step("direct add link waits for subscription modules before opening", async () => {
+    await page.goto(`${baseUrl}/subscriptions.php?add=1`, { waitUntil: "domcontentloaded" });
+    await expectVisible("#subscription-form.is-open", "direct-link add subscription modal", 15000);
+    const modulesReady = await page.evaluate(() => window.WallosSubscriptionsReady === true);
+    if (!modulesReady) {
+      throw new Error("direct add modal opened before subscription modules were ready");
+    }
+    await closeModal(
+      "#subscription-form",
+      '#subscription-form [data-subscription-action="close-add-subscription"]',
+      "direct-link add subscription modal",
+    );
+    await page.goto(`${baseUrl}/subscriptions.php`, { waitUntil: "domcontentloaded" });
+    await waitForSubscriptionsShell();
+  });
+
   await step("subscription page tabs navigate and reload cleanly", async () => {
     const tabs = page.locator('[data-subscription-action="select-page-filter"]:visible');
     const pageTabCount = await tabs.count();

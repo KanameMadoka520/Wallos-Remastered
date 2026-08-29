@@ -1591,9 +1591,15 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 if (isset($_GET['add'])) {
   ?>
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    function wallosOpenRequestedSubscriptionForm() {
       addSubscription();
-    }, { once: true });
+    }
+
+    if (window.WallosSubscriptionsReady) {
+      wallosOpenRequestedSubscriptionForm();
+    } else {
+      window.addEventListener('wallos:subscriptions-ready', wallosOpenRequestedSubscriptionForm, { once: true });
+    }
   </script>
   <?php
 }

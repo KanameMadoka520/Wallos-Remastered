@@ -33,6 +33,8 @@ function percentile(values, fraction) {
 
 function summarize(samples) {
   const metrics = [
+    "click_to_navigation_ms",
+    "click_to_fetch_ms",
     "click_to_request_ms",
     "ttfb_ms",
     "dom_content_loaded_ms",
@@ -122,7 +124,10 @@ async function measureNavigation(page, cdp, mode, target, round) {
     anchor.textContent = `Benchmark ${nextTarget}`;
     anchor.style.cssText = "position:fixed;left:4px;top:4px;z-index:2147483647;padding:4px;background:#fff;color:#000";
     anchor.addEventListener("click", () => {
-      sessionStorage.setItem("wallos-performance-click-epoch", String(Date.now()));
+      sessionStorage.setItem(
+        "wallos-performance-click-epoch",
+        String(performance.timeOrigin + performance.now()),
+      );
     }, { capture: true, once: true });
     document.body.appendChild(anchor);
   }, target);
@@ -141,7 +146,9 @@ async function measureNavigation(page, cdp, mode, target, round) {
     const epoch = performance.timeOrigin;
     const requestStart = navigation.requestStart || navigation.fetchStart || 0;
     return {
-      click_to_request_ms: Math.max(0, epoch + (navigation.fetchStart || 0) - clickEpoch),
+      click_to_navigation_ms: Math.max(0, epoch - clickEpoch),
+      click_to_fetch_ms: Math.max(0, epoch + (navigation.fetchStart || 0) - clickEpoch),
+      click_to_request_ms: Math.max(0, epoch + requestStart - clickEpoch),
       ttfb_ms: Math.max(0, navigation.responseStart - requestStart),
       dom_content_loaded_ms: Math.max(0, epoch + navigation.domContentLoadedEventEnd - clickEpoch),
       load_ms: Math.max(0, epoch + navigation.loadEventEnd - clickEpoch),
@@ -214,6 +221,7 @@ for (const mode of modes) {
   const overall = summary[mode].overall;
   console.log(
     `${mode}: samples=${overall.samples}`
+      + ` click→navigation median=${overall.click_to_navigation_ms.median}ms p95=${overall.click_to_navigation_ms.p95}ms`
       + ` click→request median=${overall.click_to_request_ms.median}ms p95=${overall.click_to_request_ms.p95}ms`
       + ` load median=${overall.load_ms.median}ms p95=${overall.load_ms.p95}ms`
       + ` transfer median=${overall.transfer_bytes.median}B`,

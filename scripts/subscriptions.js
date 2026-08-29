@@ -2258,6 +2258,8 @@ document.addEventListener("DOMContentLoaded", function () {
     updateSubscriptionReorderState,
     scheduleSubscriptionMasonryLayout
   );
+  window.WallosSubscriptionsReady = true;
+  window.dispatchEvent(new CustomEvent("wallos:subscriptions-ready"));
 });
 
 function toggleSubMenu(subMenu) {

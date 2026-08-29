@@ -34,7 +34,9 @@ function isStaticAssetPath(pathname) {
         return true;
     }
 
-    return STATIC_PATH_PREFIXES.some(prefix => normalizedPath.startsWith(prefix));
+    return STATIC_PATH_PREFIXES.some(prefix => (
+        normalizedPath.startsWith(prefix) || normalizedPath.includes('/' + prefix)
+    ));
 }
 
 function pathMatchesPrefix(pathname, prefix) {
