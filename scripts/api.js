@@ -296,6 +296,7 @@
         body,
         includeCsrf = true,
         credentials = "same-origin",
+        signal = null,
         parse = "json",
         checkHttp = true,
         requireOk,
@@ -327,6 +328,7 @@
         headers: requestHeaders,
         body,
         credentials,
+        signal,
       });
 
       if (parse === "text") {

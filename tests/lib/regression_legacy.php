@@ -40,6 +40,7 @@ function wallos_regression_run_legacy_suite(array $config, array $suiteDefinitio
         'timezone-settings' => 'tests/timezone_settings_test.php',
         'backend-rate-limit-exemption' => 'tests/backend_rate_limit_exemption_test.php',
         'navigation-performance-contract' => 'tests/navigation_performance_contract_test.php',
+        'subscription-ajax-pagination-contract' => 'tests/subscription_ajax_pagination_contract_test.php',
     );
 
     $results = array();

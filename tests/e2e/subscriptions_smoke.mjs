@@ -33,12 +33,19 @@ const browser = await chromium.launch({ headless });
 const context = await browser.newContext({
   viewport: { width: 1440, height: 1000 },
   ignoreHTTPSErrors: true,
+  serviceWorkers: "block",
 });
 const page = await context.newPage();
 
 let createdSubscriptionId = "";
 let createdSubscriptionName = "";
+let createdSubscriptionPageIds = [];
+let createdSubscriptionPageNames = [];
 let originalPreferences = null;
+let paginationFilters = [];
+let paginationEmptyFilter = "";
+let expectedPaginationConsoleErrors = 0;
+const documentNavigationRequests = [];
 
 function formatUrl(targetUrl) {
   return String(targetUrl || "").replace(baseUrl, "");
@@ -58,6 +65,13 @@ function attachDiagnostics(targetPage) {
     }
 
     const text = message.text();
+    if (
+      expectedPaginationConsoleErrors > 0
+      && text === "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    ) {
+      expectedPaginationConsoleErrors -= 1;
+      return;
+    }
     if (!shouldIgnoreConsoleError(text)) {
       diagnostics.consoleErrors.push(text);
     }
@@ -80,7 +94,10 @@ function attachDiagnostics(targetPage) {
     const status = response.status();
     const responseUrl = response.url();
     const isEndpoint = responseUrl.includes("/endpoints/");
-    if (status >= 500 || (isEndpoint && status >= 400)) {
+    const isExpectedPaginationFailure = status === 503
+      && response.headers()["x-wallos-e2e-expected-failure"] === "1"
+      && responseUrl.includes("/endpoints/subscriptions/get.php");
+    if ((status >= 500 || (isEndpoint && status >= 400)) && !isExpectedPaginationFailure) {
       diagnostics.failedResponses.push(`HTTP ${status} ${formatUrl(responseUrl)}`);
     }
   });
@@ -89,6 +106,16 @@ function attachDiagnostics(targetPage) {
     await dialog.dismiss().catch(() => {});
   });
 }
+
+page.on("request", (request) => {
+  if (
+    request.isNavigationRequest()
+    && request.frame() === page.mainFrame()
+    && request.resourceType() === "document"
+  ) {
+    documentNavigationRequests.push(request.url());
+  }
+});
 
 async function writeFailureArtifacts(error) {
   await fs.mkdir(artifactRoot, { recursive: true });
@@ -169,6 +196,159 @@ async function waitForSubscriptionsShell() {
   await page.locator("#subscription-page-loading-overlay.is-visible").waitFor({ state: "hidden", timeout: 15000 }).catch(() => null);
 }
 
+async function waitForSubscriptionPageFilter(filterValue, timeout = 15000) {
+  await page.waitForFunction((expectedFilter) => {
+    const tabs = document.getElementById("subscription-page-tabs");
+    const activeTab = tabs?.querySelector('.subscription-page-tab.is-active[aria-pressed="true"]');
+    return window.WallosSubscriptionPages?.getCurrentFilter?.() === expectedFilter
+      && activeTab?.dataset?.filter === expectedFilter
+      && tabs?.getAttribute("aria-busy") !== "true";
+  }, String(filterValue), { timeout });
+}
+
+async function selectSubscriptionPage(filterValue, options = {}) {
+  const normalizedFilter = String(filterValue);
+  const currentFilter = await page.evaluate(() => window.WallosSubscriptionPages?.getCurrentFilter?.() || "all");
+  if (currentFilter === normalizedFilter && !options.force) {
+    return null;
+  }
+
+  const responsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.endsWith("/endpoints/subscriptions/get.php")
+      && url.searchParams.get("format") === "json"
+      && url.searchParams.get("subscription_page") === normalizedFilter;
+  }, { timeout: 15000 });
+
+  await page.locator(
+    `#subscription-page-tabs [data-subscription-action="select-page-filter"][data-filter="${normalizedFilter}"]`,
+  ).click();
+  const response = await responsePromise;
+  if (!response.ok()) {
+    throw new Error(`subscription fragment returned HTTP ${response.status()} for ${normalizedFilter}`);
+  }
+
+  await waitForSubscriptionPageFilter(normalizedFilter);
+  return response;
+}
+
+async function ensurePaginationTestPages(minimumCount = 2) {
+  let state = await page.evaluate(() => window.WallosSubscriptionPages?.getState?.() || { pages: [] });
+  const missingCount = Math.max(0, minimumCount - (state.pages?.length || 0));
+
+  for (let index = 0; index < missingCount; index += 1) {
+    const pageName = `E2E Pagination ${Date.now()} ${index}`;
+    createdSubscriptionPageNames.push(pageName);
+    const result = await page.evaluate(async (name) => {
+      const headers = { "Content-Type": "application/json" };
+      if (window.csrfToken) {
+        headers["X-CSRF-Token"] = window.csrfToken;
+      }
+
+      const response = await fetch("endpoints/subscriptionpages.php", {
+        method: "POST",
+        headers,
+        credentials: "same-origin",
+        body: JSON.stringify({ action: "create", name }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || `Unable to create pagination fixture (${response.status})`);
+      }
+      return data;
+    }, pageName);
+
+    const createdPage = result.pages.find((candidate) => candidate.name === pageName);
+    if (!createdPage?.id) {
+      throw new Error(`created pagination fixture was not returned: ${pageName}`);
+    }
+    createdSubscriptionPageIds.push(String(createdPage.id));
+    await page.evaluate((payload) => window.WallosSubscriptionPages.applyPayload(payload), result);
+  }
+
+  state = await page.evaluate(() => window.WallosSubscriptionPages?.getState?.() || { pages: [] });
+  return state.pages;
+}
+
+async function createEmptyPaginationTestPage() {
+  const pageName = `E2E Empty Pagination ${Date.now()}`;
+  createdSubscriptionPageNames.push(pageName);
+  const result = await page.evaluate(async (name) => {
+    const headers = { "Content-Type": "application/json" };
+    if (window.csrfToken) {
+      headers["X-CSRF-Token"] = window.csrfToken;
+    }
+
+    const response = await fetch("endpoints/subscriptionpages.php", {
+      method: "POST",
+      headers,
+      credentials: "same-origin",
+      body: JSON.stringify({ action: "create", name }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || `Unable to create empty pagination fixture (${response.status})`);
+    }
+    return data;
+  }, pageName);
+
+  const createdPage = result.pages.find((candidate) => candidate.name === pageName);
+  if (!createdPage?.id) {
+    throw new Error(`empty pagination fixture was not returned: ${pageName}`);
+  }
+  createdSubscriptionPageIds.push(String(createdPage.id));
+  await page.evaluate((payload) => window.WallosSubscriptionPages.applyPayload(payload), result);
+  return createdPage;
+}
+
+async function cleanupCreatedSubscriptionPages() {
+  if (createdSubscriptionPageIds.length === 0 && createdSubscriptionPageNames.length === 0) {
+    return;
+  }
+
+  const trackedPageIds = [...createdSubscriptionPageIds];
+  const trackedPageNames = [...createdSubscriptionPageNames];
+  await page.evaluate(async ({ ids, names }) => {
+    const headers = { "Content-Type": "application/json" };
+    if (window.csrfToken) {
+      headers["X-CSRF-Token"] = window.csrfToken;
+    }
+
+    const listResponse = await fetch("endpoints/subscriptionpages.php", {
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    const listData = await listResponse.json();
+    if (!listResponse.ok || !listData.success) {
+      throw new Error(listData.message || `Unable to enumerate pagination fixtures (${listResponse.status})`);
+    }
+
+    const trackedIds = new Set(ids.map(Number).filter((pageId) => pageId > 0));
+    const resolvedIds = new Set();
+    for (const subscriptionPage of listData.pages || []) {
+      if (trackedIds.has(Number(subscriptionPage.id)) || names.includes(subscriptionPage.name)) {
+        resolvedIds.add(Number(subscriptionPage.id));
+      }
+    }
+
+    for (const pageId of resolvedIds) {
+      const response = await fetch("endpoints/subscriptionpages.php", {
+        method: "POST",
+        headers,
+        credentials: "same-origin",
+        body: JSON.stringify({ action: "delete", page_id: Number(pageId) }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || `Unable to delete pagination fixture ${pageId} (${response.status})`);
+      }
+    }
+  }, { ids: trackedPageIds, names: trackedPageNames });
+
+  createdSubscriptionPageIds = [];
+  createdSubscriptionPageNames = [];
+}
+
 async function readCurrentPreferences() {
   return page.evaluate(() => {
     if (!window.subscriptionPagePreferences) {
@@ -205,30 +385,64 @@ async function restorePreferences(preferences) {
 }
 
 async function cleanupCreatedSubscription() {
-  if (!createdSubscriptionId) {
+  if (!createdSubscriptionId && !createdSubscriptionName) {
     return;
   }
 
-  await page.evaluate(async (subscriptionId) => {
+  const cleanedSubscriptionId = await page.evaluate(async ({ subscriptionId, subscriptionName }) => {
     const headers = { "Content-Type": "application/json" };
     if (window.csrfToken) {
       headers["X-CSRF-Token"] = window.csrfToken;
+    }
+
+    let resolvedId = Number(subscriptionId || 0);
+    if (resolvedId <= 0 && subscriptionName) {
+      const listResponse = await fetch("endpoints/subscriptions/get.php?format=json&subscription_page=all", {
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const listData = await listResponse.json();
+      if (!listResponse.ok || !listData.success || typeof listData.html !== "string") {
+        throw new Error(listData.message || `Unable to locate subscription fixture (${listResponse.status})`);
+      }
+      const template = document.createElement("template");
+      template.innerHTML = listData.html;
+      const subscription = Array.from(template.content.querySelectorAll(".subscription[data-name]"))
+        .find((candidate) => candidate.dataset.name === subscriptionName);
+      resolvedId = Number(subscription?.dataset.id || subscription?.closest(".subscription-container")?.dataset.id || 0);
+    }
+
+    if (resolvedId <= 0) {
+      return 0;
     }
 
     await fetch("endpoints/subscription/delete.php", {
       method: "POST",
       headers,
       credentials: "same-origin",
-      body: JSON.stringify({ id: Number(subscriptionId) }),
+      body: JSON.stringify({ id: resolvedId }),
     }).catch(() => null);
 
-    await fetch("endpoints/subscription/permanentdelete.php", {
+    const permanentResponse = await fetch("endpoints/subscription/permanentdelete.php", {
       method: "POST",
       headers,
       credentials: "same-origin",
-      body: JSON.stringify({ id: Number(subscriptionId) }),
-    }).catch(() => null);
-  }, createdSubscriptionId).catch(() => null);
+      body: JSON.stringify({ id: resolvedId }),
+    });
+    const permanentData = await permanentResponse.json();
+    if (!permanentResponse.ok || !permanentData.success) {
+      throw new Error(permanentData.message || `Unable to permanently delete subscription fixture ${resolvedId}`);
+    }
+    return resolvedId;
+  }, {
+    subscriptionId: createdSubscriptionId,
+    subscriptionName: createdSubscriptionName,
+  });
+
+  if (cleanedSubscriptionId > 0 || !createdSubscriptionId) {
+    createdSubscriptionId = "";
+    createdSubscriptionName = "";
+  }
 }
 
 async function openCreatedCardActions() {
@@ -321,26 +535,365 @@ try {
     await waitForSubscriptionsShell();
   });
 
-  await step("subscription page tabs navigate and reload cleanly", async () => {
-    const tabs = page.locator('[data-subscription-action="select-page-filter"]:visible');
-    const pageTabCount = await tabs.count();
-    if (pageTabCount <= 1) {
-      return;
+  await step("subscription pages switch without document navigation", async () => {
+    const customPages = await ensurePaginationTestPages(2);
+    const emptyPage = await createEmptyPaginationTestPage();
+    paginationEmptyFilter = String(emptyPage.id);
+    const allCustomPages = [...customPages, emptyPage];
+    const populatedPages = allCustomPages.filter((subscriptionPage) => Number(subscriptionPage.subscription_count || 0) > 0);
+    const racePages = populatedPages.length >= 2 ? populatedPages : allCustomPages;
+    paginationFilters = racePages.slice(0, 2).map((subscriptionPage) => String(subscriptionPage.id));
+    if (paginationFilters.length < 2) {
+      throw new Error("pagination test requires two custom subscription pages");
     }
 
-    const targetTab = tabs.nth(1);
-    const targetFilter = await targetTab.getAttribute("data-filter");
-    await clickAndWaitForNavigation(targetTab, `subscription tab ${targetFilter}`);
-    await waitForSubscriptionsShell();
+    await page.evaluate(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("pagination_probe", "preserved");
+      history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
+      window.__wallosPaginationContainer = document.querySelector("#subscriptions");
+      window.__wallosPaginationMarker = { alive: true };
+    });
 
-    const url = new URL(page.url());
-    if (targetFilter !== "all" && url.searchParams.get("subscription_page") !== targetFilter) {
-      throw new Error(`expected subscription_page=${targetFilter}, got ${url.searchParams.get("subscription_page")}`);
+    const navigationBaseline = documentNavigationRequests.length;
+    const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+
+    for (const filterValue of allCustomPages.map((subscriptionPage) => String(subscriptionPage.id))) {
+      await selectSubscriptionPage(filterValue);
+      const result = await page.evaluate((expectedFilter) => {
+        const activeTab = document.querySelector(
+          `#subscription-page-tabs [data-filter="${expectedFilter}"].is-active[aria-pressed="true"]`,
+        );
+        return {
+          currentFilter: window.WallosSubscriptionPages?.getCurrentFilter?.(),
+          subscriptionPage: new URL(window.location.href).searchParams.get("subscription_page"),
+          probe: new URL(window.location.href).searchParams.get("pagination_probe"),
+          cardCount: document.querySelectorAll("#subscriptions .subscription-container[data-id]").length,
+          badgeCount: Number(activeTab?.querySelector(".section-count-badge")?.textContent || 0),
+          sameContainer: window.__wallosPaginationContainer === document.querySelector("#subscriptions"),
+          markerAlive: window.__wallosPaginationMarker?.alive === true,
+          timeOrigin: performance.timeOrigin,
+        };
+      }, filterValue);
+
+      if (result.currentFilter !== filterValue || result.subscriptionPage !== filterValue) {
+        throw new Error(`filter ${filterValue} did not synchronize URL, tab state, and content`);
+      }
+      if (result.probe !== "preserved") {
+        throw new Error("pagination discarded an unrelated query parameter");
+      }
+      if (result.cardCount !== result.badgeCount) {
+        throw new Error(`filter ${filterValue} rendered ${result.cardCount} cards but badge says ${result.badgeCount}`);
+      }
+      if (!result.sameContainer || !result.markerAlive || result.timeOrigin !== timeOrigin) {
+        throw new Error("pagination replaced or reloaded the document instead of updating the card fragment");
+      }
     }
 
-    const allTab = page.locator('[data-subscription-action="select-page-filter"][data-filter="all"]').first();
-    await clickAndWaitForNavigation(allTab, "all subscription tab");
-    await waitForSubscriptionsShell();
+    if (
+      await page.locator("#subscriptions .subscription-container[data-id]").count() !== 0
+      || await page.locator("#subscriptions .no-matching-subscriptions").count() !== 1
+      || await page.evaluate(() => window.WallosSubscriptionPages?.getCurrentFilter?.()) !== paginationEmptyFilter
+    ) {
+      throw new Error("the empty custom subscription page did not render its delegated empty state");
+    }
+
+    await selectSubscriptionPage("unassigned");
+    const unassignedState = await page.evaluate(() => {
+      const tab = document.querySelector('#subscription-page-tabs [data-filter="unassigned"]');
+      return {
+        cardCount: document.querySelectorAll("#subscriptions .subscription-container[data-id]").length,
+        badgeCount: Number(tab?.querySelector(".section-count-badge")?.textContent || 0),
+        urlFilter: new URL(window.location.href).searchParams.get("subscription_page"),
+      };
+    });
+    if (
+      unassignedState.cardCount !== unassignedState.badgeCount
+      || unassignedState.urlFilter !== "unassigned"
+    ) {
+      throw new Error(`Unassigned filter is inconsistent: ${JSON.stringify(unassignedState)}`);
+    }
+
+    await selectSubscriptionPage("all");
+    const allUrl = new URL(page.url());
+    if (allUrl.searchParams.has("subscription_page") || allUrl.searchParams.get("pagination_probe") !== "preserved") {
+      throw new Error("All filter did not remove only the subscription_page parameter");
+    }
+    const allCounts = await page.evaluate(() => {
+      const tab = document.querySelector('#subscription-page-tabs [data-filter="all"]');
+      return {
+        cards: document.querySelectorAll("#subscriptions .subscription-container[data-id]").length,
+        badge: Number(tab?.querySelector(".section-count-badge")?.textContent || 0),
+      };
+    });
+    if (allCounts.cards !== allCounts.badge) {
+      throw new Error(`All filter rendered ${allCounts.cards} cards but badge says ${allCounts.badge}`);
+    }
+
+    let repeatedFilterRequests = 0;
+    const countRepeatedRequests = (request) => {
+      if (request.url().includes("/endpoints/subscriptions/get.php")) {
+        repeatedFilterRequests += 1;
+      }
+    };
+    page.on("request", countRepeatedRequests);
+    const historyLength = await page.evaluate(() => history.length);
+    await page.locator('#subscription-page-tabs [data-filter="all"]').click();
+    await page.waitForTimeout(160);
+    page.off("request", countRepeatedRequests);
+    if (repeatedFilterRequests !== 0 || await page.evaluate(() => history.length) !== historyLength) {
+      throw new Error("reselecting the active subscription page should be a no-op");
+    }
+
+    if (documentNavigationRequests.length !== navigationBaseline) {
+      throw new Error("a successful subscription page switch issued a document request");
+    }
+  });
+
+  await step("browser back and forward restore subscription pages without reload", async () => {
+    const [firstFilter, secondFilter] = paginationFilters;
+    await selectSubscriptionPage(firstFilter);
+    await selectSubscriptionPage(secondFilter);
+    const navigationBaseline = documentNavigationRequests.length;
+    const historyLength = await page.evaluate(() => history.length);
+    const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+
+    const backResponse = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname.endsWith("/endpoints/subscriptions/get.php")
+        && url.searchParams.get("subscription_page") === firstFilter;
+    }, { timeout: 15000 });
+    await page.evaluate(() => history.back());
+    await backResponse;
+    await waitForSubscriptionPageFilter(firstFilter);
+
+    const forwardResponse = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname.endsWith("/endpoints/subscriptions/get.php")
+        && url.searchParams.get("subscription_page") === secondFilter;
+    }, { timeout: 15000 });
+    await page.evaluate(() => history.forward());
+    await forwardResponse;
+    await waitForSubscriptionPageFilter(secondFilter);
+
+    if (
+      documentNavigationRequests.length !== navigationBaseline
+      || await page.evaluate(() => history.length) !== historyLength
+      || await page.evaluate(() => performance.timeOrigin) !== timeOrigin
+    ) {
+      throw new Error("back/forward reloaded the document or created recursive history entries");
+    }
+  });
+
+  await step("invalid subscription page history is canonicalized without reload", async () => {
+    const invalidFilter = "999999999";
+    const navigationBaseline = documentNavigationRequests.length;
+    const response = page.waitForResponse((candidate) => {
+      const url = new URL(candidate.url());
+      return url.pathname.endsWith("/endpoints/subscriptions/get.php")
+        && url.searchParams.get("subscription_page") === invalidFilter;
+    }, { timeout: 15000 });
+
+    await page.evaluate((filterValue) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("subscription_page", filterValue);
+      history.pushState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
+      window.dispatchEvent(new PopStateEvent("popstate", { state: history.state }));
+    }, invalidFilter);
+    await response;
+    await waitForSubscriptionPageFilter("all");
+
+    if (
+      new URL(page.url()).searchParams.has("subscription_page")
+      || documentNavigationRequests.length !== navigationBaseline
+    ) {
+      throw new Error("server-normalized subscription page history was not replaced with the canonical All URL");
+    }
+  });
+
+  await step("rapid subscription page switching keeps the latest response", async () => {
+    const [slowFilter, fastFilter] = paginationFilters;
+    await selectSubscriptionPage("all");
+    const navigationBaseline = documentNavigationRequests.length;
+    const endpointPattern = "**/endpoints/subscriptions/get.php**";
+
+    await page.evaluate(() => {
+      window.__wallosOriginalAbort = AbortController.prototype.abort;
+      AbortController.prototype.abort = function wallosE2ENoopAbort() {};
+    });
+
+    await page.route(endpointPattern, async (route) => {
+      const url = new URL(route.request().url());
+      const filterValue = url.searchParams.get("subscription_page");
+      if (filterValue === slowFilter) {
+        await new Promise((resolve) => setTimeout(resolve, 320));
+      } else if (filterValue === fastFilter) {
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+      await route.continue().catch(() => null);
+    });
+
+    try {
+      const slowResponse = page.waitForResponse((response) => {
+        const url = new URL(response.url());
+        return url.pathname.endsWith("/endpoints/subscriptions/get.php")
+          && url.searchParams.get("subscription_page") === slowFilter;
+      }, { timeout: 15000 });
+      const fastResponse = page.waitForResponse((response) => {
+        const url = new URL(response.url());
+        return url.pathname.endsWith("/endpoints/subscriptions/get.php")
+          && url.searchParams.get("subscription_page") === fastFilter;
+      }, { timeout: 15000 });
+
+      await page.evaluate(([firstFilter, secondFilter]) => {
+        window.WallosSubscriptionPages.selectFilter(firstFilter);
+        window.setTimeout(() => window.WallosSubscriptionPages.selectFilter(secondFilter), 12);
+      }, [slowFilter, fastFilter]);
+      const resolvedFastResponse = await fastResponse;
+      const fastPayload = await resolvedFastResponse.json();
+      const resolvedSlowResponse = await slowResponse;
+      await resolvedSlowResponse.finished();
+      await waitForSubscriptionPageFilter(fastFilter);
+      await page.waitForTimeout(80);
+
+      const finalState = await page.evaluate(() => ({
+        currentFilter: window.WallosSubscriptionPages?.getCurrentFilter?.(),
+        activeFilter: document.querySelector(
+          '#subscription-page-tabs .subscription-page-tab.is-active[aria-pressed="true"]',
+        )?.dataset?.filter,
+        urlFilter: new URL(window.location.href).searchParams.get("subscription_page"),
+        cardIds: Array.from(document.querySelectorAll("#subscriptions .subscription-container[data-id]"))
+          .map((card) => card.dataset.id),
+      }));
+      const fastCardIds = Array.from(String(fastPayload.html || "").matchAll(
+        /class="subscription-container"\s+data-id="(\d+)"/g,
+      )).map((match) => match[1]);
+      if (
+        finalState.currentFilter !== fastFilter
+        || finalState.activeFilter !== fastFilter
+        || finalState.urlFilter !== fastFilter
+        || JSON.stringify(finalState.cardIds) !== JSON.stringify(fastCardIds)
+      ) {
+        throw new Error(`a stale response overrode the latest filter: ${JSON.stringify(finalState)}`);
+      }
+      if (documentNavigationRequests.length !== navigationBaseline) {
+        throw new Error("rapid AJAX pagination caused a document navigation");
+      }
+    } finally {
+      await page.evaluate(() => {
+        if (window.__wallosOriginalAbort) {
+          AbortController.prototype.abort = window.__wallosOriginalAbort;
+          delete window.__wallosOriginalAbort;
+        }
+      }).catch(() => null);
+      await page.unroute(endpointPattern);
+    }
+  });
+
+  await step("subscription page state survives a superseding list refresh", async () => {
+    const targetFilter = paginationFilters[0];
+    await selectSubscriptionPage("all");
+    const endpointPattern = "**/endpoints/subscriptions/get.php**";
+    const navigationBaseline = documentNavigationRequests.length;
+    let targetRequestCount = 0;
+
+    await page.route(endpointPattern, async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get("subscription_page") === targetFilter) {
+        targetRequestCount += 1;
+        await new Promise((resolve) => setTimeout(resolve, targetRequestCount === 1 ? 260 : 20));
+      }
+      await route.continue().catch(() => null);
+    });
+
+    try {
+      await page.evaluate((filterValue) => {
+        window.WallosSubscriptionPages.selectFilter(filterValue);
+        window.setTimeout(() => fetchSubscriptions(null, null, "filter"), 12);
+      }, targetFilter);
+      await waitForSubscriptionPageFilter(targetFilter);
+      await page.waitForTimeout(300);
+
+      const committedState = await page.evaluate(() => ({
+        filter: window.WallosSubscriptionPages?.getCurrentFilter?.(),
+        urlFilter: new URL(window.location.href).searchParams.get("subscription_page"),
+        loading: document.getElementById("subscription-page-tabs")?.getAttribute("aria-busy"),
+      }));
+      if (
+        targetRequestCount < 2
+        || committedState.filter !== targetFilter
+        || committedState.urlFilter !== targetFilter
+        || committedState.loading === "true"
+        || documentNavigationRequests.length !== navigationBaseline
+      ) {
+        throw new Error(`superseding refresh left pagination half-committed: ${JSON.stringify(committedState)}`);
+      }
+    } finally {
+      await page.unroute(endpointPattern);
+    }
+  });
+
+  await step("pagination request failure falls back to document navigation", async () => {
+    const fallbackFilter = paginationFilters[0];
+    const currentFilter = await page.evaluate(() => window.WallosSubscriptionPages?.getCurrentFilter?.() || "all");
+    if (currentFilter === fallbackFilter) {
+      await selectSubscriptionPage(paginationFilters[1] || "all");
+    }
+    const endpointPattern = "**/endpoints/subscriptions/get.php**";
+    let failureInjected = false;
+    const navigationBaseline = documentNavigationRequests.length;
+
+    await page.route(endpointPattern, async (route) => {
+      const url = new URL(route.request().url());
+      if (!failureInjected && url.searchParams.get("subscription_page") === fallbackFilter) {
+        failureInjected = true;
+        expectedPaginationConsoleErrors = 1;
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          headers: { "x-wallos-e2e-expected-failure": "1" },
+          body: JSON.stringify({ success: false, message: "Expected E2E pagination failure" }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+
+    try {
+      const oldDocument = await page.evaluate(() => {
+        window.__wallosFallbackOldDocument = true;
+        return { timeOrigin: performance.timeOrigin };
+      });
+      const navigation = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 });
+
+      await page.locator(`#subscription-page-tabs [data-filter="${fallbackFilter}"]`).click();
+      const navigationResponse = await navigation;
+      if (!navigationResponse || navigationResponse.status() !== 200) {
+        throw new Error(`fallback document navigation returned ${navigationResponse?.status() || "no response"}`);
+      }
+      await waitForSubscriptionsShell();
+      await waitForSubscriptionPageFilter(fallbackFilter);
+      const newDocument = await page.evaluate(() => ({
+        timeOrigin: performance.timeOrigin,
+        oldMarkerPresent: window.__wallosFallbackOldDocument === true,
+        serverFilter: window.subscriptionPageState?.currentFilter,
+      }));
+      if (
+        newDocument.timeOrigin === oldDocument.timeOrigin
+        || newDocument.oldMarkerPresent
+        || String(newDocument.serverFilter) !== fallbackFilter
+        || documentNavigationRequests.length !== navigationBaseline + 1
+        || new URL(documentNavigationRequests.at(-1)).searchParams.get("subscription_page") !== fallbackFilter
+      ) {
+        throw new Error(`fallback did not commit a fresh server-rendered document: ${JSON.stringify(newDocument)}`);
+      }
+      if (!failureInjected) {
+        throw new Error("the expected fragment failure was not injected");
+      }
+    } finally {
+      expectedPaginationConsoleErrors = 0;
+      await page.unroute(endpointPattern);
+    }
   });
 
   await step("add subscription saves, closes modal, and refreshes card list", async () => {
@@ -365,6 +918,43 @@ try {
     createdSubscriptionId = await createdCard.getAttribute("data-id") || "";
     if (!createdSubscriptionId) {
       throw new Error("created subscription card did not expose data-id");
+    }
+  });
+
+  await step("subscription page interactions are rebound after replacement", async () => {
+    const createdFilter = await page.evaluate(() => window.WallosSubscriptionPages?.getCurrentFilter?.() || "all");
+    const alternateFilter = paginationFilters.find((filterValue) => filterValue !== createdFilter) || "all";
+    await selectSubscriptionPage(alternateFilter);
+    await selectSubscriptionPage(createdFilter);
+
+    const card = page.locator(".subscription-container", { hasText: createdSubscriptionName }).first();
+    await card.waitFor({ state: "visible", timeout: 15000 });
+    const actionButton = card.locator('[data-subscription-action="expand-subscription-actions"]').first();
+    if (await actionButton.getAttribute("data-expand-action-bound") !== "1") {
+      throw new Error("replacement card did not receive its direct action binding");
+    }
+    await actionButton.click();
+    await card.locator(".actions.is-open").waitFor({ state: "visible", timeout: 10000 });
+    await actionButton.click();
+    await card.locator(".actions.is-open").waitFor({ state: "hidden", timeout: 10000 });
+
+    const lifecycleState = await page.evaluate(() => ({
+      sortableReady: typeof Sortable !== "undefined" && Boolean(Sortable.get(document.querySelector("#subscriptions"))),
+      columnClass: Array.from(document.querySelector("#subscriptions")?.classList || [])
+        .find((className) => /^subscription-columns-[123]$/.test(className)) || "",
+      imageCount: document.querySelectorAll("#subscriptions img").length,
+      masonryImagesBound: Array.from(document.querySelectorAll("#subscriptions img"))
+        .every((image) => image.dataset.subscriptionMasonryBound === "1"),
+      detailLayoutsReady: Array.from(document.querySelectorAll("#subscriptions .subscription-media-gallery"))
+        .every((gallery) => gallery.classList.contains("layout-focus") || gallery.classList.contains("layout-grid")),
+    }));
+    if (
+      !lifecycleState.sortableReady
+      || !lifecycleState.columnClass
+      || (lifecycleState.imageCount > 0 && !lifecycleState.masonryImagesBound)
+      || !lifecycleState.detailLayoutsReady
+    ) {
+      throw new Error(`replacement lifecycle incomplete: ${JSON.stringify(lifecycleState)}`);
     }
   });
 
@@ -448,6 +1038,7 @@ try {
   await step("cleanup temporary data and restore preferences", async () => {
     await restorePreferences(originalPreferences);
     await cleanupCreatedSubscription();
+    await cleanupCreatedSubscriptionPages();
     createdSubscriptionId = "";
   });
 
@@ -456,8 +1047,19 @@ try {
   await browser.close();
   process.exit(0);
 } catch (error) {
-  await restorePreferences(originalPreferences);
-  await cleanupCreatedSubscription();
+  const cleanupErrors = [];
+  await restorePreferences(originalPreferences).catch((cleanupError) => {
+    cleanupErrors.push(`restore preferences: ${cleanupError.message || cleanupError}`);
+  });
+  await cleanupCreatedSubscription().catch((cleanupError) => {
+    cleanupErrors.push(`remove subscription fixture: ${cleanupError.message || cleanupError}`);
+  });
+  await cleanupCreatedSubscriptionPages().catch((cleanupError) => {
+    cleanupErrors.push(`remove pagination fixtures: ${cleanupError.message || cleanupError}`);
+  });
+  if (cleanupErrors.length > 0) {
+    error.message = `${error.message || error}\nCleanup failures:\n- ${cleanupErrors.join("\n- ")}`;
+  }
   await writeFailureArtifacts(error);
   await browser.close();
   console.error(`FAIL: ${error.message || error}`);

@@ -37,6 +37,9 @@ $formatter = new IntlDateFormatter(
 wallos_endpoint_require_authenticated($i18n);
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
+  $jsonResponseRequested = strtolower(trim((string) ($_GET['format'] ?? ''))) === 'json';
+  $hideDisabledSubscriptions = isset($settings['hideDisabledSubscriptions'])
+    && $settings['hideDisabledSubscriptions'] === 'true';
   $mainCurrencyId = 0;
   $mainCurrencyStmt = $db->prepare('SELECT main_currency FROM user WHERE id = :userId');
   $mainCurrencyStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
@@ -112,7 +115,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     }
   }
 
-  if (isset($_GET['state']) && $_GET['state'] != "") {
+  if (!$hideDisabledSubscriptions && isset($_GET['state']) && $_GET['state'] != "") {
     $sql .= " AND inactive = :inactive";
     $params[':inactive'] = $_GET['state'];
   }
@@ -185,9 +188,9 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $stmt->bindValue($key, $value);
   }
 
+  $subscriptions = array();
   $result = $stmt->execute();
   if ($result) {
-    $subscriptions = array();
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
       $subscriptions[] = $row;
     }
@@ -320,30 +323,67 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   }
 
   $visibleSubscriptionCount = count($print ?? []);
-  if ($visibleSubscriptionCount > 0) {
-    printSubscriptions($print, $sort, $categories, $members, $i18n, $colorTheme, "../../", $settings['disabledToBottom'], $settings['mobileNavigation'], $settings['showSubscriptionProgress'], $currencies, $lang);
+  $fragmentBufferLevel = ob_get_level();
+  if ($jsonResponseRequested) {
+    ob_start();
   }
 
-  if ($visibleSubscriptionCount === 0) {
-    ?>
-    <div class="no-matching-subscriptions">
-      <p>
-        <?= translate('no_matching_subscriptions', $i18n) ?>
-      </p>
-      <?php if (wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) !== WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL): ?>
-        <button class="button" onClick="selectSubscriptionPageFilter('all')">
-          <span class="fa-solid fa-table-list"></span>
-          <?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?>
-        </button>
-      <?php else: ?>
-        <button class="button" onClick="clearFilters()">
-          <span clasS="fa-solid fa-minus-circle"></span>
-          <?= translate('clear_filters', $i18n) ?>
-        </button>
-      <?php endif; ?>
-      <img src="images/siteimages/empty.png" alt="<?= translate('empty_page', $i18n) ?>" />
-    </div>
-    <?php
+  try {
+    if ($visibleSubscriptionCount > 0) {
+      printSubscriptions($print, $sort, $categories, $members, $i18n, $colorTheme, "../../", $settings['disabledToBottom'], $settings['mobileNavigation'], $settings['showSubscriptionProgress'], $currencies, $lang);
+    }
+
+    if ($visibleSubscriptionCount === 0) {
+      ?>
+      <div class="no-matching-subscriptions">
+        <p>
+          <?= translate('no_matching_subscriptions', $i18n) ?>
+        </p>
+        <?php if (wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter) !== WALLOS_SUBSCRIPTION_PAGE_FILTER_ALL): ?>
+          <button class="button" data-subscription-action="select-page-filter" data-filter="all">
+            <span class="fa-solid fa-table-list"></span>
+            <?= wallos_translate_with_fallback('subscription_page_all', 'All', $i18n) ?>
+          </button>
+        <?php else: ?>
+          <button class="button" data-subscription-action="clear-filters">
+            <span class="fa-solid fa-minus-circle"></span>
+            <?= translate('clear_filters', $i18n) ?>
+          </button>
+        <?php endif; ?>
+        <img src="images/siteimages/empty.png" alt="<?= translate('empty_page', $i18n) ?>" />
+      </div>
+      <?php
+    }
+  } catch (Throwable $throwable) {
+    if ($jsonResponseRequested) {
+      while (ob_get_level() > $fragmentBufferLevel) {
+        ob_end_clean();
+      }
+    }
+    throw $throwable;
+  }
+
+  if ($jsonResponseRequested) {
+    $subscriptionsHtml = (string) ob_get_clean();
+    $pagePayload = wallos_get_subscription_pages_payload($db, $userId, $hideDisabledSubscriptions);
+
+    header('Content-Type: application/json; charset=UTF-8');
+    header('Cache-Control: private, no-store, max-age=0');
+    $encodedResponse = json_encode([
+      'success' => true,
+      'html' => $subscriptionsHtml,
+      'current_filter' => wallos_get_subscription_page_filter_value($currentSubscriptionPageFilter),
+      'visible_count' => $visibleSubscriptionCount,
+      'pages' => $pagePayload['pages'],
+      'counts' => $pagePayload['counts'],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+    if ($encodedResponse === false) {
+      throw new RuntimeException(translate('error', $i18n));
+    }
+
+    $db->close();
+    echo $encodedResponse;
+    exit;
   }
 }
 

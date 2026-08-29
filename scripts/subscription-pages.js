@@ -24,7 +24,11 @@
   };
   let managerSortable = null;
   let fetchSubscriptionsHandler = null;
-  let loadingRequestCount = 0;
+  let committedFilter = "all";
+  let selectionRequestSequence = 0;
+  let popstateBound = false;
+  let pendingSelection = null;
+  let documentFallbackPending = false;
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -93,27 +97,69 @@
     return `${url.pathname}${url.search}${url.hash}`;
   }
 
-  function updateFilterUrl() {
-    if (!window.history?.replaceState) {
-      return;
+  function getFilterFromUrl() {
+    const url = new URL(window.location.href);
+    return normalizeFilter(url.searchParams.get("subscription_page") || "all");
+  }
+
+  function writeFilterUrl(mode = "replace", filterValue = null) {
+    const method = mode === "push" ? "pushState" : "replaceState";
+    if (!window.history?.[method]) {
+      return false;
     }
 
-    window.history.replaceState({}, "", buildFilterUrl());
+    const nextUrl = buildFilterUrl(filterValue);
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (nextUrl === currentUrl) {
+      return false;
+    }
+
+    const currentState = window.history.state && typeof window.history.state === "object"
+      ? window.history.state
+      : {};
+    window.history[method]({
+      ...currentState,
+      wallosSubscriptionPage: normalizeFilter(filterValue ?? getCurrentFilter()),
+    }, "", nextUrl);
+    return true;
+  }
+
+  function updateFilterUrl() {
+    return writeFilterUrl("replace");
   }
 
   function setPageLoadingState(loading) {
     const overlay = document.getElementById("subscription-page-loading-overlay");
     const tabsContainer = document.getElementById("subscription-page-tabs");
-    if (!overlay) {
-      return;
+    if (overlay) {
+      overlay.classList.toggle("is-visible", loading);
+      overlay.setAttribute("aria-hidden", loading ? "false" : "true");
     }
-
-    overlay.classList.toggle("is-visible", loading);
-    overlay.setAttribute("aria-hidden", loading ? "false" : "true");
 
     if (tabsContainer) {
       tabsContainer.setAttribute("aria-busy", loading ? "true" : "false");
     }
+
+    const subscriptionsContainer = document.getElementById("subscriptions");
+    if (subscriptionsContainer) {
+      subscriptionsContainer.classList.toggle("is-page-loading", loading);
+      subscriptionsContainer.setAttribute("aria-busy", loading ? "true" : "false");
+    }
+  }
+
+  function syncTabSelection() {
+    const tabsContainer = document.getElementById("subscription-page-tabs");
+    if (!tabsContainer) {
+      return;
+    }
+
+    const activeFilter = getCurrentFilter();
+    tabsContainer.dataset.currentFilter = activeFilter;
+    tabsContainer.querySelectorAll("[data-page-filter]").forEach((tab) => {
+      const isActive = normalizeFilter(tab.dataset.pageFilter || tab.dataset.filter) === activeFilter;
+      tab.classList.toggle("is-active", isActive);
+      tab.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
   }
 
   function renderTabs() {
@@ -122,6 +168,10 @@
       return;
     }
 
+    const previousScrollLeft = tabsContainer.scrollLeft;
+    const focusedFilter = tabsContainer.contains(document.activeElement)
+      ? document.activeElement?.dataset?.pageFilter || document.activeElement?.dataset?.filter || null
+      : null;
     const strings = getStrings();
     const activeFilter = getCurrentFilter();
     const tabItems = [
@@ -152,6 +202,21 @@
         <span class="section-count-badge">${Number(item.count || 0)}</span>
       </button>
     `).join("");
+    tabsContainer.dataset.currentFilter = activeFilter;
+    tabsContainer.scrollLeft = previousScrollLeft;
+
+    if (focusedFilter !== null) {
+      const focusedTab = Array.from(tabsContainer.querySelectorAll("[data-page-filter]"))
+        .find((tab) => tab.dataset.pageFilter === focusedFilter);
+      if (focusedTab) {
+        try {
+          focusedTab.focus({ preventScroll: true });
+        } catch (error) {
+          focusedTab.focus();
+        }
+        tabsContainer.scrollLeft = previousScrollLeft;
+      }
+    }
   }
 
   function renderSelectOptions(selectedValue = null) {
@@ -236,6 +301,11 @@
   }
 
   function applyPayload(payload, options = {}) {
+    const payloadFilter = payload?.current_filter ?? payload?.currentFilter;
+    if (payloadFilter !== undefined && payloadFilter !== null) {
+      currentFilter = normalizeFilter(payloadFilter);
+    }
+
     pages = Array.isArray(payload?.pages)
       ? payload.pages.map((page) => ({
         id: Number(page.id || 0),
@@ -252,12 +322,22 @@
 
     if (/^\d+$/.test(currentFilter) && !pages.some((page) => String(page.id) === currentFilter)) {
       currentFilter = "all";
-      updateFilterUrl();
+      if (options.updateUrl !== false) {
+        updateFilterUrl();
+      }
     }
 
-    renderTabs();
-    renderManagerList();
-    renderSelectOptions(options.selectedValue ?? null);
+    if (options.renderTabs !== false) {
+      renderTabs();
+    } else {
+      syncTabSelection();
+    }
+    if (options.renderManager !== false) {
+      renderManagerList();
+    }
+    if (options.renderSelect !== false) {
+      renderSelectOptions(options.selectedValue ?? null);
+    }
     return getState();
   }
 
@@ -367,65 +447,202 @@
       });
   }
 
-  function runFetchSubscriptions(initiator) {
+  function runFetchSubscriptions(initiator, filterValue = null) {
     if (typeof fetchSubscriptionsHandler !== "function") {
       return Promise.resolve(null);
     }
 
-    return Promise.resolve(fetchSubscriptionsHandler(null, null, initiator));
+    return Promise.resolve().then(() => fetchSubscriptionsHandler(null, null, initiator, {
+      subscriptionPageFilter: normalizeFilter(filterValue ?? getCurrentFilter()),
+    }));
   }
 
-  function navigateToFilter(filterValue) {
+  function fallbackToDocumentNavigation(filterValue) {
     const nextUrl = buildFilterUrl(filterValue);
     const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
+    documentFallbackPending = true;
     setPageLoadingState(true);
 
-    window.setTimeout(() => {
-      if (nextUrl === currentUrl) {
-        window.location.reload();
-        return;
+    if (nextUrl === currentUrl) {
+      window.location.reload();
+      return;
+    }
+
+    window.location.assign(nextUrl);
+  }
+
+  function commitAppliedFilter(filterValue, context = {}) {
+    const resolvedFilter = normalizeFilter(filterValue);
+    const requestedFilter = normalizeFilter(context.requestedFilter ?? resolvedFilter);
+    const matchingPendingSelection = pendingSelection
+      && pendingSelection.requestedFilter === requestedFilter
+      ? pendingSelection
+      : null;
+
+    currentFilter = resolvedFilter;
+    committedFilter = resolvedFilter;
+    syncTabSelection();
+
+    if (matchingPendingSelection) {
+      let historyMode = matchingPendingSelection.historyMode;
+      if (resolvedFilter !== matchingPendingSelection.requestedFilter) {
+        historyMode = "replace";
       }
+      if (historyMode !== "none") {
+        writeFilterUrl(historyMode, resolvedFilter);
+      } else if (getFilterFromUrl() !== resolvedFilter) {
+        writeFilterUrl("replace", resolvedFilter);
+      }
+      pendingSelection = null;
+      setPageLoadingState(false);
+    } else if (context.canonicalize !== false && getFilterFromUrl() !== resolvedFilter) {
+      writeFilterUrl("replace", resolvedFilter);
+    }
 
-      window.location.assign(nextUrl);
-    }, 24);
+    return committedFilter;
+  }
 
-    return Promise.resolve(null);
+  function handleFragmentFailure(filterValue, error = null) {
+    const failedFilter = normalizeFilter(filterValue);
+    if (!pendingSelection || pendingSelection.requestedFilter !== failedFilter) {
+      return false;
+    }
+
+    const failedSelection = pendingSelection;
+    pendingSelection = null;
+    currentFilter = committedFilter;
+    syncTabSelection();
+
+    if (failedSelection.fallbackNavigation) {
+      fallbackToDocumentNavigation(failedSelection.requestedFilter);
+      return true;
+    }
+
+    setPageLoadingState(false);
+    showErrorMessage(normalizeRequestError(error, translate("error")));
+    return true;
   }
 
   function setFilterValue(filterValue, options = {}) {
-    currentFilter = normalizeFilter(filterValue);
-    renderTabs();
+    const requestedFilter = normalizeFilter(filterValue);
+    const shouldFetch = options.fetch !== false;
+    const historyMode = options.history
+      || (options.updateUrl === false ? "none" : "replace");
 
-    if (options.navigate === true) {
-      return navigateToFilter(currentFilter);
+    if (
+      shouldFetch
+      && pendingSelection?.requestedFilter === requestedFilter
+      && currentFilter === requestedFilter
+    ) {
+      return pendingSelection.promise || Promise.resolve({
+        applied: false,
+        pending: true,
+        currentFilter: requestedFilter,
+      });
     }
 
-    if (options.updateUrl !== false) {
-      updateFilterUrl();
+    if (
+      shouldFetch
+      && options.force !== true
+      && requestedFilter === committedFilter
+      && currentFilter === committedFilter
+    ) {
+      syncTabSelection();
+      return Promise.resolve({
+        applied: false,
+        unchanged: true,
+        currentFilter: committedFilter,
+      });
     }
 
-    if (options.fetch !== false) {
-      loadingRequestCount += 1;
-      setPageLoadingState(true);
+    currentFilter = requestedFilter;
+    syncTabSelection();
 
-      return runFetchSubscriptions("subscription-page")
-        .catch(() => {
-          showErrorMessage(translate("error"));
-        })
-        .finally(() => {
-          loadingRequestCount = Math.max(0, loadingRequestCount - 1);
-          if (loadingRequestCount === 0) {
-            setPageLoadingState(false);
-          }
-        });
+    if (!shouldFetch) {
+      if (historyMode !== "none") {
+        writeFilterUrl(historyMode, currentFilter);
+      }
+      return Promise.resolve({
+        applied: false,
+        currentFilter: getCurrentFilter(),
+      });
     }
 
-    return Promise.resolve(null);
+    const requestId = ++selectionRequestSequence;
+    pendingSelection = {
+      requestId,
+      requestedFilter,
+      historyMode,
+      fallbackNavigation: options.fallbackNavigation !== false,
+    };
+    setPageLoadingState(true);
+
+    const selectionPromise = runFetchSubscriptions(options.initiator || "subscription-page", requestedFilter)
+      .then((result) => {
+        if (requestId !== selectionRequestSequence || result?.aborted) {
+          return result;
+        }
+
+        if (result?.reloadRequired) {
+          return result;
+        }
+
+        if (!result || result.applied !== true) {
+          throw new Error(translate("error"));
+        }
+
+        if (pendingSelection?.requestId === requestId) {
+          commitAppliedFilter(result.currentFilter ?? getCurrentFilter(), {
+            requestedFilter,
+          });
+        }
+
+        return result;
+      })
+      .catch((error) => {
+        if (requestId !== selectionRequestSequence || error?.name === "AbortError") {
+          return {
+            applied: false,
+            aborted: true,
+            currentFilter: getCurrentFilter(),
+          };
+        }
+
+        handleFragmentFailure(requestedFilter, error);
+        return {
+          applied: false,
+          error,
+          currentFilter: committedFilter,
+        };
+      })
+      .finally(() => {
+        if (
+          requestId === selectionRequestSequence
+          && pendingSelection === null
+          && !documentFallbackPending
+        ) {
+          setPageLoadingState(false);
+        }
+      });
+    pendingSelection.promise = selectionPromise;
+    return selectionPromise;
+  }
+
+  function handleHistoryNavigation() {
+    setFilterValue(getFilterFromUrl(), {
+      history: "none",
+      fallbackNavigation: true,
+      initiator: "subscription-page-history",
+    });
   }
 
   function selectFilter(filterValue) {
-    return setFilterValue(filterValue, { navigate: true });
+    return setFilterValue(filterValue, {
+      history: "push",
+      fallbackNavigation: true,
+      initiator: "subscription-page",
+    });
   }
 
   function openManager(event) {
@@ -504,10 +721,13 @@
     submitAction({ action: "delete", page_id: pageId }, { selectedValue: getDefaultSelection() })
       .then(() => {
         if (deletedCurrentPage) {
-          currentFilter = "unassigned";
-          updateFilterUrl();
+          return setFilterValue("unassigned", {
+            history: "replace",
+            fallbackNavigation: true,
+            initiator: "subscription-page-delete",
+          });
         }
-        return runFetchSubscriptions("subscription-page-delete");
+        return runFetchSubscriptions("subscription-page-delete", getCurrentFilter());
       })
       .catch(() => {});
   }
@@ -522,10 +742,20 @@
       document.body.appendChild(overlay);
     }
 
+    const requestedUrlFilter = getFilterFromUrl();
     currentFilter = normalizeFilter(options.state?.currentFilter ?? window.subscriptionPageState?.currentFilter ?? "all");
     applyPayload(options.state ?? window.subscriptionPageState ?? {}, {
       selectedValue: options.selectedValue ?? getDefaultSelection(),
     });
+    committedFilter = getCurrentFilter();
+    if (requestedUrlFilter !== committedFilter) {
+      writeFilterUrl("replace", committedFilter);
+    }
+
+    if (!popstateBound) {
+      window.addEventListener("popstate", handleHistoryNavigation);
+      popstateBound = true;
+    }
   }
 
   window.WallosSubscriptionPages = {
@@ -535,6 +765,8 @@
     normalizeFilter,
     getDefaultSelection,
     getCurrentFilter,
+    commitAppliedFilter,
+    handleFragmentFailure,
     setFilterValue,
     selectFilter,
     renderTabs,

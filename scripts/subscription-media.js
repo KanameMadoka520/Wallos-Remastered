@@ -232,9 +232,13 @@
       .catch((error) => showErrorMessage(window.WallosApi?.normalizeError?.(error, translate("error")) || translate("error")));
   }
 
-  function initializeSubscriptionMediaSortables() {
+  function destroySubscriptionMediaSortables() {
     detailSubscriptionGallerySortables.forEach((sortableInstance) => sortableInstance.destroy());
     detailSubscriptionGallerySortables = [];
+  }
+
+  function initializeSubscriptionMediaSortables() {
+    destroySubscriptionMediaSortables();
 
     if (typeof Sortable === "undefined") {
       return;
@@ -653,6 +657,7 @@
     hideUploadProgress,
     resetCompression,
     initializeSubscriptionMediaSortables,
+    destroySubscriptionMediaSortables,
     buildFormViewerItems,
     resetDetailImageControls,
     handleDetailImageSelect,
