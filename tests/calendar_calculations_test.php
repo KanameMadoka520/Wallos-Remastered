@@ -119,8 +119,10 @@ try {
     wallos_calendar_test_assert(
         strpos($calendarPageSource, "calendar-subscription-title--current-due") !== false
         && strpos($calendarPageSource, "calendar_renewal_due_this_month") !== false
+        && strpos($calendarPageSource, "calendar_renewal_completed") !== false
+        && strpos($calendarPageSource, "calendar_renewal_handle_previous_first") !== false
         && strpos($calendarPageSource, "wallos_calendar_get_renewal_countdown") !== false,
-        'Calendar entries must expose a countdown and a distinct current-month renewal marker'
+        'Calendar entries must expose a countdown, a distinct current-month renewal marker, and safe forecast states'
     );
 
     wallos_calendar_test_assert(
