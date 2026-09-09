@@ -183,6 +183,7 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
       && wallos_screenshot_privacy_enabled($settings);
     $calendarPrivacySeed = $calendarPrivacyEnabled ? wallos_screenshot_privacy_seed() : '';
     foreach ($subscriptions as $subscription) {
+      $nextPaymentTimestamp = wallos_calendar_parse_date($subscription['next_payment'] ?? '');
       $paymentDates = wallos_calendar_get_payment_dates(
         $subscription,
         $calendarYear,
@@ -192,7 +193,7 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
 
       foreach ($paymentDates as $paymentDate) {
         $dayNumber = (int) date('j', $paymentDate);
-        $paymentsByDay[$dayNumber][] = $calendarPrivacyEnabled
+        $displaySubscription = $calendarPrivacyEnabled
           ? wallos_screenshot_privacy_mask_subscription(
               $subscription,
               $calendarPrivacySeed,
@@ -200,6 +201,17 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
               'calendar'
             )
           : $subscription;
+        $countdown = wallos_calendar_get_renewal_countdown($paymentDate, $today);
+        $isCurrentNextPayment = $nextPaymentTimestamp !== false
+          && date('Y-m-d', $paymentDate) === date('Y-m-d', $nextPaymentTimestamp);
+        $isDueThisMonth = $sameAsCurrent
+          && $isCurrentNextPayment
+          && date('Y-m', $nextPaymentTimestamp) === sprintf('%04d-%02d', $calendarYear, $calendarMonth);
+        $paymentsByDay[$dayNumber][] = [
+          'subscription' => $displaySubscription,
+          'countdown' => $countdown,
+          'is_due_this_month' => $isDueThisMonth,
+        ];
 
         $convertedPrice = getPriceConverted(
           $subscription['price'],
@@ -247,15 +259,46 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
             }
             $dayClass = ($day == $todayDay && $calendarMonth == $todayMonth && $calendarYear == $todayYear) ? 'today' : '';
             ?>
+            <?php
+            $dayPayments = $paymentsByDay[$day] ?? [];
+            $hasDueThisMonth = false;
+            foreach ($dayPayments as $dayPayment) {
+              if (!empty($dayPayment['is_due_this_month'])) {
+                $hasDueThisMonth = true;
+                break;
+              }
+            }
+            $dayClass .= $hasDueThisMonth ? ' calendar-cell--has-current-due' : '';
+            ?>
             <div class="calendar-cell <?= $dayClass ?>">
               <div class="calendar-cell-header">
                 <span class="day"><?= $day ?></span>
               </div>
               <div class="calendar-cell-content">
-                <?php foreach ($paymentsByDay[$day] ?? [] as $subscription): ?>
-                  <div class="calendar-subscription-title" data-subscription-id="<?= (int) $subscription['id'] ?>"
+                <?php foreach ($dayPayments as $payment): ?>
+                  <?php
+                  $subscription = $payment['subscription'];
+                  $countdown = $payment['countdown'];
+                  $countdownState = is_array($countdown) ? (string) ($countdown['state'] ?? 'upcoming') : 'upcoming';
+                  $countdownDays = is_array($countdown) ? (int) ($countdown['days'] ?? 0) : 0;
+                  $countdownLabel = $countdownState === 'overdue'
+                    ? sprintf(translate('calendar_renewal_overdue_days', $i18n), $countdownDays)
+                    : ($countdownState === 'today'
+                      ? translate('calendar_renewal_due_today', $i18n)
+                      : sprintf(translate('calendar_renewal_days_until', $i18n), $countdownDays));
+                  $titleClasses = 'calendar-subscription-title calendar-subscription-title--' . $countdownState;
+                  if (!empty($payment['is_due_this_month'])) {
+                    $titleClasses .= ' calendar-subscription-title--current-due';
+                  }
+                  ?>
+                  <div class="<?= $titleClasses ?>" data-subscription-id="<?= (int) $subscription['id'] ?>"
+                    aria-label="<?= htmlspecialchars($subscription['name'] . ' · ' . $countdownLabel, ENT_QUOTES, 'UTF-8') ?>"
                     onClick="openSubscriptionModal(<?= (int) $subscription['id'] ?>)">
-                    <?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?>
+                    <span class="calendar-subscription-name"><?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="calendar-subscription-countdown"><?= htmlspecialchars($countdownLabel, ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php if (!empty($payment['is_due_this_month'])): ?>
+                      <span class="calendar-subscription-renewal-flag"><?= translate('calendar_renewal_due_this_month', $i18n) ?></span>
+                    <?php endif; ?>
                   </div>
                 <?php endforeach; ?>
               </div>

@@ -6515,15 +6515,103 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
 }
 
 .calendar .calendar-subscription-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
   border: 1px solid var(--main-color);
   border-radius: 8px;
-  padding: 4px 2px;
+  padding: 5px 3px;
   cursor: pointer;
   box-sizing: border-box;
   white-space: normal;
   overflow-wrap: break-word;
   word-wrap: break-word;
   user-select: none;
+}
+
+.calendar .calendar-subscription-name {
+  max-width: 100%;
+  line-height: 1.25;
+}
+
+.calendar .calendar-subscription-countdown {
+  color: rgba(var(--text-color-rgb), 0.7);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.calendar .calendar-subscription-renewal-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: var(--main-color);
+  color: var(--text-color-inverted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.calendar .calendar-subscription-title--current-due {
+  border-color: var(--main-color);
+  background: rgba(var(--main-color-rgb), 0.11);
+  box-shadow: inset 0 0 0 1px rgba(var(--main-color-rgb), 0.12);
+}
+
+.calendar .calendar-subscription-title--today {
+  border-color: var(--main-color);
+  background: rgba(var(--main-color-rgb), 0.16);
+}
+
+.calendar .calendar-subscription-title--overdue {
+  border-color: var(--error-color);
+  background: rgba(var(--error-color-rgb), 0.11);
+}
+
+.calendar .calendar-subscription-title--overdue .calendar-subscription-countdown {
+  color: var(--error-color);
+}
+
+.calendar .calendar-cell--has-current-due .calendar-cell-header {
+  background: rgba(var(--main-color-rgb), 0.13);
+  box-shadow: inset 0 -2px 0 var(--main-color);
+}
+
+body.dynamic-wallpaper-enabled .calendar .calendar-subscription-title--current-due,
+body.dynamic-wallpaper-enabled .calendar .calendar-subscription-title--today {
+  border-color: rgba(var(--main-color-rgb), 0.84);
+  background: rgba(var(--main-color-rgb), 0.19);
+}
+
+body.dynamic-wallpaper-enabled .calendar .calendar-subscription-title--overdue {
+  border-color: var(--error-color);
+  background: rgba(var(--error-color-rgb), 0.2);
+}
+
+body.dynamic-wallpaper-enabled .calendar .calendar-cell--has-current-due .calendar-cell-header {
+  background: rgba(var(--main-color-rgb), 0.2);
+}
+
+@media (max-width: 768px) {
+  .calendar .calendar-subscription-title {
+    gap: 2px;
+    padding: 4px 1px;
+  }
+
+  .calendar .calendar-subscription-countdown {
+    font-size: 9px;
+  }
+
+  .calendar .calendar-subscription-renewal-flag {
+    padding: 2px 3px;
+    font-size: 8px;
+  }
 }
 
 .calendar .day {
