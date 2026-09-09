@@ -396,3 +396,35 @@ function wallos_calendar_is_due($paymentTimestamp, $todayTimestamp)
 {
     return (int) $paymentTimestamp >= (int) $todayTimestamp;
 }
+
+/**
+ * Return the calendar-day countdown for a displayed renewal occurrence.
+ *
+ * This deliberately compares date-only values in the active PHP timezone,
+ * rather than seconds, so a renewal later today is still shown as "today"
+ * and daylight-saving changes cannot make a one-day countdown jump.
+ */
+function wallos_calendar_get_renewal_countdown($paymentTimestamp, $todayTimestamp = null)
+{
+    $paymentTimestamp = (int) $paymentTimestamp;
+    $todayTimestamp = $todayTimestamp === null ? time() : (int) $todayTimestamp;
+    if ($paymentTimestamp <= 0 || $todayTimestamp <= 0) {
+        return null;
+    }
+
+    $paymentDate = DateTimeImmutable::createFromFormat('!Y-m-d', date('Y-m-d', $paymentTimestamp));
+    $todayDate = DateTimeImmutable::createFromFormat('!Y-m-d', date('Y-m-d', $todayTimestamp));
+    if ($paymentDate === false || $todayDate === false) {
+        return null;
+    }
+
+    $days = (int) $todayDate->diff($paymentDate)->format('%r%a');
+    if ($days < 0) {
+        return ['state' => 'overdue', 'days' => abs($days)];
+    }
+    if ($days === 0) {
+        return ['state' => 'today', 'days' => 0];
+    }
+
+    return ['state' => 'upcoming', 'days' => $days];
+}

@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.4.5-remastered.6`；上游兼容基线：[`ellite/Wallos v5.4.5`](https://github.com/ellite/Wallos/tree/v5.4.5)。
+> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.4.5-remastered.7`；上游兼容基线：[`ellite/Wallos v5.4.5`](https://github.com/ellite/Wallos/tree/v5.4.5)。
 
 [English README](README_EN.md) · [变更记录](CHANGELOG.md) · [安全策略](SECURITY.md) · [贡献指南](CONTRIBUTING.md)
 
@@ -87,7 +87,7 @@ docker compose logs --tail=100 wallos
 ```bash
 docker compose down
 git fetch --tags
-git checkout v5.4.5-remastered.6
+git checkout v5.4.5-remastered.7
 docker compose up -d --build
 curl http://127.0.0.1:18282/health.php
 ```
@@ -161,7 +161,7 @@ startup.sh、nginx*.conf  启动检查、进程监管与 Web 安全边界
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.4.5-remastered.6 \
+  wallos-remastered:v5.4.5-remastered.7 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 

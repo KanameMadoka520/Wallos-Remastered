@@ -109,6 +109,21 @@ try {
     );
 
     wallos_calendar_test_assert(
+        wallos_calendar_get_renewal_countdown(strtotime('2026-08-25'), $today) === ['state' => 'upcoming', 'days' => 5]
+        && wallos_calendar_get_renewal_countdown(strtotime('2026-08-20'), $today) === ['state' => 'today', 'days' => 0]
+        && wallos_calendar_get_renewal_countdown(strtotime('2026-08-18'), $today) === ['state' => 'overdue', 'days' => 2],
+        'Renewal countdowns must use calendar days and distinguish upcoming, today and overdue payments'
+    );
+
+    $calendarPageSource = file_get_contents(__DIR__ . '/../calendar.php');
+    wallos_calendar_test_assert(
+        strpos($calendarPageSource, "calendar-subscription-title--current-due") !== false
+        && strpos($calendarPageSource, "calendar_renewal_due_this_month") !== false
+        && strpos($calendarPageSource, "wallos_calendar_get_renewal_countdown") !== false,
+        'Calendar entries must expose a countdown and a distinct current-month renewal marker'
+    );
+
+    wallos_calendar_test_assert(
         wallos_calendar_get_week_days(false)[0]['key'] === 'mon'
         && wallos_calendar_get_week_days(true)[0]['key'] === 'sun',
         'Weekday headers must honor the Sunday-start preference'

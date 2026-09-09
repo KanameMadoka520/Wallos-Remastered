@@ -711,7 +711,14 @@
   function sanitizeCalendar() {
     document.querySelectorAll(".calendar-subscription-title").forEach((title, index) => {
       const key = elementKey(title, "calendar", index);
-      maskDirectText(title, fakeName(key, "calendar"));
+      const name = title.querySelector(".calendar-subscription-name");
+      const countdown = title.querySelector(".calendar-subscription-countdown");
+      const flag = title.querySelector(".calendar-subscription-renewal-flag");
+      if (name) maskDirectText(name, fakeName(key, "calendar"));
+      else maskDirectText(title, fakeName(key, "calendar"));
+      if (countdown) maskDirectText(countdown, fakeDescription(key, "calendar-countdown"));
+      if (flag) maskDirectText(flag, runtimeConfig.labels.chartSubtitle);
+      setMaskedAttribute(title, "aria-label", fakeName(key, "calendar"));
       markMasked(title);
     });
     document.querySelectorAll(".calendar-monthly-stats .statistic").forEach((statistic, index) => {
