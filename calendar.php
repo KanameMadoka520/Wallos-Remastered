@@ -201,9 +201,24 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
               'calendar'
             )
           : $subscription;
-        $countdown = wallos_calendar_get_renewal_countdown($paymentDate, $today);
         $isCurrentNextPayment = $nextPaymentTimestamp !== false
           && date('Y-m-d', $paymentDate) === date('Y-m-d', $nextPaymentTimestamp);
+        if (!$isCurrentNextPayment
+          && $nextPaymentTimestamp !== false
+          && $paymentDate < $nextPaymentTimestamp) {
+          // The projection intentionally includes older occurrences in the
+          // selected month. Once next_payment has advanced past one, it must
+          // not be presented as an overdue renewal.
+          $countdown = ['state' => 'completed', 'days' => 0];
+        } elseif (!$isCurrentNextPayment
+          && $nextPaymentTimestamp !== false
+          && $nextPaymentTimestamp < $today) {
+          // Do not imply a later forecast can be handled while the real next
+          // payment is still overdue.
+          $countdown = ['state' => 'blocked', 'days' => 0];
+        } else {
+          $countdown = wallos_calendar_get_renewal_countdown($paymentDate, $today);
+        }
         $isDueThisMonth = $sameAsCurrent
           && $isCurrentNextPayment
           && date('Y-m', $nextPaymentTimestamp) === sprintf('%04d-%02d', $calendarYear, $calendarMonth);
@@ -281,11 +296,15 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
                   $countdown = $payment['countdown'];
                   $countdownState = is_array($countdown) ? (string) ($countdown['state'] ?? 'upcoming') : 'upcoming';
                   $countdownDays = is_array($countdown) ? (int) ($countdown['days'] ?? 0) : 0;
-                  $countdownLabel = $countdownState === 'overdue'
-                    ? sprintf(translate('calendar_renewal_overdue_days', $i18n), $countdownDays)
-                    : ($countdownState === 'today'
-                      ? translate('calendar_renewal_due_today', $i18n)
-                      : sprintf(translate('calendar_renewal_days_until', $i18n), $countdownDays));
+                  $countdownLabel = $countdownState === 'completed'
+                    ? translate('calendar_renewal_completed', $i18n)
+                    : ($countdownState === 'blocked'
+                      ? translate('calendar_renewal_handle_previous_first', $i18n)
+                      : ($countdownState === 'overdue'
+                        ? sprintf(translate('calendar_renewal_overdue_days', $i18n), $countdownDays)
+                        : ($countdownState === 'today'
+                          ? translate('calendar_renewal_due_today', $i18n)
+                          : sprintf(translate('calendar_renewal_days_until', $i18n), $countdownDays))));
                   $titleClasses = 'calendar-subscription-title calendar-subscription-title--' . $countdownState;
                   if (!empty($payment['is_due_this_month'])) {
                     $titleClasses .= ' calendar-subscription-title--current-due';
