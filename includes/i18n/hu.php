@@ -495,6 +495,16 @@ $i18n = array_replace($i18n, [
     "google_search_info" => "A Google képtalálatait (SerpAPI-n keresztül) további forrásként adja hozzá a logókereséshez. Hozz létre egy ingyenes SerpAPI-fiókot, és illeszd be ide az API-kulcsodat.",
     "monthly_searches_used" => "Ebben a hónapban felhasznált keresések",
     "monthly_requests_used" => "Ebben a hónapban felhasznált API-kérések",
+    "upcoming_cancellations" => "Közelgő lemondások",
+    "upcoming_payments_to_show" => "Megjelenítendő közelgő fizetések",
+    "notes_bold" => "Félkövér",
+    "notes_italic" => "Dőlt",
+    "notes_list" => "Lista",
+    "notes_link" => "Hivatkozás",
+    "potential_monthly_savings" => "Lehetséges havi megtakarítás",
+    "potential_yearly_savings" => "Lehetséges éves megtakarítás",
+    "allow_standard_users_local_webhooks" => "Normál felhasználók számára engedélyezze a Webhook engedélyezési lista használatát",
+    "allow_standard_users_local_webhooks_info" => "Biztonsági kockázat: ennek engedélyezésével minden normál (nem admin) felhasználó értesítéseket küldhet a fenti Webhook engedélyezési listán szereplő címekre, beleértve a hálózaton belüli szolgáltatásokat is. Csak akkor engedélyezze, ha megbízik a Wallos-példány összes felhasználójában.",
 ]);
 
 

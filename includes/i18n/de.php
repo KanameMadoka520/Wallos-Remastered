@@ -429,6 +429,16 @@ $i18n = array_replace($i18n, [
     // TOTP Page
     "insert_totp_code" => "Bitte geben Sie den TOTP-Code ein",
 
+    "upcoming_cancellations" => "Bevorstehende Kündigungen",
+    "upcoming_payments_to_show" => "Anzuzeigende bevorstehende Zahlungen",
+    "notes_bold" => "Fett",
+    "notes_italic" => "Kursiv",
+    "notes_list" => "Liste",
+    "notes_link" => "Link",
+    "potential_monthly_savings" => "Mögliche monatliche Einsparung",
+    "potential_yearly_savings" => "Mögliche jährliche Einsparung",
+    "allow_standard_users_local_webhooks" => "Standardbenutzern erlauben, die Webhook-Zulassungsliste zu verwenden",
+    "allow_standard_users_local_webhooks_info" => "Sicherheitsrisiko: Wenn Sie dies aktivieren, kann jeder Standardbenutzer (kein Administrator) Benachrichtigungen an die oben in der Webhook-Zulassungsliste angegebenen Adressen senden, einschließlich interner Dienste in Ihrem Netzwerk. Aktivieren Sie dies nur, wenn Sie jedem Benutzer dieser Wallos-Instanz vertrauen.",
 ]);
 
 

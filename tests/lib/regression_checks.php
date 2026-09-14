@@ -118,8 +118,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
 
     $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
     $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
-    $remasteredVersionValid = strpos($versionPhp, '$version = "v5.4.5";') !== false
-        && strpos($versionPhp, '$remasteredVersion = "v5.4.5-remastered.8";') !== false
+    $remasteredVersionValid = strpos($versionPhp, '$version = "v5.7.1";') !== false
+        && strpos($versionPhp, '$remasteredVersion = "v5.7.1-remastered.1";') !== false
         && strpos($aboutPhp, 'Current running remastered build.') !== false
         && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= htmlspecialchars($version') !== false
         && strpos($aboutPhp, 'Remastered update scope') !== false;
@@ -128,8 +128,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'static',
         'remastered-version-contract',
         $remasteredVersionValid
-            ? 'About identifies the current v5.4.5 compatibility baseline and keeps the Remastered scope visible.'
-            : 'Expected version.php and About to identify the v5.4.5 Remastered compatibility baseline.'
+            ? 'About identifies the current v5.7.1 compatibility baseline and keeps the Remastered scope visible.'
+            : 'Expected version.php and About to identify the v5.7.1 Remastered compatibility baseline.'
     );
 
     $oidcSettingsPhp = wallos_regression_read_repo_file($config, 'includes/oidc_settings.php');
@@ -538,8 +538,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         '@filemtime(__DIR__ . \'/../scripts/common.js\')',
         '@filemtime(__DIR__ . \'/../service-worker.js\')',
     )) && wallos_regression_text_has_all($serviceWorkerJs, array(
-        "static-cache-v21",
-        "logos-cache-v21",
+        "static-cache-v22",
+        "logos-cache-v22",
         "WALLOS_CLEAR_CACHES",
         "WALLOS_CACHE_STATUS",
         "currentCaches",

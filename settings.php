@@ -2,6 +2,7 @@
 require_once 'includes/header.php';
 require_once 'includes/payment_icons.php';
 require_once 'includes/budget_period_calculations.php';
+require_once 'includes/upcoming_payments.php';
 
 $currencies = array();
 $query = "SELECT * FROM currencies WHERE user_id = :userId";
@@ -14,6 +15,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 }
 $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 $periodBudgetValue = max(0, (float) ($userData['period_budget'] ?? 0));
+$upcomingPaymentsLimit = normalize_upcoming_payments_limit($settings['upcoming_payments_limit'] ?? 3);
 $periodBudgetType = wallos_budget_period_type($userData['budget_period_type'] ?? 'monthly');
 $periodBudgetAnchorDate = wallos_budget_anchor_date($userData['budget_period_anchor_date'] ?? '');
 require_once 'includes/page_navigation.php';
@@ -1655,6 +1657,17 @@ $pageSections = [
                     <input type="checkbox" id="showoriginalprice" name="showoriginalprice"
                         onChange="setShowOriginalPrice()" <?= $settings['show_original_price'] ? 'checked' : '' ?>>
                     <label for="showoriginalprice"><?= translate('show_original_price', $i18n) ?></label>
+                </div>
+            </div>
+            <div>
+                <div class="form-group">
+                    <label for="upcomingpaymentslimit"><?= translate('upcoming_payments_to_show', $i18n) ?></label>
+                    <select id="upcomingpaymentslimit" name="upcomingpaymentslimit" onChange="setUpcomingPaymentsLimit()">
+                        <option value="3" <?= $upcomingPaymentsLimit === 3 ? 'selected' : '' ?>>3</option>
+                        <option value="5" <?= $upcomingPaymentsLimit === 5 ? 'selected' : '' ?>>5</option>
+                        <option value="10" <?= $upcomingPaymentsLimit === 10 ? 'selected' : '' ?>>10</option>
+                        <option value="20" <?= $upcomingPaymentsLimit === 20 ? 'selected' : '' ?>>20</option>
+                    </select>
                 </div>
             </div>
             <h3><?= translate('experience', $i18n) ?></h3>

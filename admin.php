@@ -1144,12 +1144,12 @@ $pageSections = [
             <input type="text" name="local_webhook_notifications_allowlist" id="local_webhook_notifications_allowlist" autocomplete="off"
                 placeholder="<?= translate('local_webhook_allowlist_placeholder', $i18n) ?>" value="<?= htmlspecialchars($settings['local_webhook_notifications_allowlist'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
         </div>
-        
+
         <div class="buttons">
             <input type="submit" class="thin mobile-grow" value="<?= translate('save', $i18n) ?>"
                 id="saveSecuritySettingsButton" onClick="window.WallosAdminRateLimit?.saveSecuritySettingsButton?.()" />
         </div>
-        
+
         <div class="settings-notes">
             <p>
                 <i class="fa-solid fa-circle-info"></i> 
@@ -1346,6 +1346,24 @@ $pageSections = [
                 id="clearClientCacheButton" onClick="clearClientCacheButton(this)" />
             <input type="button" class="button thin mobile-grow" value="<?= translate('service_worker_broadcast_refresh', $i18n) ?>"
                 id="requestClientCacheRefreshButton" onClick="requestClientCacheRefreshButton(this)" />
+        </div>
+
+        <div class="form-group-inline">
+            <input type="checkbox" id="allow_standard_users_local_webhooks" name="allow_standard_users_local_webhooks"
+                <?= !empty($settings['allow_standard_users_local_webhooks']) ? 'checked' : '' ?> />
+            <label for="allow_standard_users_local_webhooks"><?= translate('allow_standard_users_local_webhooks', $i18n) ?></label>
+        </div>
+
+        <div class="settings-notes">
+            <p>
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                <?= translate('allow_standard_users_local_webhooks_info', $i18n) ?>
+            </p>
+        </div>
+
+        <div class="buttons">
+            <input type="submit" class="thin mobile-grow" value="<?= translate('save', $i18n) ?>"
+                id="saveWebhookAccessSettingsButton" onClick="window.WallosAdminRateLimit?.saveSecuritySettingsButton?.()" />
         </div>
     </div>
 </section>

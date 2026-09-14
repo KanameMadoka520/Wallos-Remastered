@@ -1225,6 +1225,16 @@ $i18n = [
     "google_search_info" => "Adds Google image results (via SerpAPI) as an additional source in the subscription logo search. Create a free SerpAPI account and paste your API key here.",
     "monthly_searches_used" => "Searches used this month",
     "monthly_requests_used" => "API requests used this month",
+    "upcoming_cancellations" => "Upcoming Cancellations",
+    "upcoming_payments_to_show" => "Upcoming payments to show",
+    "notes_bold" => "Bold",
+    "notes_italic" => "Italic",
+    "notes_list" => "List",
+    "notes_link" => "Link",
+    "potential_monthly_savings" => "Potential Monthly Savings",
+    "potential_yearly_savings" => "Potential Yearly Savings",
+    "allow_standard_users_local_webhooks" => "Allow standard users to use the Webhook Allowlist",
+    "allow_standard_users_local_webhooks_info" => "Security risk: enabling this lets every standard (non-admin) user send notifications to the addresses in the Webhook Allowlist above, including internal services on your network. Only enable this if you trust every user on this Wallos instance.",
 ];
 
 

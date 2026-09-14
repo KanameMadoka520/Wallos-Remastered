@@ -429,6 +429,16 @@ $i18n = array_replace($i18n, [
     "over_budget_warning" => "Anda melebihi anggaran",
     // TOTP Page
     "insert_totp_code" => "Masukkan kode TOTP",
+    "upcoming_cancellations" => "Pembatalan Mendatang",
+    "upcoming_payments_to_show" => "Pembayaran mendatang yang ditampilkan",
+    "notes_bold" => "Tebal",
+    "notes_italic" => "Miring",
+    "notes_list" => "Daftar",
+    "notes_link" => "Tautan",
+    "potential_monthly_savings" => "Potensi Penghematan Bulanan",
+    "potential_yearly_savings" => "Potensi Penghematan Tahunan",
+    "allow_standard_users_local_webhooks" => "Izinkan pengguna standar menggunakan Daftar Izin Webhook",
+    "allow_standard_users_local_webhooks_info" => "Risiko keamanan: mengaktifkan ini memungkinkan setiap pengguna standar (bukan admin) mengirim notifikasi ke alamat dalam Daftar Izin Webhook di atas, termasuk layanan internal di jaringan Anda. Aktifkan ini hanya jika Anda memercayai setiap pengguna di instance Wallos ini.",
 ]);
 
 ?>

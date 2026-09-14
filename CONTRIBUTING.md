@@ -75,7 +75,7 @@ curl http://127.0.0.1:18282/health.php
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.4.5-remastered.8 \
+  wallos-remastered:v5.7.1-remastered.1 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 
@@ -88,7 +88,7 @@ docker run --rm --network host --entrypoint php \
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.4.5-remastered.8 \
+  wallos-remastered:v5.7.1-remastered.1 \
   /work/tests/regression_runner.php \
   --base-url=http://127.0.0.1:18282 \
   --username=你的测试账号 \
@@ -133,6 +133,8 @@ npm run e2e:cache
 - `docs/共享请求层与稳定性契约.md`
 
 ## 安全回归提醒
+
+上游 5.7.1 的集成取舍见 [兼容记录](docs/upstream-5.7.1-compatibility.md)。本分支迁移现已到 82；不要覆盖同号上游迁移，也不要批量解码现有备注。增加提醒卡片必须同时覆盖回收站过滤和截图脱密。
 
 涉及以下链路时，提交前请额外确认不要回退本次安全边界：
 

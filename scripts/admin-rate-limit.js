@@ -25,6 +25,7 @@
 
     const data = {
       local_webhook_notifications_allowlist: allowlist,
+      allow_standard_users_local_webhooks: document.getElementById("allow_standard_users_local_webhooks").checked,
       login_rate_limit_max_attempts: loginRateLimitMaxAttempts,
       login_rate_limit_block_minutes: document.getElementById("login_rate_limit_block_minutes").value,
       advanced_rate_limit_enabled: advancedRateLimitEnabled,

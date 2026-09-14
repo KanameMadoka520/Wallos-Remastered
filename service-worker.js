@@ -1,12 +1,11 @@
-const STATIC_CACHE = 'static-cache-v21';
-const LOGOS_CACHE = 'logos-cache-v21';
+const STATIC_CACHE = 'static-cache-v22';
+const LOGOS_CACHE = 'logos-cache-v22';
 
 // Keep the retired pages-cache prefix only so upgrades can delete legacy private-page caches.
 const WALLOS_CACHE_PREFIXES = ['static-cache-', 'pages-cache-', 'logos-cache-'];
 
 // Installation stays intentionally small. Page-specific assets are cached exactly when used.
 const PRECACHE_ASSETS = [
-    'manifest.json',
     'images/icon/favicon.ico',
     'images/icon/android-chrome-192x192.png',
     'scripts/i18n/en.js',
@@ -30,9 +29,6 @@ function normalizePathname(pathname) {
 
 function isStaticAssetPath(pathname) {
     const normalizedPath = normalizePathname(pathname);
-    if (normalizedPath === 'manifest.json') {
-        return true;
-    }
 
     return STATIC_PATH_PREFIXES.some(prefix => (
         normalizedPath.startsWith(prefix) || normalizedPath.includes('/' + prefix)

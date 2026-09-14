@@ -429,6 +429,16 @@ $i18n = array_replace($i18n, [
     // TOTP Page
     "insert_totp_code" => "Lütfen TOTP kodunuzu girin",
 
+    "upcoming_cancellations" => "Yaklaşan İptaller",
+    "upcoming_payments_to_show" => "Gösterilecek yaklaşan ödemeler",
+    "notes_bold" => "Kalın",
+    "notes_italic" => "İtalik",
+    "notes_list" => "Liste",
+    "notes_link" => "Bağlantı",
+    "potential_monthly_savings" => "Potansiyel Aylık Tasarruf",
+    "potential_yearly_savings" => "Potansiyel Yıllık Tasarruf",
+    "allow_standard_users_local_webhooks" => "Standart kullanıcıların Webhook İzin Listesini kullanmasına izin ver",
+    "allow_standard_users_local_webhooks_info" => "Güvenlik riski: bunu etkinleştirmek, her standart (yönetici olmayan) kullanıcının ağınızdaki dahili hizmetler dahil olmak üzere yukarıdaki Webhook İzin Listesindeki adreslere bildirim göndermesine izin verir. Bunu yalnızca bu Wallos örneğindeki her kullanıcıya güveniyorsanız etkinleştirin.",
 ]);
 
 

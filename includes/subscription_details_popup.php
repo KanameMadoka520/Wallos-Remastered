@@ -120,7 +120,7 @@ if (isset($subscriptions) && is_array($subscriptions)) {
         <div class="details-item hide" id="details-cancellation-item"><dt><?= translate('cancellation_notification', $i18n) ?></dt><dd id="details-cancellation"></dd></div>
         <div class="details-item hide" id="details-replacement-item"><dt><?= translate('replaced_with', $i18n) ?></dt><dd id="details-replacement"></dd></div>
     </dl>
-    <div class="details-notes hide" id="details-notes-item"><i class="fa-solid fa-note-sticky"></i><span id="details-notes"></span></div>
+    <div class="details-notes hide" id="details-notes-item"><i class="fa-solid fa-note-sticky"></i><div id="details-notes" class="subscription-markdown"></div></div>
 </section>
 
 <script>

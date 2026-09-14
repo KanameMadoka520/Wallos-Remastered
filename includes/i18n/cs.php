@@ -431,6 +431,16 @@ $i18n = array_replace($i18n, [
     "insert_totp_code" => "Vložte kód TOTP",
 
 
+    "upcoming_cancellations" => "Plánovaná zrušení",
+    "upcoming_payments_to_show" => "Zobrazené plánované platby",
+    "notes_bold" => "Tučné",
+    "notes_italic" => "Kurzíva",
+    "notes_list" => "Seznam",
+    "notes_link" => "Odkaz",
+    "potential_monthly_savings" => "Potenciální měsíční úspora",
+    "potential_yearly_savings" => "Potenciální roční úspora",
+    "allow_standard_users_local_webhooks" => "Povolit standardním uživatelům používat seznam povolených webhooků",
+    "allow_standard_users_local_webhooks_info" => "Bezpečnostní riziko: povolením tohoto nastavení umožníte každému standardnímu (neadministrátorskému) uživateli odesílat oznámení na adresy uvedené výše v seznamu povolených webhooků, včetně interních služeb ve vaší síti. Povolte to pouze v případě, že důvěřujete všem uživatelům této instance Wallos.",
 ]);
 
 

@@ -431,6 +431,16 @@ $i18n = array_replace($i18n, [
     "insert_totp_code" => "Inserează codul TOTP",
 
 
+    "upcoming_cancellations" => "Anulări viitoare",
+    "upcoming_payments_to_show" => "Plăți scadente de afișat",
+    "notes_bold" => "Aldin",
+    "notes_italic" => "Cursiv",
+    "notes_list" => "Listă",
+    "notes_link" => "Link",
+    "potential_monthly_savings" => "Economii lunare potențiale",
+    "potential_yearly_savings" => "Economii anuale potențiale",
+    "allow_standard_users_local_webhooks" => "Permite utilizatorilor standard să folosească lista albă de Webhook-uri",
+    "allow_standard_users_local_webhooks_info" => "Risc de securitate: activarea acestei opțiuni permite oricărui utilizator standard (neadministrator) să trimită notificări către adresele din lista albă de Webhook-uri de mai sus, inclusiv servicii interne din rețeaua dumneavoastră. Activați acest lucru doar dacă aveți încredere în toți utilizatorii acestei instanțe Wallos.",
 ]);
 
 

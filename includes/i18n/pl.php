@@ -429,6 +429,16 @@ $i18n = array_replace($i18n, [
     // TOTP Page
     "insert_totp_code" => "Wprowadź kod TOTP",
 
+    "upcoming_cancellations" => "Nadchodzące anulowania",
+    "upcoming_payments_to_show" => "Wyświetlane nadchodzące płatności",
+    "notes_bold" => "Pogrubienie",
+    "notes_italic" => "Kursywa",
+    "notes_list" => "Lista",
+    "notes_link" => "Link",
+    "potential_monthly_savings" => "Potencjalne oszczędności miesięczne",
+    "potential_yearly_savings" => "Potencjalne oszczędności roczne",
+    "allow_standard_users_local_webhooks" => "Zezwól standardowym użytkownikom na korzystanie z listy dozwolonych Webhooków",
+    "allow_standard_users_local_webhooks_info" => "Ryzyko bezpieczeństwa: włączenie tej opcji pozwoli każdemu standardowemu (nie administratorowi) użytkownikowi wysyłać powiadomienia na adresy znajdujące się na powyższej liście dozwolonych Webhooków, w tym do wewnętrznych usług w Twojej sieci. Włącz to tylko wtedy, gdy ufasz każdemu użytkownikowi tej instancji Wallos.",
 ]);
 
 

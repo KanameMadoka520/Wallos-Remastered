@@ -1246,6 +1246,16 @@ $i18n = array_replace($i18n, [
     "google_search_info" => "将Google图片结果（通过SerpAPI）添加为Logo搜索的额外来源。创建免费的SerpAPI账户并在此粘贴您的API密钥。",
     "monthly_searches_used" => "本月已用搜索次数",
     "monthly_requests_used" => "本月已用API请求数",
+    "upcoming_cancellations" => "即将取消",
+    "upcoming_payments_to_show" => "要显示的即将到期付款",
+    "notes_bold" => "粗体",
+    "notes_italic" => "斜体",
+    "notes_list" => "列表",
+    "notes_link" => "链接",
+    "potential_monthly_savings" => "预计每月可省",
+    "potential_yearly_savings" => "预计每年可省",
+    "allow_standard_users_local_webhooks" => "允许普通用户使用 Webhook 白名单",
+    "allow_standard_users_local_webhooks_info" => "安全风险:启用此选项后,任何普通(非管理员)用户都可以向上方 Webhook 白名单中的地址发送通知,包括您网络中的内部服务。仅在您信任此 Wallos 实例中的所有用户时才启用此选项。",
 ]);
 
 ?>

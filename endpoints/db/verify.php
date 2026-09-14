@@ -5,7 +5,7 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-const WALLOS_REQUIRED_MIGRATION_PREFIX = 81;
+const WALLOS_REQUIRED_MIGRATION_PREFIX = 82;
 
 function wallos_verify_quote_identifier($identifier)
 {
@@ -305,7 +305,8 @@ function wallos_verify_assert_current_schema(SQLite3 $db)
         'logo_text_color',
         'logo_variant',
     ]);
-    wallos_verify_assert_columns($db, 'settings', ['user_id', 'week_starts_sunday', 'screenshot_privacy_mode']);
+    wallos_verify_assert_columns($db, 'settings', ['user_id', 'week_starts_sunday', 'screenshot_privacy_mode', 'upcoming_payments_limit']);
+    wallos_verify_assert_columns($db, 'admin', ['allow_standard_users_local_webhooks']);
     wallos_verify_assert_columns($db, 'notification_settings', [
         'user_id',
         'days',

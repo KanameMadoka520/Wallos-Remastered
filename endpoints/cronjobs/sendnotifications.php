@@ -7,6 +7,7 @@ require_once 'validate.php';
 require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
 require_once __DIR__ . '/../../includes/subscription_trash.php';
 require_once __DIR__ . '/../../includes/ssrf_helper.php';
+require_once __DIR__ . '/../../includes/webhook_helper.php';
 
 require __DIR__ . '/../../libs/PHPMailer/PHPMailer.php';
 require __DIR__ . '/../../libs/PHPMailer/SMTP.php';
@@ -858,10 +859,10 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                             $payload = str_replace("{{subscription_date}}", $subscription['date'], $payload);
                             $payload = str_replace("{{subscription_days_until_payment}}", $subscription['days'], $payload);
                             $payload = str_replace("{{subscription_url}}", $subscription['url'], $payload);
-                            $payload = str_replace("{{subscription_notes}}", $subscription['notes'], $payload);
+                            $payload = str_replace("{{subscription_notes}}", webhookJsonEscape($subscription['notes']), $payload);
                             $payload = str_replace("{{period_summary}}", $periodSummaryPending ? $periodSummaryLine : '', $payload);
                             $periodSummaryPending = false;
-                
+
                             // Initialize cURL for each subscription
                             $ch = curl_init();
                             curl_setopt($ch, CURLOPT_URL, $webhook['url']);

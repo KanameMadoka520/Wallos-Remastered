@@ -179,7 +179,9 @@
 
     const notesItem = document.getElementById("details-notes-item");
     notesItem.classList.toggle("hide", !subscription.notes);
-    if (subscription.notes) document.getElementById("details-notes").textContent = subscription.notes;
+    const notesContent = document.getElementById("details-notes");
+    if (subscription.notes_html) notesContent.innerHTML = subscription.notes_html;
+    else notesContent.textContent = subscription.notes || "";
 
     const urlButton = document.getElementById("details-url-button");
     urlButton.classList.toggle("hide", !subscription.url);

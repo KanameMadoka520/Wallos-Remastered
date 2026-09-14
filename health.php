@@ -45,7 +45,7 @@ try {
     $migrationResult = $db->query('SELECT migration FROM migrations');
     while ($row = $migrationResult->fetchArray(SQLITE3_ASSOC)) {
         $migration = str_replace('\\', '/', trim((string) ($row['migration'] ?? '')));
-        if (preg_match('#(?:^|/)' . preg_quote('migrations/000081.php', '#') . '$#', $migration) === 1) {
+        if (preg_match('#(?:^|/)' . preg_quote('migrations/000082.php', '#') . '$#', $migration) === 1) {
             $completedLatestMigration = true;
             break;
         }
@@ -77,6 +77,12 @@ try {
     }
     if (!isset($settingsColumns['screenshot_privacy_mode'])) {
         throw new RuntimeException('required screenshot privacy column missing');
+    }
+    if (!isset($settingsColumns['upcoming_payments_limit'])) {
+        throw new RuntimeException('required upcoming payments column missing');
+    }
+    if (!$db->querySingle("SELECT 1 FROM pragma_table_info('admin') WHERE name='allow_standard_users_local_webhooks'")) {
+        throw new RuntimeException('required webhook access column missing');
     }
 
     $notificationColumns = [];

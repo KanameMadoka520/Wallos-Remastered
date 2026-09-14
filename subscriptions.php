@@ -1303,6 +1303,12 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 
     <div class="form-group">
       <label for="notes"><?= translate('notes', $i18n) ?></label>
+      <div class="notes-toolbar" role="toolbar" aria-label="<?= translate('notes', $i18n) ?>">
+        <?php foreach (['bold' => 'bold', 'italic' => 'italic', 'list' => 'list-ul', 'link' => 'link'] as $action => $icon): ?>
+        <button type="button" class="secondary-button thin" title="<?= translate('notes_' . $action, $i18n) ?>"
+          onclick="applyNotesMarkdown('<?= $action ?>')"><i class="fa-solid fa-<?= $icon ?>"></i></button>
+        <?php endforeach; ?>
+      </div>
       <textarea id="notes" name="notes" autocomplete="off" rows="8"
         class="subscription-notes-field"
         placeholder="<?= translate('notes', $i18n) ?>"></textarea>

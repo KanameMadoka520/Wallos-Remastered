@@ -429,6 +429,16 @@ $i18n = array_replace($i18n, [
     // TOTP Page
     "insert_totp_code" => "Introduce el código TOTP",
 
+    "upcoming_cancellations" => "Próximas Cancelaciones",
+    "upcoming_payments_to_show" => "Próximos pagos a mostrar",
+    "notes_bold" => "Negrita",
+    "notes_italic" => "Cursiva",
+    "notes_list" => "Lista",
+    "notes_link" => "Enlace",
+    "potential_monthly_savings" => "Ahorro Mensual Potencial",
+    "potential_yearly_savings" => "Ahorro Anual Potencial",
+    "allow_standard_users_local_webhooks" => "Permitir que los usuarios estándar usen la lista blanca de Webhooks",
+    "allow_standard_users_local_webhooks_info" => "Riesgo de seguridad: al activar esto, cualquier usuario estándar (no administrador) podrá enviar notificaciones a las direcciones de la lista blanca de Webhooks anterior, incluidos los servicios internos de su red. Actívelo solo si confía en todos los usuarios de esta instancia de Wallos.",
 ]);
 
 

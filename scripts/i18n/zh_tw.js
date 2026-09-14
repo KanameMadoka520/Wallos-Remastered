@@ -1,4 +1,7 @@
 globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
+  notes_bold: "粗體",
+  notes_italic: "斜體",
+  notes_link: "連結",
     // Dashboard
     error_reloading_subscription: '重新讀取訂閱時發生錯誤：',
     error_fetching_image_results: '抓取圖片時發生錯誤：',

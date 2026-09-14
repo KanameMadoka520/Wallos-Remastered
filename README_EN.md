@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.4.5-remastered.8`; upstream compatibility baseline: [`ellite/Wallos v5.4.5`](https://github.com/ellite/Wallos/tree/v5.4.5).
+> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.7.1-remastered.1`; upstream compatibility baseline: [`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1).
 
 [简体中文 README](README.md) · [Changelog (Chinese)](CHANGELOG.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
@@ -8,7 +8,7 @@
 
 Wallos-Remastered keeps the core Wallos subscription, statistics, multi-currency, notification, OIDC, and TOTP capabilities. It adds a Chinese-first experience, controlled multi-user operation, and maintenance features intended for a server that stays online for years.
 
-This is not an unmodified copy of the upstream UI or a repackaged official image. Relevant fixes from upstream `v5.4.5` were ported deliberately and integrated with this branch's ledger, media, theme, and admin systems. Its deployment model, database schema, and some interactions therefore differ from official Wallos.
+This is not an unmodified copy of the upstream UI or a repackaged official image. Relevant fixes from upstream `v5.7.1` were ported deliberately and integrated with this branch's ledger, media, theme, and admin systems. Its deployment model, database schema, and some interactions therefore differ from official Wallos.
 
 ## Key capabilities
 
@@ -23,7 +23,9 @@ This is not an unmodified copy of the upstream UI or a repackaged official image
 - **Screenshot-safe subscription display:** Screenshot Privacy Mode replaces real subscription names, prices, descriptions, and images with generated demo content without changing the database; disabling it restores the original display.
 - **Remastered presentation:** dynamic wallpaper, glass effects, custom themes/CSS, destination-specific transition scenes, immersive mode, and account-synced preferences.
 
-## Differences from upstream Wallos v5.4.5
+## Differences from upstream Wallos v5.7.1
+
+This release adds configurable upcoming payments, cancellation reminders, potential savings and Markdown editing shortcuts while keeping the custom calendar countdowns, screenshot privacy mode and page transitions. See the [5.7.1 compatibility record](docs/upstream-5.7.1-compatibility.md) for migration and integration decisions.
 
 | Area | Upstream Wallos | Wallos-Remastered |
 | --- | --- | --- |
@@ -37,7 +39,7 @@ This is not an unmodified copy of the upstream UI or a repackaged official image
 | Container SSO | OIDC can be managed in the UI | Keeps UI management and adds `OIDC_*` overrides, issuer discovery, and secret-file loading |
 | UI | Upstream pages and themes | Adds Chinese defaults, dynamic wallpaper, destination-specific transitions, screenshot privacy, and account-level theme/layout preferences |
 
-“Compatibility baseline” means that applicable `v5.4.5` behavior has been incorporated; it does not mean both trees are file-for-file identical. For example, logo search keeps Remastered's DuckDuckGo + Brave path instead of copying upstream's complete Google/selfh.st/Dashboard Icons UI. Do not mix the official and Remastered images or exchange databases without a tested backup.
+“Compatibility baseline” means that applicable `v5.7.1` behavior has been incorporated; it does not mean both trees are file-for-file identical. For example, logo search keeps Remastered's DuckDuckGo + Brave path instead of copying upstream's complete Google/selfh.st/Dashboard Icons UI. Do not mix the official and Remastered images or exchange databases without a tested backup.
 
 ## Docker deployment
 
@@ -87,7 +89,7 @@ Create and verify a backup in the admin UI first, then copy `db`, `logos`, and `
 ```bash
 docker compose down
 git fetch --tags
-git checkout v5.4.5-remastered.8
+git checkout v5.7.1-remastered.1
 docker compose up -d --build
 curl http://127.0.0.1:18282/health.php
 ```
@@ -161,7 +163,7 @@ Normal changes should receive PHP/JavaScript syntax checks, a health check, and 
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.4.5-remastered.8 \
+  wallos-remastered:v5.7.1-remastered.1 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 

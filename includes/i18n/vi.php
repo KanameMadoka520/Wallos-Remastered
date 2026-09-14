@@ -429,6 +429,16 @@ $i18n = array_replace($i18n, [
     "over_budget_warning" => "Bạn đang vượt quá ngân sách",
     // TOTP Page
     "insert_totp_code" => "Nhập mã TOTP",
+    "upcoming_cancellations" => "Hủy bỏ sắp tới",
+    "upcoming_payments_to_show" => "Các khoản thanh toán sắp tới cần hiển thị",
+    "notes_bold" => "Đậm",
+    "notes_italic" => "Nghiêng",
+    "notes_list" => "Danh sách",
+    "notes_link" => "Liên kết",
+    "potential_monthly_savings" => "Tiết kiệm hàng tháng tiềm năng",
+    "potential_yearly_savings" => "Tiết kiệm hàng năm tiềm năng",
+    "allow_standard_users_local_webhooks" => "Cho phép người dùng tiêu chuẩn sử dụng Danh sách cho phép Webhook",
+    "allow_standard_users_local_webhooks_info" => "Rủi ro bảo mật: bật tùy chọn này cho phép mọi người dùng tiêu chuẩn (không phải quản trị viên) gửi thông báo đến các địa chỉ trong Danh sách cho phép Webhook ở trên, bao gồm cả các dịch vụ nội bộ trong mạng của bạn. Chỉ bật tùy chọn này nếu bạn tin tưởng mọi người dùng trên phiên bản Wallos này.",
 ]);
 
 ?>

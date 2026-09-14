@@ -1,5 +1,18 @@
 <?php
 
+// Accept plain text; Remastered decodes its stored notes once at the caller.
+function render_notes_markdown($text)
+{
+    require_once __DIR__ . '/../libs/Parsedown.php';
+    static $parser;
+    if ($parser === null) {
+        $parser = new Parsedown();
+        $parser->setSafeMode(true);
+        $parser->setBreaksEnabled(true);
+    }
+    return $parser->text((string) $text);
+}
+
 function wallos_markdown_escape($text)
 {
     return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');

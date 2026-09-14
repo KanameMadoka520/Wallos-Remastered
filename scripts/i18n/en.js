@@ -1,4 +1,7 @@
 globalThis.wallosI18nEnglish = {
+  notes_bold: "Bold",
+  notes_italic: "Italic",
+  notes_link: "Link",
   // Dashboard
   error_reloading_subscription: "Error reloading subscription:",
   error_fetching_image_results: "Error fetching image results:",

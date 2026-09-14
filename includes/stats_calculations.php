@@ -56,7 +56,7 @@ function wallos_stats_build_item_group($title, array $items)
 
 // Get categories
 $categories = array();
-$query = "SELECT * FROM categories WHERE user_id = :userId ORDER BY 'order' ASC";
+$query = "SELECT * FROM categories WHERE user_id = :userId ORDER BY [order] ASC";
 $stmt = $db->prepare($query);
 $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
 $result = $stmt->execute();
@@ -240,11 +240,11 @@ if ($result) {
             }
             $next_payment = $subscription['next_payment'];
             $payerId = $subscription['payer_user_id'];
-            $members[$payerId]['count'] += 1;
+            if (isset($members[$payerId])) $members[$payerId]['count'] += 1;
             $categoryId = $subscription['category_id'];
-            $categories[$categoryId]['count'] += 1;
+            if (isset($categories[$categoryId])) $categories[$categoryId]['count'] += 1;
             $paymentMethodId = $subscription['payment_method_id'];
-            $paymentMethods[$paymentMethodId]['count'] += 1;
+            if (isset($paymentMethods[$paymentMethodId])) $paymentMethods[$paymentMethodId]['count'] += 1;
             $inactive = $subscription['inactive'];
             $replacementSubscriptionId = $subscription['replacement_subscription_id'];
             $subscriptionId = (int) ($subscription['id'] ?? 0);
@@ -256,9 +256,9 @@ if ($result) {
                 if ((int) $cycle !== 5) {
                     $activeSubscriptions++;
                     $totalCostPerMonth += $price;
-                    $memberCost[$payerId]['cost'] += $price;
-                    $categoryCost[$categoryId]['cost'] += $price;
-                    $paymentMethodsCount[$paymentMethodId]['count'] += 1;
+                    if (isset($memberCost[$payerId])) $memberCost[$payerId]['cost'] += $price;
+                    if (isset($categoryCost[$categoryId])) $categoryCost[$categoryId]['cost'] += $price;
+                    if (isset($paymentMethodsCount[$paymentMethodId])) $paymentMethodsCount[$paymentMethodId]['count'] += 1;
                     if ($price > $mostExpensiveSubscription['price']) {
                         $mostExpensiveSubscription['id'] = $subscriptionId;
                         $mostExpensiveSubscription['price'] = $price;
