@@ -422,6 +422,16 @@ $i18n = array_replace($i18n, [
     // TOTP Page
     "insert_totp_code" => "Vnesite kodo TOTP",
 
+    "upcoming_cancellations" => "Prihajajoči preklici",
+    "upcoming_payments_to_show" => "Prikazana prihajajoča plačila",
+    "notes_bold" => "Krepko",
+    "notes_italic" => "Ležeče",
+    "notes_list" => "Seznam",
+    "notes_link" => "Povezava",
+    "potential_monthly_savings" => "Možni mesečni prihranek",
+    "potential_yearly_savings" => "Možni letni prihranek",
+    "allow_standard_users_local_webhooks" => "Dovoli standardnim uporabnikom uporabo seznama dovoljenih naslovov za Webhook",
+    "allow_standard_users_local_webhooks_info" => "Varnostno tveganje: če to omogočite, bo lahko vsak standardni (neadministratorski) uporabnik pošiljal obvestila na naslove s seznama dovoljenih naslovov za Webhook zgoraj, vključno z notranjimi storitvami v vašem omrežju. To omogočite samo, če zaupate vsem uporabnikom tega primerka Wallosa.",
 ]);
 
 

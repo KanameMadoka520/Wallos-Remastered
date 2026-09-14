@@ -430,5 +430,15 @@ $i18n = array_replace($i18n, [
     "over_budget_warning" => "Du er over budget",
     // TOTP Page
     "insert_totp_code" => "Indtast TOTP-kode",
+    "upcoming_cancellations" => "Kommende annulleringer",
+    "upcoming_payments_to_show" => "Kommende betalinger, der vises",
+    "notes_bold" => "Fed",
+    "notes_italic" => "Kursiv",
+    "notes_list" => "Liste",
+    "notes_link" => "Link",
+    "potential_monthly_savings" => "Potentiel månedlig besparelse",
+    "potential_yearly_savings" => "Potentiel årlig besparelse",
+    "allow_standard_users_local_webhooks" => "Tillad standardbrugere at bruge webhook-tilladelseslisten",
+    "allow_standard_users_local_webhooks_info" => "Sikkerhedsrisiko: hvis dette aktiveres, kan alle standardbrugere (ikke-administratorer) sende notifikationer til adresserne på webhook-tilladelseslisten ovenfor, herunder interne tjenester på dit netværk. Aktiver kun dette, hvis du stoler på alle brugere på denne Wallos-instans.",
 ]);
 ?>

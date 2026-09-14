@@ -9,6 +9,7 @@ function wallos_normalize_page_transition_style_setting($value)
     $style = trim((string) $value);
     return in_array($style, ['shutter', 'bluearchive', 'bluearchive_theme'], true) ? $style : 'shutter';
 }
+require_once __DIR__ . '/theme_helpers.php';
 
 $query = "SELECT * FROM settings WHERE user_id = :userId";
 $stmt = $db->prepare($query);
@@ -26,7 +27,7 @@ if (!empty($settings)) {
     $themeValue = $themeMapping[$themeKey];
     $settings['update_theme_setttings'] = false;
     if (isset($_COOKIE['inUseTheme']) && $settings['dark_theme'] == 2) {
-        $inUseTheme = $_COOKIE['inUseTheme'];
+        $inUseTheme = sanitize_resolved_theme($_COOKIE['inUseTheme']);
         $settings['theme'] = $inUseTheme;
     } else {
         $settings['theme'] = $themeValue;

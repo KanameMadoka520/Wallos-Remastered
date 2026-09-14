@@ -495,6 +495,16 @@ $i18n = array_replace($i18n, [
     "google_search_info" => "يضيف نتائج صور Google (عبر SerpAPI) مصدرًا إضافيًا عند البحث عن شعارات الاشتراكات. أنشئ حساب SerpAPI مجانيًا والصق مفتاح API هنا.",
     "monthly_searches_used" => "عمليات البحث المستخدمة هذا الشهر",
     "monthly_requests_used" => "طلبات API المستخدمة هذا الشهر",
+    "upcoming_cancellations" => "الإلغاءات القادمة",
+    "upcoming_payments_to_show" => "المدفوعات القادمة المعروضة",
+    "notes_bold" => "عريض",
+    "notes_italic" => "مائل",
+    "notes_list" => "قائمة",
+    "notes_link" => "رابط",
+    "potential_monthly_savings" => "التوفير الشهري المحتمل",
+    "potential_yearly_savings" => "التوفير السنوي المحتمل",
+    "allow_standard_users_local_webhooks" => "السماح للمستخدمين العاديين باستخدام القائمة البيضاء للـ Webhook",
+    "allow_standard_users_local_webhooks_info" => "تحذير أمني: تفعيل هذا الخيار يسمح لكل مستخدم عادي (غير المسؤول) بإرسال إشعارات إلى العناوين الموجودة في القائمة البيضاء للـ Webhook أعلاه، بما في ذلك الخدمات الداخلية على شبكتك. لا تُفعّل هذا الخيار إلا إذا كنت تثق بكل مستخدم في هذا التطبيق.",
 ]);
 
 

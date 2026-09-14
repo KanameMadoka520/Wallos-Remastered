@@ -429,8 +429,18 @@ $i18n = array_replace($i18n, [
     "over_budget_warning" => "予算オーバーだ",
     // TOTP Page
     "insert_totp_code" => "TOTPコードを入力してください",
-    
 
+
+    "upcoming_cancellations" => "Upcoming Cancellations",
+    "upcoming_payments_to_show" => "Upcoming payments to show",
+    "notes_bold" => "Bold",
+    "notes_italic" => "Italic",
+    "notes_list" => "List",
+    "notes_link" => "Link",
+    "potential_monthly_savings" => "Potential Monthly Savings",
+    "potential_yearly_savings" => "Potential Yearly Savings",
+    "allow_standard_users_local_webhooks" => "Allow standard users to use the Webhook Allowlist",
+    "allow_standard_users_local_webhooks_info" => "Security risk: enabling this lets every standard (non-admin) user send notifications to the addresses in the Webhook Allowlist above, including internal services on your network. Only enable this if you trust every user on this Wallos instance.",
 ]);
 
 

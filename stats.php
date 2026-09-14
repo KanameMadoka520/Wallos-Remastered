@@ -16,6 +16,10 @@ $code = $row['code'];
 
 require_once 'includes/stats_calculations.php';
 require_once 'includes/page_navigation.php';
+require_once 'includes/upcoming_cancellations.php';
+$upcomingCancellations = get_upcoming_cancellations($db, $userId);
+$upcomingCancellationsCount = count($upcomingCancellations);
+$potentialMonthlySavings = get_upcoming_cancellations_monthly_value($upcomingCancellations, $db, $userId);
 
 $displayMostExpensiveSubscription = $mostExpensiveSubscription;
 if (function_exists('wallos_screenshot_privacy_enabled')
@@ -405,6 +409,22 @@ if ($showStatsGraphs) {
         <div class="subtitle"><?= htmlspecialchars($periodBudgetPeriod['label'], ENT_QUOTES, 'UTF-8') ?></div>
       </div>
       <?php endif; ?>
+      <?php
+    }
+    if ($upcomingCancellationsCount > 0) {
+      ?>
+      <div class="statistic">
+        <span><?= $upcomingCancellationsCount ?></span>
+        <div class="title"><?= translate('upcoming_cancellations', $i18n) ?></div>
+      </div>
+      <div class="statistic">
+        <span><?= CurrencyFormatter::format($potentialMonthlySavings, $code) ?></span>
+        <div class="title"><?= translate('potential_monthly_savings', $i18n) ?></div>
+      </div>
+      <div class="statistic">
+        <span><?= CurrencyFormatter::format($potentialMonthlySavings * 12, $code) ?></span>
+        <div class="title"><?= translate('potential_yearly_savings', $i18n) ?></div>
+      </div>
       <?php
     }
     if ($inactiveSubscriptions > 0) {

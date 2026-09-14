@@ -53,6 +53,7 @@ $subscriptionData['next_payment'] = $row['next_payment'];
 $subscriptionData['frequency'] = $row['frequency'];
 $subscriptionData['cycle'] = $row['cycle'];
 $subscriptionData['notes'] = htmlspecialchars_decode($row['notes'] ?? "");
+require_once '../../includes/markdown.php';
 $subscriptionData['payment_method_id'] = $row['payment_method_id'];
 $subscriptionData['payer_user_id'] = $row['payer_user_id'];
 $subscriptionData['category_id'] = $row['category_id'];
@@ -93,6 +94,7 @@ if ($displayPurpose && wallos_screenshot_privacy_enabled($settings)) {
     );
 }
 
+$subscriptionData['notes_html'] = render_notes_markdown($subscriptionData['notes']);
 header('Content-Type: application/json; charset=UTF-8');
 echo json_encode($subscriptionData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $db->close();

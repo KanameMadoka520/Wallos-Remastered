@@ -32,6 +32,11 @@ function wallos_get_effective_ssrf_allowlist($db)
     return array_values(array_filter(array_map('trim', explode(',', (string) $rawValue))));
 }
 
+function wallos_standard_users_may_use_webhook_allowlist($db)
+{
+    return (int) $db->querySingle('SELECT allow_standard_users_local_webhooks FROM admin LIMIT 1') === 1;
+}
+
 function wallos_extract_embedded_ipv4($ip)
 {
     $packed = @inet_pton((string) $ip);
@@ -134,7 +139,7 @@ function validate_webhook_url_for_ssrf($url, $db, $i18n, $userId = null) {
     $is_private = wallos_ip_is_private_or_reserved($ip);
 
     if ($is_private) {
-        if ($userId != 1) {
+        if ($userId != 1 && !wallos_standard_users_may_use_webhook_allowlist($db)) {
             die(json_encode([
                 "success" => false,
                 "message" => "Security Block: Standard users are not permitted to use internal network addresses."
@@ -142,12 +147,12 @@ function validate_webhook_url_for_ssrf($url, $db, $i18n, $userId = null) {
         }
 
         $allowlist = wallos_get_effective_ssrf_allowlist($db);
-        
-        if (!in_array($urlHost, $allowlist) && 
-            !in_array($ip, $allowlist) && 
-            !in_array($hostWithPort, $allowlist) && 
+
+        if (!in_array($urlHost, $allowlist) &&
+            !in_array($ip, $allowlist) &&
+            !in_array($hostWithPort, $allowlist) &&
             !in_array($ipWithPort, $allowlist)) {
-            
+
             die(json_encode([
                 "success" => false,
                 "message" => "Security Block: The target IP/Port is private and not present in the Webhook Allowlist."
@@ -195,7 +200,7 @@ function is_url_safe_for_ssrf($url, $db, $userId = null) {
     $is_private = wallos_ip_is_private_or_reserved($ip);
 
     if ($is_private) {
-        if ($userId != 1) {
+        if ($userId != 1 && !wallos_standard_users_may_use_webhook_allowlist($db)) {
             return false; // private and user is not admin — skip silently
         }
 
@@ -365,11 +370,13 @@ function validate_oidc_endpoint_url($url, $db) {
         return false;
     }
 
-    $ip = gethostbyname($host);
-    if ($ip === $host && filter_var($host, FILTER_VALIDATE_IP) === false) {
+    $ips = filter_var($host, FILTER_VALIDATE_IP) !== false ? [$host] : gethostbynamel($host);
+    if (!$ips) {
         return false;
     }
 
+    $validIps = [];
+    foreach ($ips as $ip) {
     if (wallos_ip_is_private_or_reserved($ip)) {
         $allowlist = wallos_get_effective_ssrf_allowlist($db);
         $hostWithPort = $host . ':' . $port;
@@ -378,14 +385,20 @@ function validate_oidc_endpoint_url($url, $db) {
             && !in_array($ip, $allowlist, true)
             && !in_array($hostWithPort, $allowlist, true)
             && !in_array($ipWithPort, $allowlist, true)) {
-            return false;
+            continue;
         }
+    }
+        $validIps[] = $ip;
+    }
+    if (!$validIps) {
+        return false;
     }
 
     return [
         'host' => $host,
-        'ip' => $ip,
+        'ip' => $validIps[0],
+        'ips' => $validIps,
         'port' => $port,
-        'resolve' => $host . ':' . $port . ':' . $ip,
+        'resolve' => $host . ':' . $port . ':' . implode(',', $validIps),
     ];
 }

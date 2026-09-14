@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.4.5-remastered.8`；上游兼容基线：[`ellite/Wallos v5.4.5`](https://github.com/ellite/Wallos/tree/v5.4.5)。
+> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.7.1-remastered.1`；上游兼容基线：[`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1)。
 
 [English README](README_EN.md) · [变更记录](CHANGELOG.md) · [安全策略](SECURITY.md) · [贡献指南](CONTRIBUTING.md)
 
@@ -8,7 +8,7 @@
 
 Wallos-Remastered 保留 Wallos 的订阅、统计、多币种、通知、OIDC/TOTP 等基础能力，并针对中文用户、多人受控使用和长期运维做了大量扩展。
 
-它不是上游页面的原样复制，也不是官方 Docker 镜像的换皮版。上游 `v5.4.5` 的兼容与安全修复经过人工移植，再与本分支的账本、媒体、主题和管理功能整合。因此，部署方式、数据库结构和部分交互均与官方 Wallos 不同。
+它不是上游页面的原样复制，也不是官方 Docker 镜像的换皮版。上游 `v5.7.1` 的兼容与安全修复经过人工移植，再与本分支的账本、媒体、主题和管理功能整合。因此，部署方式、数据库结构和部分交互均与官方 Wallos 不同。
 
 ## 最值得关注的功能
 
@@ -23,7 +23,9 @@ Wallos-Remastered 保留 Wallos 的订阅、统计、多币种、通知、OIDC/T
 - **截图可以隐藏真实订阅**：显示设置中的截图脱敏模式会临时用演示名称、价格、说明和内存图标替代真实订阅内容，不改数据库；关闭后恢复原显示。
 - **保留重制视觉体验**：支持动态壁纸、毛玻璃、自定义主题与 CSS、按目标页面变化的转场场景、沉浸模式，并可让偏好跟随账号。
 
-## 与上游 Wallos v5.4.5 的区别
+## 与上游 Wallos v5.7.1 的区别
+
+本次更新增加首页待付款数量设置、即将取消订阅提醒、潜在节省统计与备注快捷编辑，并保留日历倒计时、脱密模式和定制转场。逐项取舍与迁移说明见 [v5.7.1 兼容记录](docs/upstream-5.7.1-compatibility.md)。
 
 | 方面 | 上游 Wallos | Wallos-Remastered |
 | --- | --- | --- |
@@ -37,7 +39,7 @@ Wallos-Remastered 保留 Wallos 的订阅、统计、多币种、通知、OIDC/T
 | 容器化认证 | 支持在页面管理 OIDC | 保留页面配置，并补齐 `OIDC_*` 环境变量、Issuer Discovery 和 Secret File |
 | 界面 | 上游主题和页面 | 增加中文默认体验、动态壁纸、页面专属转场、截图脱敏及账号级主题与布局偏好 |
 
-这里的“兼容基线”表示已吸收适合本分支的 `v5.4.5` 行为，不表示两个仓库逐文件相同。例如 Logo 搜索仍保留 Remastered 的 DuckDuckGo + Brave 路线，没有照搬上游 Google/selfh.st/Dashboard Icons 的整套界面。请不要把官方镜像和本仓库镜像混用，也不要跳过备份直接互换数据库。
+这里的“兼容基线”表示已吸收适合本分支的 `v5.7.1` 行为，不表示两个仓库逐文件相同。例如 Logo 搜索仍保留 Remastered 的 DuckDuckGo + Brave 路线，没有照搬上游 Google/selfh.st/Dashboard Icons 的整套界面。请不要把官方镜像和本仓库镜像混用，也不要跳过备份直接互换数据库。
 
 ## Docker 部署
 
@@ -87,7 +89,7 @@ docker compose logs --tail=100 wallos
 ```bash
 docker compose down
 git fetch --tags
-git checkout v5.4.5-remastered.8
+git checkout v5.7.1-remastered.1
 docker compose up -d --build
 curl http://127.0.0.1:18282/health.php
 ```
@@ -161,7 +163,7 @@ startup.sh、nginx*.conf  启动检查、进程监管与 Web 安全边界
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.4.5-remastered.8 \
+  wallos-remastered:v5.7.1-remastered.1 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 

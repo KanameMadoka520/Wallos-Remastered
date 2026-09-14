@@ -87,7 +87,7 @@ if ($subscription) {
 
     echo json_encode([
         'success' => true,
-        'ics' => $icsContent,
+        'ics' => icalFormatContent($icsContent),
         'name' => $subscription['name']
     ]);
 } else {

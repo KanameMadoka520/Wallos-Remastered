@@ -429,6 +429,16 @@ $i18n = array_replace($i18n, [
     // TOTP Page
     "insert_totp_code" => "Veuillez insérer le code TOTP",
 
+    "upcoming_cancellations" => "Annulations à venir",
+    "upcoming_payments_to_show" => "Paiements à venir à afficher",
+    "notes_bold" => "Gras",
+    "notes_italic" => "Italique",
+    "notes_list" => "Liste",
+    "notes_link" => "Lien",
+    "potential_monthly_savings" => "Économies mensuelles potentielles",
+    "potential_yearly_savings" => "Économies annuelles potentielles",
+    "allow_standard_users_local_webhooks" => "Autoriser les utilisateurs standard à utiliser la liste blanche des Webhooks",
+    "allow_standard_users_local_webhooks_info" => "Risque de sécurité : activer cette option permet à tout utilisateur standard (non administrateur) d\'envoyer des notifications aux adresses de la liste blanche des Webhooks ci-dessus, y compris les services internes de votre réseau. N\'activez ceci que si vous faites confiance à tous les utilisateurs de cette instance Wallos.",
 ]);
 
 

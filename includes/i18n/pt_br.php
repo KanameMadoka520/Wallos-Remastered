@@ -429,6 +429,16 @@ $i18n = array_replace($i18n, [
     // TOTP Page
     "insert_totp_code" => "Insira o código TOTP",
 
+    "upcoming_cancellations" => "Cancelamentos Futuros",
+    "upcoming_payments_to_show" => "Pagamentos futuros a exibir",
+    "notes_bold" => "Negrito",
+    "notes_italic" => "Itálico",
+    "notes_list" => "Lista",
+    "notes_link" => "Link",
+    "potential_monthly_savings" => "Economia Mensal Potencial",
+    "potential_yearly_savings" => "Economia Anual Potencial",
+    "allow_standard_users_local_webhooks" => "Permitir que usuários padrão usem a Lista de Permissões de Webhook",
+    "allow_standard_users_local_webhooks_info" => "Risco de segurança: ativar esta opção permite que qualquer usuário padrão (não administrador) envie notificações para os endereços na Lista de Permissões de Webhook acima, incluindo serviços internos da sua rede. Ative isso apenas se você confia em todos os usuários desta instância do Wallos.",
 ]);
 
 

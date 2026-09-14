@@ -431,6 +431,16 @@ $i18n = array_replace($i18n, [
     "insert_totp_code" => "Introdueix el codi TOTP",
 
 
+    "upcoming_cancellations" => "Pròximes Cancel·lacions",
+    "upcoming_payments_to_show" => "Pròxims pagaments a mostrar",
+    "notes_bold" => "Negreta",
+    "notes_italic" => "Cursiva",
+    "notes_list" => "Llista",
+    "notes_link" => "Enllaç",
+    "potential_monthly_savings" => "Estalvi Mensual Potencial",
+    "potential_yearly_savings" => "Estalvi Anual Potencial",
+    "allow_standard_users_local_webhooks" => "Permet als usuaris estàndard utilitzar la llista blanca de Webhooks",
+    "allow_standard_users_local_webhooks_info" => "Risc de seguretat: en activar-ho, qualsevol usuari estàndard (no administrador) podrà enviar notificacions a les adreces de la llista blanca de Webhooks anterior, incloent serveis interns de la vostra xarxa. Activeu-ho només si confieu en tots els usuaris d\'aquesta instància de Wallos.",
 ]);
 
 

@@ -196,7 +196,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     }
 
     $icsContent .= "END:VCALENDAR\n";
-    echo $icsContent;
+    echo icalFormatContent($icsContent);
     $db->close();
     exit;
         

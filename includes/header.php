@@ -242,7 +242,7 @@ setcookie('wallosScreenshotPrivacy', $screenshotPrivacyEnabled ? '1' : '0', [
   <link rel="apple-touch-icon" href="images/icon/apple-touch-icon.png">
   <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
-  <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+  <link rel="manifest" href="manifest.php" crossorigin="use-credentials">
   <link rel="stylesheet" href="styles/theme.css?v=<?= $themeCssVersion ?>">
   <link rel="stylesheet" href="styles/decorative-background.css?v=<?= $decorativeBackgroundCssVersion ?>">
   <link rel="stylesheet" href="styles/dynamic-wallpaper.css?v=<?= $dynamicWallpaperCssVersion ?>">
@@ -265,10 +265,10 @@ setcookie('wallosScreenshotPrivacy', $screenshotPrivacyEnabled ? '1' : '0', [
   <script defer type="text/javascript" src="scripts/page-transitions.js?v=<?= $pageTransitionsJsVersion ?>"></script>
   <script defer type="text/javascript" src="scripts/screenshot-privacy.js?v=<?= $screenshotPrivacyJsVersion ?>"></script>
   <script type="text/javascript">
-    window.theme = "<?= $theme ?>";
+    window.theme = <?= json_encode($theme, JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS) ?>;
     window.update_theme_settings = "<?= $updateThemeSettings ?>";
     window.lang = "<?= $lang ?>";
-    window.colorTheme = "<?= $colorTheme ?>";
+    window.colorTheme = <?= json_encode($colorTheme, JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS) ?>;
     window.mobileNavigation = "<?= $settings['mobileNavigation'] == "true" ?>";
     window.dynamicWallpaperEnabled = <?= $dynamicWallpaperEnabled ? 'true' : 'false' ?>;
     window.dynamicWallpaperBlurEnabled = <?= $dynamicWallpaperBlurEnabled ? 'true' : 'false' ?>;

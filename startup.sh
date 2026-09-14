@@ -53,8 +53,8 @@ echo "Startup preflight is running..." > "$STARTUP_LOG"
 
 cat <<'EOF' > "$PHP_CONFIG_FILE"
 memory_limit=512M
-upload_max_filesize=64M
-post_max_size=256M
+upload_max_filesize=256M
+post_max_size=260M
 max_file_uploads=50
 max_input_time=120
 max_execution_time=120

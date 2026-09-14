@@ -32,6 +32,7 @@ $imageDownloadMbPerHour = max(1, (int) ($data['image_download_mb_per_hour'] ?? 3
 
 // Update the admin table (assuming id 1 is the primary settings row, as in your reference)
 $sql = "UPDATE admin SET
+    allow_standard_users_local_webhooks = :allow_standard_users,
     local_webhook_notifications_allowlist = :allowlist,
     login_rate_limit_max_attempts = :login_rate_limit_max_attempts,
     login_rate_limit_block_minutes = :login_rate_limit_block_minutes,
@@ -48,6 +49,7 @@ $sql = "UPDATE admin SET
     image_download_mb_per_hour = :image_download_mb_per_hour
     WHERE id = 1";
 $stmt = $db->prepare($sql);
+$stmt->bindValue(':allow_standard_users', !empty($data['allow_standard_users_local_webhooks']) ? 1 : 0, SQLITE3_INTEGER);
 $stmt->bindParam(':allowlist', $allowlist, SQLITE3_TEXT);
 $stmt->bindParam(':login_rate_limit_max_attempts', $loginRateLimitMaxAttempts, SQLITE3_INTEGER);
 $stmt->bindParam(':login_rate_limit_block_minutes', $loginRateLimitBlockMinutes, SQLITE3_INTEGER);

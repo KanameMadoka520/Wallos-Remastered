@@ -431,6 +431,16 @@ $i18n = array_replace($i18n, [
     "insert_totp_code" => "Voer TOTP code in",
 
 
+    "upcoming_cancellations" => "Aankomende Annuleringen",
+    "upcoming_payments_to_show" => "Weer te geven aankomende betalingen",
+    "notes_bold" => "Vet",
+    "notes_italic" => "Cursief",
+    "notes_list" => "Lijst",
+    "notes_link" => "Link",
+    "potential_monthly_savings" => "Potentiële Maandelijkse Besparing",
+    "potential_yearly_savings" => "Potentiële Jaarlijkse Besparing",
+    "allow_standard_users_local_webhooks" => "Sta standaardgebruikers toe de Webhook-toegangslijst te gebruiken",
+    "allow_standard_users_local_webhooks_info" => "Beveiligingsrisico: als u dit inschakelt, kan elke standaardgebruiker (geen beheerder) meldingen sturen naar de adressen in de bovenstaande Webhook-toegangslijst, inclusief interne diensten op uw netwerk. Schakel dit alleen in als u alle gebruikers van deze Wallos-instantie vertrouwt.",
 ]);
 
 

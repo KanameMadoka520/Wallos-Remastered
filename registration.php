@@ -17,6 +17,7 @@ require_once 'includes/public_page_branding.php';
 require_once 'includes/public_entry_animation.php';
 
 require_once 'includes/version.php';
+require_once 'includes/theme_helpers.php';
 
 $loginCssVersion = $version . '.' . @filemtime(__DIR__ . '/styles/login.css');
 $registrationJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/registration.js');
@@ -302,7 +303,7 @@ wallos_log_request($db, 0, '');
     <link rel="apple-touch-icon" href="images/icon/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">
     <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.php">
     <link rel="stylesheet" href="styles/theme.css?v=<?= $themeCssVersion ?>">
     <link rel="stylesheet" href="styles/decorative-background.css?v=<?= $decorativeBackgroundCssVersion ?>">
     <link rel="stylesheet" href="styles/login.css?v=<?= $loginCssVersion ?>">

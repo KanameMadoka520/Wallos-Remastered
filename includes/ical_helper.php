@@ -15,3 +15,26 @@ function icalEscape($value)
     return $value;
 }
 
+// RFC 5545 limits physical lines to 75 octets, including the continuation space.
+function icalFold($line)
+{
+    $characters = preg_split('//u', (string) $line, -1, PREG_SPLIT_NO_EMPTY);
+    if ($characters === false) $characters = str_split((string) $line);
+    $result = '';
+    $length = 0;
+    foreach ($characters as $character) {
+        if ($length + strlen($character) > 75) {
+            $result .= "\r\n ";
+            $length = 1;
+        }
+        $result .= $character;
+        $length += strlen($character);
+    }
+    return $result;
+}
+
+function icalFormatContent($content)
+{
+    $lines = preg_split('/\r\n|\r|\n/', rtrim((string) $content, "\r\n"));
+    return implode("\r\n", array_map('icalFold', $lines)) . "\r\n";
+}

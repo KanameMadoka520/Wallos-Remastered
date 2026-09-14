@@ -10,6 +10,8 @@ require_once 'includes/page_immersive_toggle.php';
 
 $dashboardJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/dashboard.js');
 $metricExplanationsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/metric-explanations.js');
+require_once 'includes/upcoming_payments.php';
+require_once 'includes/upcoming_cancellations.php';
 
 function formatPrice($price, $currencyCode, $currencies)
 {
@@ -70,15 +72,7 @@ $first_name = $user['firstname'] ?? $user['username'] ?? '';
 $effectiveUserGroup = wallos_get_effective_user_group($userData['user_group'] ?? WALLOS_USER_GROUP_FREE, $isAdmin);
 $subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
 
-// Fetch the next 3 enabled subscriptions up for payment
-$stmt = $db->prepare("SELECT id, logo, name, price, currency_id, next_payment, inactive FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status AND next_payment >= date('now') AND inactive = 0 AND cycle != 5 ORDER BY next_payment ASC LIMIT 3");
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
-$result = $stmt->execute();
-$upcomingSubscriptions = [];
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-    $upcomingSubscriptions[] = $row;
-}
+$upcomingSubscriptions = get_upcoming_payments($db, $userId, $settings['upcoming_payments_limit'] ?? 3);
 
 // Fetch enabled subscriptions with manual renewal that are overdue
 $stmt = $db->prepare("SELECT id, logo, name, price, currency_id, next_payment, inactive, auto_renew FROM subscriptions WHERE user_id = :userId AND lifecycle_status = :lifecycle_status AND next_payment < date('now') AND auto_renew = 0 AND inactive = 0 AND cycle != 5 ORDER BY next_payment ASC");
@@ -90,6 +84,11 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $overdueSubscriptions[] = $row;
 }
 $hasOverdueSubscriptions = !empty($overdueSubscriptions);
+
+// Fetch the subscriptions whose cancellation reminder is still ahead (shared with
+// the statistics page, so both stay in step).
+$upcomingCancellations = get_upcoming_cancellations($db, $userId);
+$hasUpcomingCancellations = !empty($upcomingCancellations);
 
 require_once 'includes/stats_calculations.php';
 
@@ -106,6 +105,9 @@ if (function_exists('wallos_screenshot_privacy_enabled')
     && wallos_screenshot_privacy_enabled($settings)
 ) {
     $privacySeed = wallos_screenshot_privacy_seed();
+    $upcomingCancellations = wallos_screenshot_privacy_mask_subscriptions(
+        $upcomingCancellations, $privacySeed, $lang, 'dashboard-cancellations'
+    );
     $upcomingSubscriptions = wallos_screenshot_privacy_mask_subscriptions(
         $upcomingSubscriptions,
         $privacySeed,
@@ -288,6 +290,57 @@ if (function_exists('wallos_screenshot_privacy_enabled')
                 ?>
             </div>
         </div>
+
+        <?php if ($hasUpcomingCancellations) { ?>
+            <div class="cancellation-subscriptions">
+                <h2><?= translate('upcoming_cancellations', $i18n) ?></h2>
+                <div class="dashboard-subscriptions-container">
+                    <div class="dashboard-subscriptions-list">
+                        <?php
+                        foreach ($upcomingCancellations as $subscription) {
+                            $subscriptionName = htmlspecialchars($subscription['name']);
+                            $subscriptionPrice = $subscription['price'];
+                            $subscriptionCurrency = $subscription['currency_id'];
+                            $subscriptionDisplayCancellationDate = formatDate($subscription['cancellation_date'], $lang);
+                            $subscriptionDisplayPrice = formatPrice($subscriptionPrice, $currencies[$subscriptionCurrency]['code'], $currencies);
+
+                            ?>
+                            <div class="subscription-item dashboard-subscription-trigger" data-subscription-id="<?= (int) $subscription['id'] ?>"
+                                role="button" tabindex="0" aria-label="<?= $subscriptionName ?>">
+                                <?php
+                                if (empty($subscription['logo'])) {
+                                    ?>
+                                    <p class="subscription-item-title"><?= $subscriptionName ?></p>
+                                    <?php
+                                } else {
+                                    $subscriptionLogoSrc = str_starts_with((string) $subscription['logo'], 'data:image/')
+                                        ? $subscription['logo'] : "images/uploads/logos/" . $subscription['logo'];
+                                    $subscriptionLogoVariantSrc = !empty($subscription['logo_variant']) ? "images/uploads/logos/" . $subscription['logo_variant'] : null;
+                                    $hasThemedVariant = $subscriptionLogoVariantSrc && !empty($subscription['logo_text_color']);
+                                    $nativeTheme = ($subscription['logo_text_color'] ?? '') === 'dark' ? 'light' : 'dark';
+                                    ?>
+                                    <img src="<?= htmlspecialchars($subscriptionLogoSrc, ENT_QUOTES, 'UTF-8') ?>"
+                                        class="subscription-item-logo<?= $hasThemedVariant ? ' logo-theme-original' : '' ?>"
+                                        data-native-theme="<?= $nativeTheme ?>" alt="<?= $subscriptionName ?>" title="<?= $subscriptionName ?>">
+                                    <?php if ($hasThemedVariant): ?>
+                                    <img src="<?= htmlspecialchars($subscriptionLogoVariantSrc, ENT_QUOTES, 'UTF-8') ?>"
+                                        class="subscription-item-logo logo-theme-variant" data-native-theme="<?= $nativeTheme ?>"
+                                        alt="<?= $subscriptionName ?>" title="<?= $subscriptionName ?>">
+                                    <?php endif;
+                                }
+                                ?>
+                                <div class="subscription-item-info">
+                                    <p class="subscription-item-date"> <?= $subscriptionDisplayCancellationDate ?></p>
+                                    <p class="subscription-item-price"> <?= $subscriptionDisplayPrice ?></p>
+                                </div>
+                            </div>
+                            <?php
+                        }
+                        ?>
+                    </div>
+                </div>
+            </div>
+        <?php } ?>
 
         <?php if (!empty($aiRecommendations)) { ?>
             <div class="ai-recommendations">
