@@ -23,4 +23,17 @@ function validate_markdown($value)
     return $value;
 }
 
+/**
+ * Reverse the escaping applied by validate() for values that are still stored
+ * escaped. Render paths that HTML-escape at output time must decode once
+ * first, otherwise characters like & show up as &amp;amp;.
+ *
+ * @param string $value
+ * @return string
+ */
+function wallos_decode_stored_text($value)
+{
+    return htmlspecialchars_decode((string) $value, ENT_QUOTES);
+}
+
 ?>

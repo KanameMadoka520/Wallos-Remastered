@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/inputvalidation.php';
 require_once 'includes/payment_icons.php';
 require_once 'includes/budget_period_calculations.php';
 require_once 'includes/upcoming_payments.php';
@@ -142,12 +143,12 @@ $pageSections = [
                 foreach ($household as $index => $member) {
                     ?>
                     <div class="form-group-inline" data-memberid="<?= $member['id'] ?>">
-                        <input type="text" name="member" autocomplete="off" value="<?= htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8') ?>"
+                        <input type="text" name="member" autocomplete="off" value="<?= htmlspecialchars(wallos_decode_stored_text($member['name']), ENT_QUOTES, 'UTF-8') ?>"
                             placeholder="<?= translate('member', $i18n) ?>">
                         <?php
                         if ($index !== 0) {
                             ?>
-                            <input type="text" name="email" autocomplete="off" value="<?= htmlspecialchars($member['email'] ?? "", ENT_QUOTES, 'UTF-8') ?>"
+                            <input type="text" name="email" autocomplete="off" value="<?= htmlspecialchars(wallos_decode_stored_text($member['email'] ?? ""), ENT_QUOTES, 'UTF-8') ?>"
                                 placeholder="<?= translate("email", $i18n) ?>">
                             <?php
                         }
@@ -935,7 +936,7 @@ $pageSections = [
                         ?>
                         <div class="form-group-inline" data-categoryid="<?= $category['id'] ?>">
                             <div class=" drag-icon"><i class="fa-solid fa-grip-vertical"></i></div>
-                            <input type="text" name="category" autocomplete="off" value="<?= htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8') ?>"
+                            <input type="text" name="category" autocomplete="off" value="<?= htmlspecialchars(wallos_decode_stored_text($category['name']), ENT_QUOTES, 'UTF-8') ?>"
                                 placeholder="<?= translate('category', $i18n) ?>">
                             <button class="image-button medium" onClick="editCategory(<?= $category['id'] ?>)" name="save"
                                 title="<?= translate('save_category', $i18n) ?>">
@@ -1039,11 +1040,11 @@ $pageSections = [
                     ?>
 
                     <div class="form-group-inline" data-currencyid="<?= $currency['id'] ?>">
-                        <input type="text" class="short" name="symbol" autocomplete="off" value="<?= htmlspecialchars($currency['symbol'], ENT_QUOTES, 'UTF-8') ?>"
+                        <input type="text" class="short" name="symbol" autocomplete="off" value="<?= htmlspecialchars(wallos_decode_stored_text($currency['symbol']), ENT_QUOTES, 'UTF-8') ?>"
                             placeholder="$">
-                        <input type="text" name="currency" autocomplete="off" value="<?= htmlspecialchars($currency['name'], ENT_QUOTES, 'UTF-8') ?>"
+                        <input type="text" name="currency" autocomplete="off" value="<?= htmlspecialchars(wallos_decode_stored_text($currency['name']), ENT_QUOTES, 'UTF-8') ?>"
                             placeholder="<?= translate('currency_name', $i18n) ?>">
-                        <input type="text" name="code" autocomplete="off" value="<?= htmlspecialchars($currency['code'], ENT_QUOTES, 'UTF-8') ?>"
+                        <input type="text" name="code" autocomplete="off" value="<?= htmlspecialchars(wallos_decode_stored_text($currency['code']), ENT_QUOTES, 'UTF-8') ?>"
                             placeholder="<?= translate('currency_code', $i18n) ?>" <?= !$canDelete ? 'disabled' : '' ?>>
                         <button class="image-button medium" onClick="editCurrency(<?= $currency['id'] ?>)" name="save"
                             title="<?= translate('save_currency', $i18n) ?>">
@@ -1318,7 +1319,7 @@ $pageSections = [
                     </div>
                     <img src="<?= htmlspecialchars($paymentIconPath, ENT_QUOTES, 'UTF-8') ?>" alt="Logo" />
                     <span class="payment-name" contenteditable="true"
-                        title="<?= translate("rename_payment_method", $i18n) ?>"><?= htmlspecialchars($payment['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                        title="<?= translate("rename_payment_method", $i18n) ?>"><?= htmlspecialchars(wallos_decode_stored_text($payment['name']), ENT_QUOTES, 'UTF-8') ?></span>
                     <?php
                     if (!$inUse) {
                         ?>

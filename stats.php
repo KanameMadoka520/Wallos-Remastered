@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/inputvalidation.php';
 require_once 'includes/metric_explanations.php';
 
 
@@ -281,13 +282,13 @@ if ($showStatsGraphs) {
             ? (string) $displayMostExpensiveSubscription['logo']
             : 'images/uploads/logos/' . (string) $displayMostExpensiveSubscription['logo']; ?>
           <img src="<?= htmlspecialchars($statsSubscriptionLogo, ENT_QUOTES, 'UTF-8') ?>"
-            alt="<?= htmlspecialchars($displayMostExpensiveSubscription['name'], ENT_QUOTES, 'UTF-8') ?>"
-            title="<?= htmlspecialchars($displayMostExpensiveSubscription['name'], ENT_QUOTES, 'UTF-8') ?>" />
+            alt="<?= htmlspecialchars(wallos_decode_stored_text($displayMostExpensiveSubscription['name']), ENT_QUOTES, 'UTF-8') ?>"
+            title="<?= htmlspecialchars(wallos_decode_stored_text($displayMostExpensiveSubscription['name']), ENT_QUOTES, 'UTF-8') ?>" />
         </div>
         <?php
       } else if (isset($displayMostExpensiveSubscription['name']) && $displayMostExpensiveSubscription['name'] != '') {
         ?>
-          <div class="subtitle"><?= htmlspecialchars($displayMostExpensiveSubscription['name'], ENT_QUOTES, 'UTF-8') ?></div>
+          <div class="subtitle"><?= htmlspecialchars(wallos_decode_stored_text($displayMostExpensiveSubscription['name']), ENT_QUOTES, 'UTF-8') ?></div>
         <?php
       }
       ?>

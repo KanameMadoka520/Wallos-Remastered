@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/header.php';
 require_once 'includes/subscription_trash.php';
+require_once 'includes/inputvalidation.php';
 require_once 'includes/calendar_calculations.php';
 require_once 'includes/currency_rates.php';
 
@@ -311,9 +312,9 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
                   }
                   ?>
                   <div class="<?= $titleClasses ?>" data-subscription-id="<?= (int) $subscription['id'] ?>"
-                    aria-label="<?= htmlspecialchars($subscription['name'] . ' · ' . $countdownLabel, ENT_QUOTES, 'UTF-8') ?>"
+                    aria-label="<?= htmlspecialchars(wallos_decode_stored_text($subscription['name']) . ' · ' . $countdownLabel, ENT_QUOTES, 'UTF-8') ?>"
                     onClick="openSubscriptionModal(<?= (int) $subscription['id'] ?>)">
-                    <span class="calendar-subscription-name"><?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="calendar-subscription-name"><?= htmlspecialchars(wallos_decode_stored_text($subscription['name']), ENT_QUOTES, 'UTF-8') ?></span>
                     <span class="calendar-subscription-countdown"><?= htmlspecialchars($countdownLabel, ENT_QUOTES, 'UTF-8') ?></span>
                     <?php if (!empty($payment['is_due_this_month'])): ?>
                       <span class="calendar-subscription-renewal-flag"><?= translate('calendar_renewal_due_this_month', $i18n) ?></span>

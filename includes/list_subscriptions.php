@@ -5,6 +5,7 @@ require_once __DIR__ . '/subscription_media.php';
 require_once __DIR__ . '/markdown.php';
 require_once __DIR__ . '/subscription_price_rules.php';
 require_once __DIR__ . '/currency_rates.php';
+require_once __DIR__ . '/inputvalidation.php';
 
 function getBillingCycle($cycle, $frequency, $i18n)
 {
@@ -172,6 +173,21 @@ function formatDate($date, $lang = 'en')
 
 function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n, $colorTheme, $imagePath, $disabledToBottom, $mobileNavigation, $showSubscriptionProgress, $currencies, $lang)
 {
+    // Text stored via validate() is still HTML-escaped in the database. Decode
+    // it once up front so the render-time escaping below stays single-encoding.
+    foreach ($subscriptions as $index => $subscription) {
+        $subscriptions[$index]['name'] = wallos_decode_stored_text($subscription['name'] ?? '');
+        $subscriptions[$index]['url'] = wallos_decode_stored_text($subscription['url'] ?? '');
+        $subscriptions[$index]['notes'] = wallos_decode_stored_text($subscription['notes'] ?? '');
+        $subscriptions[$index]['payment_method_name'] = wallos_decode_stored_text($subscription['payment_method_name'] ?? '');
+    }
+    foreach ($categories as $index => $category) {
+        $categories[$index]['name'] = wallos_decode_stored_text($category['name'] ?? '');
+    }
+    foreach ($members as $index => $member) {
+        $members[$index]['name'] = wallos_decode_stored_text($member['name'] ?? '');
+    }
+
     if ($sort === "price") {
         usort($subscriptions, function ($a, $b) {
             return $a['price'] < $b['price'] ? 1 : -1;

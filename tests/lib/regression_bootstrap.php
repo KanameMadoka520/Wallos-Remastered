@@ -107,6 +107,7 @@ function wallos_regression_build_suite_catalog()
                 'backend-rate-limit-exemption' => 'Execute tests/backend_rate_limit_exemption_test.php',
                 'navigation-performance-contract' => 'Execute tests/navigation_performance_contract_test.php',
                 'subscription-ajax-pagination-contract' => 'Execute tests/subscription_ajax_pagination_contract_test.php',
+                'stored-text-render-contract' => 'Execute tests/stored_text_render_contract_test.php',
             ),
         ),
     );

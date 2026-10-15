@@ -2,6 +2,7 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/getdbkeys.php';
 require_once '../../includes/markdown.php';
+require_once '../../includes/inputvalidation.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/getsettings.php';
 require_once '../../includes/screenshot_privacy.php';
@@ -36,7 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $subscription['payment_method'] = $payment_methods[$subscription['payment_method_id']]['name'];
         $subscription['currency'] = $currencies[$subscription['currency_id']]['symbol'];
         $subscription['price'] = number_format($subscription['price'], 2);
-        $subscription['notes_html'] = wallos_render_markdown($subscription['notes'] ?? '');
+        $subscription['notes_html'] = wallos_render_markdown(wallos_decode_stored_text($subscription['notes'] ?? ''));
 
         if (wallos_screenshot_privacy_enabled($settings)) {
             $subscription = wallos_screenshot_privacy_mask_subscription(

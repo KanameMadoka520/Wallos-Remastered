@@ -12,6 +12,7 @@ require_once 'includes/subscription_pages.php';
 require_once 'includes/subscription_preferences.php';
 require_once 'includes/page_immersive_toggle.php';
 require_once 'includes/payment_icons.php';
+require_once 'includes/inputvalidation.php';
 
 include_once 'includes/list_subscriptions.php';
 
@@ -952,7 +953,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
           <article class="subscription-trash-card" data-subscription-id="<?= (int) $trashedSubscription['id'] ?>">
             <div class="subscription-trash-card-header">
               <div>
-                <h3><?= htmlspecialchars($trashedSubscription['name'], ENT_QUOTES, 'UTF-8') ?></h3>
+                <h3><?= htmlspecialchars(wallos_decode_stored_text($trashedSubscription['name']), ENT_QUOTES, 'UTF-8') ?></h3>
                 <p><?= translate('deleted_at', $i18n) ?>: <?= htmlspecialchars($trashedSubscription['trashed_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></p>
                 <p><?= translate('subscription_recycle_bin_scheduled_delete_at', $i18n) ?>: <?= htmlspecialchars($trashedSubscription['scheduled_delete_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></p>
               </div>
@@ -961,7 +962,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
                   ? (string) $trashedSubscription['logo']
                   : 'images/uploads/logos/' . (string) $trashedSubscription['logo']; ?>
                 <img src="<?= htmlspecialchars($trashedLogoSrc, ENT_QUOTES, 'UTF-8') ?>"
-                  alt="<?= htmlspecialchars($trashedSubscription['name'], ENT_QUOTES, 'UTF-8') ?>">
+                  alt="<?= htmlspecialchars(wallos_decode_stored_text($trashedSubscription['name']), ENT_QUOTES, 'UTF-8') ?>">
               <?php endif; ?>
             </div>
             <div class="subscription-trash-card-meta">
@@ -1450,7 +1451,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
                 ? wallos_screenshot_privacy_fake_name($sub['id'], wallos_screenshot_privacy_seed(), $lang)
                 : $sub['name'];
             ?>
-            <option value="<?= htmlspecialchars($sub['id']) ?>"><?= htmlspecialchars($replacementSubscriptionName) ?>
+            <option value="<?= htmlspecialchars($sub['id']) ?>"><?= htmlspecialchars(wallos_decode_stored_text($replacementSubscriptionName), ENT_QUOTES, 'UTF-8') ?>
             </option>
             <?php
           }
@@ -1504,7 +1505,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
           <label for="subscription-payment-currency"><?= translate('currency', $i18n) ?></label>
           <select id="subscription-payment-currency" name="currency_id">
             <?php foreach ($currencies as $currency): ?>
-              <option value="<?= (int) $currency['id'] ?>"><?= htmlspecialchars($currency['name'], ENT_QUOTES, 'UTF-8') ?></option>
+              <option value="<?= (int) $currency['id'] ?>"><?= htmlspecialchars(wallos_decode_stored_text($currency['name']), ENT_QUOTES, 'UTF-8') ?></option>
             <?php endforeach; ?>
           </select>
         </div>
@@ -1512,7 +1513,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
           <label for="subscription-payment-method"><?= translate('payment_method', $i18n) ?></label>
           <select id="subscription-payment-method" name="payment_method_id">
             <?php foreach ($displayPaymentMethods as $payment): ?>
-              <option value="<?= (int) $payment['id'] ?>"><?= htmlspecialchars($payment['name'], ENT_QUOTES, 'UTF-8') ?></option>
+              <option value="<?= (int) $payment['id'] ?>"><?= htmlspecialchars(wallos_decode_stored_text($payment['name']), ENT_QUOTES, 'UTF-8') ?></option>
             <?php endforeach; ?>
           </select>
         </div>

@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.7.1-remastered.1`; upstream compatibility baseline: [`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1).
+> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.7.1-remastered.2`; upstream compatibility baseline: [`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1).
 
 [简体中文 README](README.md) · [Changelog (Chinese)](CHANGELOG.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
@@ -89,7 +89,7 @@ Create and verify a backup in the admin UI first, then copy `db`, `logos`, and `
 ```bash
 docker compose down
 git fetch --tags
-git checkout v5.7.1-remastered.1
+git checkout v5.7.1-remastered.2
 docker compose up -d --build
 curl http://127.0.0.1:18282/health.php
 ```
@@ -163,7 +163,7 @@ Normal changes should receive PHP/JavaScript syntax checks, a health check, and 
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.7.1-remastered.1 \
+  wallos-remastered:v5.7.1-remastered.2 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 

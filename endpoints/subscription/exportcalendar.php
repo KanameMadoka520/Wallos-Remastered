@@ -48,16 +48,16 @@ if ($subscription) {
     $uid = 'wallos-subscription-' . $subscription['id'] . '@wallos';
     $summary = icalEscape(html_entity_decode((string) $subscription['name'], ENT_QUOTES, 'UTF-8'));
     $notes = icalEscape(html_entity_decode((string) ($subscription['notes'] ?? ''), ENT_QUOTES, 'UTF-8'));
-    $category = icalEscape($subscription['category'] ?? '');
-    $paymentMethod = icalEscape($subscription['payment_method'] ?? '');
-    $payer = icalEscape($subscription['payer_user'] ?? '');
+    $category = icalEscape(html_entity_decode((string) ($subscription['category'] ?? ''), ENT_QUOTES, 'UTF-8'));
+    $paymentMethod = icalEscape(html_entity_decode((string) ($subscription['payment_method'] ?? ''), ENT_QUOTES, 'UTF-8'));
+    $payer = icalEscape(html_entity_decode((string) ($subscription['payer_user'] ?? ''), ENT_QUOTES, 'UTF-8'));
     $currency = icalEscape(html_entity_decode((string) ($subscription['currency'] ?? ''), ENT_QUOTES, 'UTF-8'));
     $description = "Price: {$currency}{$subscription['price']}\\nCategory: {$category}\\nPayment Method: {$paymentMethod}\\nPayer: {$payer}\\n\\nNotes: {$notes}";
 
     $dtstamp = gmdate('Ymd\THis\Z');
     $dtstart = (new DateTime($subscription['next_payment']))->format('Ymd');
     $dtend = (new DateTime($subscription['next_payment']))->format('Ymd');
-    $location = icalEscape(isset($subscription['url']) ? $subscription['url'] : '');
+    $location = icalEscape(html_entity_decode((string) (isset($subscription['url']) ? $subscription['url'] : ''), ENT_QUOTES, 'UTF-8'));
     $alarm_trigger = '-P' . $subscription['trigger'] . 'D';
 
     $icsContent = <<<ICS

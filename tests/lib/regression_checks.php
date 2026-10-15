@@ -119,7 +119,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
     $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
     $remasteredVersionValid = strpos($versionPhp, '$version = "v5.7.1";') !== false
-        && strpos($versionPhp, '$remasteredVersion = "v5.7.1-remastered.1";') !== false
+        && strpos($versionPhp, '$remasteredVersion = "v5.7.1-remastered.2";') !== false
         && strpos($aboutPhp, 'Current running remastered build.') !== false
         && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= htmlspecialchars($version') !== false
         && strpos($aboutPhp, 'Remastered update scope') !== false;
@@ -291,7 +291,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         && wallos_regression_text_has_all($singleIcalPhp, array(
             "require_once '../../includes/ical_helper.php';",
             'icalEscape(html_entity_decode',
-            'icalEscape(isset($subscription[\'url\'])',
+            'icalEscape(html_entity_decode((string) (isset($subscription[\'url\'])',
             '$currency = icalEscape(',
             "Price: {\$currency}{\$subscription['price']}",
         ));
@@ -1091,17 +1091,17 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         && strpos($adminPhp, "htmlspecialchars(\$oidcSettings['client_secret']") === false;
     $selfXssEscapingValid = wallos_regression_text_has_all($adminPhp, array(
         "htmlspecialchars(\$settings['server_url'], ENT_QUOTES, 'UTF-8')",
-        "htmlspecialchars(\$user['email'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(wallos_decode_stored_text(\$user['email']), ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$settings['smtp_password'], ENT_QUOTES, 'UTF-8')",
     )) && wallos_regression_text_has_all($profilePhp, array(
-        "htmlspecialchars(\$userData['username'], ENT_QUOTES, 'UTF-8')",
-        "htmlspecialchars(\$userData['email'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(wallos_decode_stored_text(\$userData['username']), ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(wallos_decode_stored_text(\$userData['email']), ENT_QUOTES, 'UTF-8')",
     )) && wallos_regression_text_has_all($settingsPhp, array(
         "htmlspecialchars(\$notificationsEmail['smtp_password'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$notificationsDiscord['webhook_url'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(\$notificationsWebhook['payload'], ENT_QUOTES, 'UTF-8')",
-        "htmlspecialchars(\$category['name'], ENT_QUOTES, 'UTF-8')",
-        "htmlspecialchars(\$payment['name'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(wallos_decode_stored_text(\$category['name']), ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(wallos_decode_stored_text(\$payment['name']), ENT_QUOTES, 'UTF-8')",
     )) && $profileApiKeyEscapingValid && $oidcSecretPresentationSafe;
     $results[] = wallos_regression_make_result(
         $selfXssEscapingValid ? 'PASS' : 'FAIL',

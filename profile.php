@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/inputvalidation.php';
 require_once 'includes/user_groups.php';
 require_once 'includes/timezone_settings.php';
 
@@ -110,23 +111,23 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                     <div class="grow">
                         <div class="form-group">
                             <label for="username"><?= translate('username', $i18n) ?>:</label>
-                            <input type="text" id="username" name="username" value="<?= htmlspecialchars($userData['username'], ENT_QUOTES, 'UTF-8') ?>"
+                            <input type="text" id="username" name="username" value="<?= htmlspecialchars(wallos_decode_stored_text($userData['username']), ENT_QUOTES, 'UTF-8') ?>"
                                 disabled>
                         </div>
                         <div class="form-group">
                             <label for="firstname"><?= translate('firstname', $i18n) ?>:</label>
                             <input type="text" id="firstname" name="firstname" autocomplete="given-name"
-                                value="<?= htmlspecialchars($userData['firstname'], ENT_QUOTES, 'UTF-8') ?>">
+                                value="<?= htmlspecialchars(wallos_decode_stored_text($userData['firstname']), ENT_QUOTES, 'UTF-8') ?>">
                         </div>
                         <div class="form-group">
                             <label for="lastname"><?= translate('lastname', $i18n) ?>:</label>
                             <input type="text" id="lastname" name="lastname" autocomplete="family-name"
-                                value="<?= htmlspecialchars($userData['lastname'], ENT_QUOTES, 'UTF-8') ?>">
+                                value="<?= htmlspecialchars(wallos_decode_stored_text($userData['lastname']), ENT_QUOTES, 'UTF-8') ?>">
                         </div>
                         <div class="form-group">
                             <label for="email"><?= translate('email', $i18n) ?>:</label>
                             <input type="email" id="email" name="email" autocomplete="email"
-                                value="<?= htmlspecialchars($userData['email'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                value="<?= htmlspecialchars(wallos_decode_stored_text($userData['email']), ENT_QUOTES, 'UTF-8') ?>" required>
                         </div>
                         <div class="form-group">
                             <label for="password"><?= translate('password', $i18n) ?>:</label>
@@ -161,7 +162,7 @@ $pageSections[] = ['id' => 'profile-account', 'label' => translate('account', $i
                                         $userData['currency_symbol'] = $currency['symbol'];
                                     }
                                     ?>
-                                    <option value="<?= $currency['id'] ?>" <?= $selected ?>><?= htmlspecialchars($currency['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                                    <option value="<?= $currency['id'] ?>" <?= $selected ?>><?= htmlspecialchars(wallos_decode_stored_text($currency['name']), ENT_QUOTES, 'UTF-8') ?></option>
                                     <?php
                                 }
                                 ?>

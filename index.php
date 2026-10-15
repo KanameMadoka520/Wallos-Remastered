@@ -11,6 +11,7 @@ require_once 'includes/page_immersive_toggle.php';
 $dashboardJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/dashboard.js');
 $metricExplanationsJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/metric-explanations.js');
 require_once 'includes/upcoming_payments.php';
+require_once 'includes/inputvalidation.php';
 require_once 'includes/upcoming_cancellations.php';
 
 function formatPrice($price, $currencyCode, $currencies)
@@ -140,6 +141,15 @@ if (function_exists('wallos_screenshot_privacy_enabled')
     }
 }
 
+// Stored names are still HTML-escaped in the database (see validate()); decode
+// once so the dashboard rendering below stays single-encoded. Privacy masking
+// above only swaps in fake labels, so decoding here stays a no-op for it.
+foreach (['upcomingSubscriptions', 'overdueSubscriptions', 'upcomingCancellations'] as $dashboardListName) {
+    foreach (${$dashboardListName} as $dashboardIndex => $dashboardSubscription) {
+        ${$dashboardListName}[$dashboardIndex]['name'] = wallos_decode_stored_text($dashboardSubscription['name'] ?? '');
+    }
+}
+
 ?>
 
 <section class="contain dashboard" data-page-ui-hide-target>
@@ -169,7 +179,7 @@ if (function_exists('wallos_screenshot_privacy_enabled')
             <?php
         }
     ?>
-    <h1><?= translate('hello', $i18n) ?> <?= htmlspecialchars($first_name) ?></h1>
+    <h1><?= translate('hello', $i18n) ?> <?= htmlspecialchars(wallos_decode_stored_text($first_name), ENT_QUOTES, 'UTF-8') ?></h1>
     <div class="subscription-upload-policy-banner">
         <div class="subscription-upload-policy-header">
             <h2><?= translate('homepage_upload_policy_title', $i18n) ?></h2>

@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/inputvalidation.php';
 require_once 'includes/user_groups.php';
 require_once 'includes/user_status.php';
 require_once 'includes/subscription_media.php';
@@ -481,7 +482,7 @@ $pageSections = [
                                 <div class="user-list-icon">
                                     <i class="fa-solid <?= $userIcon ?>"></i>
                                 </div>
-                                <span><?= htmlspecialchars($user['username'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <span><?= htmlspecialchars(wallos_decode_stored_text($user['username']), ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
                             <?php
                             if ($isPrimaryAdmin) {
@@ -505,11 +506,11 @@ $pageSections = [
                             </div>
                             <div title="<?= translate('username', $i18n) ?>">
                                 <span class="user-card-label"><?= translate('username', $i18n) ?></span>
-                                <strong><?= htmlspecialchars($user['username'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                <strong><?= htmlspecialchars(wallos_decode_stored_text($user['username']), ENT_QUOTES, 'UTF-8') ?></strong>
                             </div>
                             <div title="<?= translate('email', $i18n) ?>">
                                 <span class="user-card-label"><?= translate('email', $i18n) ?></span>
-                                <a href="mailto:<?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?></a>
+                                <a href="mailto:<?= htmlspecialchars(wallos_decode_stored_text($user['email']), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(wallos_decode_stored_text($user['email']), ENT_QUOTES, 'UTF-8') ?></a>
                             </div>
                         </div>
                         <div class="user-list-actions">
@@ -632,7 +633,7 @@ $pageSections = [
                                     <div class="user-list-icon">
                                         <i class="fa-solid fa-envelope"></i>
                                     </div>
-                                    <a href="mailto:<?= htmlspecialchars($trashedUser['email'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($trashedUser['email'], ENT_QUOTES, 'UTF-8') ?></a>
+                                    <a href="mailto:<?= htmlspecialchars(wallos_decode_stored_text($trashedUser['email']), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(wallos_decode_stored_text($trashedUser['email']), ENT_QUOTES, 'UTF-8') ?></a>
                                 </div>
                             </div>
                             <div class="recycle-bin-user-meta">
