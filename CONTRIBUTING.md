@@ -75,7 +75,7 @@ curl http://127.0.0.1:18282/health.php
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.7.1-remastered.2 \
+  wallos-remastered:v5.7.1-remastered.3 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 
@@ -88,7 +88,7 @@ docker run --rm --network host --entrypoint php \
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.7.1-remastered.2 \
+  wallos-remastered:v5.7.1-remastered.3 \
   /work/tests/regression_runner.php \
   --base-url=http://127.0.0.1:18282 \
   --username=你的测试账号 \
@@ -134,7 +134,7 @@ npm run e2e:cache
 
 ## 安全回归提醒
 
-上游 5.7.1 的集成取舍见 [兼容记录](docs/upstream-5.7.1-compatibility.md)。本分支迁移现已到 82；不要覆盖同号上游迁移，也不要批量解码现有备注。增加提醒卡片必须同时覆盖回收站过滤和截图脱密。
+上游 5.7.1 的集成取舍见 [兼容记录](docs/upstream-5.7.1-compatibility.md)。本分支迁移现已到 83；不要覆盖同号上游迁移，也不要批量解码现有备注。增加提醒卡片必须同时覆盖回收站过滤和截图脱密。
 
 涉及以下链路时，提交前请额外确认不要回退本次安全边界：
 
@@ -150,3 +150,11 @@ npm run e2e:cache
 - 不要让订阅图片维护工具自动删除文件；孤儿文件扫描应先报告，由管理员确认后再处理
 - 不要把存储占用统计、日志增长提示、图片审计 CSV 导出做成后台自动删除；维护区默认应保持只读报告，只有明确命名的人工维护动作才能修改数据
 
+
+## Agent API 回归
+
+Agent 接口和密钥管理改动必须阅读 [协议与权限约定](docs/agent-api.md)，运行 `tests/agent_api_test.php`，对隔离测试数据库运行 `tests/agent_http_test.py`。不得用生产数据执行新增/删除测试；MCP 和 HTTP 共享业务函数，禁止出现绕开 scope、归属、版本和幂等的旁路。迁移基线已推进到 83；旧读取 API 和浏览器 CSRF 必须保持兼容。账号清理也必须删除新增密钥、防重与审计记录。
+
+## 维护者提交身份
+
+本仓库维护者的 author 和 committer 统一使用 `KanameMadoka520 <90090108+KanameMadoka520@users.noreply.github.com>`。提交采用中文 Conventional Commits，保留上游作者署名；不写入私人邮箱、GitHub 令牌或生产凭据。历史邮箱隐私调整必须同时检查提交者、作者、标签和历史文件内容，远端历史更新使用预期旧提交校验，避免覆盖新提交。

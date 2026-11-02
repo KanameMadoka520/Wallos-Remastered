@@ -83,10 +83,11 @@ try {
 
     $dockerfile = wallos_startup_contract_source('Dockerfile');
     wallos_startup_contract_assert(
-        strpos($dockerfile, 'php:8.3.33-fpm-alpine3.24@sha256:') !== false
-            && strpos($dockerfile, 'apk upgrade') === false
+        strpos($dockerfile, 'FROM wallos-php-base:8.3.36-fpm-alpine3.24') !== false
+            && strpos($dockerfile, 'FROM nginx:1.30.6-alpine AS security_nginx') !== false
+            && strpos($dockerfile, 'COPY --from=security_nginx /usr/sbin/nginx /usr/sbin/nginx') !== false
             && strpos($dockerfile, 'imagick-3.8.1') !== false,
-        'Production build inputs must keep the audited base and PECL version pinned.'
+        'Production build inputs must preserve the locally patched PHP/NGINX security bases and pinned PECL version.'
     );
     wallos_startup_contract_assert(
         strpos($dockerfile, 'COPY cronjobs /tmp/wallos-cronjobs') !== false

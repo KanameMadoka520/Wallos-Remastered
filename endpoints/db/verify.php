@@ -5,7 +5,7 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-const WALLOS_REQUIRED_MIGRATION_PREFIX = 82;
+const WALLOS_REQUIRED_MIGRATION_PREFIX = 83;
 
 function wallos_verify_quote_identifier($identifier)
 {
@@ -278,6 +278,10 @@ function wallos_verify_assert_current_schema(SQLite3 $db)
         'settings',
         'notification_settings',
         'migrations',
+        'agent_keys',
+        'agent_requests',
+        'agent_audit',
+        'agent_rate_limits',
     ]);
 
     wallos_verify_assert_columns($db, 'user', [

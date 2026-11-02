@@ -1,5 +1,7 @@
-# Keep production rebuilds on the audited PHP 8.3.33 / Alpine 3.24 base.
-FROM php:8.3.33-fpm-alpine3.24@sha256:bf90236449d333cef008b1f01c72a3d4f11a6470a74629665e4c6b6158f03fc8
+# PHP 8.3.36 fixes CVE-2026-109618 and CVE-2026-109619.
+# Local base build recipe: docker/php-base/Dockerfile.
+FROM nginx:1.30.6-alpine AS security_nginx
+FROM wallos-php-base:8.3.36-fpm-alpine3.24
 
 # Set working directory to /var/www/html
 WORKDIR /var/www/html
@@ -15,12 +17,17 @@ RUN apk add --no-cache dumb-init shadow sqlite-dev libpng libpng-dev libjpeg-tur
     docker-php-ext-enable imagick && \
     apk del .build-deps
 
+# Preserve the patched NGINX binary until Alpine ships the same security version.
+RUN apk upgrade --no-cache && mkdir -p /var/cache/nginx
+COPY --from=security_nginx /usr/sbin/nginx /usr/sbin/nginx
+
 # Copy your PHP application files into the container
 COPY . .
 
 # Copy Nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY docker/php/zz-wallos-performance.ini /usr/local/etc/php/conf.d/zz-wallos-performance.ini
+COPY docker/php/zz-security.ini /usr/local/etc/php/conf.d/zz-security.ini
 
 # Remove nginx conf files from webroot
 RUN rm -rf /var/www/html/nginx.conf && \

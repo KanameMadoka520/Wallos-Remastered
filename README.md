@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.7.1-remastered.2`；上游兼容基线：[`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1)。
+> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.7.1-remastered.3`；上游兼容基线：[`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1)。
 
 [English README](README_EN.md) · [变更记录](CHANGELOG.md) · [安全策略](SECURITY.md) · [贡献指南](CONTRIBUTING.md)
 
@@ -163,7 +163,7 @@ startup.sh、nginx*.conf  启动检查、进程监管与 Web 安全边界
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.7.1-remastered.2 \
+  wallos-remastered:v5.7.1-remastered.3 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 
@@ -193,3 +193,11 @@ npm run e2e:subscriptions
 - [上游 Wallos](https://github.com/ellite/Wallos)
 - [完整变更记录](CHANGELOG.md)
 - [英文说明](README_EN.md)
+
+## Agent 接入与 MCP
+
+`v5.7.1-remastered.3` 新增标准 MCP Streamable HTTP 和 JSON HTTP 工具接口。登录后从设置 → **Agent 接入 / MCP** 创建有期限、可撤销、细粒度授权的密钥，外部 agent 可读取和维护订阅、付款、优惠规则、引用数据和预算。所有写入支持版本冲突检测、幂等和预演，订阅删除进入回收站。MCP 地址为 `/api/agent/mcp.php`；完整接入、权限、安全边界及 vikunja-x 客户端兼容说明见 [Agent API 文档](docs/agent-api.md)。
+
+### 本机 PHP 安全基础镜像
+
+仓库包含当前运行环境使用的 PHP 8.3.36 基础镜像构建配方（基于 docker-library/php，包含源码校验及签名验证）。在首次执行主镜像构建或 Compose build 前，先运行 `docker build -t wallos-php-base:8.3.36-fpm-alpine3.24 docker/php-base`。这样新克隆不依赖本站仓库外的私有构建目录。

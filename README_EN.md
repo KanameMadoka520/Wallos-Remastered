@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.7.1-remastered.2`; upstream compatibility baseline: [`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1).
+> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.7.1-remastered.3`; upstream compatibility baseline: [`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1).
 
 [简体中文 README](README.md) · [Changelog (Chinese)](CHANGELOG.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
@@ -163,7 +163,7 @@ Normal changes should receive PHP/JavaScript syntax checks, a health check, and 
 ```bash
 docker run --rm --network host --entrypoint php \
   -v "$PWD:/work:ro" \
-  wallos-remastered:v5.7.1-remastered.2 \
+  wallos-remastered:v5.7.1-remastered.3 \
   /work/tests/regression_runner.php --base-url=http://127.0.0.1:18282
 ```
 
@@ -193,3 +193,11 @@ This branch remains under [GNU GPLv3](LICENSE.md). It is a community remaster; r
 - [Upstream Wallos](https://github.com/ellite/Wallos)
 - [Full Remastered changelog (Chinese)](CHANGELOG.md)
 - [Simplified Chinese README](README.md)
+
+## Agent access and MCP
+
+`v5.7.1-remastered.3` adds an authenticated, stateless MCP Streamable HTTP endpoint at `/api/agent/mcp.php` and a JSON HTTP tool API. In Settings → **Agent access / MCP**, create account-bound keys with scopes, expiry and revocation. Writes support optimistic concurrency, idempotency, dry-run and audit metadata. Subscription deletion uses the existing recycle bin. See [integration and security documentation](docs/agent-api.md), including the requirement for an external MCP client.
+
+### Local PHP security base image
+
+The PHP 8.3.36 base-image recipe is included in `docker/php-base`, derived from docker-library/php with source checksum and signature verification. Before the first application image or Compose build, run `docker build -t wallos-php-base:8.3.36-fpm-alpine3.24 docker/php-base`. Fresh clones do not require this server’s external build directory.

@@ -30,6 +30,10 @@ try {
         'notification_settings',
         'cycles',
         'migrations',
+        'agent_keys',
+        'agent_requests',
+        'agent_audit',
+        'agent_rate_limits',
     ];
     foreach ($requiredTables as $table) {
         $stmt = $db->prepare('SELECT 1 FROM sqlite_master WHERE type = :type AND name = :name LIMIT 1');
@@ -45,7 +49,7 @@ try {
     $migrationResult = $db->query('SELECT migration FROM migrations');
     while ($row = $migrationResult->fetchArray(SQLITE3_ASSOC)) {
         $migration = str_replace('\\', '/', trim((string) ($row['migration'] ?? '')));
-        if (preg_match('#(?:^|/)' . preg_quote('migrations/000082.php', '#') . '$#', $migration) === 1) {
+        if (preg_match('#(?:^|/)' . preg_quote('migrations/000083.php', '#') . '$#', $migration) === 1) {
             $completedLatestMigration = true;
             break;
         }

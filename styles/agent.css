@@ -1,0 +1,18 @@
+.agent-settings { max-width: 1100px; margin-inline: auto; }
+.agent-settings p, .agent-settings code { overflow-wrap: anywhere; }
+.agent-settings form { display: grid; gap: 1rem; }
+.agent-settings form > label { display: grid; gap: .5rem; max-width: 32rem; }
+.agent-settings fieldset { border: 1px solid currentColor; border-radius: .7rem; padding: 1rem; }
+.agent-settings .agent-scope { display: flex; flex-wrap: wrap; gap: .8rem; padding-block: .6rem; }
+.agent-settings .agent-scope strong { flex-basis: 100%; }
+.agent-settings label { display: inline-flex; align-items: center; gap: .4rem; }
+.agent-settings input[type="checkbox"] { width: auto; }
+.agent-settings button { min-height: 44px; width: fit-content; padding: .6rem 1rem; cursor: pointer; }
+.agent-settings button:disabled { opacity: .6; cursor: wait; }
+.agent-settings article { border-bottom: 1px solid currentColor; padding-block: 1rem; }
+.agent-settings [data-agent-secret] { width: 100%; font-family: monospace; }
+.agent-settings [hidden] { display: none !important; }
+.agent-settings [data-agent-secret-panel] { border: 2px solid currentColor; border-radius: .7rem; padding: 1rem; margin-block: 1rem; }
+@media (max-width: 600px) { .agent-settings { padding-inline: 1rem; } }
+
+html.wallos-screenshot-privacy-enabled .agent-settings [data-agent-secret-panel] { display: none !important; }

@@ -1,5 +1,7 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/agent_i18n.php';
+$agentSettingsLabels = wallos_agent_labels($lang);
 require_once 'includes/inputvalidation.php';
 require_once 'includes/payment_icons.php';
 require_once 'includes/budget_period_calculations.php';
@@ -52,6 +54,10 @@ $pageSections = [
     <div class="page-layout">
         <?php render_page_navigation(translate('settings', $i18n), $pageSections); ?>
         <div class="page-content">
+    <section class="account-section">
+        <h2><a href="agent.php"><?= htmlspecialchars($agentSettingsLabels['title'], ENT_QUOTES, 'UTF-8') ?></a></h2>
+        <p><?= htmlspecialchars($agentSettingsLabels['intro'], ENT_QUOTES, 'UTF-8') ?></p>
+    </section>
 
     <section class="account-section" id="settings-budget" data-page-section>
         <header>

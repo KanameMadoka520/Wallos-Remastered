@@ -3,6 +3,7 @@
 function wallos_regression_run_legacy_suite(array $config, array $suiteDefinition)
 {
     $tests = array(
+        'agent-api' => 'tests/agent_api_test.php',
         'budget-regression' => 'tests/budget_regression_test.php',
         'budget-period' => 'tests/budget_period_test.php',
         'currency-rates' => 'tests/currency_rates_test.php',
