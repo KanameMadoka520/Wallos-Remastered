@@ -155,6 +155,8 @@ npm run e2e:cache
 
 Agent 接口和密钥管理改动必须阅读 [协议与权限约定](docs/agent-api.md)，运行 `tests/agent_api_test.php`，对隔离测试数据库运行 `tests/agent_http_test.py`。不得用生产数据执行新增/删除测试；MCP 和 HTTP 共享业务函数，禁止出现绕开 scope、归属、版本和幂等的旁路。迁移基线已推进到 83；旧读取 API 和浏览器 CSRF 必须保持兼容。账号清理也必须删除新增密钥、防重与审计记录。
 
+密钥管理 UI 的浏览器回归还须验证权限控件的实际可见性、鼠标 / 键盘交互及所创建密钥的远端权限，不能只断言 DOM 中存在或 `checked` 值正确。已有密钥不自动提权；权限快捷选择仅用于新建。
+
 ## 维护者提交身份
 
 本仓库维护者的 author 和 committer 统一使用 `KanameMadoka520 <90090108+KanameMadoka520@users.noreply.github.com>`。提交采用中文 Conventional Commits，保留上游作者署名；不写入私人邮箱、GitHub 令牌或生产凭据。历史邮箱隐私调整必须同时检查提交者、作者、标签和历史文件内容，远端历史更新使用预期旧提交校验，避免覆盖新提交。

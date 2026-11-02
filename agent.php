@@ -20,7 +20,13 @@ function agent_escape($s) { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
         <form data-agent-create autocomplete="off">
             <label><?= agent_escape($agentLabels['name']) ?><input type="text" name="name" required maxlength="100" autocomplete="off"></label>
             <label><?= agent_escape($agentLabels['days']) ?><input name="days" type="number" min="1" max="365" value="30" required></label>
-            <fieldset><legend><?= agent_escape($agentLabels['scope']) ?></legend>
+            <fieldset aria-describedby="agent-scope-help"><legend><?= agent_escape($agentLabels['scope']) ?></legend>
+                <p id="agent-scope-help"><?= agent_escape($agentLabels['scope_help']) ?></p>
+                <div class="agent-presets" role="group" aria-label="<?= agent_escape($agentLabels['presets']) ?>">
+                    <?php foreach (['read', 'write', 'all'] as $preset): ?>
+                    <button type="button" class="button thin secondary-button" data-agent-preset="<?= $preset ?>" aria-pressed="false"><?= agent_escape($agentLabels['preset_' . $preset]) ?></button>
+                    <?php endforeach; ?>
+                </div>
                 <?php foreach (['subscriptions', 'payments', 'references', 'budgets'] as $resource): ?>
                 <div class="agent-scope"><strong><?= agent_escape($agentLabels[$resource]) ?></strong>
                     <?php foreach (['read', 'write', 'delete'] as $verb): if ($resource === 'budgets' && $verb === 'delete') continue; ?>
@@ -29,6 +35,7 @@ function agent_escape($s) { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
                 </div>
                 <?php endforeach; ?>
                 <label><input type="checkbox" name="scopes[]" value="audit:read"><?= agent_escape($agentLabels['audit_read']) ?></label>
+                <p data-agent-scope-summary role="status" aria-live="polite"></p>
             </fieldset>
             <button type="submit" class="button"><?= agent_escape($agentLabels['create']) ?></button>
         </form>
@@ -40,7 +47,7 @@ function agent_escape($s) { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
         </div>
         <p data-agent-feedback role="status" aria-live="polite"></p>
     </section>
-    <section class="account-section"><h2><?= agent_escape($agentLabels['keys']) ?></h2><div data-agent-keys><?= agent_escape($agentLabels['loading']) ?></div></section>
+    <section class="account-section"><h2><?= agent_escape($agentLabels['keys']) ?></h2><p><?= agent_escape($agentLabels['replace_help']) ?></p><div data-agent-keys><?= agent_escape($agentLabels['loading']) ?></div></section>
     <section class="account-section"><h2><?= agent_escape($agentLabels['audit']) ?></h2><div data-agent-audit><?= agent_escape($agentLabels['loading']) ?></div></section>
 </section>
 <script type="application/json" id="agent-labels"><?= json_encode($agentLabels, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>

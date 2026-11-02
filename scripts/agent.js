@@ -6,6 +6,25 @@
   const form = root.querySelector('[data-agent-create]');
   const secret = root.querySelector('[data-agent-secret]');
   const panel = root.querySelector('[data-agent-secret-panel]');
+  const scopes = Array.from(form.querySelectorAll('input[name="scopes[]"]'));
+  const presets = Array.from(form.querySelectorAll('[data-agent-preset]'));
+  const matchesPreset = (scope, preset) => preset === 'all' || (preset === 'write' ? !scope.endsWith(':delete') : scope.endsWith(':read'));
+  const updateScopes = () => {
+    const selected = scopes.filter(input => input.checked).map(input => input.value);
+    const has = verb => selected.some(scope => scope.endsWith(`:${verb}`));
+    root.querySelector('[data-agent-scope-summary]').textContent = !selected.length ? labels.scope_none : has('delete') ? labels.scope_delete : has('write') ? labels.scope_write : labels.scope_read;
+    for (const button of presets) {
+      button.setAttribute('aria-pressed', String(scopes.every(input => input.checked === matchesPreset(input.value, button.dataset.agentPreset))));
+    }
+  };
+  for (const button of presets) {
+    button.addEventListener('click', () => {
+      for (const input of scopes) input.checked = matchesPreset(input.value, button.dataset.agentPreset);
+      updateScopes();
+    });
+  }
+  for (const input of scopes) input.addEventListener('change', updateScopes);
+  updateScopes();
   root.querySelector('[data-agent-mcp]').textContent = new URL('api/agent/mcp.php', location.href).href;
   root.querySelector('[data-agent-http]').textContent = new URL('api/agent/v1/index.php', location.href).href;
   const clearSecret = () => { secret.value = ''; panel.hidden = true; };
@@ -29,7 +48,12 @@
       const card = element('article', '');
       const status = key.revoked_at ? labels.revoked : key.expires_at <= Date.now() / 1000 ? labels.expired : labels.active;
       card.append(element('strong', `${key.name} · ${key.token_prefix}… · ${status}`));
-      card.append(element('p', JSON.parse(key.scopes).join(', ')));
+      const permissions = JSON.parse(key.scopes);
+      card.append(element('p', permissions.map(scope => {
+        const [resource, verb] = scope.split(':');
+        return scope === 'audit:read' ? labels.audit_read : `${labels[resource] || resource}：${labels[verb] || verb}`;
+      }).join(' · ')));
+      if (permissions.every(scope => scope.endsWith(':read'))) card.append(element('p', labels.key_readonly));
       card.append(element('p', `${labels.expires}: ${date(key.expires_at)} · ${labels.used}: ${date(key.last_used_at)}`));
       if (!key.revoked_at && key.expires_at > Date.now() / 1000) {
         const button = element('button', labels.revoke);

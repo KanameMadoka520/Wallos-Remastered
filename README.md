@@ -198,6 +198,8 @@ npm run e2e:subscriptions
 
 `v5.7.1-remastered.3` 新增标准 MCP Streamable HTTP 和 JSON HTTP 工具接口。登录后从设置 → **Agent 接入 / MCP** 创建有期限、可撤销、细粒度授权的密钥，外部 agent 可读取和维护订阅、付款、优惠规则、引用数据和预算。所有写入支持版本冲突检测、幂等和预演，订阅删除进入回收站。MCP 地址为 `/api/agent/mcp.php`；完整接入、权限、安全边界及 vikunja-x 客户端兼容说明见 [Agent API 文档](docs/agent-api.md)。
 
+创建时默认只读。权限区提供可见的逐项复选框和“仅读取 / 读取和修改 / 全部权限（含删除）”快捷选择。已有只读密钥需要重新创建后，在客户端替换并刷新工具列表；仅开启客户端的写入开关不会扩大 Wallos 端权限。
+
 ### 本机 PHP 安全基础镜像
 
 仓库包含当前运行环境使用的 PHP 8.3.36 基础镜像构建配方（基于 docker-library/php，包含源码校验及签名验证）。在首次执行主镜像构建或 Compose build 前，先运行 `docker build -t wallos-php-base:8.3.36-fpm-alpine3.24 docker/php-base`。这样新克隆不依赖本站仓库外的私有构建目录。

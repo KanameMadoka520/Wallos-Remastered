@@ -198,6 +198,8 @@ This branch remains under [GNU GPLv3](LICENSE.md). It is a community remaster; r
 
 `v5.7.1-remastered.3` adds an authenticated, stateless MCP Streamable HTTP endpoint at `/api/agent/mcp.php` and a JSON HTTP tool API. In Settings → **Agent access / MCP**, create account-bound keys with scopes, expiry and revocation. Writes support optimistic concurrency, idempotency, dry-run and audit metadata. Subscription deletion uses the existing recycle bin. See [integration and security documentation](docs/agent-api.md), including the requirement for an external MCP client.
 
+New keys default to read-only. Visible permission checkboxes and Read only / Read and edit / All permissions (including delete) presets allow explicit selection. To replace a read-only key, create a new key, update the client credential and refresh its tool list. Enabling writes in the client alone does not grant Wallos write scopes.
+
 ### Local PHP security base image
 
 The PHP 8.3.36 base-image recipe is included in `docker/php-base`, derived from docker-library/php with source checksum and signature verification. Before the first application image or Compose build, run `docker build -t wallos-php-base:8.3.36-fpm-alpine3.24 docker/php-base`. Fresh clones do not require this server’s external build directory.

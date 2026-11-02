@@ -6,7 +6,15 @@
 .agent-settings .agent-scope { display: flex; flex-wrap: wrap; gap: .8rem; padding-block: .6rem; }
 .agent-settings .agent-scope strong { flex-basis: 100%; }
 .agent-settings label { display: inline-flex; align-items: center; gap: .4rem; }
-.agent-settings input[type="checkbox"] { width: auto; }
+/* Global switches hide their native input and require an adjacent label.
+   This form wraps each native checkbox in its label, so render it explicitly. */
+.agent-settings input[type="checkbox"] { appearance: auto; opacity: 1; position: static; width: 1.2rem; height: 1.2rem; margin: 0; flex: 0 0 auto; accent-color: var(--main-color); cursor: pointer; }
+.agent-settings input[type="checkbox"]:focus-visible { outline: 2px solid var(--main-color); outline-offset: 3px; }
+.agent-settings label:has(input[type="checkbox"]) { min-height: 44px; cursor: pointer; }
+.agent-settings .agent-presets { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .8rem; }
+.agent-settings .agent-presets button { max-width: 100%; white-space: normal; }
+.agent-settings .agent-presets button[aria-pressed="true"] { outline: 2px solid var(--main-color); outline-offset: 2px; }
+.agent-settings [data-agent-scope-summary] { font-weight: 600; }
 .agent-settings button { min-height: 44px; width: fit-content; padding: .6rem 1rem; cursor: pointer; }
 .agent-settings button:disabled { opacity: .6; cursor: wait; }
 .agent-settings article { border-bottom: 1px solid currentColor; padding-block: 1rem; }
