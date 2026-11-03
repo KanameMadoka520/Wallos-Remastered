@@ -4,6 +4,10 @@ function wallos_regression_run_legacy_suite(array $config, array $suiteDefinitio
 {
     $tests = array(
         'agent-api' => 'tests/agent_api_test.php',
+        'ai-client' => 'tests/ai_client_test.php',
+        'ai-recommendations' => 'tests/ai_recommendations_test.php',
+        'ai-category-translation' => 'tests/ai_category_translation_test.php',
+        'logo-catalog' => 'tests/logo_catalog_test.php',
         'subscription-relations' => 'tests/subscription_relations_test.php',
         'subscription-relation-statistics' => 'tests/subscription_relation_stats_test.php',
         'subscription-bulk' => 'tests/subscription_bulk_test.php',

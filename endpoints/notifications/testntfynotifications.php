@@ -23,7 +23,7 @@ if (
     $customheaders = webhook_custom_headers($data['headers'] ?? '');
 
     $url = rtrim($host, '/') . '/' . ltrim($topic, '/');
-    $ignore_ssl = $data["ignore_ssl"];
+    $ignore_ssl = !empty($data["ignore_ssl"]);
 
     // Validate URL scheme
     $parsedUrl = parse_url($url);
@@ -53,6 +53,8 @@ if (
     curl_setopt($ch, CURLOPT_POSTFIELDS, $message);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $customheaders);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
     if ($ignore_ssl) {
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -61,12 +63,13 @@ if (
 
     // Execute the request
     $response = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
     // Close the cURL session
     unset($ch);
 
     // Check if the message was sent successfully
-    if ($response === false) {
+    if ($response === false || $status < 200 || $status >= 300) {
         die(json_encode([
             "success" => false,
             "message" => translate('notification_failed', $i18n)

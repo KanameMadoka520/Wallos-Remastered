@@ -1,153 +1,39 @@
 <?php
-
-require_once '../../includes/connect_endpoint.php';
-require_once '../../includes/validate_endpoint.php';
-require_once '../../includes/ssrf_helper.php';
-
-$chatgptModelsApiUrl = 'https://api.openai.com/v1/models';
-$geminiModelsApiUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
-$openrouterModelsApiUrl = 'https://openrouter.ai/api/v1/models';
-
-$input = file_get_contents('php://input');
-$data = json_decode($input, true);
-
-$aiType = isset($data["type"]) ? trim($data["type"]) : '';
-$aiApiKey = isset($data["api_key"]) ? trim($data["api_key"]) : '';
-$aiOllamaHost = isset($data["ollama_host"]) ? trim($data["ollama_host"]) : '';
-
-$ssrf = null;
-
-// Validate ai-type
-if (!in_array($aiType, ['chatgpt', 'gemini', 'openrouter', 'ollama', 'openai-compatible'])) {
-    echo json_encode(["success" => false, "message" => translate('error', $i18n)]);
-    exit;
+require_once __DIR__ . '/../../includes/connect_endpoint.php';
+require_once __DIR__ . '/../../includes/validate_endpoint.php';
+require_once __DIR__ . '/../../includes/ai_client.php';
+header('Content-Type: application/json; charset=UTF-8');
+$data = json_decode(file_get_contents('php://input'), true);
+if (!is_array($data)) { echo json_encode(ai_failure($i18n, 'invalid_settings')); exit; }
+$settings = ['type' => $data['type'] ?? '', 'api_key' => $data['api_key'] ?? '', 'url' => $data['ollama_host'] ?? '', 'model' => ''];
+$valid = ai_validate_settings($settings, $db, $i18n, $userId, false);
+if (!$valid['success']) { echo json_encode($valid); exit; }
+$type = $settings['type'];
+$key = $settings['api_key'];
+$headers = ['Accept: application/json'];
+$url = match ($type) {
+    'chatgpt' => 'https://api.openai.com/v1/models',
+    'gemini' => 'https://generativelanguage.googleapis.com/v1beta/models',
+    'openrouter' => 'https://openrouter.ai/api/v1/models',
+    'ollama' => rtrim($settings['url'], '/') . '/api/tags',
+    default => rtrim($settings['url'], '/') . '/models',
+};
+if ($type === 'gemini') $headers[] = 'x-goog-api-key: ' . $key;
+elseif ($type !== 'ollama' && $key !== '') $headers[] = 'Authorization: Bearer ' . $key;
+if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+$response = ai_http_request($url, $headers, null, $db, $i18n, $userId, $type, 60);
+if (!$response['success']) { echo json_encode($response); exit; }
+$body = json_decode($response['body'], true, 128);
+$rows = $type === 'gemini' ? ($body['models'] ?? null) : ($body['data'] ?? $body['models'] ?? null);
+if (!is_array($rows) || !array_is_list($rows) || count($rows) > 10000 || isset($body['error'])) { echo json_encode(ai_failure($i18n, 'invalid_response')); exit; }
+$models = [];
+foreach ($rows as $row) {
+    if (!is_array($row)) continue;
+    $id = $row[$type === 'gemini' ? 'name' : 'id'] ?? $row['name'] ?? '';
+    if (!is_string($id)) continue;
+    if ($type === 'gemini') $id = preg_replace('~^models/~', '', $id);
+    $name = $row['displayName'] ?? $row['name'] ?? $id;
+    if (!is_string($id) || $id === '' || strlen($id) > 512 || preg_match('/[\x00-\x1f\x7f]/', $id) || !mb_check_encoding($id, 'UTF-8') || !is_string($name) || strlen($name) > 1024 || !mb_check_encoding($name, 'UTF-8') || preg_match('/[\x00-\x1f\x7f]/', $name)) continue;
+    $models[$id] = ['id' => $id, 'name' => $name];
 }
-
-// Validate API key for providers that require it
-if (in_array($aiType, ['chatgpt', 'gemini', 'openrouter'])) {
-    if (empty($aiApiKey)) {
-        echo json_encode(["success" => false, "message" => translate('invalid_api_key', $i18n)]);
-        exit;
-    }
-}
-
-// Prepare the request headers and URL
-$headers = ['Content-Type: application/json'];
-
-if ($aiType === 'chatgpt') {
-    $headers[] = 'Authorization: Bearer ' . $aiApiKey;
-    $apiUrl = $chatgptModelsApiUrl;
-} elseif ($aiType === 'gemini') {
-    $apiUrl = $geminiModelsApiUrl . '?key=' . urlencode($aiApiKey);
-} elseif ($aiType === 'openrouter') {
-    $headers[] = 'Authorization: Bearer ' . $aiApiKey;
-    $apiUrl = $openrouterModelsApiUrl;
-} elseif ($aiType === 'openai-compatible') {
-    if (empty($aiOllamaHost)) {
-        echo json_encode(["success" => false, "message" => translate('invalid_host', $i18n)]);
-        exit;
-    }
-
-    $parsedUrl = parse_url($aiOllamaHost);
-    if (
-        !isset($parsedUrl['scheme']) ||
-        !in_array(strtolower($parsedUrl['scheme']), ['http', 'https']) ||
-        !filter_var($aiOllamaHost, FILTER_VALIDATE_URL)
-    ) {
-        echo json_encode(["success" => false, "message" => translate('invalid_host', $i18n)]);
-        exit;
-    }
-
-    $ssrf = validate_webhook_url_for_ssrf($aiOllamaHost, $db, $i18n, $userId);
-
-    // API key is optional — local instances don't need one
-    if (!empty($aiApiKey)) {
-        $headers[] = 'Authorization: Bearer ' . $aiApiKey;
-    }
-
-    $apiUrl = rtrim($aiOllamaHost, '/') . '/models';
-
-} else {
-    // Ollama — no API key needed
-    if (empty($aiOllamaHost)) {
-        echo json_encode(["success" => false, "message" => translate('invalid_host', $i18n)]);
-        exit;
-    }
-
-    $parsedUrl = parse_url($aiOllamaHost);
-    if (
-        !isset($parsedUrl['scheme']) ||
-        !in_array(strtolower($parsedUrl['scheme']), ['http', 'https']) ||
-        !filter_var($aiOllamaHost, FILTER_VALIDATE_URL)
-    ) {
-        echo json_encode(["success" => false, "message" => translate('invalid_host', $i18n)]);
-        exit;
-    }
-
-    $ssrf = validate_webhook_url_for_ssrf($aiOllamaHost, $db, $i18n, $userId);
-
-    $apiUrl = rtrim($aiOllamaHost, '/') . '/api/tags';
-}
-
-// Execute cURL request
-$ch = curl_init($apiUrl);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-if ($ssrf) {
-    curl_setopt($ch, CURLOPT_RESOLVE, ["{$ssrf['host']}:{$ssrf['port']}:{$ssrf['ip']}"]);
-}
-$response = curl_exec($ch);
-
-if (curl_errno($ch)) {
-    $response = [
-        "success" => false,
-        "message" => in_array($aiType, ['ollama', 'openai-compatible'])
-            ? translate('invalid_host', $i18n)
-            : translate('error', $i18n)
-    ];
-} else {
-    $modelsData = json_decode($response, true);
-
-    if ($aiType === 'gemini' && isset($modelsData['models']) && is_array($modelsData['models'])) {
-        // Normalize Gemini response
-        $models = array_map(function ($model) {
-            return [
-                'id'   => str_replace('models/', '', $model['name']),
-                'name' => $model['displayName'] ?? $model['name'],
-            ];
-        }, $modelsData['models']);
-        $response = ["success" => true, "models" => $models];
-
-    } elseif (isset($modelsData['data']) && is_array($modelsData['data'])) {
-        // OpenAI format (ChatGPT, OpenRouter, OpenAI Compatible)
-        $models = array_map(function ($model) {
-            return [
-                'id'   => $model['id'],
-                'name' => $model['name'] ?? $model['id'],
-            ];
-        }, $modelsData['data']);
-        $response = ["success" => true, "models" => $models];
-
-    } elseif (in_array($aiType, ['ollama', 'openai-compatible']) && isset($modelsData['models']) && is_array($modelsData['models'])) {
-        // Ollama native format — also a fallback for openai-compatible servers that return this shape
-        $models = array_map(function ($model) {
-            return [
-                'id'   => $model['name'],
-                'name' => $model['name'],
-            ];
-        }, $modelsData['models']);
-        $response = ["success" => true, "models" => $models];
-
-    } else {
-        $response = [
-            "success" => false,
-            "message" => in_array($aiType, ['ollama', 'openai-compatible'])
-                ? translate('invalid_host', $i18n)
-                : translate('invalid_api_key', $i18n)
-        ];
-    }
-}
-
-unset($ch);
-echo json_encode($response);
+echo json_encode(['success' => true, 'models' => array_values($models)], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

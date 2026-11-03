@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.10.4-remastered.1`；上游功能同步目标：[`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4)。
+> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.10.4-remastered.2`；上游功能同步目标：[`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4)。
 
 [English README](README_EN.md) · [变更记录](CHANGELOG.md) · [安全策略](SECURITY.md) · [贡献指南](CONTRIBUTING.md)
 
@@ -11,6 +11,8 @@ Wallos-Remastered 保留 Wallos 的订阅、统计、多币种、通知、OIDC/T
 它不是上游页面的原样复制，也不是官方 Docker 镜像的换皮版。上游 `v5.7.1` 的兼容与安全修复经过人工移植，再与本分支的账本、媒体、主题和管理功能整合。因此，部署方式、数据库结构和部分交互均与官方 Wallos 不同。
 
 2026-11-03 更新在安全适配基础上补齐官方 **v5.10.4** 的多付款人、多分类、批量操作和可选 Web Push，并保留账本、优惠、回收站、图片、分页、截图隐私和定制 Service Worker。迁移推进到 86；MCP 扩展为 20 个工具，保留单值主引用和已有密钥权限。新功能、统计口径及迁移/恢复约束见 [功能整合说明](docs/upstream-feature-integration.md)，此前安全移植见 [兼容记录](docs/upstream-5.10.4-compatibility.md)。
+
+本轮继续补齐统一 AI 推荐调用与响应解析、分类 AI 翻译预览、自定义 Logo 目录来源和 ntfy 测试超时处理。用法见 [AI 配置与分类翻译](docs/ai-recommendations.md) 和 [Logo 搜索来源](docs/logo-sources.md)。数据库仍为迁移 86，现有 MCP 工具及密钥权限保持兼容。
 
 ## 最值得关注的功能
 
@@ -41,7 +43,7 @@ Wallos-Remastered 保留 Wallos 的订阅、统计、多币种、通知、OIDC/T
 | 容器化认证 | 支持在页面管理 OIDC | 保留页面配置，并补齐 `OIDC_*` 环境变量、Issuer Discovery 和 Secret File |
 | 界面 | 上游主题和页面 | 增加中文默认体验、动态壁纸、页面专属转场、截图脱敏及账号级主题与布局偏好 |
 
-这里的“兼容基线”表示已吸收适合本分支的 `v5.7.1` 行为，不表示两个仓库逐文件相同。例如 Logo 搜索仍保留 Remastered 的 DuckDuckGo + Brave 路线，没有照搬上游 Google/selfh.st/Dashboard Icons 的整套界面。请不要把官方镜像和本仓库镜像混用，也不要跳过备份直接互换数据库。
+这里的“兼容基线”表示已吸收适合本分支的 `v5.7.1` 行为，不表示两个仓库逐文件相同。例如 Logo 搜索保留 DuckDuckGo + Brave，并增加 selfh.st / Dashboard Icons 目录选择；Google 自定义搜索需额外密钥配置，尚未接入。请不要把官方镜像和本仓库镜像混用，也不要跳过备份直接互换数据库。
 
 ## Docker 部署
 
@@ -91,7 +93,8 @@ docker compose logs --tail=100 wallos
 ```bash
 docker compose down
 git fetch --tags
-git checkout v5.7.1-remastered.2
+git switch main
+git pull --ff-only
 docker compose up -d --build
 curl http://127.0.0.1:18282/health.php
 ```

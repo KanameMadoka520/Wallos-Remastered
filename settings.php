@@ -44,6 +44,8 @@ $pageSections = [
 
 ?>
 
+<link rel="stylesheet" href="styles/ai-category-translation.css?v=<?= filemtime(__DIR__ . '/styles/ai-category-translation.css') ?>">
+<link rel="stylesheet" href="styles/logo-catalog-search.css?v=<?= filemtime(__DIR__ . '/styles/logo-catalog-search.css') ?>">
 <script defer src="scripts/libs/sortable.min.js?v=<?= $sortableJsVersion ?>"></script>
 <style>
     .logo-preview:after {
@@ -923,9 +925,10 @@ $pageSections = [
             <h2><?= translate('categories', $i18n) ?></h2>
         </header>
         <div class="account-categories">
+            <?php if ($screenshotPrivacyEnabled): ?><p><?= translate('screenshot_privacy_mode_blocked', $i18n) ?></p><?php endif; ?>
             <div id="categories" class="sortable-list">
                 <?php
-                foreach ($categories as $category) {
+                foreach ($screenshotPrivacyEnabled ? [] : $categories as $category) {
                     if ($category['id'] != 1) {
                         $canDelete = true;
 
@@ -974,7 +977,29 @@ $pageSections = [
             </div>
             <div class="buttons">
                 <input type="submit" value="<?= translate('add', $i18n) ?>" id="addCategory"
-                    onClick="addCategoryButton()" class="thin mobile-grow" />
+                    onClick="addCategoryButton()" class="thin mobile-grow" <?= $screenshotPrivacyEnabled ? 'disabled' : '' ?> />
+            </div>
+            <div class="ai-category-translation" id="ai-category-translation" data-privacy="<?= $screenshotPrivacyEnabled ? '1' : '0' ?>">
+                <h3><?= translate('ai_categories_title', $i18n) ?></h3>
+                <p><?= translate('ai_categories_info', $i18n) ?></p>
+                <p><a href="#settings-ai"><?= translate('ai_categories_settings', $i18n) ?></a></p>
+                <div class="buttons">
+                    <button type="button" class="thin mobile-grow" id="ai-category-translate" <?= $screenshotPrivacyEnabled ? 'disabled' : '' ?>><?= translate('ai_categories_translate', $i18n) ?></button>
+                </div>
+                <p id="ai-category-status" role="status" aria-live="polite"></p>
+                <div id="ai-category-preview" hidden>
+                    <p><?= translate('ai_categories_confirm_info', $i18n) ?></p>
+                    <div class="ai-category-preview-scroll">
+                        <table>
+                            <thead><tr><th scope="col"><?= translate('ai_categories_before', $i18n) ?></th><th scope="col"><?= translate('ai_categories_after', $i18n) ?></th></tr></thead>
+                            <tbody id="ai-category-preview-rows"></tbody>
+                        </table>
+                    </div>
+                    <div class="buttons">
+                        <button type="button" class="warning-button thin mobile-grow" id="ai-category-apply" disabled><?= translate('ai_categories_apply', $i18n) ?></button>
+                        <button type="button" class="secondary-button thin mobile-grow" id="ai-category-cancel"><?= translate('cancel', $i18n) ?></button>
+                    </div>
+                </div>
             </div>
             <div class="localized-reset-box">
                 <h3><?= translate('localized_defaults_reset_title', $i18n) ?></h3>
@@ -982,7 +1007,7 @@ $pageSections = [
                 <p><?= translate('localized_defaults_reset_matching_info', $i18n) ?></p>
                 <p><?= translate('localized_defaults_reset_warning', $i18n) ?></p>
                 <div class="form-group-inline localized-reset-confirm">
-                    <input type="checkbox" id="reset-categories-confirm" onchange="toggleLocalizedResetButton('categories')">
+                    <input type="checkbox" id="reset-categories-confirm" <?= $screenshotPrivacyEnabled ? 'disabled' : '' ?> onchange="toggleLocalizedResetButton('categories')">
                     <label for="reset-categories-confirm"><?= translate('localized_defaults_reset_acknowledge', $i18n) ?></label>
                 </div>
                 <div class="buttons">
@@ -1189,7 +1214,7 @@ $pageSections = [
     </section>
 
     <?php
-    $sql = "SELECT * FROM ai_settings WHERE user_id = :userId LIMIT 1";
+    $sql = "SELECT * FROM ai_settings WHERE user_id = :userId ORDER BY id DESC LIMIT 1";
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
     $result = $stmt->execute();
@@ -1768,6 +1793,8 @@ $pageSections = [
     </div>
 </section>
 <script defer src="scripts/settings.js?v=<?= $settingsJsVersion ?>"></script>
+<script defer src="scripts/ai-category-translation.js?v=<?= filemtime(__DIR__ . '/scripts/ai-category-translation.js') ?>"></script>
+<script defer src="scripts/logo-catalog-search.js?v=<?= filemtime(__DIR__ . '/scripts/logo-catalog-search.js') ?>"></script>
 <script defer src="scripts/theme.js?v=<?= $themeJsVersion ?>"></script>
 <script defer src="scripts/notifications.js?v=<?= $notificationsJsVersion ?>"></script>
 <script defer src="scripts/webpush.js?v=<?= filemtime(__DIR__ . '/scripts/webpush.js') ?>"></script>

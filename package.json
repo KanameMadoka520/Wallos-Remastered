@@ -16,7 +16,9 @@
     "e2e:performance": "node tests/e2e/navigation_performance.mjs",
     "e2e:relations": "node tests/e2e/subscription_relations_smoke.mjs",
     "e2e:bulk": "node tests/e2e/subscription_bulk_smoke.mjs",
-    "e2e:webpush": "node tests/e2e/webpush_smoke.mjs"
+    "e2e:webpush": "node tests/e2e/webpush_smoke.mjs",
+    "e2e:logo-catalog": "node tests/e2e/logo_catalog_smoke.mjs",
+    "e2e:ai-categories": "node tests/e2e/ai_category_translation_smoke.mjs"
   },
   "devDependencies": {
     "playwright": "^1.59.1"

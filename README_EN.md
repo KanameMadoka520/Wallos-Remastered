@@ -1,10 +1,12 @@
 # Wallos-Remastered
 
-> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.10.4-remastered.1`; upstream feature synchronization target: [`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4).
+> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.10.4-remastered.2`; upstream feature synchronization target: [`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4).
 
 [简体中文 README](README.md) · [Changelog (Chinese)](CHANGELOG.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
 The 2026-11-03 feature integration adds multiple payers/categories, transactional bulk updates/trash and optional device-scoped Web Push. Migration level is 86; MCP now exposes 20 tools while preserving legacy primary references and existing key scopes. See [feature integration and migration](docs/upstream-feature-integration.md), [Agent API](docs/agent-api.md), and [Web Push](docs/web-push.md). The upstream synchronization target is v5.10.4; Remastered retains its own schema, UI, ledger, recycle bin and private cache rules.
+
+This release also unifies AI requests and response parsing, adds category translation with preview/apply, adds selfh.st and Dashboard Icons catalog searches, and bounds ntfy test requests. See [AI setup and translation](docs/ai-recommendations.md) and [logo sources](docs/logo-sources.md). The schema stays at migration 86 and existing MCP tools and key scopes remain compatible.
 
 ## What this project is
 
@@ -43,7 +45,7 @@ This release adds configurable upcoming payments, cancellation reminders, potent
 | Container SSO | OIDC can be managed in the UI | Keeps UI management and adds `OIDC_*` overrides, issuer discovery, and secret-file loading |
 | UI | Upstream pages and themes | Adds Chinese defaults, dynamic wallpaper, destination-specific transitions, screenshot privacy, and account-level theme/layout preferences |
 
-“Compatibility baseline” means that applicable `v5.7.1` behavior has been incorporated; it does not mean both trees are file-for-file identical. For example, logo search keeps Remastered's DuckDuckGo + Brave path instead of copying upstream's complete Google/selfh.st/Dashboard Icons UI. Do not mix the official and Remastered images or exchange databases without a tested backup.
+“Compatibility baseline” means that applicable `v5.7.1` behavior has been incorporated; it does not mean both trees are file-for-file identical. Logo search keeps DuckDuckGo + Brave and adds selectable selfh.st / Dashboard Icons catalogs. Google Custom Search, which needs additional credentials, is not integrated. Do not mix the official and Remastered images or exchange databases without a tested backup.
 
 ## Docker deployment
 
@@ -93,7 +95,8 @@ Create and verify a backup in the admin UI first, then copy `db`, `logos`, and `
 ```bash
 docker compose down
 git fetch --tags
-git checkout v5.7.1-remastered.2
+git switch main
+git pull --ff-only
 docker compose up -d --build
 curl http://127.0.0.1:18282/health.php
 ```

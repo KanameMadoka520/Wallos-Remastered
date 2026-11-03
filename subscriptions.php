@@ -1693,6 +1693,8 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 <script defer src="scripts/subscription-payments.js?v=<?= $subscriptionPaymentsJsVersion ?>"></script>
 <script defer src="scripts/subscription-interactions.js?v=<?= $subscriptionInteractionsJsVersion ?>"></script>
 <script defer src="scripts/subscriptions.js?v=<?= $subscriptionsJsVersion ?>"></script>
+<link rel="stylesheet" href="styles/logo-catalog-search.css?v=<?= $version . '.' . @filemtime(__DIR__ . '/styles/logo-catalog-search.css') ?>">
+<script defer src="scripts/logo-catalog-search.js?v=<?= $version . '.' . @filemtime(__DIR__ . '/scripts/logo-catalog-search.js') ?>"></script>
 <script defer src="scripts/subscription_bulk.js?v=<?= $version . '.' . @filemtime(__DIR__ . '/scripts/subscription_bulk.js') ?>"></script>
 <?php
 if (isset($_GET['add'])) {

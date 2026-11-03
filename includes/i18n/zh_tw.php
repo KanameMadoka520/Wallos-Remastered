@@ -3,6 +3,29 @@
 require __DIR__ . '/en.php';
 
 $i18n = array_replace($i18n, [
+    "ai_categories_title" => "使用 AI 翻譯分類",
+    "ai_categories_info" => "將已儲存的分類翻譯為帳戶語言。僅向已設定的 AI 服務商傳送分類 ID、名稱和目標語言。先預覽，確認後再套用；訂閱的分類歸屬維持不變。",
+    "ai_categories_settings" => "請先設定並儲存 AI 服務商和模型",
+    "ai_categories_translate" => "產生翻譯預覽",
+    "ai_categories_confirm_info" => "請檢查每一項譯名。套用後會一次修改下列全部已儲存分類的名稱。預覽在 10 分鐘後到期；分類、帳戶語言或 AI 設定改變時，需要重新預覽。",
+    "ai_categories_before" => "目前名稱",
+    "ai_categories_after" => "建議譯名",
+    "ai_categories_apply" => "確認套用這些譯名",
+    "ai_categories_preview_ready" => "預覽已產生，尚未修改名稱。目標語言：",
+    "ai_categories_applied" => "分類譯名已套用。",
+    "ai_categories_translating" => "正在產生譯名，現有名稱維持不變…",
+    "ai_categories_cancelled" => "已關閉預覽，未修改分類名稱。",
+    "ai_categories_not_configured" => "請先在 AI 設定中啟用並儲存服務商和模型。",
+    "ai_categories_empty" => "沒有可翻譯的分類。",
+    "ai_categories_too_large" => "分類名稱過多，超過單次翻譯請求的容量。",
+    "ai_categories_invalid_response" => "AI 傳回的譯名不完整或無效，已保留原有名稱。",
+    "ai_categories_preview_expired" => "預覽已到期，請重新產生。",
+    "ai_categories_changed" => "分類、帳戶語言或 AI 設定已改變，請重新整理頁面並再次預覽。",
+    "ai_categories_unsaved" => "頁面上的分類名稱與已儲存的預覽不一致。請先儲存編輯，重新整理頁面後再次預覽。",
+    "ai_categories_failed" => "分類翻譯失敗，已保留原有名稱。",
+    "ai_response_invalid" => "AI 傳回的內容無效，已保留原有建議。",
+    "ai_data_changed" => "產生過程中 AI 設定或訂閱資料已改變，請重試。",
+
     // 註冊頁面
     "create_account" => "您需要先建立帳號才能登入",
     "username" => "使用者名稱",
@@ -1210,7 +1233,7 @@ $i18n = array_replace($i18n, [
     "amount_needed_this_period" => "本週期所需金額",
     "current_period" => "目前週期",
     "translate_categories" => "使用AI翻譯",
-    "ai_provider_error" => "AI 提供商錯誤",
+    "ai_provider_error" => "AI 服務商請求失敗，請檢查設定後重試。",
     "ai_invalid_response" => "AI 提供商返回了無效回應。",
     "ai_invalid_json_response" => "AI 回應未包含有效建議。",
     "remove_background_info" => "這也會產生第二個重新上色的標誌版本，讓您在淺色與深色主題之間切換時仍保持清晰可辨。",

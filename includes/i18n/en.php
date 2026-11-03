@@ -1,6 +1,29 @@
 <?php
 
 $i18n = [
+    "ai_categories_title" => "Translate categories with AI",
+    "ai_categories_info" => "Translate your saved categories into your account language. Only category IDs, names and the target language are sent to your configured AI provider. Review the preview before applying; subscription assignments stay the same.",
+    "ai_categories_settings" => "Configure and save your AI provider and model first",
+    "ai_categories_translate" => "Generate translation preview",
+    "ai_categories_confirm_info" => "Review every translation. Applying changes all the listed saved category names together. The preview expires after 10 minutes; changes to categories, language or AI settings require a new preview.",
+    "ai_categories_before" => "Current name",
+    "ai_categories_after" => "Proposed name",
+    "ai_categories_apply" => "Apply these translations",
+    "ai_categories_preview_ready" => "Preview ready. No names have changed. Target language:",
+    "ai_categories_applied" => "Category translations applied.",
+    "ai_categories_translating" => "Generating translations. Existing names are unchanged…",
+    "ai_categories_cancelled" => "Preview dismissed. No names were changed.",
+    "ai_categories_not_configured" => "Enable and save your AI provider and model in AI settings first.",
+    "ai_categories_empty" => "There are no categories to translate.",
+    "ai_categories_too_large" => "There are too many category names for one translation request.",
+    "ai_categories_invalid_response" => "AI returned incomplete or invalid translations. Existing names were kept.",
+    "ai_categories_preview_expired" => "This preview has expired. Generate a new preview.",
+    "ai_categories_changed" => "Your categories, account language or AI settings changed. Reload and generate a new preview.",
+    "ai_categories_unsaved" => "Category names on this page differ from the saved preview. Save any edits, reload this page and generate a new preview.",
+    "ai_categories_failed" => "Category translation failed. Existing names were kept.",
+    "ai_response_invalid" => "AI returned an invalid response. Existing recommendations were kept.",
+    "ai_data_changed" => "Your AI settings or subscription data changed while generating. Please retry.",
+
     // Registration page
     "create_account" => "You need to create an account before you're able to login",
     "username" => "Username",
@@ -1210,7 +1233,7 @@ $i18n = [
     "amount_needed_this_period" => "Amount needed this period",
     "current_period" => "Current period",
     "translate_categories" => "Translate with AI",
-    "ai_provider_error" => "AI provider error",
+    "ai_provider_error" => "AI provider request failed. Check your settings and retry.",
     "ai_invalid_response" => "The AI provider returned an invalid response.",
     "ai_invalid_json_response" => "The AI response did not contain valid recommendations.",
     "remove_background_info" => "This also generates a second, recolored version of the logo so it stays legible when you switch between light and dark theme.",

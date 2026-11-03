@@ -3,6 +3,29 @@
 require __DIR__ . '/en.php';
 
 $i18n = array_replace($i18n, [
+    "ai_categories_title" => "使用 AI 翻译分类",
+    "ai_categories_info" => "将已保存的分类翻译为账户语言。仅向已配置的 AI 服务商发送分类 ID、名称和目标语言。先预览，确认后再应用；订阅的分类归属保持不变。",
+    "ai_categories_settings" => "请先配置并保存 AI 服务商和模型",
+    "ai_categories_translate" => "生成翻译预览",
+    "ai_categories_confirm_info" => "请检查每一项译名。应用后会一次性修改下列全部已保存分类的名称。预览在 10 分钟后过期；分类、账户语言或 AI 设置发生变化时，需要重新预览。",
+    "ai_categories_before" => "当前名称",
+    "ai_categories_after" => "建议译名",
+    "ai_categories_apply" => "确认应用这些译名",
+    "ai_categories_preview_ready" => "预览已生成，尚未修改名称。目标语言：",
+    "ai_categories_applied" => "分类译名已应用。",
+    "ai_categories_translating" => "正在生成译名，现有名称保持不变…",
+    "ai_categories_cancelled" => "已关闭预览，未修改分类名称。",
+    "ai_categories_not_configured" => "请先在 AI 设置中启用并保存服务商和模型。",
+    "ai_categories_empty" => "没有可翻译的分类。",
+    "ai_categories_too_large" => "分类名称过多，超过单次翻译请求的容量。",
+    "ai_categories_invalid_response" => "AI 返回的译名不完整或无效，已保留原有名称。",
+    "ai_categories_preview_expired" => "预览已过期，请重新生成。",
+    "ai_categories_changed" => "分类、账户语言或 AI 设置已发生变化，请刷新页面并重新预览。",
+    "ai_categories_unsaved" => "页面上的分类名称与已保存的预览不一致。请先保存编辑，刷新页面后重新预览。",
+    "ai_categories_failed" => "分类翻译失败，已保留原有名称。",
+    "ai_response_invalid" => "AI 返回的内容无效，已保留原有建议。",
+    "ai_data_changed" => "生成过程中 AI 设置或订阅数据已发生变化，请重试。",
+
     // 注册页面
     "create_account" => "请创建帐号后登录",
     "username" => "用户名",
@@ -1231,7 +1254,7 @@ $i18n = array_replace($i18n, [
     "amount_needed_this_period" => "本周期所需金额",
     "current_period" => "当前周期",
     "translate_categories" => "使用AI翻译",
-    "ai_provider_error" => "AI 提供商错误",
+    "ai_provider_error" => "AI 服务商请求失败，请检查设置后重试。",
     "ai_invalid_response" => "AI 提供商返回了无效响应。",
     "ai_invalid_json_response" => "AI 响应未包含有效建议。",
     "remove_background_info" => "这还会生成一个重新配色的第二版本徽标，以便在浅色和深色主题之间切换时仍然清晰可辨。",

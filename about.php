@@ -61,7 +61,7 @@ $pageSections = [
                     </div>
                     <div>
                         <h3>Remastered update scope</h3>
-                        <span>Security, database migration, currency, OIDC, backup recovery, TOTP and query-performance fixes were synchronized without replacing the custom dashboard, subscriptions, calendar, ledger, media or theme work.</span>
+                        <span>Security, multiple payers/categories, bulk management, optional Web Push, shared AI requests, category translation previews and icon catalogs are integrated alongside the custom dashboard, subscriptions, calendar, ledger, private media and themes.</span>
                     </div>
                     <div>
                         <h3>Release notes</h3>

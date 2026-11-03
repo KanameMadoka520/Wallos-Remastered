@@ -119,7 +119,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
     $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
     $remasteredVersionValid = strpos($versionPhp, '$version = "v5.10.4";') !== false
-        && strpos($versionPhp, '$remasteredVersion = "v5.10.4-remastered.1";') !== false
+        && strpos($versionPhp, '$remasteredVersion = "v5.10.4-remastered.2";') !== false
         && strpos($aboutPhp, 'Current running remastered build.') !== false
         && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= htmlspecialchars($version') !== false
         && strpos($aboutPhp, 'Remastered update scope') !== false;
@@ -1040,6 +1040,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $subscriptionAddPhp = wallos_regression_read_repo_file($config, 'endpoints/subscription/add.php');
     $paymentAddPhp = wallos_regression_read_repo_file($config, 'endpoints/payments/add.php');
     $aiFetchModelsPhp = wallos_regression_read_repo_file($config, 'endpoints/ai/fetch_models.php');
+    $aiClientPhp = wallos_regression_read_repo_file($config, 'includes/ai_client.php');
     $ssrfHardeningValid = wallos_regression_text_has_all($ssrfHelperPhp, array(
         'function is_cgnat_ip($ip)',
         "str_replace('::ffff:', '', \$ip)",
@@ -1072,9 +1073,16 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'CURLOPT_FOLLOWLOCATION, false',
         'CURLOPT_RESOLVE',
     )) && wallos_regression_text_has_all($aiFetchModelsPhp, array(
-        '$ssrf = null;',
-        'validate_webhook_url_for_ssrf($aiOllamaHost, $db, $i18n, $userId)',
+        '/../../includes/ai_client.php',
+        'ai_validate_settings($settings, $db, $i18n, $userId, false)',
+        'ai_http_request($url, $headers, null, $db, $i18n, $userId',
+    )) && wallos_regression_text_has_all($aiClientPhp, array(
+        "require_once __DIR__ . '/ssrf_helper.php';",
+        'is_url_safe_for_ssrf($url, $db, $userId)',
         'CURLOPT_RESOLVE',
+        'CURLOPT_FOLLOWLOCATION => false',
+        'CURLOPT_MAXREDIRS => 0',
+        "CURLOPT_PROXY => ''",
     ));
     $results[] = wallos_regression_make_result(
         $ssrfHardeningValid ? 'PASS' : 'FAIL',

@@ -1,106 +1,40 @@
 <?php
-require_once '../../includes/connect_endpoint.php';
-require_once '../../includes/validate_endpoint.php';
-require_once '../../includes/ssrf_helper.php';
-
-$input = file_get_contents('php://input');
-$data = json_decode($input, true);
-
-$aiEnabled    = isset($data['ai_enabled']) ? (bool) $data['ai_enabled'] : false;
-$aiType       = isset($data['ai_type']) ? trim($data['ai_type']) : '';
-$aiApiKey     = isset($data['api_key']) ? trim($data['api_key']) : '';
-$aiOllamaHost = isset($data['ollama_host']) ? trim($data['ollama_host']) : '';
-$aiModel      = isset($data['model']) ? trim($data['model']) : '';
-$aiSchedule   = isset($data['ai_run_schedule']) ? $data['ai_run_schedule'] : "manual";
-
-// Validate type
-if (empty($aiType) || !in_array($aiType, ['chatgpt', 'gemini', 'openrouter', 'ollama', 'openai-compatible'])) {
-    echo json_encode(["success" => false, "message" => translate('error', $i18n)]);
-    exit;
+require_once __DIR__ . '/../../includes/connect_endpoint.php';
+require_once __DIR__ . '/../../includes/validate_endpoint.php';
+require_once __DIR__ . '/../../includes/ai_client.php';
+header('Content-Type: application/json; charset=UTF-8');
+$data = json_decode(file_get_contents('php://input'), true);
+if (!is_array($data)) { echo json_encode(ai_failure($i18n, 'invalid_settings')); exit; }
+foreach (['ai_type', 'api_key', 'ollama_host', 'model', 'ai_run_schedule'] as $field) {
+    if (isset($data[$field]) && !is_string($data[$field])) { echo json_encode(ai_failure($i18n, 'invalid_settings')); exit; }
 }
-
-// API key required only for these
-if (in_array($aiType, ['chatgpt', 'gemini', 'openrouter']) && empty($aiApiKey)) {
-    echo json_encode(["success" => false, "message" => translate('invalid_api_key', $i18n)]);
-    exit;
+if (isset($data['ai_enabled']) && !is_bool($data['ai_enabled']) && !in_array($data['ai_enabled'], [0, 1, '0', '1'], true)) { echo json_encode(ai_failure($i18n, 'invalid_settings')); exit; }
+$settings = [
+    'user_id' => $userId, 'type' => trim($data['ai_type'] ?? ''), 'api_key' => trim($data['api_key'] ?? ''),
+    'url' => trim($data['ollama_host'] ?? ''), 'model' => trim($data['model'] ?? ''),
+    'enabled' => !empty($data['ai_enabled']), 'run_schedule' => $data['ai_run_schedule'] ?? 'manual',
+];
+if (!in_array($settings['run_schedule'], ['manual', 'weekly', 'monthly'], true)) { echo json_encode(ai_failure($i18n, 'invalid_settings')); exit; }
+$valid = ai_validate_settings($settings, $db, $i18n, $userId);
+if (!$valid['success']) { echo json_encode($valid); exit; }
+if ($settings['type'] === 'ollama') $settings['api_key'] = '';
+if (!in_array($settings['type'], ['ollama', 'openai-compatible'], true)) $settings['url'] = '';
+$db->enableExceptions(true);
+$began = false;
+try {
+    $db->exec('BEGIN IMMEDIATE');
+    $began = true;
+    // Historical installations may contain duplicates: replace this account's rows atomically.
+    $stmt = $db->prepare('DELETE FROM ai_settings WHERE user_id=:uid');
+    $stmt->bindValue(':uid', $userId, SQLITE3_INTEGER);
+    $stmt->execute();
+    $stmt = $db->prepare('INSERT INTO ai_settings(user_id,type,enabled,api_key,model,url,run_schedule) VALUES(:user_id,:type,:enabled,:api_key,:model,:url,:run_schedule)');
+    foreach ($settings as $key => $value) $stmt->bindValue(':' . $key, $value, in_array($key, ['user_id', 'enabled'], true) ? SQLITE3_INTEGER : SQLITE3_TEXT);
+    $stmt->execute();
+    $db->exec('COMMIT');
+    echo json_encode(['success' => true, 'message' => translate('success', $i18n), 'enabled' => $settings['enabled']]);
+} catch (Throwable $error) {
+    if ($began) $db->exec('ROLLBACK');
+    ai_log_failure($settings['type'], $userId, 'settings_save_failed');
+    echo json_encode(ai_failure($i18n, 'invalid_settings'));
 }
-
-// URL required when using a host
-if (in_array($aiType, ['ollama', 'openai-compatible']) && empty($aiOllamaHost)) {
-    echo json_encode(["success" => false, "message" => translate('invalid_host', $i18n)]);
-    exit;
-}
-
-// Model is always required
-if (empty($aiModel)) {
-    echo json_encode(["success" => false, "message" => translate('fill_mandatory_fields', $i18n)]);
-    exit;
-}
-
-// URL validation + SSRF for host-based providers
-if (in_array($aiType, ['ollama', 'openai-compatible'])) {
-    $parsedUrl = parse_url($aiOllamaHost);
-    if (
-        !isset($parsedUrl['scheme']) ||
-        !in_array(strtolower($parsedUrl['scheme']), ['http', 'https']) ||
-        !filter_var($aiOllamaHost, FILTER_VALIDATE_URL)
-    ) {
-        echo json_encode(["success" => false, "message" => translate('invalid_host', $i18n)]);
-        exit;
-    }
-
-    validate_webhook_url_for_ssrf($aiOllamaHost, $db, $i18n, $userId);
-
-    if ($aiType === 'ollama') {
-        // Ollama never uses an API key
-        $aiApiKey = '';
-    }
-} else {
-    // Non-host providers do not store a URL
-    $aiOllamaHost = '';
-}
-
-// Save settings
-//
-// The insert below replaces this row and its result is read; this one's was
-// dropped. Two rows in ai_settings for one user is worse than a stale colour:
-// includes/ai_client.php and settings.php both take the first row they are
-// handed, so the account can go on talking to the provider and the key it just
-// replaced - after being told the new one was saved.
-$stmt = $db->prepare("DELETE FROM ai_settings WHERE user_id = ?");
-$stmt->bindValue(1, $userId, SQLITE3_INTEGER);
-$deleted = $stmt->execute();
-$stmt->close();
-
-if ($deleted === false) {
-    echo json_encode(["success" => false, "message" => translate('error', $i18n)]);
-    exit;
-}
-
-$stmt = $db->prepare("
-    INSERT INTO ai_settings (user_id, type, enabled, api_key, model, url, run_schedule)
-    VALUES (:user_id, :type, :enabled, :api_key, :model, :url, :run_schedule)
-");
-$stmt->bindValue(':user_id',  $userId,      SQLITE3_INTEGER);
-$stmt->bindValue(':type',     $aiType,      SQLITE3_TEXT);
-$stmt->bindValue(':enabled',  $aiEnabled,   SQLITE3_INTEGER);
-$stmt->bindValue(':api_key',  $aiApiKey,    SQLITE3_TEXT);
-$stmt->bindValue(':model',    $aiModel,     SQLITE3_TEXT);
-$stmt->bindValue(':url',      $aiOllamaHost,SQLITE3_TEXT);
-$stmt->bindValue(':run_schedule', $aiSchedule, SQLITE3_TEXT);
-$result = $stmt->execute();
-
-if ($result) {
-    $response = [
-        "success" => true,
-        "message" => translate('success', $i18n),
-        "enabled" => $aiEnabled,
-    ];
-} else {
-    $response = [
-        "success" => false,
-        "message" => translate('error', $i18n),
-    ];
-}
-
-echo json_encode($response);
