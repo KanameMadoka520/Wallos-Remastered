@@ -18,7 +18,14 @@ RUN apk add --no-cache dumb-init shadow sqlite-dev libpng libpng-dev libjpeg-tur
     apk del .build-deps
 
 # Preserve the patched NGINX binary until Alpine ships the same security version.
-RUN apk upgrade --no-cache && mkdir -p /var/cache/nginx
+# Change SECURITY_REFRESH (or pass today's date at build time) to invalidate the
+# package layer without recompiling PHP extensions. --no-cache here only controls
+# apk's index cache; it does not bypass Docker's layer cache.
+ARG SECURITY_REFRESH=2026-11-03
+RUN echo "Refreshing security packages (${SECURITY_REFRESH})" && \
+    apk upgrade --no-cache && \
+    apk add --no-cache 'libexpat>=2.10.0-r0' && \
+    mkdir -p /var/cache/nginx
 COPY --from=security_nginx /usr/sbin/nginx /usr/sbin/nginx
 
 # Copy your PHP application files into the container
@@ -28,6 +35,7 @@ COPY . .
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY docker/php/zz-wallos-performance.ini /usr/local/etc/php/conf.d/zz-wallos-performance.ini
 COPY docker/php/zz-security.ini /usr/local/etc/php/conf.d/zz-security.ini
+COPY docker/php/zzz-wallos-security.conf /usr/local/etc/php-fpm.d/zzz-wallos-security.conf
 
 # Remove nginx conf files from webroot
 RUN rm -rf /var/www/html/nginx.conf && \

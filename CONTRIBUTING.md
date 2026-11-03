@@ -134,6 +134,8 @@ npm run e2e:cache
 
 ## 安全回归提醒
 
+修改 PHP 基础镜像、Alpine 依赖或 FPM 配置时，先对照 PHP 官方公告和 Alpine 对应分支安全库检查实际版本；PHP 为源码构建，不能只依赖 APK 扫描。主镜像安全重建须更新 `SECURITY_REFRESH` 构建参数，部署候选容器运行 `python3 tests/runtime_security_test.py --container 容器名`，并验证 Web 和 MCP。NGINX 与 FPM 同容器部署时，FPM 必须仅监听 IPv4 回环；拆分容器的部署需另行设计受限的 FastCGI 网络，不能直接恢复全网卡监听。
+
 上游 5.7.1 的集成取舍见 [兼容记录](docs/upstream-5.7.1-compatibility.md)。本分支迁移现已到 83；不要覆盖同号上游迁移，也不要批量解码现有备注。增加提醒卡片必须同时覆盖回收站过滤和截图脱密。
 
 涉及以下链路时，提交前请额外确认不要回退本次安全边界：

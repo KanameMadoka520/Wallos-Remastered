@@ -203,3 +203,5 @@ New keys default to read-only. Visible permission checkboxes and Read only / Rea
 ### Local PHP security base image
 
 The PHP 8.3.36 base-image recipe is included in `docker/php-base`, derived from docker-library/php with source checksum and signature verification. Before the first application image or Compose build, run `docker build -t wallos-php-base:8.3.36-fpm-alpine3.24 docker/php-base`. Fresh clones do not require this server’s external build directory.
+
+The application image requires `libexpat >= 2.10.0-r0`, keeps PHP session upload progress disabled, and restricts PHP-FPM to `127.0.0.1:9000` inside the container. For security rebuilds use `docker build --build-arg SECURITY_REFRESH="$(date -u +%F)" -t wallos-remastered:local .` so Docker's cached package layer does not skip updates. After deployment run `python3 tests/runtime_security_test.py --container YOUR_CONTAINER`. See the [runtime security review](docs/php-runtime-security-2026-11.md) for CVE applicability, validation limits and rollback.

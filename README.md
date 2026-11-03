@@ -203,3 +203,5 @@ npm run e2e:subscriptions
 ### 本机 PHP 安全基础镜像
 
 仓库包含当前运行环境使用的 PHP 8.3.36 基础镜像构建配方（基于 docker-library/php，包含源码校验及签名验证）。在首次执行主镜像构建或 Compose build 前，先运行 `docker build -t wallos-php-base:8.3.36-fpm-alpine3.24 docker/php-base`。这样新克隆不依赖本站仓库外的私有构建目录。
+
+主镜像要求 `libexpat >= 2.10.0-r0`，保留关闭 PHP 上传进度的缓解配置，PHP-FPM 仅监听容器内 `127.0.0.1:9000`。重建安全更新时使用 `docker build --build-arg SECURITY_REFRESH="$(date -u +%F)" -t wallos-remastered:local .`，避免 Docker 缓存跳过软件包升级。部署后运行 `python3 tests/runtime_security_test.py --container 你的容器名`。适用 CVE、检查范围和回滚说明见 [PHP 运行时安全核查](docs/php-runtime-security-2026-11.md)。

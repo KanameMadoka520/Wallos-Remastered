@@ -65,6 +65,8 @@
 
 ## 运行建议
 
+- PHP/系统依赖安全核查与本地重建流程见 [2026-11 运行时安全记录](docs/php-runtime-security-2026-11.md)。源码编译的 PHP 必须单独核查版本，APK 扫描结果不能代替 PHP 公告检查。
+- 单容器部署的 PHP-FPM 只监听 `127.0.0.1:9000`，只接受回环客户端和 `.php` 脚本；不要映射 FastCGI 端口或覆盖这项配置。PHP `session.upload_progress.enabled` 保持关闭，普通文件上传不依赖该功能。
 - 始终持久化 `db`、`logos`、`backups`
 - 定期抽测备份校验与恢复
 - 不要将调试入口直接暴露到公网
