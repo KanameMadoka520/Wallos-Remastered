@@ -1,4 +1,5 @@
 <?php
+require_once 'includes/instance_config.php';
 
 require_once 'includes/connect.php';
 require_once 'includes/checkuser.php';
@@ -32,7 +33,7 @@ $theme = $publicThemePreferences['theme'];
 $updateThemeSettings = $publicThemePreferences['update_theme_settings'];
 $colorTheme = wallos_resolve_public_color_theme_cookie();
 
-$settings = $db->querySingle("SELECT * FROM admin", true);
+$settings = wallos_get_admin_settings($db);
 if ($settings['smtp_address'] == "" || $settings['server_url'] == "") {
     header("Location: .");
     exit();

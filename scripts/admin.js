@@ -993,6 +993,7 @@ function testSmtpSettingsButton() {
   const fromEmail = document.getElementById("fromemail").value;
 
   const data = {
+    instance_smtp: true,
     smtpaddress: smtpAddress,
     smtpport: smtpPort,
     encryption: encryption,

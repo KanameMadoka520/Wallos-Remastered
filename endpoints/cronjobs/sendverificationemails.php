@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../includes/notification_output.php';
+require_once __DIR__ . '/../../includes/instance_config.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
@@ -9,10 +11,7 @@ require_once __DIR__ . '/../../includes/ssrf_helper.php';
 
 require 'settimezone.php';
 
-$query = "SELECT * FROM admin";
-$stmt = $db->prepare($query);
-$result = $stmt->execute();
-$admin = $result->fetchArray(SQLITE3_ASSOC);
+$admin = wallos_get_admin_settings($db);
 
 if ($admin['require_email_verification'] == 0) {
     if (php_sapi_name() !== 'cli') {
@@ -76,7 +75,7 @@ if ($rows) {
                     <br>
                     Registration on Wallos was successful.
                     <br>
-                    Please click the following link to verify your email: <a href="' . $server_url . '/verifyemail.php?email=' . $user['email'] . '&token=' . $user['token'] . '">Verify Email</a>';
+                    Please click the following link to verify your email: <a href="' . $server_url . '/verifyemail.php?email=' . wallos_notification_output_text($user['email']) . '&token=' . $user['token'] . '">Verify Email</a>';
 
                 $mail->send();
 
@@ -87,10 +86,10 @@ if ($rows) {
 
                 $mail->clearAddresses();
 
-                echo "Verification email sent to " . $user['email'] . "<br>";
+                echo "Verification email sent to " . wallos_notification_output_text($user['email']) . "<br>";
             }
         } catch (Exception $e) {
-            echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+            echo "Message could not be sent. Mailer Error: " . wallos_notification_output_text($mail->ErrorInfo);
         }
     } else {
         // There are no SMTP settings

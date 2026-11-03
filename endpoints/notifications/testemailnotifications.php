@@ -7,9 +7,32 @@ use PHPMailer\PHPMailer\Exception;
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/ssrf_helper.php';
+require_once '../../includes/instance_config.php';
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
+if (!is_array($data)) {
+    http_response_code(400);
+    die(json_encode(['success' => false, 'message' => translate('error', $i18n)]));
+}
+// Instance credentials are never a fallback for ordinary notification tests.
+if (!empty($data['instance_smtp'])) {
+    if ((int) $userId !== 1) {
+        http_response_code(403);
+        die(json_encode(['success' => false, 'message' => translate('error', $i18n)]));
+    }
+    $configuration = wallos_get_effective_admin_configuration($db);
+    foreach ([
+        'smtpaddress' => 'smtp_address', 'smtpport' => 'smtp_port',
+        'encryption' => 'encryption', 'smtpusername' => 'smtp_username',
+        'smtppassword' => 'smtp_password', 'fromemail' => 'from_email',
+    ] as $field => $column) {
+        if (isset($configuration['managed_fields'][$column])) {
+            $data[$field] = $configuration['settings'][$column];
+        }
+    }
+}
+
 
 if (
     !isset($data["smtpaddress"]) || $data["smtpaddress"] == "" ||

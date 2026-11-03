@@ -474,7 +474,7 @@ $pageSections = [
                             $selected = $i == $notifications['days'] ? "selected" : "";
                             ?>
                             <option value="<?= $i ?>" <?= $selected ?>>
-                                <?= $i ?>     <?= translate('day_before', $i18n) ?>
+                                <?= $i ?>     <?= translate('days_before', $i18n) ?>
                             </option>
                             <?php
                         }
@@ -1125,6 +1125,7 @@ $pageSections = [
 
     <?php
     $apiKey = "";
+    $provider = 0;
     $sql = "SELECT api_key, provider FROM fixer WHERE user_id = :userId";
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
@@ -1154,6 +1155,7 @@ $pageSections = [
                 <select name="fixer-provider" id="fixerProvider">
                     <option value="0" <?= $provider == 0 ? 'selected' : '' ?>>fixer.io</option>
                     <option value="1" <?= $provider == 1 ? 'selected' : '' ?>>apilayer.com</option>
+                    <option value="2" <?= $provider == 2 ? 'selected' : '' ?>>frankfurter.dev (<?= translate('no_api_key_required', $i18n) ?>)</option>
                 </select>
             </div>
             <div class="buttons">
@@ -1645,12 +1647,12 @@ $pageSections = [
                         <?php
                         if ($settings['convert_currency'])
                             echo ' checked';
-                        if ($apiKey == "")
+                        if ($apiKey == "" && (int) $provider !== 2)
                             echo ' disabled';
                         ?>>
                     <label for="convertcurrency"><?= translate('convert_prices', $i18n) ?></label>
                 </div>
-                <?php if ($apiKey == ""): ?>
+                <?php if ($apiKey == "" && (int) $provider !== 2): ?>
                     <div class="settings-notes">
                         <p>
                             <i class="fa-solid fa-circle-info"></i>

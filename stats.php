@@ -164,7 +164,7 @@ if ($showStatsGraphs) {
                         $selectedClass = 'selected';
                       }
                       ?>
-                      <div class="filter-item <?= $selectedClass ?>" data-memberid="<?= $member['id'] ?>"><?= $member['name'] ?>
+                      <div class="filter-item <?= $selectedClass ?>" data-memberid="<?= $member['id'] ?>"><?= htmlspecialchars(wallos_decode_stored_text($member['name']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                       </div>
                       <?php
                     }
@@ -196,7 +196,7 @@ if ($showStatsGraphs) {
                         }
                         ?>
                         <div class="filter-item <?= $selectedClass ?>" data-categoryid="<?= $category['id'] ?>">
-                          <?= $category['name'] ?>
+                          <?= htmlspecialchars(wallos_decode_stored_text($category['name']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                         </div>
                         <?php
                       }
@@ -228,7 +228,7 @@ if ($showStatsGraphs) {
                       }
                       ?>
                       <div class="filter-item <?= $selectedClass ?>" data-paymentid="<?= $payment['id'] ?>">
-                        <?= $payment['name'] ?>
+                        <?= htmlspecialchars(wallos_decode_stored_text($payment['name']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                       </div>
                       <?php
                     }
@@ -573,14 +573,14 @@ if ($showStatsGraphs) {
   <script defer src="scripts/libs/chart.js?v=<?= $chartJsVersion ?>"></script>
   <script type="text/javascript">
     window.onload = function () {
-      loadLineGraph("totalMonthlyCostChart", <?php echo json_encode($totalMonthlyCostDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", "<?= $showTotalMonthlyCostGraph ?>");
-      loadGraph("categorySplitChart", <?php echo json_encode($categoryDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showCategoryCostGraph ?>);
-      loadGraph("memberSplitChart", <?php echo json_encode($memberDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showMemberCostGraph ?>);
-      loadGraph("paymentMethidSplitChart", <?php echo json_encode($paymentMethodDataPoints, JSON_NUMERIC_CHECK); ?>, "", <?= $showPaymentMethodsGraph ?>);
-      loadGraph("budgetVsCostChart", <?php echo json_encode($vsBudgetDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showVsBudgetGraph ?>);
-      loadBudgetBreakdownGraph("yearlyBudgetBreakdownChart", <?php echo json_encode($yearlyBudgetDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showYearlyBudgetGraph ?>);
-      loadGraph("periodBudgetVsCostChart", <?php echo json_encode($vsPeriodBudgetDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showVsPeriodBudgetGraph ?>);
-      loadLineGraph("rollingProjectionChart", <?php echo json_encode($projectionDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", "<?= $showProjectionGraph ?>");
+      loadLineGraph("totalMonthlyCostChart", <?php echo json_encode($totalMonthlyCostDataPoints, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?= json_encode($code, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, "<?= $showTotalMonthlyCostGraph ?>");
+      loadGraph("categorySplitChart", <?php echo json_encode($categoryDataPoints, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?= json_encode($code, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= $showCategoryCostGraph ?>);
+      loadGraph("memberSplitChart", <?php echo json_encode($memberDataPoints, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?= json_encode($code, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= $showMemberCostGraph ?>);
+      loadGraph("paymentMethidSplitChart", <?php echo json_encode($paymentMethodDataPoints, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, "", <?= $showPaymentMethodsGraph ?>);
+      loadGraph("budgetVsCostChart", <?php echo json_encode($vsBudgetDataPoints, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?= json_encode($code, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= $showVsBudgetGraph ?>);
+      loadBudgetBreakdownGraph("yearlyBudgetBreakdownChart", <?php echo json_encode($yearlyBudgetDataPoints, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?= json_encode($code, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= $showYearlyBudgetGraph ?>);
+      loadGraph("periodBudgetVsCostChart", <?php echo json_encode($vsPeriodBudgetDataPoints, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?= json_encode($code, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= $showVsPeriodBudgetGraph ?>);
+      loadLineGraph("rollingProjectionChart", <?php echo json_encode($projectionDataPoints, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?= json_encode($code, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, "<?= $showProjectionGraph ?>");
     }
   </script>
   <?php

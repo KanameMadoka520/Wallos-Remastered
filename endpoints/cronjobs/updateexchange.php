@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../../includes/notification_output.php';
+require_once __DIR__ . '/../../includes/frankfurter.php';
+require_once __DIR__ . '/../../includes/exchange_rate_writer.php';
 require_once 'validate.php';
 require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
 require_once __DIR__ . '/../../includes/exchange_rate_freshness.php';
@@ -18,7 +21,7 @@ $usersToUpdateExchange = $stmt->execute();
 
 while ($userToUpdateExchange = $usersToUpdateExchange->fetchArray(SQLITE3_ASSOC)) {
     $userId = $userToUpdateExchange['id'];
-    echo "For user: " . $userToUpdateExchange['username'] . "<br />";
+    echo "For user: " . wallos_notification_output_text($userToUpdateExchange['username']) . "<br />";
 
     // Asked before anything is read or fetched. This job also runs on every
     // container start, so without this a deploy costs one provider request per
@@ -58,7 +61,9 @@ while ($userToUpdateExchange = $usersToUpdateExchange->fetchArray(SQLITE3_ASSOC)
             $mainCurrencyCode = $row['code'];
             $mainCurrencyId = $row['main_currency'];
 
-            if ($provider === 1) {
+            if ((int) $provider === 2) {
+                $apiData = frankfurter_latest_rates($mainCurrencyCode, $codes);
+            } elseif ($provider === 1) {
                 $api_url = "https://api.apilayer.com/fixer/latest?base=EUR&symbols=" . $codes;
                 $context = stream_context_create([
                     'http' => [
@@ -68,11 +73,11 @@ while ($userToUpdateExchange = $usersToUpdateExchange->fetchArray(SQLITE3_ASSOC)
                 ]);
                 $response = file_get_contents($api_url, false, $context);
             } else {
-                $api_url = "http://data.fixer.io/api/latest?access_key=" . $apiKey . "&base=EUR&symbols=" . $codes;
+                $api_url = "https://data.fixer.io/api/latest?access_key=" . $apiKey . "&base=EUR&symbols=" . $codes;
                 $response = file_get_contents($api_url);
             }
 
-            $apiData = json_decode((string) $response, true);
+            if ((int) $provider !== 2) { $apiData = json_decode((string) $response, true); }
             $mainCurrencyToEUR = $apiData['rates'][$mainCurrencyCode] ?? null;
 
             if (!is_array($apiData) || !isset($apiData['rates']) || !is_numeric($mainCurrencyToEUR) || (float) $mainCurrencyToEUR <= 0) {
@@ -80,49 +85,11 @@ while ($userToUpdateExchange = $usersToUpdateExchange->fetchArray(SQLITE3_ASSOC)
                 continue;
             }
 
-            $db->exec('BEGIN IMMEDIATE');
-            $updateStmt = $db->prepare("UPDATE currencies SET rate = :rate WHERE code = :code AND user_id = :userId");
-            $updateFailed = false;
-            foreach ($apiData['rates'] as $currencyCode => $rate) {
-                if (!is_numeric($rate)) {
-                    $updateFailed = true;
-                    break;
-                }
-                $exchangeRate = $currencyCode === $mainCurrencyCode ? 1.0 : ((float) $rate / (float) $mainCurrencyToEUR);
-                $updateStmt->bindValue(':rate', $exchangeRate, SQLITE3_FLOAT);
-                $updateStmt->bindValue(':code', $currencyCode, SQLITE3_TEXT);
-                $updateStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-                $updateResult = $updateStmt->execute();
-                $updateStmt->reset();
-                if (!$updateResult) {
-                    $updateFailed = true;
-                    break;
-                }
+            if (wallos_store_exchange_rates($db, $userId, $mainCurrencyCode, $apiData['rates'])) {
+                echo 'Rates updated successfully!<br />';
+            } else {
+                echo 'Exchange rates update rolled back.<br />';
             }
-
-            if ($updateFailed) {
-                $db->exec('ROLLBACK');
-                echo "Exchange rates update rolled back.<br />";
-                continue;
-            }
-
-                $currentDate = new DateTime();
-                $formattedDate = $currentDate->format('Y-m-d');
-
-                $deleteQuery = "DELETE FROM last_exchange_update WHERE user_id = :userId";
-                $deleteStmt = $db->prepare($deleteQuery);
-                $deleteStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                $deleteResult = $deleteStmt->execute();
-
-                $query = "INSERT INTO last_exchange_update (date, user_id) VALUES (:formattedDate, :userId)";
-                $stmt = $db->prepare($query);
-                $stmt->bindParam(':formattedDate', $formattedDate, SQLITE3_TEXT);
-                $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                $result = $stmt->execute();
-
-                $db->exec('COMMIT');
-
-                echo "Rates updated successfully!<br />";
         } else {
             echo "Exchange rates update skipped. No fixer.io api key provided<br />";
             $apiKey = null;

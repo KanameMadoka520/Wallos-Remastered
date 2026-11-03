@@ -462,4 +462,28 @@ $i18n = array_replace($i18n, [
     "allow_standard_users_local_webhooks_info" => "Rischio per la sicurezza: abilitando questa opzione, ogni utente standard (non amministratore) potrà inviare notifiche agli indirizzi presenti nella Whitelist dei Webhook sopra, inclusi i servizi interni della tua rete. Abilita questa opzione solo se ti fidi di tutti gli utenti di questa istanza di Wallos.",
 ]);
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Intrattenimento",
+    "category_music" => "Musica",
+    "category_utilities" => "Utenze",
+    "category_food_and_beverages" => "Cibo e bevande",
+    "category_health_and_wellbeing" => "Salute e benessere",
+    "category_productivity" => "Produttività",
+    "category_banking" => "Banche",
+    "category_transport" => "Trasporti",
+    "category_education" => "Istruzione",
+    "category_insurance" => "Assicurazioni",
+    "category_gaming" => "Giochi",
+    "category_news_and_magazines" => "Notizie e riviste",
+    "category_software" => "Software",
+    "category_technology" => "Tecnologia",
+    "category_cloud_services" => "Servizi cloud",
+    "category_charity_and_donations" => "Beneficenza e donazioni",
+    "payment_method_credit_card" => "Carta di credito",
+    "payment_method_bank_transfer" => "Bonifico bancario",
+    "payment_method_direct_debit" => "Addebito diretto",
+    "payment_method_money" => "Contanti",
+]);
 ?>

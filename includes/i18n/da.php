@@ -441,4 +441,28 @@ $i18n = array_replace($i18n, [
     "allow_standard_users_local_webhooks" => "Tillad standardbrugere at bruge webhook-tilladelseslisten",
     "allow_standard_users_local_webhooks_info" => "Sikkerhedsrisiko: hvis dette aktiveres, kan alle standardbrugere (ikke-administratorer) sende notifikationer til adresserne på webhook-tilladelseslisten ovenfor, herunder interne tjenester på dit netværk. Aktiver kun dette, hvis du stoler på alle brugere på denne Wallos-instans.",
 ]);
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Underholdning",
+    "category_music" => "Musik",
+    "category_utilities" => "Forsyning",
+    "category_food_and_beverages" => "Mad og drikke",
+    "category_health_and_wellbeing" => "Sundhed og velvære",
+    "category_productivity" => "Produktivitet",
+    "category_banking" => "Bank",
+    "category_transport" => "Transport",
+    "category_education" => "Uddannelse",
+    "category_insurance" => "Forsikring",
+    "category_gaming" => "Spil",
+    "category_news_and_magazines" => "Nyheder og magasiner",
+    "category_software" => "Software",
+    "category_technology" => "Teknologi",
+    "category_cloud_services" => "Cloudtjenester",
+    "category_charity_and_donations" => "Velgørenhed og donationer",
+    "payment_method_credit_card" => "Kreditkort",
+    "payment_method_bank_transfer" => "Bankoverførsel",
+    "payment_method_direct_debit" => "Direkte debitering",
+    "payment_method_money" => "Kontanter",
+]);
 ?>

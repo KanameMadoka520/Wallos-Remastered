@@ -442,4 +442,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Unterhaltung",
+    "category_music" => "Musik",
+    "category_utilities" => "Nebenkosten",
+    "category_food_and_beverages" => "Essen & Trinken",
+    "category_health_and_wellbeing" => "Gesundheit & Wohlbefinden",
+    "category_productivity" => "Produktivität",
+    "category_banking" => "Bankwesen",
+    "category_transport" => "Verkehr",
+    "category_education" => "Bildung",
+    "category_insurance" => "Versicherung",
+    "category_gaming" => "Spiele",
+    "category_news_and_magazines" => "Nachrichten & Zeitschriften",
+    "category_software" => "Software",
+    "category_technology" => "Technik",
+    "category_cloud_services" => "Cloud-Dienste",
+    "category_charity_and_donations" => "Spenden & Wohltätigkeit",
+    "payment_method_credit_card" => "Kreditkarte",
+    "payment_method_bank_transfer" => "Überweisung",
+    "payment_method_direct_debit" => "Lastschrift",
+    "payment_method_money" => "Bargeld",
+]);
 ?>

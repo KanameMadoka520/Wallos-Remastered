@@ -34,9 +34,12 @@ final class Factory implements FactoryInterface
             $clock = new InternalClock();
         }
 
-        $otp = self::createOTP($parsed_url, $clock);
-
-        self::populateOTP($otp, $parsed_url);
+        try {
+            $otp = self::createOTP($parsed_url, $clock);
+            self::populateOTP($otp, $parsed_url);
+        } catch (Throwable $throwable) {
+            throw new InvalidArgumentException('Not a valid OTP provisioning URI', 0, $throwable);
+        }
 
         return $otp;
     }
@@ -44,6 +47,11 @@ final class Factory implements FactoryInterface
     private static function populateParameters(OTPInterface $otp, Url $data): void
     {
         foreach ($data->getQuery() as $key => $value) {
+            // Provisioning URIs may configure public OTP parameters only.
+            if (!in_array($key, ['issuer', 'algorithm', 'digits', 'period', 'counter'], true)
+                || !is_string($value)) {
+                throw new InvalidArgumentException('Unsupported OTP provisioning parameter.');
+            }
             $otp->setParameter($key, $value);
         }
     }

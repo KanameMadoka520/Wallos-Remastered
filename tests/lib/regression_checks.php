@@ -119,7 +119,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
     $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
     $remasteredVersionValid = strpos($versionPhp, '$version = "v5.7.1";') !== false
-        && strpos($versionPhp, '$remasteredVersion = "v5.7.1-remastered.3";') !== false
+        && strpos($versionPhp, '$remasteredVersion = "v5.7.1-remastered.4";') !== false
         && strpos($aboutPhp, 'Current running remastered build.') !== false
         && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= htmlspecialchars($version') !== false
         && strpos($aboutPhp, 'Remastered update scope') !== false;
@@ -174,8 +174,11 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
             'validate_oidc_endpoint_url',
         )) && wallos_regression_text_has_all($oidcLogoutPhp, array(
             'wallos_oidc_is_http_url($logoutUrl)',
-            "strpos(\$logoutUrl, '?') === false ? '?' : '&'",
-            'http_build_query([',
+            'oidc_build_logout_url(',
+        )) && wallos_regression_text_has_all(wallos_regression_read_repo_file($config, 'includes/oidc/logout_url.php'), array(
+            "strpos(\$logoutUrl, '?')",
+            'http_build_query(',
+            'PHP_QUERY_RFC3986',
         ));
     $results[] = wallos_regression_make_result(
         $declarativeOidcValid ? 'PASS' : 'FAIL',
@@ -1092,7 +1095,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $selfXssEscapingValid = wallos_regression_text_has_all($adminPhp, array(
         "htmlspecialchars(\$settings['server_url'], ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(wallos_decode_stored_text(\$user['email']), ENT_QUOTES, 'UTF-8')",
-        "htmlspecialchars(\$settings['smtp_password'], ENT_QUOTES, 'UTF-8')",
+        "htmlspecialchars(isset(\$instanceManagedFields['smtp_password']) ? '' : \$settings['smtp_password'], ENT_QUOTES, 'UTF-8')",
     )) && wallos_regression_text_has_all($profilePhp, array(
         "htmlspecialchars(wallos_decode_stored_text(\$userData['username']), ENT_QUOTES, 'UTF-8')",
         "htmlspecialchars(wallos_decode_stored_text(\$userData['email']), ENT_QUOTES, 'UTF-8')",

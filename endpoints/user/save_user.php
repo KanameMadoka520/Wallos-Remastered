@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../includes/frankfurter.php';
+require_once __DIR__ . '/../../includes/exchange_rate_writer.php';
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/inputvalidation.php';
 require_once '../../includes/validate_endpoint.php';
@@ -36,8 +38,9 @@ function update_exchange_rate($db, $userId)
             $provider = $row['provider'];
 
             $codes = "";
-            $query = "SELECT id, name, symbol, code FROM currencies";
-            $result = $db->query($query);
+            $stmt = $db->prepare("SELECT id, name, symbol, code FROM currencies WHERE user_id = :uid");
+            $stmt->bindValue(':uid', $userId, SQLITE3_INTEGER);
+            $result = $stmt->execute();
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 $codes .= $row['code'] . ",";
             }
@@ -51,7 +54,9 @@ function update_exchange_rate($db, $userId)
             $mainCurrencyCode = $row['code'];
             $mainCurrencyId = $row['main_currency'];
 
-            if ($provider === 1) {
+            if ((int) $provider === 2) {
+                $apiData = frankfurter_latest_rates($mainCurrencyCode, $codes);
+            } elseif ($provider === 1) {
                 $api_url = "https://api.apilayer.com/fixer/latest?base=EUR&symbols=" . $codes;
                 $context = stream_context_create([
                     'http' => [
@@ -61,49 +66,14 @@ function update_exchange_rate($db, $userId)
                 ]);
                 $response = file_get_contents($api_url, false, $context);
             } else {
-                $api_url = "http://data.fixer.io/api/latest?access_key=" . $apiKey . "&base=EUR&symbols=" . $codes;
+                $api_url = "https://data.fixer.io/api/latest?access_key=" . $apiKey . "&base=EUR&symbols=" . $codes;
                 $response = file_get_contents($api_url);
             }
 
-            $apiData = json_decode($response, true);
+            if ((int) $provider !== 2) { $apiData = json_decode($response, true); }
 
-            $mainCurrencyToEUR = $apiData['rates'][$mainCurrencyCode];
-
-            if ($apiData !== null && isset($apiData['rates'])) {
-                foreach ($apiData['rates'] as $currencyCode => $rate) {
-                    if ($currencyCode === $mainCurrencyCode) {
-                        $exchangeRate = 1.0;
-                    } else {
-                        $exchangeRate = $rate / $mainCurrencyToEUR;
-                    }
-                    $updateQuery = "UPDATE currencies SET rate = :rate WHERE code = :code AND user_id = :userId";
-                    $updateStmt = $db->prepare($updateQuery);
-                    $updateStmt->bindParam(':rate', $exchangeRate, SQLITE3_TEXT);
-                    $updateStmt->bindParam(':code', $currencyCode, SQLITE3_TEXT);
-                    $updateStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                    $updateResult = $updateStmt->execute();
-                }
-                $currentDate = new DateTime();
-                $formattedDate = $currentDate->format('Y-m-d');
-
-                $query = "SELECT * FROM last_exchange_update WHERE user_id = :userId";
-                $stmt = $db->prepare($query);
-                $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                $result = $stmt->execute();
-                $row = $result->fetchArray(SQLITE3_ASSOC);
-
-                if ($row) {
-                    $query = "UPDATE last_exchange_update SET date = :formattedDate WHERE user_id = :userId";
-                } else {
-                    $query = "INSERT INTO last_exchange_update (date, user_id) VALUES (:formattedDate, :userId)";
-                }
-
-                $stmt = $db->prepare($query);
-                $stmt->bindParam(':formattedDate', $formattedDate, SQLITE3_TEXT);
-                $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                $resutl = $stmt->execute();
-
-                $db->close();
+            if (isset($apiData['rates']) && is_array($apiData['rates'])) {
+                wallos_store_exchange_rates($db, $userId, $mainCurrencyCode, $apiData['rates']);
             }
         }
     }
@@ -311,6 +281,13 @@ if (
 
     $avatar = filter_var($_POST['avatar'], FILTER_SANITIZE_URL);
     $main_currency = $_POST['main_currency'];
+    $ownedCurrency = $db->prepare('SELECT 1 FROM currencies WHERE id = :id AND user_id = :uid');
+    $ownedCurrency->bindValue(':id', (int) $main_currency, SQLITE3_INTEGER);
+    $ownedCurrency->bindValue(':uid', $userId, SQLITE3_INTEGER);
+    if (!$ownedCurrency->execute()->fetchArray(SQLITE3_NUM)) {
+        http_response_code(400);
+        save_user_response(false, translate('error_updating_user_data', $i18n));
+    }
     $language = $_POST['language'];
     $userTimezone = wallos_normalize_timezone_identifier($_POST['user_timezone'], wallos_get_default_user_timezone());
 

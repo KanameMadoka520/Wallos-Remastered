@@ -5,6 +5,21 @@ require_once '../../includes/validate_endpoint.php';
 $newApiKey = isset($_POST["api_key"]) ? trim($_POST["api_key"]) : "";
 $provider = isset($_POST["provider"]) ? $_POST["provider"] : 0;
 
+if ((int) $provider === 2) {
+    $db->exec('BEGIN IMMEDIATE');
+    $stmt = $db->prepare('UPDATE fixer SET provider=2 WHERE user_id=:uid');
+    $stmt->bindValue(':uid', $userId, SQLITE3_INTEGER);
+    $ok = $stmt->execute() !== false;
+    if ($ok && $db->changes() === 0) {
+        $stmt = $db->prepare("INSERT INTO fixer(api_key,provider,user_id) VALUES('',2,:uid)");
+        $stmt->bindValue(':uid', $userId, SQLITE3_INTEGER);
+        $ok = $stmt->execute() !== false;
+    }
+    $db->exec($ok ? 'COMMIT' : 'ROLLBACK');
+    echo json_encode(['success' => $ok, 'message' => translate($ok ? 'currency_provider_saved' : 'failed_to_store_api_key', $i18n)]);
+    exit;
+}
+
 // The insert further down replaces this row and its result decides the answer;
 // this one's was dropped. Two rows in fixer for one user means the exchange
 // rate update reads whichever key it is handed first, which can be the one the
@@ -32,7 +47,7 @@ if ($provider == 1) {
     ]);
     $response = file_get_contents($testKeyUrl, false, $context);
 } else {
-    $testKeyUrl = "http://data.fixer.io/api/latest?access_key=$newApiKey";
+    $testKeyUrl = "https://data.fixer.io/api/latest?access_key=$newApiKey";
     $response = file_get_contents($testKeyUrl);
 }
 

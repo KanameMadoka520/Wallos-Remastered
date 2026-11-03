@@ -15,6 +15,7 @@ require_once '../../includes/subscription_pages.php';
 require_once '../../includes/logo_theme_variant.php';
 require_once '../../includes/user_groups.php';
 require_once '../../includes/security_rate_limits.php';
+require_once '../../includes/subscription_reference_validation.php';
 if (!file_exists('../../images/uploads/logos')) {
     mkdir('../../images/uploads/logos', 0777, true);
     mkdir('../../images/uploads/logos/avatars', 0777, true);
@@ -320,6 +321,19 @@ if ($replacementSubscriptionId == 0 || $inactive == 0) {
     $replacementSubscriptionId = null;
 }
 
+$subscriptionReferences = [
+    'id' => $isEdit ? (int) $_POST['id'] : 0,
+    'currency_id' => $currencyId,
+    'category_id' => $categoryId,
+    'payer_user_id' => $payerUserId,
+    'payment_method_id' => $paymentMethodId,
+    'replacement_subscription_id' => $replacementSubscriptionId,
+];
+if (wallos_subscription_invalid_reference($db, $userId, $subscriptionReferences, $subscriptionPriceRules) !== null) {
+    http_response_code(400);
+    subscription_error_response(translate('error', $i18n));
+}
+
 $manualCycleUsedValueCycleStart = $manualCycleUsedValueMain > 0
     ? wallos_get_subscription_current_cycle_start_value([
         'start_date' => $startDate,
@@ -461,6 +475,11 @@ if ($logo !== '' && $removeBackgroundEnabled) {
 
 try {
     $db->exec('BEGIN IMMEDIATE');
+    // Recheck while holding the write lock, after any remote image fetch.
+    if (wallos_subscription_invalid_reference($db, $userId, $subscriptionReferences, $subscriptionPriceRules) !== null) {
+        http_response_code(400);
+        throw new RuntimeException(translate('error', $i18n));
+    }
     $nextSortOrder = !$isEdit ? wallos_get_next_subscription_sort_order($db, $userId) : 0;
 
     if (!$isEdit) {

@@ -444,4 +444,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "エンターテインメント",
+    "category_music" => "音楽",
+    "category_utilities" => "公共料金",
+    "category_food_and_beverages" => "食品・飲料",
+    "category_health_and_wellbeing" => "健康・ウェルビーイング",
+    "category_productivity" => "仕事効率化",
+    "category_banking" => "銀行",
+    "category_transport" => "交通",
+    "category_education" => "教育",
+    "category_insurance" => "保険",
+    "category_gaming" => "ゲーム",
+    "category_news_and_magazines" => "ニュース・雑誌",
+    "category_software" => "ソフトウェア",
+    "category_technology" => "テクノロジー",
+    "category_cloud_services" => "クラウドサービス",
+    "category_charity_and_donations" => "慈善・寄付",
+    "payment_method_credit_card" => "クレジットカード",
+    "payment_method_bank_transfer" => "銀行振込",
+    "payment_method_direct_debit" => "口座振替",
+    "payment_method_money" => "現金",
+]);
 ?>

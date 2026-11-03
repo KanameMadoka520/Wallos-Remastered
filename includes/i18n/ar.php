@@ -227,9 +227,9 @@ $i18n = array_replace($i18n, [
     "notifications" => "الإشعارات",
     "enable_email_notifications" => "تفعيل إشعارات البريد الإلكتروني",
     "notify_me" => "إشعاري",
-    "day_before" => "قبلها بيوم",
+    "day_before" => "يوم قبل الموعد",
     "on_due_date" => "في تاريخ الاستحقاق",
-    "days_before" => "قبلها بأيام",
+    "days_before" => "أيام قبل الموعد",
     "smtp_address" => "عنوان SMTP",
     "port" => "المنفذ",
     "tls" => "TLS",
@@ -508,4 +508,31 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "الترفيه",
+    "category_music" => "الموسيقى",
+    "category_utilities" => "الخدمات المنزلية",
+    "category_food_and_beverages" => "الطعام والمشروبات",
+    "category_health_and_wellbeing" => "الصحة والعافية",
+    "category_productivity" => "الإنتاجية",
+    "category_banking" => "الخدمات المصرفية",
+    "category_transport" => "المواصلات",
+    "category_education" => "التعليم",
+    "category_insurance" => "التأمين",
+    "category_gaming" => "الألعاب",
+    "category_news_and_magazines" => "الأخبار والمجلات",
+    "category_software" => "البرمجيات",
+    "category_technology" => "التقنية",
+    "category_cloud_services" => "الخدمات السحابية",
+    "category_charity_and_donations" => "الأعمال الخيرية والتبرعات",
+    "payment_method_credit_card" => "بطاقة ائتمانية",
+    "payment_method_bank_transfer" => "تحويل بنكي",
+    "payment_method_direct_debit" => "خصم مباشر",
+    "payment_method_money" => "نقدًا",
+]);
+$i18n["totp_too_many_attempts"] = "محاولات فاشلة كثيرة. يرجى الانتظار قليلًا ثم المحاولة مرة أخرى.";
+
+$i18n["error_saving_logo"] = "حدث خطأ أثناء حفظ صورة الشعار.";
 ?>

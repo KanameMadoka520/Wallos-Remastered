@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.7.1-remastered.3`；上游兼容基线：[`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1)。
+> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.7.1-remastered.4`；上游兼容基线：[`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1)。
 
 [English README](README_EN.md) · [变更记录](CHANGELOG.md) · [安全策略](SECURITY.md) · [贡献指南](CONTRIBUTING.md)
 
@@ -9,6 +9,8 @@
 Wallos-Remastered 保留 Wallos 的订阅、统计、多币种、通知、OIDC/TOTP 等基础能力，并针对中文用户、多人受控使用和长期运维做了大量扩展。
 
 它不是上游页面的原样复制，也不是官方 Docker 镜像的换皮版。上游 `v5.7.1` 的兼容与安全修复经过人工移植，再与本分支的账本、媒体、主题和管理功能整合。因此，部署方式、数据库结构和部分交互均与官方 Wallos 不同。
+
+2026-11-03 更新额外审阅并选择性吸收官方稳定版 **v5.10.4** 的安全修复、无密钥汇率、部署 SMTP/URL、OIDC、Webhook 和日历改进。保留原有完整兼容基线与自定义数据模型；已引入、已有等价实现及未引入的结构变化见 [v5.10.4 兼容记录](docs/upstream-5.10.4-compatibility.md)。这次不需要数据库迁移，MCP 的 18 个工具与已有密钥权限保持兼容。
 
 ## 最值得关注的功能
 

@@ -183,6 +183,17 @@ trap 'handle_signal TERM' TERM
 trap 'handle_signal INT' INT
 trap 'handle_signal QUIT' QUIT
 
+# The dual-stack listener cannot start when the kernel has IPv6 disabled.
+# Keep the existing configuration on hosts that support IPv6.
+if [ ! -e /proc/net/if_inet6 ]; then
+    echo "IPv6 unavailable; configuring NGINX for IPv4."
+    for nginx_config in /etc/nginx/nginx.conf /etc/nginx/http.d/default.conf; do
+        if [ -f "$nginx_config" ]; then
+            sed -i 's/listen\([[:space:]]*\)\[::\]:80 ipv6only=off;/listen\180;/' "$nginx_config"
+        fi
+    done
+fi
+
 echo "Launching php-fpm"
 php-fpm -F &
 PHP_FPM_PID=$!

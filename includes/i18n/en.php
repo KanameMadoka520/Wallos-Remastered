@@ -1238,4 +1238,32 @@ $i18n = [
 ];
 
 
+
+$i18n['currency_provider_saved'] = 'Currency provider saved.';
+$i18n['no_api_key_required'] = 'no API key required';
+$i18n['instance_environment_managed'] = 'Some instance settings are managed by deployment environment variables. Update them in the deployment configuration; managed passwords are not shown.';
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Entertainment",
+    "category_music" => "Music",
+    "category_utilities" => "Utilities",
+    "category_food_and_beverages" => "Food & Beverages",
+    "category_health_and_wellbeing" => "Health & Wellbeing",
+    "category_productivity" => "Productivity",
+    "category_banking" => "Banking",
+    "category_transport" => "Transport",
+    "category_education" => "Education",
+    "category_insurance" => "Insurance",
+    "category_gaming" => "Gaming",
+    "category_news_and_magazines" => "News & Magazines",
+    "category_software" => "Software",
+    "category_technology" => "Technology",
+    "category_cloud_services" => "Cloud Services",
+    "category_charity_and_donations" => "Charity & Donations",
+    "payment_method_credit_card" => "Credit Card",
+    "payment_method_bank_transfer" => "Bank Transfer",
+    "payment_method_direct_debit" => "Direct Debit",
+    "payment_method_money" => "Money",
+]);
 ?>

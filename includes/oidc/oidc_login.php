@@ -31,6 +31,9 @@ $_SESSION['loggedin'] = true;
 $_SESSION['main_currency'] = $main_currency;
 $_SESSION['userId'] = $userId;
 $_SESSION['from_oidc'] = true; // Indicate this session is from OIDC login
+if (isset($tokenData['id_token']) && is_string($tokenData['id_token'])) {
+    $_SESSION['oidc_id_token'] = $tokenData['id_token'];
+}
 
 $cookieExpire = time() + (86400 * 30); // 30 days
 

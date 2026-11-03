@@ -149,11 +149,14 @@ try {
             && strpos($apiSource, "\$oidcConfiguration['settings']") === false,
         'OIDC settings API must use the redacted presentation payload.'
     );
+    $logoutHelperSource = file_get_contents(dirname(__DIR__) . '/includes/oidc/logout_url.php');
     wallos_oidc_test_assert(
-        strpos($logoutSource, "strpos(\$logoutUrl, '?') === false ? '?' : '&'") !== false
+        strpos($logoutSource, "oidc_build_logout_url(") !== false
             && strpos($logoutSource, "wallos_oidc_is_http_url(\$logoutUrl)") !== false
-            && strpos($logoutSource, "http_build_query([") !== false,
-        'OIDC logout must validate the URL and append parameters without creating a second question mark.'
+            && strpos($logoutHelperSource, "strpos(\$logoutUrl, '?')") !== false
+            && strpos($logoutHelperSource, 'http_build_query(') !== false
+            && strpos($logoutHelperSource, 'PHP_QUERY_RFC3986') !== false,
+        'OIDC logout must validate the URL and append encoded parameters without creating a second question mark.'
     );
 
     echo "Declarative OIDC compatibility test passed.\n";

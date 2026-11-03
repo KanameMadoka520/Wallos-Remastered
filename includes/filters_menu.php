@@ -22,7 +22,7 @@
             }
           }
           ?>
-          <div class="filter-item <?= $selectedClass ?>" data-memberid="<?= $member['id'] ?>"><?= $member['name'] ?>
+          <div class="filter-item <?= $selectedClass ?>" data-memberid="<?= $member['id'] ?>"><?= htmlspecialchars(wallos_decode_stored_text($member['name']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
           </div>
           <?php
         }
@@ -55,7 +55,7 @@
           }
           ?>
           <div class="filter-item <?= $selectedClass ?>" data-categoryid="<?= $category['id'] ?>">
-            <?= $category['name'] ?>
+            <?= htmlspecialchars(wallos_decode_stored_text($category['name']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
           </div>
           <?php
         }
@@ -85,7 +85,7 @@
           }
           ?>
           <div class="filter-item <?= $selectedClass ?>" data-paymentid="<?= $payment['id'] ?>">
-            <?= $payment['name'] ?>
+            <?= htmlspecialchars(wallos_decode_stored_text($payment['name']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
           </div>
           <?php
         }

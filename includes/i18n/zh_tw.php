@@ -1238,4 +1238,32 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+$i18n['currency_provider_saved'] = '匯率提供者已儲存。';
+$i18n['no_api_key_required'] = '不需 API 金鑰';
+$i18n['instance_environment_managed'] = '部分執行個體設定由部署環境變數管理。請在部署設定中修改，託管密碼不會顯示在頁面中。';
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "娛樂",
+    "category_music" => "音樂",
+    "category_utilities" => "公用事業",
+    "category_food_and_beverages" => "餐飲",
+    "category_health_and_wellbeing" => "健康與福祉",
+    "category_productivity" => "生產力",
+    "category_banking" => "銀行",
+    "category_transport" => "交通",
+    "category_education" => "教育",
+    "category_insurance" => "保險",
+    "category_gaming" => "遊戲",
+    "category_news_and_magazines" => "新聞與雜誌",
+    "category_software" => "軟體",
+    "category_technology" => "科技",
+    "category_cloud_services" => "雲端服務",
+    "category_charity_and_donations" => "慈善與捐贈",
+    "payment_method_credit_card" => "信用卡",
+    "payment_method_bank_transfer" => "銀行轉帳",
+    "payment_method_direct_debit" => "自動扣款",
+    "payment_method_money" => "現金",
+]);
 ?>

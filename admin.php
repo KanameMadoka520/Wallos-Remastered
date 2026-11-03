@@ -1,4 +1,5 @@
 <?php
+require_once 'includes/instance_config.php';
 require_once 'includes/header.php';
 require_once 'includes/inputvalidation.php';
 require_once 'includes/user_groups.php';
@@ -18,9 +19,9 @@ if ($isAdmin != 1) {
 }
 
 // get admin settings from admin table
-$stmt = $db->prepare('SELECT * FROM admin');
-$result = $stmt->execute();
-$settings = $result->fetchArray(SQLITE3_ASSOC);
+$instanceConfiguration = wallos_get_effective_admin_configuration($db);
+$settings = $instanceConfiguration['settings'];
+$instanceManagedFields = $instanceConfiguration['managed_fields'];
 $subscriptionImagePolicy = wallos_get_subscription_media_policy($db);
 
 // Resolve database values together with any declarative OIDC overrides.
@@ -397,7 +398,7 @@ $pageSections = [
             ?>
             <div class="form-group">
                 <label for="serverUrl"><?= translate('server_url', $i18n) ?></label>
-                <input type="text" id="serverUrl" autocomplete="off" value="<?= htmlspecialchars($settings['server_url'], ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="text" id="serverUrl" <?= isset($instanceManagedFields['server_url']) ? 'disabled' : '' ?> autocomplete="off" value="<?= htmlspecialchars($settings['server_url'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group">
                 <label for="customEditionTitle"><?= translate('custom_edition_title', $i18n) ?></label>
@@ -957,44 +958,52 @@ $pageSections = [
 
     </section>
 
+    <?php if ($instanceManagedFields || $instanceConfiguration['notes']): ?>
+    <div class="settings-notes">
+        <p><?= translate('instance_environment_managed', $i18n) ?></p>
+        <?php foreach ($instanceConfiguration['notes'] as $note): ?>
+            <p><?= htmlspecialchars($note, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></p>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
     <section class="account-section" id="admin-smtp" data-page-section>
         <header>
             <h2><?= translate('smtp_settings', $i18n) ?></h2>
         </header>
         <div class="admin-form">
             <div class="form-group-inline">
-                <input type="text" name="smtpaddress" id="smtpaddress" autocomplete="off"
+                <input type="text" name="smtpaddress" id="smtpaddress" <?= isset($instanceManagedFields['smtp_address']) ? 'disabled' : '' ?> autocomplete="off"
                     placeholder="<?= translate('smtp_address', $i18n) ?>" value="<?= htmlspecialchars($settings['smtp_address'], ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="text" name="smtpport" id="smtpport" autocomplete="off"
+                <input type="text" name="smtpport" id="smtpport" <?= isset($instanceManagedFields['smtp_port']) ? 'disabled' : '' ?> autocomplete="off"
                     placeholder="<?= translate('port', $i18n) ?>" class="one-third" value="<?= htmlspecialchars($settings['smtp_port'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group-inline">
                 <div>
-                    <input type="radio" name="encryption" id="encryptionnone" value="none"
+                    <input type="radio" name="encryption" id="encryptionnone" <?= isset($instanceManagedFields['encryption']) ? 'disabled' : '' ?> value="none"
                         <?= empty($settings['encryption']) || $settings['encryption'] == "none" ? "checked" : "" ?> />
                     <label for="encryptionnone"><?= translate('none', $i18n) ?></label>
                 </div>
                 <div>
-                    <input type="radio" name="encryption" id="encryptiontls" value="tls"
+                    <input type="radio" name="encryption" id="encryptiontls" <?= isset($instanceManagedFields['encryption']) ? 'disabled' : '' ?> value="tls"
                         <?= $settings['encryption'] == "tls" ? "checked" : "" ?> />
                     <label for="encryptiontls"><?= translate('tls', $i18n) ?></label>
                 </div>
                 <div>
-                    <input type="radio" name="encryption" id="encryptionssl" value="ssl"
+                    <input type="radio" name="encryption" id="encryptionssl" <?= isset($instanceManagedFields['encryption']) ? 'disabled' : '' ?> value="ssl"
                         <?= $settings['encryption'] == "ssl" ? "checked" : "" ?> />
                     <label for="encryptionssl"><?= translate('ssl', $i18n) ?></label>
                 </div>
             </div>
             <div class="form-group-inline">
-                <input type="text" name="smtpusername" id="smtpusername" autocomplete="off"
+                <input type="text" name="smtpusername" id="smtpusername" <?= isset($instanceManagedFields['smtp_username']) ? 'disabled' : '' ?> autocomplete="off"
                     placeholder="<?= translate('smtp_username', $i18n) ?>" value="<?= htmlspecialchars($settings['smtp_username'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group-inline">
-                <input type="password" name="smtppassword" id="smtppassword" autocomplete="off"
-                    placeholder="<?= translate('smtp_password', $i18n) ?>" value="<?= htmlspecialchars($settings['smtp_password'], ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="password" name="smtppassword" id="smtppassword" <?= isset($instanceManagedFields['smtp_password']) ? 'disabled' : '' ?> autocomplete="off"
+                    placeholder="<?= translate('smtp_password', $i18n) ?>" value="<?= htmlspecialchars(isset($instanceManagedFields['smtp_password']) ? '' : $settings['smtp_password'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="form-group-inline">
-                <input type="text" name="fromemail" id="fromemail" autocomplete="off"
+                <input type="text" name="fromemail" id="fromemail" <?= isset($instanceManagedFields['from_email']) ? 'disabled' : '' ?> autocomplete="off"
                     placeholder="<?= translate('from_email', $i18n) ?>" value="<?= htmlspecialchars($settings['from_email'], ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="buttons">

@@ -508,4 +508,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Szórakozás",
+    "category_music" => "Zene",
+    "category_utilities" => "Közüzemi szolgáltatások",
+    "category_food_and_beverages" => "Étel és ital",
+    "category_health_and_wellbeing" => "Egészség és jólét",
+    "category_productivity" => "Termelékenység",
+    "category_banking" => "Banki szolgáltatások",
+    "category_transport" => "Közlekedés",
+    "category_education" => "Oktatás",
+    "category_insurance" => "Biztosítás",
+    "category_gaming" => "Játékok",
+    "category_news_and_magazines" => "Hírek és magazinok",
+    "category_software" => "Szoftver",
+    "category_technology" => "Technológia",
+    "category_cloud_services" => "Felhőszolgáltatások",
+    "category_charity_and_donations" => "Jótékonyság és adományok",
+    "payment_method_credit_card" => "Hitelkártya",
+    "payment_method_bank_transfer" => "Banki átutalás",
+    "payment_method_direct_debit" => "Csoportos beszedési megbízás",
+    "payment_method_money" => "Készpénz",
+]);
 ?>

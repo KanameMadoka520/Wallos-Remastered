@@ -3,6 +3,7 @@ require_once __DIR__ . '/user_status.php';
 require_once __DIR__ . '/request_logs.php';
 require_once __DIR__ . '/timezone_settings.php';
 require_once __DIR__ . '/auth_session.php';
+require_once __DIR__ . '/oidc/session_persist.php';
 
 function wallos_logout_trashed_session_and_redirect(array $userData)
 {
@@ -22,6 +23,7 @@ if (isset($_GET['code'])) {
     $expectedOidcState = (string) ($_SESSION['oidc_state'] ?? '');
     $issuedAt = (int) ($_SESSION['oidc_state_issued_at'] ?? 0);
     unset($_SESSION['oidc_state'], $_SESSION['oidc_state_issued_at']);
+    oidc_persist_session();
 
     if ($expectedOidcState === '' || !hash_equals($expectedOidcState, (string) $state)
         || $issuedAt <= 0 || (time() - $issuedAt) > 600) {

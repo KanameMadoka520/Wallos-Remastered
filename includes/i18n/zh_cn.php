@@ -1258,4 +1258,32 @@ $i18n = array_replace($i18n, [
     "allow_standard_users_local_webhooks_info" => "安全风险:启用此选项后,任何普通(非管理员)用户都可以向上方 Webhook 白名单中的地址发送通知,包括您网络中的内部服务。仅在您信任此 Wallos 实例中的所有用户时才启用此选项。",
 ]);
 
+
+$i18n['currency_provider_saved'] = '汇率提供商已保存。';
+$i18n['no_api_key_required'] = '无需 API 密钥';
+$i18n['instance_environment_managed'] = '部分实例设置由部署环境变量托管。请在部署配置中修改，托管密码不会显示在页面中。';
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "娱乐",
+    "category_music" => "音乐",
+    "category_utilities" => "公用事业",
+    "category_food_and_beverages" => "餐饮",
+    "category_health_and_wellbeing" => "健康与养生",
+    "category_productivity" => "生产力",
+    "category_banking" => "银行",
+    "category_transport" => "交通",
+    "category_education" => "教育",
+    "category_insurance" => "保险",
+    "category_gaming" => "游戏",
+    "category_news_and_magazines" => "新闻与杂志",
+    "category_software" => "软件",
+    "category_technology" => "科技",
+    "category_cloud_services" => "云服务",
+    "category_charity_and_donations" => "慈善与捐赠",
+    "payment_method_credit_card" => "信用卡",
+    "payment_method_bank_transfer" => "银行转账",
+    "payment_method_direct_debit" => "直接扣款",
+    "payment_method_money" => "现金",
+]);
 ?>

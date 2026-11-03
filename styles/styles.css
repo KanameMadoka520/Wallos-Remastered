@@ -6542,6 +6542,8 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   line-height: 1.25;
 }
 
+.calendar .calendar-subscription-price,
+.calendar .calendar-subscription-renewal-type,
 .calendar .calendar-subscription-countdown {
   color: rgba(var(--text-color-rgb), 0.7);
   font-size: 11px;

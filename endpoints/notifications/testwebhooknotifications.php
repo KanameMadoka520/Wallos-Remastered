@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../includes/webhook_headers.php';
 
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
@@ -57,7 +58,7 @@ if (
         $payload = str_replace($placeholder, $value, $payload);
     }
 
-    $customheaders = json_decode($data["customheaders"], true);
+    $customheaders = webhook_headers_with_content_type(webhook_custom_headers($data["customheaders"] ?? ''), $payload);
     $ignore_ssl = $data["ignore_ssl"];
 
     $ch = curl_init();

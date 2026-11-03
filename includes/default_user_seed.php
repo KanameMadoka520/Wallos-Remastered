@@ -61,7 +61,9 @@ function wallos_get_seed_translation_language($language)
 
 function wallos_get_seed_languages()
 {
-    return ['en', 'zh_cn', 'zh_tw'];
+    $languages = [];
+    require __DIR__ . '/i18n/languages.php';
+    return array_keys($languages);
 }
 
 function wallos_get_seed_rows($scope, $language = 'en')
@@ -274,7 +276,8 @@ function wallos_get_default_categories($language = 'en')
         ],
     ];
 
-    return wallos_localize_seed_rows($categories, $translations, $language, 'key');
+    return wallos_localize_international_seed_rows(
+        wallos_localize_seed_rows($categories, $translations, $language, 'key'), $language, 'category_');
 }
 
 function wallos_get_default_payment_methods($language = 'en')
@@ -336,7 +339,8 @@ function wallos_get_default_payment_methods($language = 'en')
         ],
     ];
 
-    return wallos_localize_seed_rows($paymentMethods, $translations, $language, 'key');
+    return wallos_localize_international_seed_rows(
+        wallos_localize_seed_rows($paymentMethods, $translations, $language, 'key'), $language, 'payment_method_');
 }
 
 function wallos_get_seed_reset_map($scope, $targetLanguage)
@@ -361,4 +365,34 @@ function wallos_get_seed_reset_map($scope, $targetLanguage)
     }
 
     return $resetMap;
+}
+
+/** Localize new accounts while retaining Remastered's Chinese names and IDs. */
+function wallos_localize_international_seed_rows(array $rows, $language, $prefix)
+{
+    // Existing Chinese/default reset mappings remain stable; no stored row is renamed.
+    $language = strtolower(str_replace('-', '_', trim((string) $language)));
+    if (in_array($language, ['en', 'zh_cn', 'zh_tw'], true)) {
+        return $rows;
+    }
+    if (preg_match('/^[a-z]{2}(?:_[a-z]{2,3})?$/', $language) !== 1
+        || !is_file(__DIR__ . '/i18n/' . $language . '.php')) {
+        return $rows;
+    }
+    static $tables = [];
+    if (!isset($tables[$language])) {
+        $tables[$language] = (static function ($language) {
+            $i18n = [];
+            require __DIR__ . '/i18n/' . $language . '.php';
+            return $i18n;
+        })($language);
+    }
+    foreach ($rows as &$row) {
+        $key = $row['key'] === 'no_category' ? 'no_category' : $prefix . $row['key'];
+        if (isset($tables[$language][$key])) {
+            $row['name'] = $tables[$language][$key];
+        }
+    }
+    unset($row);
+    return $rows;
 }

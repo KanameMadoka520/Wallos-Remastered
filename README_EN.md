@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.7.1-remastered.3`; upstream compatibility baseline: [`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1).
+> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.7.1-remastered.4`; upstream compatibility baseline: [`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1).
 
 [简体中文 README](README.md) · [Changelog (Chinese)](CHANGELOG.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
@@ -9,6 +9,8 @@
 Wallos-Remastered keeps the core Wallos subscription, statistics, multi-currency, notification, OIDC, and TOTP capabilities. It adds a Chinese-first experience, controlled multi-user operation, and maintenance features intended for a server that stays online for years.
 
 This is not an unmodified copy of the upstream UI or a repackaged official image. Relevant fixes from upstream `v5.7.1` were ported deliberately and integrated with this branch's ledger, media, theme, and admin systems. Its deployment model, database schema, and some interactions therefore differ from official Wallos.
+
+The 2026-11-03 release additionally reviews and selectively adopts fixes from stable upstream **v5.10.4**: security, keyless exchange rates, deployment-managed SMTP/URL, OIDC, webhooks and calendar details. The full compatibility baseline and custom data model remain intact. See the [5.10.4 compatibility decisions](docs/upstream-5.10.4-compatibility.md) for adopted, equivalent and deferred changes. This update needs no schema migration; all 18 MCP tools and existing key scopes remain compatible.
 
 ## Key capabilities
 

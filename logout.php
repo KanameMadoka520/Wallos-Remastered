@@ -2,6 +2,7 @@
 require_once 'includes/connect.php';
 require_once 'includes/request_security.php';
 require_once 'includes/oidc_settings.php';
+require_once 'includes/oidc/logout_url.php';
 $secondsInMonth = 30 * 24 * 60 * 60;
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params(wallos_build_session_cookie_params($secondsInMonth));
@@ -16,6 +17,7 @@ if (isset($_SESSION['from_oidc']) && $_SESSION['from_oidc'] === true) {
     $oidcConfiguration = wallos_get_effective_oidc_configuration($db);
     $oidcSettings = $oidcConfiguration['settings'];
     $logoutUrl = $oidcSettings['logout_url'] ?? '';
+    $oidcIdToken = $_SESSION['oidc_id_token'] ?? null;
 }
 
 // get token from cookie to remove from DB
@@ -53,14 +55,9 @@ setcookie('wallos_login', '', wallos_build_cookie_options($cookieExpire, ['httpo
 $db->close();
 
 if ($logoutOIDC && !empty($logoutUrl) && wallos_oidc_is_http_url($logoutUrl)) {
-    $logoutTarget = rtrim($logoutUrl, '&');
-    $separator = substr($logoutTarget, -1) === '?'
-        ? ''
-        : (strpos($logoutUrl, '?') === false ? '?' : '&');
-    $logoutQuery = http_build_query([
-        'post_logout_redirect_uri' => (string) ($oidcSettings['redirect_url'] ?? ''),
-    ]);
-    header('Location: ' . $logoutTarget . $separator . $logoutQuery);
+    header('Location: ' . oidc_build_logout_url($logoutUrl,
+        (string) ($oidcSettings['redirect_url'] ?? ''), $oidcIdToken,
+        (string) ($oidcSettings['client_id'] ?? '')));
     exit();
 }
 

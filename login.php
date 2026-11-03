@@ -2,6 +2,7 @@
 require_once 'includes/connect.php';
 require_once 'includes/checkuser.php';
 require_once 'includes/oidc_settings.php';
+require_once 'includes/instance_config.php';
 
 require_once 'includes/i18n/languages.php';
 require_once 'includes/i18n/getlang.php';
@@ -175,7 +176,10 @@ $trashedAccountMessage = '';
 $loginRateLimitMessage = '';
 $hasSuccessMessage = (isset($_GET['validated']) && $_GET['validated'] == "true") || (isset($_GET['registered']) && $_GET['registered'] == true) ? true : false;
 $userEmailWaitingVerification = false;
-if (isset($_POST['username']) && isset($_POST['password'])) {
+if (isset($_POST['username']) && isset($_POST['password']) && $password_login_disabled) {
+    // SSO-only is a server policy, including direct requests to this endpoint.
+    wallos_mark_login_failed($loginFailed);
+} elseif (isset($_POST['username']) && isset($_POST['password'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
     $rememberMe = isset($_POST['remember']) ? true : false;
@@ -307,9 +311,7 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
 $registrations = false;
 $resetPasswordEnabled = false;
 if (!$password_login_disabled) {
-    $adminQuery = "SELECT registrations_open, max_users, server_url, smtp_address FROM admin";
-    $adminResult = $db->query($adminQuery);
-    $adminRow = $adminResult->fetchArray(SQLITE3_ASSOC);
+    $adminRow = wallos_get_admin_settings($db);
     $registrationsOpen = $adminRow['registrations_open'];
     $maxUsers = $adminRow['max_users'];
 

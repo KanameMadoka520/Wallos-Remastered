@@ -4,6 +4,7 @@ require_once 'includes/subscription_trash.php';
 require_once 'includes/inputvalidation.php';
 require_once 'includes/calendar_calculations.php';
 require_once 'includes/currency_rates.php';
+require_once 'includes/subscription_price_rules.php';
 
 $calendarJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/calendar.js');
 
@@ -183,6 +184,7 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
     $calendarPrivacyEnabled = function_exists('wallos_screenshot_privacy_enabled')
       && wallos_screenshot_privacy_enabled($settings);
     $calendarPrivacySeed = $calendarPrivacyEnabled ? wallos_screenshot_privacy_seed() : '';
+    $calendarPriceRules = wallos_get_subscription_price_rules_map($db, $userId, true);
     foreach ($subscriptions as $subscription) {
       $nextPaymentTimestamp = wallos_calendar_parse_date($subscription['next_payment'] ?? '');
       $paymentDates = wallos_calendar_get_payment_dates(
@@ -194,14 +196,21 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
 
       foreach ($paymentDates as $paymentDate) {
         $dayNumber = (int) date('j', $paymentDate);
+        $effectiveCalendarPrice = wallos_get_effective_subscription_price_for_due_date(
+          $subscription, $calendarPriceRules[(int) $subscription['id']] ?? [],
+          date('Y-m-d', $paymentDate), $db, $userId);
+        $pricedSubscription = array_replace($subscription, [
+          'price' => $effectiveCalendarPrice['amount_original'],
+          'currency_id' => $effectiveCalendarPrice['currency_id'],
+        ]);
         $displaySubscription = $calendarPrivacyEnabled
           ? wallos_screenshot_privacy_mask_subscription(
-              $subscription,
+              $pricedSubscription,
               $calendarPrivacySeed,
               $lang,
               'calendar'
             )
-          : $subscription;
+          : $pricedSubscription;
         $isCurrentNextPayment = $nextPaymentTimestamp !== false
           && date('Y-m-d', $paymentDate) === date('Y-m-d', $nextPaymentTimestamp);
         if (!$isCurrentNextPayment
@@ -225,16 +234,13 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
           && date('Y-m', $nextPaymentTimestamp) === sprintf('%04d-%02d', $calendarYear, $calendarMonth);
         $paymentsByDay[$dayNumber][] = [
           'subscription' => $displaySubscription,
+          'display_price' => CurrencyFormatter::format($displaySubscription['price'],
+            $effectiveCalendarPrice['currency_code'] ?: $code),
           'countdown' => $countdown,
           'is_due_this_month' => $isDueThisMonth,
         ];
 
-        $convertedPrice = getPriceConverted(
-          $subscription['price'],
-          $subscription['currency_id'],
-          $db,
-          $userId
-        );
+        $convertedPrice = $effectiveCalendarPrice['amount_main'];
         $totalCostThisMonth += $convertedPrice;
         $numberOfSubscriptionsToPayThisMonth++;
         // A payment due today is still due; only older dates are paid.
@@ -315,6 +321,10 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
                     aria-label="<?= htmlspecialchars(wallos_decode_stored_text($subscription['name']) . ' · ' . $countdownLabel, ENT_QUOTES, 'UTF-8') ?>"
                     onClick="openSubscriptionModal(<?= (int) $subscription['id'] ?>)">
                     <span class="calendar-subscription-name"><?= htmlspecialchars(wallos_decode_stored_text($subscription['name']), ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="calendar-subscription-price"><?= htmlspecialchars($payment['display_price'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span>
+                    <?php if ((int) $subscription['cycle'] !== 5): ?>
+                      <span class="calendar-subscription-renewal-type"><?= translate(!empty($subscription['auto_renew']) ? 'automatically_renews' : 'manual_renewal', $i18n) ?></span>
+                    <?php endif; ?>
                     <span class="calendar-subscription-countdown"><?= htmlspecialchars($countdownLabel, ENT_QUOTES, 'UTF-8') ?></span>
                     <?php if (!empty($payment['is_due_this_month'])): ?>
                       <span class="calendar-subscription-renewal-flag"><?= translate('calendar_renewal_due_this_month', $i18n) ?></span>

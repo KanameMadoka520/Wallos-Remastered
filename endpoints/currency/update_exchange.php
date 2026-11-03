@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../includes/frankfurter.php';
+require_once __DIR__ . '/../../includes/exchange_rate_writer.php';
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/currency_update_schedule.php';
@@ -51,7 +53,9 @@ if ($result) {
         $mainCurrencyCode = $row['code'];
         $mainCurrencyId = $row['main_currency'];
 
-        if ($provider === 1) {
+        if ((int) $provider === 2) {
+            $apiData = frankfurter_latest_rates($mainCurrencyCode, $codes);
+        } elseif ($provider === 1) {
             $api_url = "https://api.apilayer.com/fixer/latest?base=EUR&symbols=" . $codes;
             $context = stream_context_create([
                 'http' => [
@@ -61,11 +65,11 @@ if ($result) {
             ]);
             $response = file_get_contents($api_url, false, $context);
         } else {
-            $api_url = "http://data.fixer.io/api/latest?access_key=" . $apiKey . "&base=EUR&symbols=" . $codes;
+            $api_url = "https://data.fixer.io/api/latest?access_key=" . $apiKey . "&base=EUR&symbols=" . $codes;
             $response = file_get_contents($api_url);
         }
 
-        $apiData = json_decode((string) $response, true);
+        if ((int) $provider !== 2) { $apiData = json_decode((string) $response, true); }
         $mainCurrencyToEUR = $apiData['rates'][$mainCurrencyCode] ?? null;
 
         if (!is_array($apiData) || !isset($apiData['rates']) || !is_numeric($mainCurrencyToEUR) || (float) $mainCurrencyToEUR <= 0) {
@@ -73,42 +77,10 @@ if ($result) {
             exit;
         }
 
-        $db->exec('BEGIN IMMEDIATE');
-        $updateStmt = $db->prepare("UPDATE currencies SET rate = :rate WHERE code = :code AND user_id = :userId");
-        $updateFailed = false;
-        foreach ($apiData['rates'] as $currencyCode => $rate) {
-            if (!is_numeric($rate)) {
-                $updateFailed = true;
-                break;
-            }
-            $exchangeRate = $currencyCode === $mainCurrencyCode ? 1.0 : ((float) $rate / (float) $mainCurrencyToEUR);
-            $updateStmt->bindValue(':rate', $exchangeRate, SQLITE3_FLOAT);
-            $updateStmt->bindValue(':code', $currencyCode, SQLITE3_TEXT);
-            $updateStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-            $updateResult = $updateStmt->execute();
-            $updateStmt->reset();
-            if (!$updateResult) {
-                $updateFailed = true;
-                break;
-            }
-        }
-
-        if ($updateFailed) {
-            $db->exec('ROLLBACK');
-            echo "Exchange rates update rolled back.";
+        if (wallos_store_exchange_rates($db, $userId, $mainCurrencyCode, $apiData['rates'])) {
+            echo 'Rates updated successfully!';
         } else {
-            $currentDate = new DateTime();
-            $formattedDate = $currentDate->format('Y-m-d');
-
-            $updateQuery = "UPDATE last_exchange_update SET date = :formattedDate WHERE user_id = :userId";
-            $updateStmt = $db->prepare($updateQuery);
-            $updateStmt->bindParam(':formattedDate', $formattedDate, SQLITE3_TEXT);
-            $updateStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-            $updateResult = $updateStmt->execute();
-
-            $db->exec('COMMIT');
-            $db->close();
-            echo "Rates updated successfully!";
+            echo 'Exchange rates update rolled back.';
         }
     } else {
         echo "Exchange rates update skipped. No fixer.io api key provided";

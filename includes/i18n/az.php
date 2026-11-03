@@ -1239,4 +1239,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Əyləncə",
+    "category_music" => "Musiqi",
+    "category_utilities" => "Kommunal xidmətlər",
+    "category_food_and_beverages" => "Yemək və içkilər",
+    "category_health_and_wellbeing" => "Sağlamlıq və rifah",
+    "category_productivity" => "Məhsuldarlıq",
+    "category_banking" => "Bankçılıq",
+    "category_transport" => "Nəqliyyat",
+    "category_education" => "Təhsil",
+    "category_insurance" => "Sığorta",
+    "category_gaming" => "Oyunlar",
+    "category_news_and_magazines" => "Xəbərlər və jurnallar",
+    "category_software" => "Proqram təminatı",
+    "category_technology" => "Texnologiya",
+    "category_cloud_services" => "Bulud xidmətləri",
+    "category_charity_and_donations" => "Xeyriyyə və ianələr",
+    "payment_method_credit_card" => "Kredit kartı",
+    "payment_method_bank_transfer" => "Bank köçürməsi",
+    "payment_method_direct_debit" => "Birbaşa debet",
+    "payment_method_money" => "Nağd pul",
+]);
 ?>

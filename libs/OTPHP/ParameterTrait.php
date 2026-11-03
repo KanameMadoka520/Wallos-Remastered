@@ -85,7 +85,7 @@ trait ParameterTrait
     public function getDigits(): int
     {
         $value = $this->getParameter('digits');
-        (is_int($value) && $value > 0) || throw new InvalidArgumentException('Invalid "digits" parameter.');
+        (is_int($value) && $value >= 1 && $value <= self::MAX_DIGITS) || throw new InvalidArgumentException('Invalid "digits" parameter.');
 
         return $value;
     }
@@ -121,7 +121,9 @@ trait ParameterTrait
             $value = $callback($value);
         }
 
-        if (property_exists($this, $parameter)) {
+        // Only public label/issuer setters may address object properties.
+        // Backport GHSA-2jx3-65f3-xr8r without changing the vendored API.
+        if (in_array($parameter, ['label', 'issuer'], true)) {
             $this->{$parameter} = $value;
         } else {
             $this->parameters[$parameter] = $value;
@@ -168,9 +170,12 @@ trait ParameterTrait
                 return $value;
             },
             'digits' => static function ($value): int {
-                $value > 0 || throw new InvalidArgumentException('Digits must be at least 1.');
+                $digits = (is_int($value) || is_string($value))
+                    ? filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => self::MAX_DIGITS]])
+                    : false;
+                $digits !== false || throw new InvalidArgumentException('Digits must be an integer between 1 and 10.');
 
-                return (int) $value;
+                return $digits;
             },
             'issuer' => function (string $value): string {
                 assert($value !== '');

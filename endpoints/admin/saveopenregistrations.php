@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../includes/instance_config.php';
 
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint_admin.php';
@@ -11,7 +12,9 @@ $data = json_decode($postData, true);
 $openRegistrations = $data['open_registrations'];
 $maxUsers = $data['max_users'];
 $requireEmailVerification = $data['require_email_validation'];
-$serverUrl = $data['server_url'];
+$instanceConfiguration = wallos_get_effective_admin_configuration($db);
+$serverUrlManaged = isset($instanceConfiguration['managed_fields']['server_url']);
+$serverUrl = $serverUrlManaged ? $instanceConfiguration['settings']['server_url'] : ($data['server_url'] ?? '');
 $disableLogin = $data['disable_login'];
 $inviteOnlyRegistration = (int) ($data['invite_only_registration'] ?? 0);
 $customEditionTitle = wallos_normalize_custom_edition_value(
@@ -57,11 +60,16 @@ if ($requireEmailVerification == 1 && $serverUrl == "") {
 }
 
 $sql = "UPDATE admin SET registrations_open = :openRegistrations, max_users = :maxUsers, require_email_verification = :requireEmailVerification, server_url = :serverUrl, login_disabled = :disableLogin, invite_only_registration = :inviteOnlyRegistration, custom_edition_title = :customEditionTitle, custom_edition_subtitle = :customEditionSubtitle WHERE id = 1";
+if ($serverUrlManaged) {
+    $sql = str_replace('server_url = :serverUrl, ', '', $sql);
+}
 $stmt = $db->prepare($sql);
 $stmt->bindParam(':openRegistrations', $openRegistrations, SQLITE3_INTEGER);
 $stmt->bindParam(':maxUsers', $maxUsers, SQLITE3_INTEGER);
 $stmt->bindParam(':requireEmailVerification', $requireEmailVerification, SQLITE3_INTEGER);
-$stmt->bindParam(':serverUrl', $serverUrl, SQLITE3_TEXT);
+if (!$serverUrlManaged) {
+    $stmt->bindValue(':serverUrl', $serverUrl, SQLITE3_TEXT);
+}
 $stmt->bindParam(':disableLogin', $disableLogin, SQLITE3_INTEGER);
 $stmt->bindParam(':inviteOnlyRegistration', $inviteOnlyRegistration, SQLITE3_INTEGER);
 $stmt->bindParam(':customEditionTitle', $customEditionTitle, SQLITE3_TEXT);

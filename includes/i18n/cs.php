@@ -444,4 +444,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Zábava",
+    "category_music" => "Hudba",
+    "category_utilities" => "Energie a služby",
+    "category_food_and_beverages" => "Jídlo a pití",
+    "category_health_and_wellbeing" => "Zdraví a pohoda",
+    "category_productivity" => "Produktivita",
+    "category_banking" => "Bankovnictví",
+    "category_transport" => "Doprava",
+    "category_education" => "Vzdělávání",
+    "category_insurance" => "Pojištění",
+    "category_gaming" => "Hry",
+    "category_news_and_magazines" => "Zprávy a časopisy",
+    "category_software" => "Software",
+    "category_technology" => "Technologie",
+    "category_cloud_services" => "Cloudové služby",
+    "category_charity_and_donations" => "Charita a dary",
+    "payment_method_credit_card" => "Kreditní karta",
+    "payment_method_bank_transfer" => "Bankovní převod",
+    "payment_method_direct_debit" => "Inkaso",
+    "payment_method_money" => "Hotovost",
+]);
 ?>

@@ -441,4 +441,28 @@ $i18n = array_replace($i18n, [
     "allow_standard_users_local_webhooks_info" => "Ризик безпеки: увімкнення цього дозволить будь-якому звичайному (не адміністратору) користувачеві надсилати сповіщення на адреси зі списку дозволених адрес для вебхуків вище, включно з внутрішніми службами у вашій мережі. Вмикайте це лише якщо довіряєте всім користувачам цього екземпляра Wallos.",
 ]);
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Розваги",
+    "category_music" => "Музика",
+    "category_utilities" => "Комунальні послуги",
+    "category_food_and_beverages" => "Їжа та напої",
+    "category_health_and_wellbeing" => "Здоров'я та добробут",
+    "category_productivity" => "Продуктивність",
+    "category_banking" => "Банківські послуги",
+    "category_transport" => "Транспорт",
+    "category_education" => "Освіта",
+    "category_insurance" => "Страхування",
+    "category_gaming" => "Ігри",
+    "category_news_and_magazines" => "Новини та журнали",
+    "category_software" => "Програмне забезпечення",
+    "category_technology" => "Технології",
+    "category_cloud_services" => "Хмарні сервіси",
+    "category_charity_and_donations" => "Благодійність і пожертви",
+    "payment_method_credit_card" => "Кредитна картка",
+    "payment_method_bank_transfer" => "Банківський переказ",
+    "payment_method_direct_debit" => "Пряме дебетування",
+    "payment_method_money" => "Готівка",
+]);
 ?>

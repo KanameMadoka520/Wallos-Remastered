@@ -47,3 +47,20 @@ python3 tests/runtime_security_test.py --container 你的候选容器名
 部署前保留在线 SQLite 备份、原 Compose 和旧镜像。仅替换镜像，沿用持久化目录；本次运行时修复没有数据库迁移。回滚只需恢复原镜像并重新创建容器，通常无需恢复数据库。不要用旧数据库快照覆盖修复后产生的新业务数据。
 
 本记录不等同于入侵取证结论：修补版本和扫描结果不能证明历史上从未遭受攻击。
+
+## 随附 PHP 库核查与 OTPHP 安全回移
+
+本项目不通过 Composer 清单加载这些库，容器扫描显示“0 个语言依赖文件”不能证明随附 PHP 库没有漏洞。单独检查了 PHPMailer 6.8.1、Parsedown 1.8.0（实际启用 Safe Mode）、OTPHP 旧接口与常量时间编码库的上游公告。未以不存在公开公告推断无风险，也没有为追求版本号而整体更换接口。
+
+OTPHP 的 [GHSA-g7m4-839x-ch6v](https://github.com/Spomky-Labs/otphp/security/advisories/GHSA-g7m4-839x-ch6v) 和 [GHSA-2jx3-65f3-xr8r](https://github.com/Spomky-Labs/otphp/security/advisories/GHSA-2jx3-65f3-xr8r) 于 2026-05-31 公布，影响 11.4.3 之前版本，公告未分配 CVE。前者可经异常 `digits` 导致除零错误，后者允许导入 URI 向内部对象属性赋值。本地随附代码具有这两项缺陷。实际页面只用 `TOTP::createFromSecret()` 和固定默认位数，没有调用 `Factory::loadFromProvisioningUri()` 导入外部 URI，因此不能把它描述为已经证实的远程登录攻击入口。
+
+保留当前库文件组织与现有异常接口，回移 11.4.3 的安全含义：
+
+- OTP 位数只接受整数或整数字符串，范围 1–10，读取端同样限制上界。
+- 动态属性赋值仅允许验证过的 label/issuer；普通参数不能替换内部参数表或只读时钟。
+- URI 只允许公开参数 issuer、algorithm、digits、period、counter，拒绝嵌套参数；对象创建和填充时的错误归一为当前接口的 `InvalidArgumentException`。
+- 没有将本地库冒称为完整的 11.4.3；具体回移记录在 `libs/OTPHP/SECURITY-PATCHES.md`。
+
+新增 `tests/otphp_security_test.php` 的 53 项检查覆盖 RFC 4226 / 6238 标准向量、1/6/8/10 位边界、异常位数、恶意 URI、内部属性保护与正常 URI 往返。`tests/otphp_http_test.py` 在隔离账号上验证 14 项实际流程：错误验证码不启用、正常六位验证码启用、密码登录进入第二步、启用验证码不能重放、恢复码单次使用、关闭后恢复正常登录。测试不读取生产 OTP 密钥，也不改变真实账号的双因素配置。
+
+公开来源：[PHPMailer 公告](https://github.com/PHPMailer/PHPMailer/security/advisories)、[Parsedown 公告](https://github.com/erusev/parsedown/security/advisories)、[OTPHP 公告](https://github.com/Spomky-Labs/otphp/security/advisories)、[常量时间编码库公告](https://github.com/paragonie/constant_time_encoding/security/advisories)。

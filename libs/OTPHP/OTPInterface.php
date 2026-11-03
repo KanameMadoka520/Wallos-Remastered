@@ -8,6 +8,9 @@ interface OTPInterface
 {
     public const DEFAULT_DIGITS = 6;
 
+    // Security backport from OTPHP 11.4.3 (GHSA-g7m4-839x-ch6v).
+    public const MAX_DIGITS = 10;
+
     public const DEFAULT_DIGEST = 'sha1';
 
     /**

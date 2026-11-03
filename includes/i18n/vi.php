@@ -441,4 +441,28 @@ $i18n = array_replace($i18n, [
     "allow_standard_users_local_webhooks_info" => "Rủi ro bảo mật: bật tùy chọn này cho phép mọi người dùng tiêu chuẩn (không phải quản trị viên) gửi thông báo đến các địa chỉ trong Danh sách cho phép Webhook ở trên, bao gồm cả các dịch vụ nội bộ trong mạng của bạn. Chỉ bật tùy chọn này nếu bạn tin tưởng mọi người dùng trên phiên bản Wallos này.",
 ]);
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Giải trí",
+    "category_music" => "Âm nhạc",
+    "category_utilities" => "Tiện ích",
+    "category_food_and_beverages" => "Đồ ăn & thức uống",
+    "category_health_and_wellbeing" => "Sức khỏe & đời sống",
+    "category_productivity" => "Năng suất",
+    "category_banking" => "Ngân hàng",
+    "category_transport" => "Giao thông",
+    "category_education" => "Giáo dục",
+    "category_insurance" => "Bảo hiểm",
+    "category_gaming" => "Trò chơi",
+    "category_news_and_magazines" => "Tin tức & tạp chí",
+    "category_software" => "Phần mềm",
+    "category_technology" => "Công nghệ",
+    "category_cloud_services" => "Dịch vụ đám mây",
+    "category_charity_and_donations" => "Từ thiện & quyên góp",
+    "payment_method_credit_card" => "Thẻ tín dụng",
+    "payment_method_bank_transfer" => "Chuyển khoản ngân hàng",
+    "payment_method_direct_debit" => "Ghi nợ trực tiếp",
+    "payment_method_money" => "Tiền mặt",
+]);
 ?>

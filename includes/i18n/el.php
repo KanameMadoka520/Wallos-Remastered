@@ -442,4 +442,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Ψυχαγωγία",
+    "category_music" => "Μουσική",
+    "category_utilities" => "Λογαριασμοί κοινής ωφέλειας",
+    "category_food_and_beverages" => "Φαγητό και ποτά",
+    "category_health_and_wellbeing" => "Υγεία και ευεξία",
+    "category_productivity" => "Παραγωγικότητα",
+    "category_banking" => "Τράπεζα",
+    "category_transport" => "Μεταφορές",
+    "category_education" => "Εκπαίδευση",
+    "category_insurance" => "Ασφάλιση",
+    "category_gaming" => "Παιχνίδια",
+    "category_news_and_magazines" => "Ειδήσεις και περιοδικά",
+    "category_software" => "Λογισμικό",
+    "category_technology" => "Τεχνολογία",
+    "category_cloud_services" => "Υπηρεσίες cloud",
+    "category_charity_and_donations" => "Φιλανθρωπία και δωρεές",
+    "payment_method_credit_card" => "Πιστωτική κάρτα",
+    "payment_method_bank_transfer" => "Τραπεζική μεταφορά",
+    "payment_method_direct_debit" => "Άμεση χρέωση",
+    "payment_method_money" => "Μετρητά",
+]);
 ?>

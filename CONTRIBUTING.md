@@ -162,3 +162,7 @@ Agent 接口和密钥管理改动必须阅读 [协议与权限约定](docs/agent
 ## 维护者提交身份
 
 本仓库维护者的 author 和 committer 统一使用 `KanameMadoka520 <90090108+KanameMadoka520@users.noreply.github.com>`。提交采用中文 Conventional Commits，保留上游作者署名；不写入私人邮箱、GitHub 令牌或生产凭据。历史邮箱隐私调整必须同时检查提交者、作者、标签和历史文件内容，远端历史更新使用预期旧提交校验，避免覆盖新提交。
+
+## v5.10.4 选择性同步回归
+
+取舍与复现入口见 [兼容记录](docs/upstream-5.10.4-compatibility.md)。不得用多对多上游迁移覆盖本分支标量引用，不得用官方 Service Worker 覆盖私有缓存边界。浏览器订阅和 MCP 必须同时验证账号归属；新的汇率路径必须保持存储事务及刷新时间一致。实例 SMTP 与普通用户通知 SMTP 不可共享隐式密钥后备。新增的 HTTP/浏览器专项使用独立 fixture 数据库和私有凭据文件，禁止指向生产。

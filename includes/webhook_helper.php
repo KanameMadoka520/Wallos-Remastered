@@ -15,7 +15,7 @@
  */
 function webhookJsonEscape($value)
 {
-    return trim(json_encode((string) $value), '"');
+    return substr(json_encode((string) $value, JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR), 1, -1);
 }
 
 ?>

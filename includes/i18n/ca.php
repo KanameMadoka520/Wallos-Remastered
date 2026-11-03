@@ -444,4 +444,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Entreteniment",
+    "category_music" => "Música",
+    "category_utilities" => "Subministraments",
+    "category_food_and_beverages" => "Menjar i begudes",
+    "category_health_and_wellbeing" => "Salut i benestar",
+    "category_productivity" => "Productivitat",
+    "category_banking" => "Banca",
+    "category_transport" => "Transport",
+    "category_education" => "Educació",
+    "category_insurance" => "Assegurances",
+    "category_gaming" => "Videojocs",
+    "category_news_and_magazines" => "Notícies i revistes",
+    "category_software" => "Programari",
+    "category_technology" => "Tecnologia",
+    "category_cloud_services" => "Serveis al núvol",
+    "category_charity_and_donations" => "Caritat i donacions",
+    "payment_method_credit_card" => "Targeta de crèdit",
+    "payment_method_bank_transfer" => "Transferència bancària",
+    "payment_method_direct_debit" => "Domiciliació bancària",
+    "payment_method_money" => "Efectiu",
+]);
 ?>

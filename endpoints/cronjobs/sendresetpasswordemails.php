@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../includes/notification_output.php';
+require_once __DIR__ . '/../../includes/instance_config.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
@@ -9,10 +11,7 @@ require_once __DIR__ . '/../../includes/ssrf_helper.php';
 
 require 'settimezone.php';
 
-$query = "SELECT * FROM admin";
-$stmt = $db->prepare($query);
-$result = $stmt->execute();
-$admin = $result->fetchArray(SQLITE3_ASSOC);
+$admin = wallos_get_admin_settings($db);
 
 $query = "SELECT * FROM password_resets WHERE email_sent = 0";
 $stmt = $db->prepare($query);
@@ -69,7 +68,7 @@ if ($rows) {
                     <br>
                     A password reset was requested for your account.
                     <br>
-                    Please click the following link to reset your password: <a href="' . $server_url . '/passwordreset.php?email=' . $user['email'] . '&token=' . $user['token'] . '">Reset Password</a>';
+                    Please click the following link to reset your password: <a href="' . $server_url . '/passwordreset.php?email=' . wallos_notification_output_text($user['email']) . '&token=' . $user['token'] . '">Reset Password</a>';
 
                 $mail->send();
 
@@ -80,11 +79,11 @@ if ($rows) {
 
                 $mail->clearAddresses();
 
-                echo "Password reset email sent to " . $user['email'] . "<br>";
+                echo "Password reset email sent to " . wallos_notification_output_text($user['email']) . "<br>";
 
             }
         } catch (Exception $e) {
-            echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo} <br>";
+            echo "Message could not be sent. Mailer Error: " . wallos_notification_output_text($mail->ErrorInfo) . " <br>";
         }
     } else {
         // There are no SMTP settings

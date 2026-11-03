@@ -442,4 +442,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "엔터테인먼트",
+    "category_music" => "음악",
+    "category_utilities" => "공과금",
+    "category_food_and_beverages" => "식음료",
+    "category_health_and_wellbeing" => "건강 및 웰빙",
+    "category_productivity" => "생산성",
+    "category_banking" => "은행",
+    "category_transport" => "교통",
+    "category_education" => "교육",
+    "category_insurance" => "보험",
+    "category_gaming" => "게임",
+    "category_news_and_magazines" => "뉴스 및 잡지",
+    "category_software" => "소프트웨어",
+    "category_technology" => "기술",
+    "category_cloud_services" => "클라우드 서비스",
+    "category_charity_and_donations" => "자선 및 기부",
+    "payment_method_credit_card" => "신용카드",
+    "payment_method_bank_transfer" => "계좌 이체",
+    "payment_method_direct_debit" => "자동이체",
+    "payment_method_money" => "현금",
+]);
 ?>

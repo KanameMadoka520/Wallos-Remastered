@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../includes/webhook_headers.php';
 
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
@@ -19,13 +20,7 @@ if (
 } else {
     $host = rtrim($data["host"], '/');
     $topic = $data["topic"];
-    $headers = json_decode($data["headers"], true);
-    if ($headers === null) {
-        $headers = [];
-    }
-    $customheaders = array_map(function ($key, $value) {
-        return "$key: $value";
-    }, array_keys($headers), $headers);
+    $customheaders = webhook_custom_headers($data['headers'] ?? '');
 
     $url = rtrim($host, '/') . '/' . ltrim($topic, '/');
     $ignore_ssl = $data["ignore_ssl"];

@@ -441,4 +441,28 @@ $i18n = array_replace($i18n, [
     "allow_standard_users_local_webhooks_info" => "Risiko keamanan: mengaktifkan ini memungkinkan setiap pengguna standar (bukan admin) mengirim notifikasi ke alamat dalam Daftar Izin Webhook di atas, termasuk layanan internal di jaringan Anda. Aktifkan ini hanya jika Anda memercayai setiap pengguna di instance Wallos ini.",
 ]);
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Hiburan",
+    "category_music" => "Musik",
+    "category_utilities" => "Utilitas",
+    "category_food_and_beverages" => "Makanan & Minuman",
+    "category_health_and_wellbeing" => "Kesehatan & Kesejahteraan",
+    "category_productivity" => "Produktivitas",
+    "category_banking" => "Perbankan",
+    "category_transport" => "Transportasi",
+    "category_education" => "Pendidikan",
+    "category_insurance" => "Asuransi",
+    "category_gaming" => "Game",
+    "category_news_and_magazines" => "Berita & Majalah",
+    "category_software" => "Perangkat Lunak",
+    "category_technology" => "Teknologi",
+    "category_cloud_services" => "Layanan Cloud",
+    "category_charity_and_donations" => "Amal & Donasi",
+    "payment_method_credit_card" => "Kartu Kredit",
+    "payment_method_bank_transfer" => "Transfer Bank",
+    "payment_method_direct_debit" => "Debit Langsung",
+    "payment_method_money" => "Uang Tunai",
+]);
 ?>

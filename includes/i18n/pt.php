@@ -441,4 +441,28 @@ $i18n = array_replace($i18n, [
     "allow_standard_users_local_webhooks_info" => "Risco de segurança: ativar esta opção permite que qualquer utilizador padrão (não administrador) envie notificações para os endereços na Lista de Permissões de Webhook acima, incluindo serviços internos da sua rede. Ative apenas se confiar em todos os utilizadores desta instância do Wallos.",
 ]);
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Entretenimento",
+    "category_music" => "Música",
+    "category_utilities" => "Serviços públicos",
+    "category_food_and_beverages" => "Alimentação e bebidas",
+    "category_health_and_wellbeing" => "Saúde e bem-estar",
+    "category_productivity" => "Produtividade",
+    "category_banking" => "Banca",
+    "category_transport" => "Transportes",
+    "category_education" => "Educação",
+    "category_insurance" => "Seguros",
+    "category_gaming" => "Jogos",
+    "category_news_and_magazines" => "Notícias e revistas",
+    "category_software" => "Software",
+    "category_technology" => "Tecnologia",
+    "category_cloud_services" => "Serviços na nuvem",
+    "category_charity_and_donations" => "Caridade e donativos",
+    "payment_method_credit_card" => "Cartão de crédito",
+    "payment_method_bank_transfer" => "Transferência bancária",
+    "payment_method_direct_debit" => "Débito direto",
+    "payment_method_money" => "Dinheiro",
+]);
 ?>

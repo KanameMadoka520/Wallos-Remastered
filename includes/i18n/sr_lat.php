@@ -442,4 +442,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Zabava",
+    "category_music" => "Muzika",
+    "category_utilities" => "Komunalije",
+    "category_food_and_beverages" => "Hrana i piće",
+    "category_health_and_wellbeing" => "Zdravlje i dobrobit",
+    "category_productivity" => "Produktivnost",
+    "category_banking" => "Bankarstvo",
+    "category_transport" => "Prevoz",
+    "category_education" => "Obrazovanje",
+    "category_insurance" => "Osiguranje",
+    "category_gaming" => "Igre",
+    "category_news_and_magazines" => "Vesti i časopisi",
+    "category_software" => "Softver",
+    "category_technology" => "Tehnologija",
+    "category_cloud_services" => "Usluge u oblaku",
+    "category_charity_and_donations" => "Humanitarni rad i donacije",
+    "payment_method_credit_card" => "Kreditna kartica",
+    "payment_method_bank_transfer" => "Bankovni prenos",
+    "payment_method_direct_debit" => "Direktno zaduženje",
+    "payment_method_money" => "Gotovina",
+]);
 ?>

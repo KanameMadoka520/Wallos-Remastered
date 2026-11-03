@@ -444,4 +444,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Divertisment",
+    "category_music" => "Muzică",
+    "category_utilities" => "Utilități",
+    "category_food_and_beverages" => "Mâncare și băuturi",
+    "category_health_and_wellbeing" => "Sănătate și bunăstare",
+    "category_productivity" => "Productivitate",
+    "category_banking" => "Servicii bancare",
+    "category_transport" => "Transport",
+    "category_education" => "Educație",
+    "category_insurance" => "Asigurări",
+    "category_gaming" => "Jocuri",
+    "category_news_and_magazines" => "Știri și reviste",
+    "category_software" => "Software",
+    "category_technology" => "Tehnologie",
+    "category_cloud_services" => "Servicii cloud",
+    "category_charity_and_donations" => "Caritate și donații",
+    "payment_method_credit_card" => "Card de credit",
+    "payment_method_bank_transfer" => "Transfer bancar",
+    "payment_method_direct_debit" => "Debit direct",
+    "payment_method_money" => "Numerar",
+]);
 ?>

@@ -444,4 +444,28 @@ $i18n = array_replace($i18n, [
 ]);
 
 
+
+// Default-name translations adapted from upstream v5.10.4.
+$i18n = array_replace($i18n, [
+    "category_entertainment" => "Entertainment",
+    "category_music" => "Muziek",
+    "category_utilities" => "Nutsvoorzieningen",
+    "category_food_and_beverages" => "Eten en drinken",
+    "category_health_and_wellbeing" => "Gezondheid en welzijn",
+    "category_productivity" => "Productiviteit",
+    "category_banking" => "Bankieren",
+    "category_transport" => "Vervoer",
+    "category_education" => "Onderwijs",
+    "category_insurance" => "Verzekeringen",
+    "category_gaming" => "Gaming",
+    "category_news_and_magazines" => "Nieuws en tijdschriften",
+    "category_software" => "Software",
+    "category_technology" => "Technologie",
+    "category_cloud_services" => "Cloudservices",
+    "category_charity_and_donations" => "Goede doelen en donaties",
+    "payment_method_credit_card" => "Creditcard",
+    "payment_method_bank_transfer" => "Bankoverschrijving",
+    "payment_method_direct_debit" => "Automatische incasso",
+    "payment_method_money" => "Contant geld",
+]);
 ?>
