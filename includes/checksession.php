@@ -48,6 +48,8 @@ if (isset($_GET['code'])) {
 
     $userData = $wallosAuthState['user'];
     $userId = (int) ($userData['id'] ?? 0);
+    require_once __DIR__ . '/webpush.php';
+    wallos_webpush_sync_browser_account($db, $userId);
     $username = (string) ($userData['username'] ?? '');
     $main_currency = $userData['main_currency'] ?? ($_SESSION['main_currency'] ?? null);
 

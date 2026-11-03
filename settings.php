@@ -491,6 +491,7 @@ $pageSections = [
                     </label>
                 </div>
             </section>
+            <?php require __DIR__ . '/includes/webpush_settings.php'; ?>
             <section class="account-notifications-section">
                 <header class="account-notification-section-header" onclick="openNotificationsSettings('email')">
                     <h3>
@@ -1769,6 +1770,7 @@ $pageSections = [
 <script defer src="scripts/settings.js?v=<?= $settingsJsVersion ?>"></script>
 <script defer src="scripts/theme.js?v=<?= $themeJsVersion ?>"></script>
 <script defer src="scripts/notifications.js?v=<?= $notificationsJsVersion ?>"></script>
+<script defer src="scripts/webpush.js?v=<?= filemtime(__DIR__ . '/scripts/webpush.js') ?>"></script>
 
 <?php
 require_once 'includes/footer.php';

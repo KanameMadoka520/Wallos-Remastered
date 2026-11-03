@@ -9,6 +9,8 @@ require_once 'validate.php';
 require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
 require_once __DIR__ . '/../../includes/subscription_trash.php';
 require_once __DIR__ . '/../../includes/ssrf_helper.php';
+require_once __DIR__ . '/../../includes/webpush.php';
+require_once __DIR__ . '/../../includes/subscription_relations.php';
 require_once __DIR__ . '/../../includes/webhook_helper.php';
 
 require __DIR__ . '/../../libs/PHPMailer/PHPMailer.php';
@@ -135,7 +137,8 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
         $webhookNotificationsEnabled = $row['enabled'] && $row['cancelation_payload'] != "";
     }
 
-    $notificationsEnabled = $emailNotificationsEnabled || $gotifyNotificationsEnabled || $telegramNotificationsEnabled ||
+    $pushNotificationsEnabled = (int)wallos_webpush_settings($db, $userId)['enabled'] === 1;
+    $notificationsEnabled = $pushNotificationsEnabled || $emailNotificationsEnabled || $gotifyNotificationsEnabled || $telegramNotificationsEnabled ||
         $pushoverNotificationsEnabled || $discordNotificationsEnabled ||$ntfyNotificationsEnabled || $webhookNotificationsEnabled;
 
     // If no notifications are enabled, no need to run
@@ -191,20 +194,34 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
         $resultSubscriptions = $stmt->execute();
 
         $notify = [];
+        $notifyOtherPayers = [];
         $i = 0;
         $currentDate = new DateTime('now');
         while ($rowSubscription = $resultSubscriptions->fetchArray(SQLITE3_ASSOC)) {
+            if ($pushNotificationsEnabled) {
+                wallos_webpush_deliver($db, $userId, 'cancellation', $rowSubscription, $i18n);
+            }
             $notify[$rowSubscription['payer_user_id']][$i]['name'] = $rowSubscription['name'];
             $notify[$rowSubscription['payer_user_id']][$i]['price'] = $rowSubscription['price'] . $currencies[$rowSubscription['currency_id']]['symbol'];
             $notify[$rowSubscription['payer_user_id']][$i]['currency'] = $currencies[$rowSubscription['currency_id']]['name'];
-            $notify[$rowSubscription['payer_user_id']][$i]['category'] = $categories[$rowSubscription['category_id']]['name'];
-            $notify[$rowSubscription['payer_user_id']][$i]['payer'] = $household[$rowSubscription['payer_user_id']]['name'];
+            $notify[$rowSubscription['payer_user_id']][$i]['category'] = wallos_subscription_relation_names($db, $rowSubscription, 'category', $categories);
+            $notify[$rowSubscription['payer_user_id']][$i]['payer'] = wallos_subscription_relation_names($db, $rowSubscription, 'payer', $household);
             $notify[$rowSubscription['payer_user_id']][$i]['date'] = $rowSubscription['next_payment'];
             $notify[$rowSubscription['payer_user_id']][$i]['url'] = $rowSubscription['url'];
             $notify[$rowSubscription['payer_user_id']][$i]['notes'] = $rowSubscription['notes'];
+            foreach (wallos_subscription_relation_ids($db, $rowSubscription, 'payer') as $extraPayerId) {
+                if ($extraPayerId !== (int) $rowSubscription['payer_user_id']) {
+                    $notifyOtherPayers[$extraPayerId][$i] = $notify[$rowSubscription['payer_user_id']][$i];
+                }
+            }
             $i++;
         }
 
+        // Each non-email channel receives one entry. Email reaches each assigned payer.
+        $notifyEmail = $notify;
+        foreach ($notifyOtherPayers as $payerId => $entries) {
+            foreach ($entries as $index => $entry) $notifyEmail[$payerId][$index] = $entry;
+        }
         if (!empty($notify)) {
 
             // Email notifications if enabled
@@ -225,7 +242,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                     $defaultEmail = $defaultUser['email'];
                     $defaultName = $defaultUser['username'];
 
-                    foreach ($notify as $payerUserId => $perUser) {
+                    foreach ($notifyEmail as $payerUserId => $perUser) {
                         $message = "The following subscriptions are up for cancellation:\n";
 
                         foreach ($perUser as $subscription) {
@@ -253,6 +270,9 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                         $result = $stmt->execute();
                         $user = $result->fetchArray(SQLITE3_ASSOC);
 
+                        if (empty($user['email']) && isset($notifyOtherPayers[$payerUserId]) && !isset($notify[$payerUserId])) {
+                            continue; // A secondary payer without an address must not duplicate owner email.
+                        }
                         $emailaddress = !empty($user['email']) ? $user['email'] : $defaultEmail;
                         $name = !empty($user['name']) ? $user['name'] : $defaultName;
 

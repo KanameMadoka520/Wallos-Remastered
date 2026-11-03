@@ -217,9 +217,9 @@ function wallos_budget_period_amount(array $subscriptions, DateTime $rangeStart,
             $dueDate = $occurrence->format('Y-m-d');
             if ($rules && function_exists('wallos_get_effective_subscription_price_for_due_date')) {
                 $effective = wallos_get_effective_subscription_price_for_due_date($subscription, $rules, $dueDate, $db, $userId);
-                $amount += (float) ($effective['amount_main'] ?? 0);
+                $amount += (float) ($effective['amount_main'] ?? 0) * (float) ($subscription['_allocation_share'] ?? 1);
             } else {
-                $amount += wallos_convert_price($subscription['price'] ?? 0, $subscription['currency_id'] ?? 0, $db, $userId);
+                $amount += wallos_convert_price($subscription['price'] ?? 0, $subscription['currency_id'] ?? 0, $db, $userId) * (float) ($subscription['_allocation_share'] ?? 1);
             }
         }
     }

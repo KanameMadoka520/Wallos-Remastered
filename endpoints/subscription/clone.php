@@ -1,10 +1,17 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_relations.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_sort.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/subscription_price_rules.php';
+$db->enableExceptions(true);
+$transactionStarted = false;
+$clonedImageFiles = [];
+try {
+    $db->exec('BEGIN IMMEDIATE');
+    $transactionStarted = true;
 
 $postData = file_get_contents("php://input");
 $data = json_decode($postData, true);
@@ -18,10 +25,7 @@ $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3
 $result = $stmt->execute();
 $subscriptionToClone = $result->fetchArray(SQLITE3_ASSOC);
 if ($subscriptionToClone === false) {
-    die(json_encode([
-        "success" => false,
-        "message" => translate("error", $i18n)
-    ]));
+    throw new RuntimeException('Subscription not found.');
 }
 
 $userStmt = $db->prepare('SELECT username FROM user WHERE id = :userId');
@@ -75,6 +79,7 @@ $cloneStmt->bindValue(':manual_cycle_used_value_cycle_start', '', SQLITE3_TEXT);
 
 if ($cloneStmt->execute()) {
     $newSubscriptionId = $db->lastInsertRowID();
+    wallos_save_subscription_relations($db, $newSubscriptionId, wallos_subscription_relation_ids($db, $subscriptionToClone, 'payer'), wallos_subscription_relation_ids($db, $subscriptionToClone, 'category'));
     wallos_clone_subscription_price_rules($db, $subscriptionId, $newSubscriptionId, $userId);
     wallos_clone_subscription_uploaded_images(
         $db,
@@ -82,7 +87,8 @@ if ($cloneStmt->execute()) {
         $subscriptionId,
         $newSubscriptionId,
         $userId,
-        $currentUser['username'] ?? ('user-' . $userId)
+        $currentUser['username'] ?? ('user-' . $userId),
+        $clonedImageFiles
     );
 
     $response = [
@@ -90,13 +96,19 @@ if ($cloneStmt->execute()) {
         "message" => translate('success', $i18n),
         "id" => $newSubscriptionId
     ];
+    $db->exec('COMMIT');
+    $transactionStarted = false;
     echo json_encode($response);
 } else {
-    die(json_encode([
-        "success" => false,
-        "message" => translate("error", $i18n)
-    ]));
+    throw new RuntimeException('Subscription clone failed.');
 }
-
+} catch (Throwable $error) {
+    if ($transactionStarted) $db->exec('ROLLBACK');
+    foreach ($clonedImageFiles as $path) {
+        if (is_file($path)) @unlink($path);
+    }
+    wallos_database_emit_busy_response_if_needed($i18n, $error, $db);
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => translate('error', $i18n)]);
+}
 $db->close();
-?>

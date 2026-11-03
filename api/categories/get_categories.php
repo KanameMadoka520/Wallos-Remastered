@@ -89,7 +89,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         unset($categories[$key]['user_id']);
         // Check if it's in use in any subscription
         $categoryId = $categories[$key]['id'];
-        $sql = "SELECT COUNT(*) as count FROM subscriptions WHERE user_id = :userId AND category_id = :categoryId";
+        $sql = "SELECT COUNT(*) as count FROM subscriptions WHERE user_id = :userId AND (category_id = :categoryId OR EXISTS (SELECT 1 FROM subscription_categories r WHERE r.subscription_id=subscriptions.id AND r.category_id=:categoryId))";
         $stmt = $db->prepare($sql);
         $stmt->bindValue(':categoryId', $categoryId);
         $stmt->bindValue(':userId', $userId);

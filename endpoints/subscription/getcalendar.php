@@ -1,5 +1,6 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_relations.php';
 require_once '../../includes/getdbkeys.php';
 require_once '../../includes/markdown.php';
 require_once '../../includes/inputvalidation.php';
@@ -32,8 +33,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($subscription) {
         // get payer name from household object
-        $subscription['payer_user'] = $members[$subscription['payer_user_id']]['name'];
-        $subscription['category'] = $categories[$subscription['category_id']]['name'];
+        $subscription['payer_user'] = wallos_subscription_relation_names($db, $subscription, 'payer', $members);
+        $subscription['category'] = wallos_subscription_relation_names($db, $subscription, 'category', $categories);
         $subscription['payment_method'] = $payment_methods[$subscription['payment_method_id']]['name'];
         $subscription['currency'] = $currencies[$subscription['currency_id']]['symbol'];
         $subscription['price'] = number_format($subscription['price'], 2);

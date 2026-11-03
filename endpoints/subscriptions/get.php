@@ -1,5 +1,6 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_relations.php';
 
 require_once '../../includes/currency_formatter.php';
 require_once '../../includes/getdbkeys.php';
@@ -78,7 +79,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     }, array_keys($allCategories));
 
     $sql .= " AND (" . implode(' OR ', array_map(function ($placeholder) {
-      return "category_id = {$placeholder}";
+      return "(category_id = {$placeholder} OR EXISTS (SELECT 1 FROM subscription_categories r WHERE r.subscription_id=subscriptions.id AND r.category_id={$placeholder}))";
     }, $placeholders)) . ")";
 
     foreach ($allCategories as $idx => $category) {
@@ -108,7 +109,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     }, array_keys($allMembers));
 
     $sql .= " AND (" . implode(' OR ', array_map(function ($placeholder) {
-      return "payer_user_id = {$placeholder}";
+      return "(payer_user_id = {$placeholder} OR EXISTS (SELECT 1 FROM subscription_payers r WHERE r.subscription_id=subscriptions.id AND r.payer_id={$placeholder}))";
     }, $placeholders)) . ")";
 
     foreach ($allMembers as $idx => $member) {
@@ -224,6 +225,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $print[$id]['payment_method_icon'] = wallos_resolve_payment_icon_path($payment_methods[$paymentMethodId]['icon'] ?? '');
     $print[$id]['payment_method_name'] = $payment_methods[$paymentMethodId]['name'];
     $print[$id]['payment_method_id'] = $paymentMethodId;
+    $print[$id]['category_ids'] = wallos_subscription_relation_ids($db, $subscription, 'category');
+    $print[$id]['payer_ids'] = wallos_subscription_relation_ids($db, $subscription, 'payer');
     $print[$id]['category_id'] = $subscription['category_id'];
     $print[$id]['payer_user_id'] = $subscription['payer_user_id'];
     $print[$id]['price'] = floatval($subscription['price']);

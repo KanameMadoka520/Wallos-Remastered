@@ -92,6 +92,7 @@ Example response:
 }
 */
 
+require_once __DIR__ . '/../../includes/subscription_relations.php';
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/currency_rates.php';
@@ -221,7 +222,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         $placeholders = array_map(function ($key) {
             return ":member{$key}";
         }, array_keys($memberIds));
-        $sql .= " AND payer_user_id IN (" . implode(',', $placeholders) . ")";
+        $sql .= " AND (payer_user_id IN (" . implode(',', $placeholders) . ") OR EXISTS (SELECT 1 FROM subscription_payers r WHERE r.subscription_id=subscriptions.id AND r.payer_id IN (" . implode(',', $placeholders) . ")))";
         foreach ($memberIds as $key => $memberId) {
             $params[":member{$key}"] = $memberId;
         }
@@ -231,7 +232,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         $placeholders = array_map(function ($key) {
             return ":category{$key}";
         }, array_keys($categoryIds));
-        $sql .= " AND category_id IN (" . implode(',', $placeholders) . ")";
+        $sql .= " AND (category_id IN (" . implode(',', $placeholders) . ") OR EXISTS (SELECT 1 FROM subscription_categories r WHERE r.subscription_id=subscriptions.id AND r.category_id IN (" . implode(',', $placeholders) . ")))";
         foreach ($categoryIds as $key => $categoryId) {
             $params[":category{$key}"] = $categoryId;
         }
@@ -287,7 +288,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     }
     $subscriptionsToReturn = array();
     foreach ($subscriptions as $subscription) {
-        $subscriptionToReturn = $subscription;
+        $subscriptionToReturn = wallos_subscription_with_relations($db, $subscription);
         if (isset($_REQUEST['convert_currency']) && $_REQUEST['convert_currency'] === 'true' && $canConvertCurrency && $subscription['currency_id'] != $userCurrencyId) {
             $subscriptionToReturn['price'] = getPriceConverted(
                 $subscription['price'],
@@ -301,6 +302,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         $subscriptionToReturn['category_name'] = isset($categories[$subscription['category_id']]) ? $categories[$subscription['category_id']] : 'No category';
         $subscriptionToReturn['payer_user_name'] = isset($members[$subscription['payer_user_id']]) ? $members[$subscription['payer_user_id']] : 'Unknown member';
         $subscriptionToReturn['payment_method_name'] = isset($paymentMethods[$subscription['payment_method_id']]) ? $paymentMethods[$subscription['payment_method_id']] : 'Unknown payment method';
+        $subscriptionToReturn['category_names'] = array_map(static function ($id) use ($categories) { return $categories[$id] ?? ''; }, $subscriptionToReturn['category_ids']);
+        $subscriptionToReturn['payer_names'] = array_map(static function ($id) use ($members) { return $members[$id] ?? ''; }, $subscriptionToReturn['payer_ids']);
         $subscriptionToReturn['one_time'] = ((int) ($subscription['cycle'] ?? 0) === 5);
         $subscriptionsToReturn[] = $subscriptionToReturn;
     }

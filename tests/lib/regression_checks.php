@@ -118,8 +118,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
 
     $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
     $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
-    $remasteredVersionValid = strpos($versionPhp, '$version = "v5.7.1";') !== false
-        && strpos($versionPhp, '$remasteredVersion = "v5.7.1-remastered.4";') !== false
+    $remasteredVersionValid = strpos($versionPhp, '$version = "v5.10.4";') !== false
+        && strpos($versionPhp, '$remasteredVersion = "v5.10.4-remastered.1";') !== false
         && strpos($aboutPhp, 'Current running remastered build.') !== false
         && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= htmlspecialchars($version') !== false
         && strpos($aboutPhp, 'Remastered update scope') !== false;
@@ -128,8 +128,8 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'static',
         'remastered-version-contract',
         $remasteredVersionValid
-            ? 'About identifies the current v5.7.1 compatibility baseline and keeps the Remastered scope visible.'
-            : 'Expected version.php and About to identify the v5.7.1 Remastered compatibility baseline.'
+            ? 'About identifies the current v5.10.4 compatibility target and keeps the Remastered scope visible.'
+            : 'Expected version.php and About to identify the v5.10.4 Remastered compatibility target.'
     );
 
     $oidcSettingsPhp = wallos_regression_read_repo_file($config, 'includes/oidc_settings.php');

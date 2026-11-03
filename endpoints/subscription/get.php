@@ -1,5 +1,6 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_relations.php';
 require_once '../../includes/subscription_media.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/subscription_payment_records.php';
@@ -57,6 +58,8 @@ require_once '../../includes/markdown.php';
 $subscriptionData['payment_method_id'] = $row['payment_method_id'];
 $subscriptionData['payer_user_id'] = $row['payer_user_id'];
 $subscriptionData['category_id'] = $row['category_id'];
+$subscriptionData['payer_ids'] = wallos_subscription_relation_ids($db, $row, 'payer');
+$subscriptionData['category_ids'] = wallos_subscription_relation_ids($db, $row, 'category');
 $subscriptionData['subscription_page_id'] = isset($row['subscription_page_id']) ? (int) $row['subscription_page_id'] : 0;
 $subscriptionData['notify'] = $row['notify'];
 $subscriptionData['inactive'] = $row['inactive'];

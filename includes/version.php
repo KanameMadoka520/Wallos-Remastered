@@ -1,4 +1,4 @@
 <?php
-$version = "v5.7.1";
-$remasteredVersion = "v5.7.1-remastered.4";
+$version = "v5.10.4";
+$remasteredVersion = "v5.10.4-remastered.1";
 ?>

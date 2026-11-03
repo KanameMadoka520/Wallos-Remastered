@@ -8,6 +8,7 @@ It receives the following parameters:
 It returns a downloadable VCAL file with the active subscriptions
 */
 
+require_once __DIR__ . '/../../includes/subscription_relations.php';
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/currency_rates.php';
@@ -130,7 +131,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     }
 
     foreach ($subscriptions as $subscription) {
-        $subscriptionToReturn = $subscription;
+        $subscriptionToReturn = wallos_subscription_with_relations($db, $subscription);
 
         if (isset($_REQUEST['convert_currency']) && $_REQUEST['convert_currency'] === 'true' && $canConvertCurrency && $subscription['currency_id'] != $userCurrencyId) {
             $subscriptionToReturn['price'] = getPriceConverted($subscription['price'], $subscription['currency_id'], $db, $userId);

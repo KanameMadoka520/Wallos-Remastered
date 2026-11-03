@@ -5,7 +5,7 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-const WALLOS_REQUIRED_MIGRATION_PREFIX = 83;
+const WALLOS_REQUIRED_MIGRATION_PREFIX = 86;
 
 function wallos_verify_quote_identifier($identifier)
 {
@@ -282,7 +282,26 @@ function wallos_verify_assert_current_schema(SQLite3 $db)
         'agent_requests',
         'agent_audit',
         'agent_rate_limits',
+        'subscription_payers',
+        'subscription_categories',
+        'subscription_bulk_requests',
+        'push_vapid',
+        'push_notifications',
+        'push_subscriptions',
+        'push_delivery_claims',
     ]);
+
+    foreach ([
+        'subscription_payers' => ['subscription_id', 'payer_id', 'position'],
+        'subscription_categories' => ['subscription_id', 'category_id', 'position'],
+        'push_vapid' => ['id', 'public_key', 'private_key'],
+        'push_notifications' => ['user_id', 'enabled', 'show_details'],
+        'push_subscriptions' => ['id', 'user_id', 'endpoint', 'p256dh', 'auth', 'device_hash', 'device_name', 'created_at', 'last_used_at', 'last_attempt_at', 'last_status', 'failure_count'],
+        'push_delivery_claims' => ['device_id', 'event_key', 'claimed_at', 'delivered_at', 'attempts'],
+        'subscription_bulk_requests' => ['user_id', 'request_id', 'request_hash', 'result_json', 'created_at'],
+    ] as $featureTable => $featureColumns) {
+        wallos_verify_assert_columns($db, $featureTable, $featureColumns);
+    }
 
     wallos_verify_assert_columns($db, 'user', [
         'id',

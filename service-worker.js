@@ -203,3 +203,34 @@ self.addEventListener('fetch', function (event) {
 
     event.respondWith(fetch(request));
 });
+
+// Web Push adds events only; private pages/endpoints retain the no-store fetch
+// rules above. Targets are fixed within this registration, never payload URLs.
+self.addEventListener('push', function (event) {
+    let payload = {};
+    try { payload = event.data ? event.data.json() : {}; } catch (_) { /* generic reminder */ }
+    const body = typeof payload.body === 'string' ? payload.body.slice(0, 500) : 'Wallos: a subscription reminder is available.';
+    const target = new URL('index.php', self.registration.scope).href;
+    const icon = new URL('images/icon/android-chrome-192x192.png', self.registration.scope).href;
+    const tag = typeof payload.tag === 'string' && /^wallos-[a-z0-9-]{1,100}$/.test(payload.tag) ? payload.tag : 'wallos-reminder';
+    event.waitUntil(self.registration.showNotification('Wallos', {
+        body, icon, badge: icon, tag, data: { url: target },
+    }));
+});
+
+self.addEventListener('notificationclick', function (event) {
+    event.notification.close();
+    const target = new URL('index.php', self.registration.scope);
+    event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async function (windows) {
+        // Opening the authenticated entrypoint lets the server check the current
+        // identity. Never navigate to a subscription link from an old account.
+        for (const client of windows) {
+            const url = new URL(client.url);
+            if (url.origin === target.origin && url.pathname.startsWith(new URL(self.registration.scope).pathname)) {
+                await client.navigate(target.href);
+                return client.focus();
+            }
+        }
+        return self.clients.openWindow(target.href);
+    }));
+});

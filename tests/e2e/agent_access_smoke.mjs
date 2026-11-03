@@ -91,7 +91,7 @@ try {
   const allName = `ui-full-access-${Date.now()}`;
   const allKey = await createKey(allName, 'all');
   check(await page.locator('input[name="scopes[]"]').evaluateAll(inputs => inputs.every(input => input.checked)), 'all-permissions preset explicitly selects every scope including deletion');
-  check((await rpc(allKey, 'tools/list')).tools.length === 18, 'full-access key created in the UI discovers all 18 MCP tools');
+  check((await rpc(allKey, 'tools/list')).tools.length === 20, 'full-access key created in the UI discovers all 20 MCP tools');
   const changed = (await rpc(allKey, 'tools/call', {name: 'wallos_subscriptions_update', arguments: {
     id: created.id, expected_version: created.version, changes: {price: 42}, request_id: `ui-update-${Date.now()}`,
   }})).structuredContent.subscription;

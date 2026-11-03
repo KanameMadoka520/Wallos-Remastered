@@ -152,8 +152,8 @@
 
     document.getElementById("details-next-payment").textContent = detailsFormatDate(subscription.next_payment);
     document.getElementById("details-start-date").textContent = detailsFormatDate(subscription.start_date) || strings.none;
-    document.getElementById("details-category").textContent = lookup("categories", subscription.category_id) || strings.none;
-    document.getElementById("details-payer").textContent = lookup("members", subscription.payer_user_id) || strings.none;
+    document.getElementById("details-category").textContent = (subscription.category_ids || [subscription.category_id]).map((id) => lookup("categories", id)).filter(Boolean).join(", ") || strings.none;
+    document.getElementById("details-payer").textContent = (subscription.payer_ids || [subscription.payer_user_id]).map((id) => lookup("members", id)).filter(Boolean).join(", ") || strings.none;
 
     const paymentMethod = lookup("paymentMethods", subscription.payment_method_id);
     const paymentIcon = document.getElementById("details-payment-icon");

@@ -5,6 +5,7 @@ function agent_test_db($path = ':memory:') {
     $db->enableExceptions(true);
     $db->exec(file_get_contents(__DIR__ . '/fixtures/agent_schema.sql'));
     require __DIR__ . '/../migrations/000083.php';
+    require __DIR__ . '/../migrations/000084.php';
     require __DIR__ . '/../migrations/000083.php';
     $db->exec("INSERT INTO cycles VALUES(1,1,'day'),(2,7,'week'),(3,30,'month'),(4,365,'year'),(5,0,'one-time')");
     $db->exec("INSERT INTO frequencies(id,name) VALUES(1,'1'),(2,'2')");
@@ -123,6 +124,42 @@ try {
     rejects('in_recycle_bin', fn() => call_tool($db, $key, 'wallos_subscriptions_update', ['id' => $id, 'expected_version' => $trashed['version'], 'changes' => ['price' => 90], 'request_id' => 'trash-edit-001']), 'trashed subscription cannot be edited');
     $restored = call_tool($db, $key, 'wallos_subscriptions_restore', ['id' => $id, 'expected_version' => $trashed['version'], 'request_id' => 'restore-001'])['subscription'];
     check($restored['lifecycle_status'] === 'active', 'subscription restoration works');
+    // The array contract remains compatible with scalar-only and sparse legacy clients.
+    $db->exec("INSERT INTO categories(id,name,user_id) VALUES(110,'Second category',1),(111,'Third category',1)");
+    $db->exec("INSERT INTO household(id,name,user_id) VALUES(110,'Second payer',1),(111,'Third payer',1)");
+    $multiData = $data;
+    unset($multiData['payer_user_id'], $multiData['category_id']);
+    $multiData['payer_ids'] = [100,110];
+    $multiData['category_ids'] = [100,110];
+    $multi = call_tool($db, $key, 'wallos_subscriptions_create', ['data'=>$multiData,'request_id'=>'multi-create-001'])['subscription'];
+    check($multi['payer_ids'] === [100,110] && $multi['category_ids'] === [100,110] && $multi['category_id'] === 100, 'array-only create exposes full ordered lists and scalar primaries');
+    $multiGet = fn() => call_tool($db,$key,'wallos_subscriptions_get',['id'=>$multi['id']])['subscription'];
+    $patched = call_tool($db,$key,'wallos_subscriptions_update',['id'=>$multi['id'],'expected_version'=>$multi['version'],'changes'=>['price'=>99],'request_id'=>'multi-sparse-001'])['subscription'];
+    check($patched['payer_ids'] === [100,110] && $patched['category_ids'] === [100,110], 'legacy sparse edit preserves every secondary relationship');
+    $patched = call_tool($db,$key,'wallos_subscriptions_update',['id'=>$multi['id'],'expected_version'=>$patched['version'],'changes'=>['payer_user_id'=>111,'category_id'=>111],'request_id'=>'multi-scalar-001'])['subscription'];
+    check($patched['payer_ids'] === [111,100,110] && $patched['category_ids'] === [111,100,110], 'scalar-only edit promotes primary without dropping old members');
+    $matches = call_tool($db,$key,'wallos_subscriptions_list',['category_id'=>110,'payer_user_id'=>110])['subscriptions'];
+    check(count(array_filter($matches,fn($r)=>$r['id']===$multi['id']))===1, 'secondary payer and category filters match without duplicate subscriptions');
+    foreach (['payer_ids','category_ids'] as $field) {
+        rejects('not_found',fn()=>call_tool($db,$key,'wallos_subscriptions_update',['id'=>$multi['id'],'expected_version'=>$patched['version'],'changes'=>[$field=>[100,200]],'request_id'=>'foreign-'.$field]),'secondary foreign reference rejected: '.$field);
+        rejects('invalid_arguments',fn()=>call_tool($db,$key,'wallos_subscriptions_update',['id'=>$multi['id'],'expected_version'=>$patched['version'],'changes'=>[$field=>[]],'request_id'=>'empty-'.$field]),'empty relationship list rejected: '.$field);
+    }
+    rejects('invalid_arguments',fn()=>call_tool($db,$key,'wallos_subscriptions_update',['id'=>$multi['id'],'expected_version'=>$patched['version'],'changes'=>['category_id'=>100,'category_ids'=>[110]],'request_id'=>'ambiguous-multi-001']),'contradictory primary and list rejected');
+    $secondary = wallos_agent_reference($db,1,'categories',110);
+    rejects('reference_in_use',fn()=>call_tool($db,$key,'wallos_references_delete',['kind'=>'categories','id'=>110,'confirm_id'=>110,'expected_version'=>wallos_agent_version($secondary),'request_id'=>'secondary-ref-delete']),'secondary reference cannot be deleted');
+    $snapshot = $multiGet();
+    $dry = call_tool($db,$key,'wallos_subscriptions_update',['id'=>$multi['id'],'expected_version'=>$snapshot['version'],'changes'=>['payer_ids'=>[110],'category_ids'=>[110]],'request_id'=>'multi-preview-001','dry_run'=>true]);
+    check($dry['subscription']['category_ids'] === [110] && $multiGet() === $snapshot, 'relation dry run rolls back primaries and both junction lists');
+    $paymentState = wallos_agent_rows($db->query('SELECT * FROM subscription_payment_records ORDER BY id'));
+    $replaced = call_tool($db,$key,'wallos_subscriptions_update',['id'=>$multi['id'],'expected_version'=>$snapshot['version'],'changes'=>['payer_ids'=>[110],'category_ids'=>[110]],'request_id'=>'multi-replace-001'])['subscription'];
+    check($replaced['payer_ids'] === [110] && $replaced['category_ids'] === [110], 'explicit arrays replace complete associations');
+    check(wallos_agent_rows($db->query('SELECT * FROM subscription_payment_records ORDER BY id')) === $paymentState, 'relation edits never rewrite historical payment snapshots');
+    $db->exec('INSERT INTO subscription_categories(subscription_id,category_id,position) VALUES('.$multi['id'].',111,1)');
+    rejects('conflict',fn()=>call_tool($db,$key,'wallos_subscriptions_update',['id'=>$multi['id'],'expected_version'=>$replaced['version'],'changes'=>['name'=>'stale'],'request_id'=>'multi-stale-001']),'browser junction-only changes invalidate aggregate version');
+    $currentMulti = $multiGet();
+    $trashedMulti = call_tool($db,$key,'wallos_subscriptions_trash',['id'=>$multi['id'],'confirm_id'=>$multi['id'],'expected_version'=>$currentMulti['version'],'request_id'=>'multi-trash-001'])['subscription'];
+    $restoredMulti = call_tool($db,$key,'wallos_subscriptions_restore',['id'=>$multi['id'],'expected_version'=>$trashedMulti['version'],'request_id'=>'multi-restore-001'])['subscription'];
+    check($restoredMulti['payer_ids'] === [110] && $restoredMulti['category_ids'] === [110,111], 'recycle bin restore preserves full associations');
     $readKey = wallos_agent_authenticate($db, 'Bearer ' . wallos_agent_create_key($db, 1, 'readonly', ['subscriptions:read'])['token']);
     rejects('forbidden', fn() => call_tool($db, $readKey, 'wallos_subscriptions_create', ['data' => $data, 'request_id' => 'readonly-write']), 'read-only key cannot write');
     wallos_agent_sql($db, 'UPDATE agent_keys SET revoked_at=:now WHERE id=:id', ['now' => time(), 'id' => (int) $readKey['id']]);

@@ -7863,3 +7863,14 @@ body.light .subscription-main .logo img.logo-theme-variant[data-native-theme="da
 .dashboard-subscriptions-container::-webkit-scrollbar {
     display: none;
 }
+
+/* Multiple assignment controls use native keyboard and mobile selection. */
+#subs-form select[multiple] {
+  height: auto;
+  min-height: 108px;
+  padding: 6px;
+}
+#subs-form select[multiple] option {
+  padding: 7px 9px;
+  border-radius: 4px;
+}

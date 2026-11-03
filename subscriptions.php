@@ -13,6 +13,7 @@ require_once 'includes/subscription_preferences.php';
 require_once 'includes/page_immersive_toggle.php';
 require_once 'includes/payment_icons.php';
 require_once 'includes/inputvalidation.php';
+require_once 'includes/subscription_relations.php';
 
 include_once 'includes/list_subscriptions.php';
 
@@ -76,7 +77,7 @@ if (isset($_GET['member'])) {
     return ":member{$key}";
   }, array_keys($memberIds));
 
-  $sql .= " AND payer_user_id IN (" . implode(',', $placeholders) . ")";
+  $sql .= " AND (payer_user_id IN (" . implode(',', $placeholders) . ") OR EXISTS (SELECT 1 FROM subscription_payers r WHERE r.subscription_id=subscriptions.id AND r.payer_id IN (" . implode(',', $placeholders) . ")))";
 
   foreach ($memberIds as $key => $memberId) {
     $params[":member{$key}"] = $memberId;
@@ -89,7 +90,7 @@ if (isset($_GET['category'])) {
     return ":category{$key}";
   }, array_keys($categoryIds));
 
-  $sql .= " AND category_id IN (" . implode(',', $placeholders) . ")";
+  $sql .= " AND (category_id IN (" . implode(',', $placeholders) . ") OR EXISTS (SELECT 1 FROM subscription_categories r WHERE r.subscription_id=subscriptions.id AND r.category_id IN (" . implode(',', $placeholders) . ")))";
 
   foreach ($categoryIds as $key => $categoryId) {
     $params[":category{$key}"] = $categoryId;
@@ -192,9 +193,9 @@ if (function_exists('wallos_screenshot_privacy_enabled')
 
 foreach ($subscriptions as $subscription) {
   $memberId = $subscription['payer_user_id'];
-  $members[$memberId]['count']++;
+  foreach (wallos_subscription_relation_ids($db, $subscription, 'payer') as $memberId) { if (isset($members[$memberId])) $members[$memberId]['count']++; }
   $categoryId = $subscription['category_id'];
-  $categories[$categoryId]['count']++;
+  foreach (wallos_subscription_relation_ids($db, $subscription, 'category') as $categoryId) { if (isset($categories[$categoryId])) $categories[$categoryId]['count']++; }
   $paymentMethodId = $subscription['payment_method_id'];
   $payment_methods[$paymentMethodId]['count']++;
 }
@@ -640,6 +641,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 </style>
 
 <section class="contain contain-wide subscriptions-page-layout" data-page-ui-hide-target>
+<?php require __DIR__ . '/includes/subscription_bulk_toolbar.php'; ?>
   <header class="<?= $headerClass ?>" id="main-actions">
     <div class="inline-row">
       <button class="button" data-subscription-action="open-add-subscription">
@@ -806,6 +808,8 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       $print[$id]['payment_method_icon'] = wallos_resolve_payment_icon_path($payment_methods[$paymentMethodId]['icon'] ?? '');
       $print[$id]['payment_method_name'] = $payment_methods[$paymentMethodId]['name'];
       $print[$id]['payment_method_id'] = $paymentMethodId;
+      $print[$id]['category_ids'] = wallos_subscription_relation_ids($db, $subscription, 'category');
+      $print[$id]['payer_ids'] = wallos_subscription_relation_ids($db, $subscription, 'payer');
       $print[$id]['category_id'] = $subscription['category_id'];
       $print[$id]['payer_user_id'] = $subscription['payer_user_id'];
       $print[$id]['price'] = floatval($subscription['price']);
@@ -1203,7 +1207,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
         </div>
         <div class="split50">
           <label for="payer_user"><?= translate('paid_by', $i18n) ?></label>
-          <select id="payer_user" name="payer_user_id">
+          <select id="payer_user" name="payer_ids[]" multiple size="3" required>
             <?php
             foreach ($displayMembers as $member) {
               ?>
@@ -1218,7 +1222,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 
     <div class="form-group">
       <label for="category"><?= translate('category', $i18n) ?></label>
-      <select id="category" name="category_id">
+      <select id="category" name="category_ids[]" multiple size="3" required>
         <?php
         foreach ($displayCategories as $category) {
           ?>
@@ -1689,6 +1693,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 <script defer src="scripts/subscription-payments.js?v=<?= $subscriptionPaymentsJsVersion ?>"></script>
 <script defer src="scripts/subscription-interactions.js?v=<?= $subscriptionInteractionsJsVersion ?>"></script>
 <script defer src="scripts/subscriptions.js?v=<?= $subscriptionsJsVersion ?>"></script>
+<script defer src="scripts/subscription_bulk.js?v=<?= $version . '.' . @filemtime(__DIR__ . '/scripts/subscription_bulk.js') ?>"></script>
 <?php
 if (isset($_GET['add'])) {
   ?>

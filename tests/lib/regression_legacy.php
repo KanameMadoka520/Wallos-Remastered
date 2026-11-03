@@ -4,6 +4,11 @@ function wallos_regression_run_legacy_suite(array $config, array $suiteDefinitio
 {
     $tests = array(
         'agent-api' => 'tests/agent_api_test.php',
+        'subscription-relations' => 'tests/subscription_relations_test.php',
+        'subscription-relation-statistics' => 'tests/subscription_relation_stats_test.php',
+        'subscription-bulk' => 'tests/subscription_bulk_test.php',
+        'web-push' => 'tests/webpush_test.php',
+        'feature-restore' => 'tests/feature_restore_test.php',
         'budget-regression' => 'tests/budget_regression_test.php',
         'budget-period' => 'tests/budget_period_test.php',
         'currency-rates' => 'tests/currency_rates_test.php',

@@ -32,6 +32,12 @@ function wallos_trash_user($db, $targetUserId, $reason)
         $agentStmt->execute();
     }
 
+    if ($db->querySingle("SELECT 1 FROM sqlite_master WHERE type='table' AND name='push_subscriptions'")) {
+        $pushStmt = $db->prepare('DELETE FROM push_subscriptions WHERE user_id=:id');
+        $pushStmt->bindValue(':id', (int)$targetUserId, SQLITE3_INTEGER);
+        $pushStmt->execute();
+    }
+
     $tokenStmt = $db->prepare('DELETE FROM login_tokens WHERE user_id = :id');
     $tokenStmt->bindValue(':id', (int) $targetUserId, SQLITE3_INTEGER);
     $tokenStmt->execute();
@@ -111,6 +117,17 @@ function wallos_delete_user_data($db, $targetUserId, $basePath)
             'DELETE FROM agent_requests WHERE key_id IN (SELECT id FROM agent_keys WHERE user_id = :id)',
             'DELETE FROM agent_audit WHERE user_id = :id',
             'DELETE FROM agent_keys WHERE user_id = :id'
+        );
+    }
+
+    if ($db->querySingle("SELECT 1 FROM sqlite_master WHERE type='table' AND name='subscription_bulk_requests'")) {
+        array_unshift($deleteStatements, 'DELETE FROM subscription_bulk_requests WHERE user_id = :id');
+    }
+
+    if ($db->querySingle("SELECT 1 FROM sqlite_master WHERE type='table' AND name='push_subscriptions'")) {
+        array_unshift($deleteStatements,
+            'DELETE FROM push_subscriptions WHERE user_id = :id',
+            'DELETE FROM push_notifications WHERE user_id = :id'
         );
     }
 

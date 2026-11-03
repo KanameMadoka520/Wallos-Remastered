@@ -48,6 +48,9 @@ if (isset($_SESSION['token'])) {
         }
     }
 }
+// Revoke before the OIDC redirect too: JavaScript may never run on that path.
+require_once __DIR__ . '/includes/webpush.php';
+wallos_webpush_revoke_browser($db);
 $_SESSION = array();
 session_destroy();
 $cookieExpire = time() - 3600;
@@ -67,6 +70,11 @@ if ($logoutOIDC && !empty($logoutUrl) && wallos_oidc_is_http_url($logoutUrl)) {
 <head>
 <script>
   async function clearAndRedirect() {
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = registration && await registration.pushManager?.getSubscription();
+      if (subscription) await subscription.unsubscribe().catch(() => {});
+    }
     if ('caches' in window) {
       const keys = await caches.keys();
       const wallosCachePrefixes = ['pages-cache-v', 'static-cache-v', 'logos-cache-v'];

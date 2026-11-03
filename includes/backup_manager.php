@@ -2026,6 +2026,30 @@ function wallos_restore_assert_latest_schema(SQLite3 $db, array $catalog)
         'cycles' => ['id', 'days', 'name'],
     ];
 
+    // Feature requirements follow the actual image inventory. Small migration
+    // fixtures and older supported inventories retain their original contract;
+    // a complete ledger may never conceal missing feature tables or columns.
+    $featureColumns = [
+        'migrations/000084.php' => [
+            'subscription_payers' => ['subscription_id', 'payer_id', 'position'],
+            'subscription_categories' => ['subscription_id', 'category_id', 'position'],
+        ],
+        'migrations/000085.php' => [
+            'push_vapid' => ['id', 'public_key', 'private_key'],
+            'push_notifications' => ['user_id', 'enabled', 'show_details'],
+            'push_subscriptions' => ['id', 'user_id', 'endpoint', 'p256dh', 'auth', 'device_hash', 'device_name', 'created_at', 'last_used_at', 'last_attempt_at', 'last_status', 'failure_count'],
+            'push_delivery_claims' => ['device_id', 'event_key', 'claimed_at', 'delivered_at', 'attempts'],
+        ],
+        'migrations/000086.php' => [
+            'subscription_bulk_requests' => ['user_id', 'request_id', 'request_hash', 'result_json', 'created_at'],
+        ],
+    ];
+    foreach ($featureColumns as $migrationName => $featureSchema) {
+        if (isset($catalog[$migrationName])) {
+            $requiredColumns = array_replace($requiredColumns, $featureSchema);
+        }
+    }
+
     foreach ($requiredColumns as $tableName => $columns) {
         if (!wallos_restore_table_exists($db, $tableName)) {
             throw new RuntimeException('Restored database is missing required table: ' . $tableName);
@@ -2051,6 +2075,19 @@ function wallos_restore_assert_latest_schema(SQLite3 $db, array $catalog)
             'columns' => ['user_id', 'notify', 'inactive'],
         ],
     ];
+    if (isset($catalog['migrations/000084.php'])) {
+        $requiredIndexes['idx_subscription_payers_reference'] = [
+            'table' => 'subscription_payers', 'columns' => ['payer_id', 'subscription_id'],
+        ];
+        $requiredIndexes['idx_subscription_categories_reference'] = [
+            'table' => 'subscription_categories', 'columns' => ['category_id', 'subscription_id'],
+        ];
+    }
+    if (isset($catalog['migrations/000085.php'])) {
+        $requiredIndexes['idx_push_subscriptions_user'] = [
+            'table' => 'push_subscriptions', 'columns' => ['user_id'],
+        ];
+    }
     foreach ($requiredIndexes as $indexName => $expectedIndex) {
         if (wallos_restore_index_table($db, $indexName) !== $expectedIndex['table']
             || wallos_restore_index_columns($db, $indexName) !== $expectedIndex['columns']) {

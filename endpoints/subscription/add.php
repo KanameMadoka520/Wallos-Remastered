@@ -1,7 +1,10 @@
 <?php
 error_reporting(E_ERROR | E_PARSE);
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_relations.php';
 require_once '../../includes/validate_endpoint.php';
+// BEGIN/COMMIT failures must throw, preventing accidental autocommit after lock errors.
+$db->enableExceptions(true);
 require_once '../../includes/inputvalidation.php';
 require_once '../../includes/getsettings.php';
 require_once '../../includes/ssrf_helper.php';
@@ -286,8 +289,23 @@ $nextPayment = $_POST["next_payment"];
 $autoRenew = isset($_POST['auto_renew']) ? true : false;
 $startDate = $_POST["start_date"];
 $paymentMethodId = $_POST["payment_method_id"];
-$payerUserId = $_POST["payer_user_id"];
-$categoryId = $_POST['category_id'];
+$existingRelationSubscription = null;
+if ($isEdit) {
+    $relationStmt = $db->prepare('SELECT * FROM subscriptions WHERE id=:id AND user_id=:user');
+    $relationStmt->bindValue(':id', (int) $_POST['id'], SQLITE3_INTEGER);
+    $relationStmt->bindValue(':user', (int) $userId, SQLITE3_INTEGER);
+    $existingRelationSubscription = $relationStmt->execute()->fetchArray(SQLITE3_ASSOC);
+    if (!$existingRelationSubscription) subscription_error_response(translate('error', $i18n));
+}
+try {
+    $payerIds = wallos_subscription_relation_input($db, $userId, 'payer', $_POST, $existingRelationSubscription);
+    $categoryIds = wallos_subscription_relation_input($db, $userId, 'category', $_POST, $existingRelationSubscription);
+} catch (InvalidArgumentException $exception) {
+    http_response_code(400);
+    subscription_error_response(translate('error', $i18n));
+}
+$payerUserId = $payerIds[0];
+$categoryId = $categoryIds[0];
 $notes = validate($_POST["notes"]);
 $url = validate($_POST['url']);
 $logoUrl = validate($_POST['logo-url']);
@@ -473,13 +491,17 @@ if ($logo !== '' && $removeBackgroundEnabled) {
     }
 }
 
+$subscriptionTransactionStarted = false;
 try {
     $db->exec('BEGIN IMMEDIATE');
+    $subscriptionTransactionStarted = true;
     // Recheck while holding the write lock, after any remote image fetch.
     if (wallos_subscription_invalid_reference($db, $userId, $subscriptionReferences, $subscriptionPriceRules) !== null) {
         http_response_code(400);
         throw new RuntimeException(translate('error', $i18n));
     }
+    $payerIds = wallos_subscription_relation_input($db, $userId, 'payer', $_POST, $existingRelationSubscription);
+    $categoryIds = wallos_subscription_relation_input($db, $userId, 'category', $_POST, $existingRelationSubscription);
     $nextSortOrder = !$isEdit ? wallos_get_next_subscription_sort_order($db, $userId) : 0;
 
     if (!$isEdit) {
@@ -596,6 +618,8 @@ try {
         }
     }
 
+    wallos_save_subscription_relations($db, $subscriptionId, $payerIds, $categoryIds);
+
     if (!empty($removeUploadedImageIds)) {
         $imagesPendingFileDeletion = wallos_get_uploaded_images_by_ids($db, $removeUploadedImageIds, $userId, $subscriptionId);
         if (!empty($imagesPendingFileDeletion)) {
@@ -639,6 +663,7 @@ try {
     wallos_replace_subscription_price_rules($db, $subscriptionId, $userId, $subscriptionPriceRules);
 
     $db->exec('COMMIT');
+    $subscriptionTransactionStarted = false;
 
     foreach ($imagesPendingFileDeletion as $imageRow) {
         wallos_delete_subscription_image_related_files(__DIR__ . '/../../', $imageRow);
@@ -654,8 +679,7 @@ try {
     echo json_encode($success);
     exit();
 } catch (Throwable $throwable) {
-    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
-    $db->exec('ROLLBACK');
+    if ($subscriptionTransactionStarted) $db->exec('ROLLBACK');
 
     foreach ($storedUploadedImages as $storedImage) {
         wallos_delete_subscription_image_related_files(__DIR__ . '/../../', $storedImage);
@@ -667,6 +691,7 @@ try {
         }
     }
 
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
     subscription_error_response($throwable->getMessage());
 }
 $db->close();

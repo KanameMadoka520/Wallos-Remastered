@@ -6,6 +6,7 @@ require_once __DIR__ . '/markdown.php';
 require_once __DIR__ . '/subscription_price_rules.php';
 require_once __DIR__ . '/currency_rates.php';
 require_once __DIR__ . '/inputvalidation.php';
+require_once __DIR__ . '/subscription_relations.php';
 
 function getBillingCycle($cycle, $frequency, $i18n)
 {
@@ -173,6 +174,7 @@ function formatDate($date, $lang = 'en')
 
 function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n, $colorTheme, $imagePath, $disabledToBottom, $mobileNavigation, $showSubscriptionProgress, $currencies, $lang)
 {
+    global $db;
     // Text stored via validate() is still HTML-escaped in the database. Decode
     // it once up front so the render-time escaping below stays single-encoding.
     foreach ($subscriptions as $index => $subscription) {
@@ -423,9 +425,9 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                     <span
                         class="name"><?php include $imagePath . "images/siteicons/svg/subscription.php"; ?><?= htmlspecialchars($subscription['name'], ENT_QUOTES, 'UTF-8') ?></span>
                     <span class="payer_user"
-                        title="<?= translate('paid_by', $i18n) ?>"><?php include $imagePath . "images/siteicons/svg/payment.php"; ?><?= htmlspecialchars($members[$subscription['payer_user_id']]['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                        title="<?= translate('paid_by', $i18n) ?>"><?php include $imagePath . "images/siteicons/svg/payment.php"; ?><?= htmlspecialchars(wallos_subscription_relation_names($db, $subscription, 'payer', $members), ENT_QUOTES, 'UTF-8') ?></span>
                     <span class="category"
-                        title="<?= translate('category', $i18n) ?>"><?php include $imagePath . "images/siteicons/svg/category.php"; ?><?= htmlspecialchars($categories[$subscription['category_id']]['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                        title="<?= translate('category', $i18n) ?>"><?php include $imagePath . "images/siteicons/svg/category.php"; ?><?= htmlspecialchars(wallos_subscription_relation_names($db, $subscription, 'category', $categories), ENT_QUOTES, 'UTF-8') ?></span>
                     <?php
                     if ($subscription['url'] != "") {
                         $url = $subscription['url'];

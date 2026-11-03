@@ -1,5 +1,6 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/subscription_relations.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/getsettings.php';
 require_once '../../includes/screenshot_privacy.php';
@@ -47,9 +48,9 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         'Payment Cycle' => $cyclePrint,
         'Next Payment' => $row['next_payment'],
         'Renewal' => $row['auto_renew'] ? 'Automatic' : 'Manual',
-        'Category' => str_replace(',', ' ', $categories[$row['category_id']]['name']),
+        'Category' => str_replace(',', ' ', wallos_subscription_relation_names($db, $row, 'category', $categories)),
         'Payment Method' => str_replace(',', ' ', $payment_methods[$row['payment_method_id']]['name']),
-        'Paid By' => str_replace(',', ' ', $members[$row['payer_user_id']]['name']),
+        'Paid By' => str_replace(',', ' ', wallos_subscription_relation_names($db, $row, 'payer', $members)),
         'Price' => $currencies[$row['currency_id']]['symbol'] . $row['price'],
         'Notes' => str_replace(',', ' ', $row['notes']),
         'URL' => $row['url'],

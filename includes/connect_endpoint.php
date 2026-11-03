@@ -32,6 +32,8 @@ if ($wallosAuthState['code'] === 'account_trashed') {
 }
 
 if ($userId > 0 && $currentAuthenticatedUser !== null) {
+    require_once __DIR__ . '/webpush.php';
+    wallos_webpush_sync_browser_account($db, $userId);
     wallos_apply_php_timezone(wallos_fetch_user_timezone($db, $userId));
     wallos_log_request($db, $currentAuthenticatedUser['id'], $currentAuthenticatedUser['username'] ?? '');
 

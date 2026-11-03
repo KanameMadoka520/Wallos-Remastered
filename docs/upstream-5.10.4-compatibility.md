@@ -1,5 +1,7 @@
 # Wallos v5.10.4 选择性兼容记录（2026-11-03）
 
+> 本文保留 remastered.4 安全适配的历史范围。随后 `v5.10.4-remastered.1` 已继续补齐多付款人、多分类、批量操作和 Web Push；当前功能状态与迁移见 [功能整合说明](upstream-feature-integration.md)。下文“本次不引入”只指此前安全发布。
+
 本次发布为 `v5.7.1-remastered.4`。完整历史兼容基线仍为 v5.7.1；额外审阅并选择性吸收官方 v5.7.1 到 v5.10.4 的变化，不宣称完整合并上游分支或支持其所有新功能。审阅目标是 2026-11-01 的稳定标签 `v5.10.4`（`b6bb019`），不追随未发布的 main。原来的账本、优惠规则、回收站、图片、分组、后台维护、截图隐私和 Agent API 契约继续生效。
 
 官方参考：[发布记录](https://github.com/ellite/Wallos/releases/tag/v5.10.4)、[完整差异](https://github.com/ellite/Wallos/compare/v5.7.1...v5.10.4)。运行时 CVE 核查另见 [PHP 安全记录](php-runtime-security-2026-11.md)。

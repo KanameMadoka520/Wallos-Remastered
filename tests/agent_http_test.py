@@ -34,7 +34,7 @@ check(status == 200 and body['result']['protocolVersion']=='2025-11-25','MCP ini
 check('no-store' in h['Cache-Control'],'agent responses are not cacheable')
 check(request(mcp, {'jsonrpc':'2.0','method':'notifications/initialized'})[0] == 202,'initialized notification returns empty 202')
 status, body, h = request(mcp, {'jsonrpc':'2.0','id':'catalog','method':'tools/list'})
-check(status == 200 and len(body['result']['tools']) == 18,'MCP tools catalog exposes schemas')
+check(status == 200 and len(body['result']['tools']) == 20,'MCP tools catalog exposes schemas')
 check(all(t['inputSchema']['type']=='object' and isinstance(t['inputSchema']['properties'],dict) for t in body['result']['tools']),'schemas always encode object properties')
 status, body, h = request(mcp, {'jsonrpc':'2.0','id':3,'method':'tools/call','params':{'name':'wallos_context','arguments':{}}})
 check(status == 200 and body['result']['structuredContent']['account']['id']==1,'MCP call returns structured account-scoped result')

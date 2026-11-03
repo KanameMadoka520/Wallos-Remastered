@@ -59,7 +59,7 @@ function wallos_database_safety_run_php($script, array $arguments = [])
 
 function wallos_database_safety_write_migration_inventory($projectRoot)
 {
-    for ($number = 1; $number <= 83; $number++) {
+    for ($number = 1; $number <= 86; $number++) {
         $path = $projectRoot . '/migrations/' . sprintf('%06d.php', $number);
         if (file_put_contents($path, "<?php\n") === false) {
             throw new RuntimeException('Unable to create test migration inventory.');
@@ -90,6 +90,8 @@ function wallos_database_safety_create_current_database($databaseFile)
         $db->exec('CREATE TABLE subscriptions (
             id INTEGER PRIMARY KEY,
             user_id INTEGER,
+            payer_user_id INTEGER,
+            category_id INTEGER,
             cycle INTEGER,
             frequency INTEGER,
             next_payment TEXT,
@@ -101,7 +103,8 @@ function wallos_database_safety_create_current_database($databaseFile)
             logo_text_color TEXT,
             logo_variant TEXT
         )');
-        $db->exec('CREATE TABLE categories (id INTEGER PRIMARY KEY)');
+        $db->exec('CREATE TABLE categories (id INTEGER PRIMARY KEY,user_id INTEGER)');
+        $db->exec('CREATE TABLE household (id INTEGER PRIMARY KEY,user_id INTEGER)');
         $db->exec('CREATE TABLE currencies (id INTEGER PRIMARY KEY)');
         $db->exec('CREATE TABLE payment_methods (id INTEGER PRIMARY KEY)');
         $db->exec('CREATE TABLE cycles (id INTEGER PRIMARY KEY, days INTEGER NOT NULL, name TEXT NOT NULL)');
@@ -124,9 +127,9 @@ function wallos_database_safety_create_current_database($databaseFile)
         $db->exec("INSERT INTO cycles (id, days, name) VALUES (5, 0, 'One-time')");
 
         $marker = $db->prepare('INSERT INTO migrations (migration) VALUES (:migration)');
-        for ($number = 1; $number <= 83; $number++) {
+        for ($number = 1; $number <= 86; $number++) {
             $migration = sprintf('migrations/%06d.php', $number);
-            if ($number === 83) {
+            if ($number === 86) {
                 $migration = '../../' . $migration;
             }
             $marker->bindValue(':migration', $migration, SQLITE3_TEXT);
@@ -136,6 +139,9 @@ function wallos_database_safety_create_current_database($databaseFile)
         $db->exec("INSERT INTO migrations (migration) VALUES ('custom/remastered-extension.php')");
 
         require __DIR__ . '/../migrations/000083.php';
+        require __DIR__ . '/../migrations/000084.php';
+        require __DIR__ . '/../migrations/000085.php';
+        require __DIR__ . '/../migrations/000086.php';
         $db->exec('COMMIT');
     } catch (Throwable $throwable) {
         $db->exec('ROLLBACK');
@@ -167,8 +173,8 @@ try {
     $verifySourceText = file_get_contents($verifySource);
     wallos_database_safety_assert(
         is_string($verifySourceText)
-            && strpos($verifySourceText, 'WALLOS_REQUIRED_MIGRATION_PREFIX = 83') !== false,
-        'Database verification minimum migration prefix must track migration 000083.'
+            && strpos($verifySourceText, 'WALLOS_REQUIRED_MIGRATION_PREFIX = 86') !== false,
+        'Database verification minimum migration prefix must track migration 000086.'
     );
 
     $bootstrapSourceText = file_get_contents($bootstrapSource);
@@ -239,7 +245,7 @@ try {
     $formalResult = wallos_database_safety_run_php($verifyScript);
     wallos_database_safety_assert(
         $formalResult['exit_code'] === 0
-            && strpos($formalResult['stdout'], '83 contiguous migrations') !== false,
+            && strpos($formalResult['stdout'], '86 contiguous migrations') !== false,
         'Formal verification rejected a valid current schema or legacy marker: ' . $formalResult['stderr']
     );
 

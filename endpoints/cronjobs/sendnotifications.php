@@ -8,6 +8,8 @@ require_once 'validate.php';
 require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
 require_once __DIR__ . '/../../includes/subscription_trash.php';
 require_once __DIR__ . '/../../includes/ssrf_helper.php';
+require_once __DIR__ . '/../../includes/webpush.php';
+require_once __DIR__ . '/../../includes/subscription_relations.php';
 require_once __DIR__ . '/../../includes/webhook_helper.php';
 require_once __DIR__ . '/../../includes/notification_output.php';
 
@@ -217,7 +219,8 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
         $serverchan['sendkey'] = $row['sendkey'];
     }
 
-    $notificationsEnabled = $emailNotificationsEnabled || $gotifyNotificationsEnabled || $telegramNotificationsEnabled ||
+    $pushNotificationsEnabled = (int)wallos_webpush_settings($db, $userId)['enabled'] === 1;
+    $notificationsEnabled = $pushNotificationsEnabled || $emailNotificationsEnabled || $gotifyNotificationsEnabled || $telegramNotificationsEnabled ||
         $webhookNotificationsEnabled || $pushoverNotificationsEnabled || $discordNotificationsEnabled || $pushplusNotificationsEnabled ||
         $mattermostNotificationsEnabled || $ntfyNotificationsEnabled || $serverchanNotificationsEnabled;
 
@@ -278,6 +281,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
         $resultSubscriptions = $stmt->execute();
 
         $notify = [];
+        $notifyOtherPayers = [];
         $i = 0;
         while ($rowSubscription = $resultSubscriptions->fetchArray(SQLITE3_ASSOC)) {
             if ($rowSubscription['notify_days_before'] !== -1) {
@@ -297,17 +301,25 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                 echo "Next payment date: " . wallos_notification_output_text($nextPaymentDate->format('Y-m-d')) . "<br />";
                 echo "Current date: " . wallos_notification_output_text($currentDate->format('Y-m-d')) . "<br />";
                 echo "Difference: " . wallos_notification_output_text($difference) . "<br /><br />";
+                if ($pushNotificationsEnabled) {
+                    wallos_webpush_deliver($db, $userId, 'renewal', $rowSubscription, $i18n);
+                }
                 $notify[$rowSubscription['payer_user_id']][$i]['name'] = html_entity_decode($rowSubscription['name'], ENT_QUOTES, 'UTF-8');
                 $notify[$rowSubscription['payer_user_id']][$i]['price'] = $rowSubscription['price'] . $currencies[$rowSubscription['currency_id']]['symbol'];
                 $notify[$rowSubscription['payer_user_id']][$i]['currency'] = $currencies[$rowSubscription['currency_id']]['name'];
                 $notify[$rowSubscription['payer_user_id']][$i]['currency_symbol'] = $currencies[$rowSubscription['currency_id']]['symbol'];
                 $notify[$rowSubscription['payer_user_id']][$i]['formatted_price'] = formatPrice($rowSubscription['price'], $currencies[$rowSubscription['currency_id']]['code'], $currencies[$rowSubscription['currency_id']]['symbol']);
-                $notify[$rowSubscription['payer_user_id']][$i]['category'] = $categories[$rowSubscription['category_id']]['name'];
-                $notify[$rowSubscription['payer_user_id']][$i]['payer'] = $household[$rowSubscription['payer_user_id']]['name'];
+                $notify[$rowSubscription['payer_user_id']][$i]['category'] = wallos_subscription_relation_names($db, $rowSubscription, 'category', $categories);
+                $notify[$rowSubscription['payer_user_id']][$i]['payer'] = wallos_subscription_relation_names($db, $rowSubscription, 'payer', $household);
                 $notify[$rowSubscription['payer_user_id']][$i]['date'] = $rowSubscription['next_payment'];
                 $notify[$rowSubscription['payer_user_id']][$i]['days'] = $daysToCompare;
                 $notify[$rowSubscription['payer_user_id']][$i]['url'] = $rowSubscription['url'];
                 $notify[$rowSubscription['payer_user_id']][$i]['notes'] = $rowSubscription['notes'];
+                foreach (wallos_subscription_relation_ids($db, $rowSubscription, 'payer') as $extraPayerId) {
+                    if ($extraPayerId !== (int) $rowSubscription['payer_user_id']) {
+                        $notifyOtherPayers[$extraPayerId][$i] = $notify[$rowSubscription['payer_user_id']][$i];
+                    }
+                }
                 $i++;
             }
         }
@@ -319,6 +331,11 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             $notify[$periodSummaryPayerId] = [];
         }
 
+        // Each non-email channel receives one entry. Email reaches each assigned payer.
+        $notifyEmail = $notify;
+        foreach ($notifyOtherPayers as $payerId => $entries) {
+            foreach ($entries as $index => $entry) $notifyEmail[$payerId][$index] = $entry;
+        }
         if (!empty($notify)) {
 
             // Email notifications if enabled
@@ -339,7 +356,7 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                     $defaultEmail = $defaultUser['email'];
                     $defaultName = $defaultUser['username'];
 
-                    foreach ($notify as $payerUserId => $perUser) {
+                    foreach ($notifyEmail as $payerUserId => $perUser) {
                         $smtpAuth = (isset($email["smtpUsername"]) && $email["smtpUsername"] != "") || (isset($email["smtpPassword"]) && $email["smtpPassword"] != "");
 
                         $mail = new PHPMailer(true);
@@ -367,6 +384,9 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
                         $result = $stmt->execute();
                         $user = $result->fetchArray(SQLITE3_ASSOC);
 
+                        if (empty($user['email']) && isset($notifyOtherPayers[$payerUserId]) && !isset($notify[$payerUserId])) {
+                            continue; // A secondary payer without an address must not duplicate owner email.
+                        }
                         $emailaddress = !empty($user['email']) ? $user['email'] : $defaultEmail;
                         $name = !empty($user['name']) ? $user['name'] : $defaultName;
                         $message = wallos_build_notification_message(

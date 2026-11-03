@@ -1,8 +1,10 @@
 # Wallos-Remastered
 
-> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.7.1-remastered.4`; upstream compatibility baseline: [`ellite/Wallos v5.7.1`](https://github.com/ellite/Wallos/tree/v5.7.1).
+> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.10.4-remastered.1`; upstream feature synchronization target: [`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4).
 
 [简体中文 README](README.md) · [Changelog (Chinese)](CHANGELOG.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
+
+The 2026-11-03 feature integration adds multiple payers/categories, transactional bulk updates/trash and optional device-scoped Web Push. Migration level is 86; MCP now exposes 20 tools while preserving legacy primary references and existing key scopes. See [feature integration and migration](docs/upstream-feature-integration.md), [Agent API](docs/agent-api.md), and [Web Push](docs/web-push.md). The upstream synchronization target is v5.10.4; Remastered retains its own schema, UI, ledger, recycle bin and private cache rules.
 
 ## What this project is
 
@@ -10,7 +12,7 @@ Wallos-Remastered keeps the core Wallos subscription, statistics, multi-currency
 
 This is not an unmodified copy of the upstream UI or a repackaged official image. Relevant fixes from upstream `v5.7.1` were ported deliberately and integrated with this branch's ledger, media, theme, and admin systems. Its deployment model, database schema, and some interactions therefore differ from official Wallos.
 
-The 2026-11-03 release additionally reviews and selectively adopts fixes from stable upstream **v5.10.4**: security, keyless exchange rates, deployment-managed SMTP/URL, OIDC, webhooks and calendar details. The full compatibility baseline and custom data model remain intact. See the [5.10.4 compatibility decisions](docs/upstream-5.10.4-compatibility.md) for adopted, equivalent and deferred changes. This update needs no schema migration; all 18 MCP tools and existing key scopes remain compatible.
+The earlier security release selectively adopted upstream v5.10.4 security, keyless exchange rates, deployment-managed SMTP/URL, OIDC, webhooks and calendar details. Those changes remain in this feature release; see the [historical compatibility decisions](docs/upstream-5.10.4-compatibility.md) and the current feature matrix linked above.
 
 ## Key capabilities
 

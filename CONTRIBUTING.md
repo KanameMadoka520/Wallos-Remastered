@@ -136,7 +136,7 @@ npm run e2e:cache
 
 修改 PHP 基础镜像、Alpine 依赖或 FPM 配置时，先对照 PHP 官方公告和 Alpine 对应分支安全库检查实际版本；PHP 为源码构建，不能只依赖 APK 扫描。主镜像安全重建须更新 `SECURITY_REFRESH` 构建参数，部署候选容器运行 `python3 tests/runtime_security_test.py --container 容器名`，并验证 Web 和 MCP。NGINX 与 FPM 同容器部署时，FPM 必须仅监听 IPv4 回环；拆分容器的部署需另行设计受限的 FastCGI 网络，不能直接恢复全网卡监听。
 
-上游 5.7.1 的集成取舍见 [兼容记录](docs/upstream-5.7.1-compatibility.md)。本分支迁移现已到 83；不要覆盖同号上游迁移，也不要批量解码现有备注。增加提醒卡片必须同时覆盖回收站过滤和截图脱密。
+上游 5.7.1 的集成取舍见 [兼容记录](docs/upstream-5.7.1-compatibility.md)。本分支迁移现已到 86；不要覆盖同号上游迁移，也不要批量解码现有备注。增加提醒卡片必须同时覆盖回收站过滤和截图脱密。
 
 涉及以下链路时，提交前请额外确认不要回退本次安全边界：
 
@@ -155,7 +155,7 @@ npm run e2e:cache
 
 ## Agent API 回归
 
-Agent 接口和密钥管理改动必须阅读 [协议与权限约定](docs/agent-api.md)，运行 `tests/agent_api_test.php`，对隔离测试数据库运行 `tests/agent_http_test.py`。不得用生产数据执行新增/删除测试；MCP 和 HTTP 共享业务函数，禁止出现绕开 scope、归属、版本和幂等的旁路。迁移基线已推进到 83；旧读取 API 和浏览器 CSRF 必须保持兼容。账号清理也必须删除新增密钥、防重与审计记录。
+Agent 接口和密钥管理改动必须阅读 [协议与权限约定](docs/agent-api.md)，运行 `tests/agent_api_test.php`，对隔离测试数据库运行 `tests/agent_http_test.py`。不得用生产数据执行新增/删除测试；MCP 和 HTTP 共享业务函数，禁止出现绕开 scope、归属、版本和幂等的旁路。迁移基线已推进到 86；旧读取 API 和浏览器 CSRF 必须保持兼容。账号清理也必须删除新增密钥、防重与审计记录。
 
 密钥管理 UI 的浏览器回归还须验证权限控件的实际可见性、鼠标 / 键盘交互及所创建密钥的远端权限，不能只断言 DOM 中存在或 `checked` 值正确。已有密钥不自动提权；权限快捷选择仅用于新建。
 
@@ -165,4 +165,8 @@ Agent 接口和密钥管理改动必须阅读 [协议与权限约定](docs/agent
 
 ## v5.10.4 选择性同步回归
 
-取舍与复现入口见 [兼容记录](docs/upstream-5.10.4-compatibility.md)。不得用多对多上游迁移覆盖本分支标量引用，不得用官方 Service Worker 覆盖私有缓存边界。浏览器订阅和 MCP 必须同时验证账号归属；新的汇率路径必须保持存储事务及刷新时间一致。实例 SMTP 与普通用户通知 SMTP 不可共享隐式密钥后备。新增的 HTTP/浏览器专项使用独立 fixture 数据库和私有凭据文件，禁止指向生产。
+取舍与复现入口见 [兼容记录](docs/upstream-5.10.4-compatibility.md)。多关系使用本分支迁移 84，并保留标量主引用；不得以同号上游迁移覆盖已有历史，不得用官方 Service Worker 覆盖私有缓存边界。浏览器订阅和 MCP 必须同时验证账号归属；新的汇率路径必须保持存储事务及刷新时间一致。实例 SMTP 与普通用户通知 SMTP 不可共享隐式密钥后备。新增的 HTTP/浏览器专项使用独立 fixture 数据库和私有凭据文件，禁止指向生产。
+
+## 多关系、批量及 Web Push 回归
+
+设计与恢复见 [功能整合](docs/upstream-feature-integration.md)。MCP 的关联数组省略时不清空，scalar-only 更新提升主引用并保留其他成员；版本包括关联。批量不绕过单条业务规则，不永久删除订阅，事务同时包含数据、审计与防重。新增 Web Push 必须验证设备归属、退出/切换解绑、外发 endpoint/密钥校验、加密向量、去重及原 Service Worker 缓存隐私边界。真实设备送达与本机模拟测试分开报告。写入测试始终使用隔离数据库。

@@ -1213,6 +1213,12 @@ function resetForm() {
   replacementSubscription.classList.add("hide");
   const form = document.querySelector("#subs-form");
   form.reset();
+  ["#payer_user", "#category"].forEach((selector) => {
+    const select = document.querySelector(selector);
+    // Sorting by numeric reference keeps defaults stable after editing a multi-selection.
+    const options = Array.from(select.options).sort((a, b) => Number(a.value) - Number(b.value));
+    options.forEach((option, index) => { select.appendChild(option); option.selected = index === 0; });
+  });
   renderSubscriptionPageSelectOptions(getDefaultSubscriptionPageSelection());
   resetSubscriptionPriceRules();
   resetDetailImageControls();
@@ -1249,10 +1255,10 @@ function fillEditFormFields(subscription) {
   const paymentSelect = document.querySelector("#payment_method");
   paymentSelect.value = subscription.payment_method_id;
   const categorySelect = document.querySelector("#category");
-  categorySelect.value = subscription.category_id;
+  setSubscriptionRelationSelection(categorySelect, subscription.category_ids || [subscription.category_id]);
   renderSubscriptionPageSelectOptions(subscription.subscription_page_id ? String(subscription.subscription_page_id) : "");
   const payerSelect = document.querySelector("#payer_user");
-  payerSelect.value = subscription.payer_user_id;
+  setSubscriptionRelationSelection(payerSelect, subscription.payer_ids || [subscription.payer_user_id]);
 
   const startDate = document.querySelector("#start_date");
   startDate.value = subscription.start_date;
@@ -2551,3 +2557,14 @@ window.addEventListener("pageshow", (event) => {
   scheduleSubscriptionLayoutAfterImagesSettle(subscriptionsContainer, subscriptionsRequestSequence);
   scheduleSubscriptionLayoutAfterFontsSettle(subscriptionsContainer, subscriptionsRequestSequence);
 });
+
+// Explicit lists retain primary ordering while native multiple controls remain accessible.
+function setSubscriptionRelationSelection(select, ids) {
+  const selectedIds = ids.map(String);
+  const options = Array.from(select.options);
+  options.sort((a, b) => {
+    const ai = selectedIds.indexOf(a.value), bi = selectedIds.indexOf(b.value);
+    return (ai < 0 ? 10000 : ai) - (bi < 0 ? 10000 : bi);
+  });
+  options.forEach((option) => { select.appendChild(option); option.selected = selectedIds.includes(option.value); });
+}

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/subscription_trash.php';
+require_once __DIR__ . '/subscription_relations.php';
 require_once __DIR__ . '/subscription_payment_records.php';
 require_once __DIR__ . '/subscription_price_rules.php';
 require_once __DIR__ . '/budget_metrics.php';
@@ -112,6 +113,7 @@ $monthlyCostBreakdown = [];
 $yearlyCostBreakdown = [];
 $amountDueThisMonthSummary = [];
 $projectedYearSummary = [];
+$relationShares = [];
 $actualPaidThisMonthRecords = [];
 $actualPaidThisYearRecords = [];
 $priceRulesMap = wallos_get_subscription_price_rules_map($db, $userId, true);
@@ -129,13 +131,13 @@ $conditions = [];
 $params = [];
 
 if (isset($_GET['member'])) {
-    $conditions[] = "payer_user_id = :member";
+    $conditions[] = "(payer_user_id = :member OR EXISTS (SELECT 1 FROM subscription_payers r WHERE r.subscription_id=subscriptions.id AND r.payer_id=:member))";
     $params[':member'] = $_GET['member'];
     $statsSubtitleParts[] = $members[$_GET['member']]['name'];
 }
 
 if (isset($_GET['category'])) {
-    $conditions[] = "category_id = :category";
+    $conditions[] = "(category_id = :category OR EXISTS (SELECT 1 FROM subscription_categories r WHERE r.subscription_id=subscriptions.id AND r.category_id=:category))";
     $params[':category'] = $_GET['category'];
     $statsSubtitleParts[] = $categories[$_GET['category']]['name'] == "No category" ? translate("no_category", $i18n) : $categories[$_GET['category']]['name'];
 }
@@ -226,6 +228,25 @@ if ($result) {
             true,
             $paymentScopeIds
         );
+        $relationShares = [];
+        foreach ($subscriptions as $row) {
+            $share = wallos_subscription_relation_filter_share($db, $row, $_GET);
+            $relationShares[(int) $row['id']] = $share;
+        }
+        if ($hasStatsFilter) {
+            // These are in-memory display copies. Original payment rows and snapshots are untouched.
+            foreach (['actualPaidThisMonthRecords', 'actualPaidThisYearRecords'] as $recordVariable) {
+                foreach ($$recordVariable as &$record) {
+                    $share = $relationShares[(int) $record['subscription_id']] ?? 1;
+                    $record['allocation_share'] = $share;
+                    $record['amount_original'] = (float) $record['amount_original'] * $share;
+                    if ($record['amount_main_snapshot'] !== null) $record['amount_main_snapshot'] = (float) $record['amount_main_snapshot'] * $share;
+                }
+                unset($record);
+            }
+            $currentMonthActualPaid = array_sum(array_column($actualPaidThisMonthRecords, 'amount_main_snapshot'));
+            $currentYearActualPaid = array_sum(array_column($actualPaidThisYearRecords, 'amount_main_snapshot'));
+        }
         $replacementSubscriptions = array();
 
         foreach ($subscriptions as $subscription) {
@@ -240,9 +261,11 @@ if ($result) {
             }
             $next_payment = $subscription['next_payment'];
             $payerId = $subscription['payer_user_id'];
-            if (isset($members[$payerId])) $members[$payerId]['count'] += 1;
+            $payerIds = wallos_subscription_relation_ids($db, $subscription, 'payer');
+            foreach ($payerIds as $id) { if (isset($members[$id])) $members[$id]['count'] += 1; }
             $categoryId = $subscription['category_id'];
-            if (isset($categories[$categoryId])) $categories[$categoryId]['count'] += 1;
+            $categoryIds = wallos_subscription_relation_ids($db, $subscription, 'category');
+            foreach ($categoryIds as $id) { if (isset($categories[$id])) $categories[$id]['count'] += 1; }
             $paymentMethodId = $subscription['payment_method_id'];
             if (isset($paymentMethods[$paymentMethodId])) $paymentMethods[$paymentMethodId]['count'] += 1;
             $inactive = $subscription['inactive'];
@@ -250,14 +273,16 @@ if ($result) {
             $subscriptionId = (int) ($subscription['id'] ?? 0);
             $priceRules = $priceRulesMap[$subscriptionId] ?? [];
             $originalSubscriptionPrice = getPriceConverted($price, $currency, $db, $userId);
+            $share = $relationShares[$subscriptionId] ?? 1;
+            $originalSubscriptionPrice *= $share;
             $price = getPricePerMonth($cycle, $frequency, $originalSubscriptionPrice);
 
             if ($inactive == 0) {
                 if ((int) $cycle !== 5) {
                     $activeSubscriptions++;
                     $totalCostPerMonth += $price;
-                    if (isset($memberCost[$payerId])) $memberCost[$payerId]['cost'] += $price;
-                    if (isset($categoryCost[$categoryId])) $categoryCost[$categoryId]['cost'] += $price;
+                    foreach ($payerIds as $id) { if (isset($memberCost[$id]) && (!isset($_GET['member']) || $id === (int) $_GET['member'])) $memberCost[$id]['cost'] += $price / (isset($_GET['member']) ? 1 : max(1, count($payerIds))); }
+                    foreach ($categoryIds as $id) { if (isset($categoryCost[$id]) && (!isset($_GET['category']) || $id === (int) $_GET['category'])) $categoryCost[$id]['cost'] += $price / (isset($_GET['category']) ? 1 : max(1, count($categoryIds))); }
                     if (isset($paymentMethodsCount[$paymentMethodId])) $paymentMethodsCount[$paymentMethodId]['count'] += 1;
                     if ($price > $mostExpensiveSubscription['price']) {
                         $mostExpensiveSubscription['id'] = $subscriptionId;
@@ -312,7 +337,7 @@ if ($result) {
                             $ruleSourceSummary = $effectivePrice['matched_rule']
                                 ? wallos_format_subscription_price_rule_summary($effectivePrice['matched_rule'], $currencies, $i18n)
                                 : translate('metric_explanation_regular_price_source', $i18n);
-                            $lineAmount = (float) ($effectivePrice['amount_main'] ?? 0);
+                            $lineAmount = (float) ($effectivePrice['amount_main'] ?? 0) * $share;
                             $amountDueThisMonth += $lineAmount;
                             $amountDueThisMonthSummary[] = [
                                 'name' => $name,
@@ -349,13 +374,13 @@ if ($result) {
                             $ruleSourceSummary = $effectivePrice['matched_rule']
                                 ? wallos_format_subscription_price_rule_summary($effectivePrice['matched_rule'], $currencies, $i18n)
                                 : translate('metric_explanation_regular_price_source', $i18n);
-                            $projectedRemainingYearCost += $effectivePrice['amount_main'];
+                            $projectedRemainingYearCost += $effectivePrice['amount_main'] * $share;
                             $projectedYearSummary[] = [
                                 'name' => $name,
                                 'billing_cycle' => wallos_stats_get_billing_cycle_label($cycle, $frequency, $i18n),
                                 'count' => 1,
-                                'unit_amount' => round((float) $effectivePrice['amount_main'], 2),
-                                'total_amount' => round((float) $effectivePrice['amount_main'], 2),
+                                'unit_amount' => round((float) $effectivePrice['amount_main'] * $share, 2),
+                                'total_amount' => round((float) $effectivePrice['amount_main'] * $share, 2),
                                 'next_due' => $dueDate,
                                 'currency_code' => $mainCurrencyCode,
                                 'rule_summary' => $ruleSourceSummary,
@@ -371,7 +396,7 @@ if ($result) {
 
                 // Check if it has a replacement subscription and if it was not already counted
                 if ($replacementSubscriptionId && !in_array($replacementSubscriptionId, $replacementSubscriptions)) {
-                    $query = "SELECT price, currency_id, cycle, frequency FROM subscriptions WHERE id = :replacementSubscriptionId AND user_id = :userId AND lifecycle_status = :lifecycle_status AND exclude_from_stats = 0";
+                    $query = "SELECT * FROM subscriptions WHERE id = :replacementSubscriptionId AND user_id = :userId AND lifecycle_status = :lifecycle_status AND exclude_from_stats = 0";
                     $stmt = $db->prepare($query);
                     $stmt->bindValue(':replacementSubscriptionId', $replacementSubscriptionId, SQLITE3_INTEGER);
                     $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
@@ -381,7 +406,8 @@ if ($result) {
                     if ($replacementSubscription) {
                         $replacementSubscriptionPrice = getPriceConverted($replacementSubscription['price'], $replacementSubscription['currency_id'], $db, $userId);
                         $replacementSubscriptionPrice = getPricePerMonth($replacementSubscription['cycle'], $replacementSubscription['frequency'], $replacementSubscriptionPrice);
-                        $totalCostsInReplacementsPerMonth += $replacementSubscriptionPrice;
+                        $replacementShare = wallos_subscription_relation_filter_share($db, $replacementSubscription, $_GET);
+                        $totalCostsInReplacementsPerMonth += $replacementSubscriptionPrice * $replacementShare;
                     }
                 }
 
@@ -452,7 +478,7 @@ if ($periodBudgetReferenceDate < $periodBudgetPeriod['start']) {
     $periodBudgetReferenceDate = clone $periodBudgetPeriod['start'];
 }
 $periodBudgetAmount = wallos_budget_period_amount(
-    $subscriptions ?? [],
+    array_map(static function ($subscription) use ($relationShares) { $subscription['_allocation_share'] = $relationShares[(int) $subscription['id']] ?? 1; return $subscription; }, $subscriptions ?? []),
     $periodBudgetReferenceDate,
     $periodBudgetPeriod['end'],
     $db,
@@ -635,7 +661,7 @@ foreach (($subscriptions ?? []) as $subscription) {
 
         $bucketKey = $occurrence->format('Y-m');
         if (isset($projectionBuckets[$bucketKey])) {
-            $projectionBuckets[$bucketKey]['total'] += $amountMain;
+            $projectionBuckets[$bucketKey]['total'] += $amountMain * ($relationShares[$subscriptionId] ?? 1);
         }
     }
 }

@@ -1544,7 +1544,7 @@ function wallos_generate_missing_subscription_image_variants($db, $userId, $base
     ];
 }
 
-function wallos_clone_subscription_uploaded_images($db, $basePath, $fromSubscriptionId, $toSubscriptionId, $userId, $username)
+function wallos_clone_subscription_uploaded_images($db, $basePath, $fromSubscriptionId, $toSubscriptionId, $userId, $username, &$createdPaths = null)
 {
     $images = wallos_get_subscription_uploaded_images($db, $fromSubscriptionId, $userId);
     if (empty($images)) {
@@ -1569,6 +1569,7 @@ function wallos_clone_subscription_uploaded_images($db, $basePath, $fromSubscrip
             continue;
         }
 
+        if (is_array($createdPaths)) $createdPaths[] = $destinationPath;
         $mimeType = trim((string) ($image['mime_type'] ?? ''));
         if ($mimeType === '') {
             $detectedMimeType = @mime_content_type($destinationPath);
@@ -1594,6 +1595,12 @@ function wallos_clone_subscription_uploaded_images($db, $basePath, $fromSubscrip
                     );
                     $previewPath = $variants['preview']['path'];
                     $thumbnailPath = $variants['thumbnail']['path'];
+                    if (is_array($createdPaths)) {
+                        foreach ([$previewPath, $thumbnailPath] as $relativeVariantPath) {
+                            $absoluteVariantPath = wallos_resolve_subscription_image_absolute_path($basePath, $relativeVariantPath);
+                            if ($absoluteVariantPath !== '') $createdPaths[] = $absoluteVariantPath;
+                        }
+                    }
                 } finally {
                     imagedestroy($clonedImage);
                 }
