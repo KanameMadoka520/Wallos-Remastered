@@ -1,3 +1,4 @@
+let calendarModalTrigger = null;
 function nextMonth(currentMonth, currentYear) {
   let nextMonth = currentMonth + 1;
   let nextYear = currentYear;
@@ -67,9 +68,11 @@ function goToCalendarDate() {
 function closeSubscriptionModal() {
     const modal = document.getElementById('subscriptionModal');
     modal.classList.remove('is-open');
+    if (calendarModalTrigger?.isConnected) calendarModalTrigger.focus({ preventScroll: true });
 }
 
 function openSubscriptionModal(subscriptionId) {
+    calendarModalTrigger = document.activeElement;
     const modal = document.getElementById('subscriptionModal');
     const modalContent = document.getElementById('subscriptionModalContent');
 
@@ -87,7 +90,7 @@ function openSubscriptionModal(subscriptionId) {
           const html = `
             <div class="modal-header">
                 <h3>${subscription.name}</h3>
-                <span class="fa-solid fa-xmark close-modal" onclick="closeSubscriptionModal()"></span>
+                <button type="button" class="close-modal" aria-label="${translate('close')}" onclick="closeSubscriptionModal()"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body">
                 ${subscriptionLogo ? `<div class="subscription-logo">
@@ -107,6 +110,7 @@ function openSubscriptionModal(subscriptionId) {
             </div>`;
           modalContent.innerHTML = html;
           modal.classList.add('is-open');
+          modalContent.querySelector('.close-modal')?.focus({ preventScroll: true });
         } else {
           console.error(data.message);
         }
@@ -185,4 +189,16 @@ function copyToClipboard() {
 
 document.addEventListener('DOMContentLoaded', function () {
   syncCalendarJumpControls(false);
+});
+
+// Calendar tiles retain full details and keyboard access when names are clamped.
+document.querySelector('.calendar-body')?.addEventListener('keydown', (event) => {
+  const tile = event.target.closest('.calendar-subscription-title[data-subscription-id]');
+  if (!tile || !['Enter', ' '].includes(event.key)) return;
+  event.preventDefault();
+  openSubscriptionModal(Number(tile.dataset.subscriptionId));
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && document.getElementById('subscriptionModal')?.classList.contains('is-open')) closeSubscriptionModal();
 });

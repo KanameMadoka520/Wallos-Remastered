@@ -2,6 +2,7 @@
   'use strict';
   const toolbar = document.getElementById('subscription-bulk-toolbar');
   if (!toolbar) return;
+  const panel = document.getElementById('subscription-bulk-panel');
   const strings = window.subscriptionBulkStrings || {};
   const endpoint = 'endpoints/subscriptions/bulkedit.php';
   const selected = new Set();
@@ -69,6 +70,9 @@
       label.querySelector('input').checked = checked;
       card.classList.toggle('subscription-bulk-selected', checked);
     });
+    // The selection row changes card height. Re-measure the existing masonry
+    // grid after showing it and after AJAX replaces cards to prevent overlap.
+    window.WallosSubscriptionLayout?.scheduleSubscriptionMasonryLayout();
   }
   function allCards() {
     return Array.from(document.querySelectorAll('.subscription[data-subscription-id]'))
@@ -125,9 +129,10 @@
   }
   function setBusy(value) {
     busy = value;
-    toolbar.querySelectorAll('button,select,input').forEach((element) => { element.disabled = value || (unconfirmed && element !== controls.apply); });
+    panel.querySelectorAll('button,select,input').forEach((element) => { element.disabled = value || (unconfirmed && element !== controls.apply); });
   }
   toolbar.addEventListener('toggle', () => {
+    panel.hidden = !toolbar.open;
     document.body.classList.toggle('subscription-bulk-mode', toolbar.open);
     updateCards();
     if (!toolbar.open) clear();

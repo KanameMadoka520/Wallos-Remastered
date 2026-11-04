@@ -45,6 +45,7 @@ $pageSections = [
 ?>
 
 <link rel="stylesheet" href="styles/ai-category-translation.css?v=<?= filemtime(__DIR__ . '/styles/ai-category-translation.css') ?>">
+<link rel="stylesheet" href="styles/webpush-settings.css?v=<?= filemtime(__DIR__ . '/styles/webpush-settings.css') ?>">
 <link rel="stylesheet" href="styles/logo-catalog-search.css?v=<?= filemtime(__DIR__ . '/styles/logo-catalog-search.css') ?>">
 <script defer src="scripts/libs/sortable.min.js?v=<?= $sortableJsVersion ?>"></script>
 <style>
@@ -984,7 +985,7 @@ $pageSections = [
                 <p><?= translate('ai_categories_info', $i18n) ?></p>
                 <p><a href="#settings-ai"><?= translate('ai_categories_settings', $i18n) ?></a></p>
                 <div class="buttons">
-                    <button type="button" class="thin mobile-grow" id="ai-category-translate" <?= $screenshotPrivacyEnabled ? 'disabled' : '' ?>><?= translate('ai_categories_translate', $i18n) ?></button>
+                    <button type="button" class="button thin mobile-grow" id="ai-category-translate" <?= $screenshotPrivacyEnabled ? 'disabled' : '' ?>><?= translate('ai_categories_translate', $i18n) ?></button>
                 </div>
                 <p id="ai-category-status" role="status" aria-live="polite"></p>
                 <div id="ai-category-preview" hidden>

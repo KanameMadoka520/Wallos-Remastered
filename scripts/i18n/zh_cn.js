@@ -1,4 +1,5 @@
 globalThis.i18n = Object.assign({}, globalThis.wallosI18nEnglish || {}, {
+  close: "关闭",
   screenshot_privacy_mode_blocked: "截图脱敏模式已开启，请先关闭该模式再使用此功能。",
   ai_categories_title: "使用 AI 翻译分类",
   ai_categories_info: "将已保存的分类翻译为账户语言。仅向已配置的 AI 服务商发送分类 ID、名称和目标语言。先预览，确认后再应用；订阅的分类归属保持不变。",

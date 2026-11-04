@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.10.4-remastered.2`；上游功能同步目标：[`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4)。
+> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.10.4-remastered.3`；上游功能同步目标：[`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4)。
 
 [English README](README_EN.md) · [变更记录](CHANGELOG.md) · [安全策略](SECURITY.md) · [贡献指南](CONTRIBUTING.md)
 
@@ -13,6 +13,8 @@ Wallos-Remastered 保留 Wallos 的订阅、统计、多币种、通知、OIDC/T
 2026-11-03 更新在安全适配基础上补齐官方 **v5.10.4** 的多付款人、多分类、批量操作和可选 Web Push，并保留账本、优惠、回收站、图片、分页、截图隐私和定制 Service Worker。迁移推进到 86；MCP 扩展为 20 个工具，保留单值主引用和已有密钥权限。新功能、统计口径及迁移/恢复约束见 [功能整合说明](docs/upstream-feature-integration.md)，此前安全移植见 [兼容记录](docs/upstream-5.10.4-compatibility.md)。
 
 本轮继续补齐统一 AI 推荐调用与响应解析、分类 AI 翻译预览、自定义 Logo 目录来源和 ntfy 测试超时处理。用法见 [AI 配置与分类翻译](docs/ai-recommendations.md) 和 [Logo 搜索来源](docs/logo-sources.md)。数据库仍为迁移 86，现有 MCP 工具及密钥权限保持兼容。
+
+2026-11-04 桌面整合修复覆盖批量工具栏、多选表单、统计/日历、详情弹窗，以及 AI、Web Push 和 Logo 设置组件。在 1366×768、1440×900、1920×1080 下检查布局与键盘操作，保留所有新功能和原有 MCP 契约。修复范围和复验入口见 [桌面验收](docs/upstream-feature-integration.md#桌面整合验收)。
 
 ## 最值得关注的功能
 

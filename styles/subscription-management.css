@@ -1,0 +1,281 @@
+/* Subscription-only controls share the existing form and toolbar sizing. */
+.subscriptions-page-layout .subscription-page-toolbar {
+  flex-wrap: wrap;
+}
+
+.subscriptions-page-layout .subscription-page-tabs {
+  flex-basis: 0;
+}
+
+.subscription-bulk-toolbar {
+  flex: 0 0 auto;
+}
+
+.subscription-bulk-trigger {
+  flex: 0 0 auto;
+  list-style: none;
+  cursor: pointer;
+  white-space: nowrap;
+  background: var(--box-background-color);
+  border: 2px solid rgba(var(--main-color-rgb), .25);
+  color: var(--main-color);
+}
+
+.subscription-bulk-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.subscription-bulk-trigger:hover,
+.subscription-bulk-toolbar[open] .subscription-bulk-trigger {
+  background: rgba(var(--main-color-rgb), .08);
+  color: var(--hover-color);
+  border-color: var(--hover-color);
+}
+
+.subscription-bulk-chevron {
+  font-size: 10px;
+  transition: transform 150ms ease;
+}
+
+.subscription-bulk-toolbar[open] .subscription-bulk-chevron {
+  transform: rotate(180deg);
+}
+
+.subscription-bulk-panel {
+  order: 3;
+  flex: 1 0 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border: 1px solid var(--input-border-color, #8885);
+  border-radius: 12px;
+  background: var(--input-background-color);
+}
+
+.subscription-bulk-controls,
+.subscription-bulk-preview-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.subscription-bulk-controls > select,
+.subscription-bulk-controls > .subscription-relation-picker {
+  width: 220px;
+  max-width: 100%;
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.subscription-bulk-controls > input[type="number"] {
+  width: 100px;
+}
+
+#subscription-bulk-count {
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.subscription-bulk-hint {
+  font-size: .85rem;
+  opacity: .8;
+  margin: 8px 0;
+}
+
+.subscription-bulk-selection {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.subscription-bulk-mode .subscription-bulk-selection {
+  display: flex;
+}
+
+.subscription-bulk-selection input,
+.subscription-relation-option input {
+  appearance: auto !important;
+  position: static !important;
+  opacity: 1 !important;
+  width: 20px !important;
+  height: 20px !important;
+  margin: 0;
+  flex: 0 0 20px;
+  accent-color: var(--accent-color, #7452ce);
+}
+
+.subscription-bulk-selected {
+  outline: 2px solid var(--accent-color, #7452ce);
+  outline-offset: 2px;
+}
+
+.subscription-bulk-preview {
+  border-top: 1px solid var(--input-border-color, #8885);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.subscription-bulk-preview ul {
+  max-height: 220px;
+  overflow: auto;
+  padding-inline-start: 24px;
+}
+
+.subscription-bulk-panel[hidden],
+.subscription-bulk-panel [hidden],
+.subscription-relation-picker[hidden],
+.subscription-relation-panel[hidden] {
+  display: none !important;
+}
+
+.subscription-bulk-error {
+  color: var(--danger-color, #bf3636);
+  overflow-wrap: anywhere;
+}
+
+.subscription-relation-picker {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.subscription-payment-modal textarea,
+#subs-form textarea {
+  box-sizing: border-box;
+}
+
+#subscription-payment-note {
+  height: 128px;
+  min-height: 128px;
+  resize: vertical;
+}
+
+#subs-form .inline > .split50,
+#subscription-payment-form .inline > .split50 {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Keep the original named select as the form's canonical value and required
+ * validation target. Without JavaScript it remains a native multiple select. */
+#subs-form select.subscription-relation-native,
+select.subscription-relation-native {
+  position: absolute;
+  width: 1px !important;
+  height: 1px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.subscription-relation-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 50px;
+  box-sizing: border-box;
+  padding: 0 15px;
+  border: 1px solid var(--input-border-color);
+  border-radius: 8px;
+  background: var(--input-background-color);
+  color: var(--text-color);
+  font: inherit;
+  font-size: 16px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.subscription-relation-toggle:focus-visible,
+.subscription-bulk-trigger:focus-visible {
+  outline: 2px solid var(--accent-color, #7452ce);
+  outline-offset: 2px;
+}
+
+.subscription-relation-toggle:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.subscription-relation-value {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subscription-relation-count {
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--button-background-color, #8882);
+  font-size: 12px;
+}
+
+.subscription-relation-chevron {
+  font-size: 11px;
+  flex: 0 0 auto;
+}
+
+.subscription-relation-panel {
+  position: fixed;
+  z-index: 4100;
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  border: 1px solid var(--input-border-color);
+  border-radius: 10px;
+  background: var(--input-background-color);
+  color: var(--text-color);
+  box-shadow: 0 8px 24px #0003;
+}
+
+.subscription-relation-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 6px 9px;
+  margin: 0;
+  box-sizing: border-box;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.subscription-relation-option:hover,
+.subscription-relation-option:focus-within {
+  background: var(--hover-background-color, #8882);
+}
+
+.subscription-relation-hint {
+  padding: 5px 9px;
+  font-size: 12px;
+  opacity: .7;
+}
+
+@media (max-width: 900px) {
+  .subscriptions-page-layout .subscription-page-toolbar {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .subscription-page-toolbar .subscription-page-tabs {
+    flex: 1 0 100%;
+  }
+
+  .subscription-bulk-panel {
+    padding: 10px;
+  }
+}

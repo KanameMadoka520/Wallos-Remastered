@@ -78,6 +78,20 @@
     fetchSubscriptions(null, null, "clearfilters");
   }
 
+  function closeActions(restoreFocus = false) {
+    const trigger = currentActions?.closest('.subscription-container')
+      ?.querySelector('[data-subscription-action="expand-subscription-actions"]');
+    document.querySelectorAll('.actions.is-open').forEach((actions) => {
+      actions.classList.remove('is-open');
+      const container = actions.closest('.subscription-container');
+      container?.classList.remove('actions-menu-open');
+      container?.querySelector('[data-subscription-action="expand-subscription-actions"]')
+        ?.setAttribute('aria-expanded', 'false');
+    });
+    currentActions = null;
+    if (restoreFocus && trigger?.isConnected) trigger.focus();
+  }
+
   function expandActions(event, subscriptionId) {
     event.stopPropagation();
     event.preventDefault();
@@ -89,21 +103,13 @@
       return;
     }
 
-    const allActions = document.querySelectorAll('.actions.is-open');
-    allActions.forEach((openAction) => {
-      if (openAction !== actions) {
-        openAction.classList.remove('is-open');
-        const openContainer = openAction.closest('.subscription-container');
-        if (openContainer) {
-          openContainer.classList.remove('actions-menu-open');
-        }
-      }
-    });
-
     const shouldOpen = !actions.classList.contains('is-open');
-    actions.classList.toggle('is-open');
+    closeActions();
+    actions.classList.toggle('is-open', shouldOpen);
     if (subscriptionContainer) {
       subscriptionContainer.classList.toggle('actions-menu-open', shouldOpen);
+      subscriptionContainer.querySelector('[data-subscription-action="expand-subscription-actions"]')
+        ?.setAttribute('aria-expanded', String(shouldOpen));
     }
 
     currentActions = shouldOpen ? actions : null;
@@ -116,6 +122,7 @@
       }
 
       button.dataset.expandActionBound = "1";
+      button.setAttribute('aria-expanded', 'false');
       button.addEventListener('click', function (event) {
         expandActions(event, Number(this.dataset.subscriptionId || 0));
       });
@@ -310,15 +317,20 @@
           return;
         }
 
-        if (currentActions && !currentActions.contains(event.target)) {
-          currentActions.classList.remove('is-open');
-          const currentContainer = currentActions.closest('.subscription-container');
-          if (currentContainer) {
-            currentContainer.classList.remove('actions-menu-open');
-          }
-          currentActions = null;
+        // Dismiss before delegated actions open a dialog or stop propagation.
+        // A chosen menu item is complete, so it must not remain above the card
+        // after the dialog closes.
+        if (currentActions && (!currentActions.contains(event.target)
+          || event.target.closest('[data-subscription-action]'))) closeActions();
+      }, true);
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && currentActions) {
+          event.preventDefault();
+          event.stopPropagation();
+          closeActions(true);
         }
-      });
+      }, true);
 
       interactionsInitialized = true;
     }
@@ -334,6 +346,7 @@
     closeSubMenus,
     toggleSubMenu,
     clearFilters,
+    closeActions,
     expandActions,
     setSwipeElements,
     swipeHintAnimation,

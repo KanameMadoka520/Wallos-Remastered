@@ -27,6 +27,21 @@ function wallos_stored_text_source($relativePath)
 
 try {
     require_once __DIR__ . '/../includes/inputvalidation.php';
+    require_once __DIR__ . '/../includes/metric_explanations.php';
+    $metricItems = [['name' => 'AT&amp;T &lt;private&gt;', 'subscription_name' => 'A &quot;Plan&quot;', 'total_amount' => 12.5]];
+    $metricSource = ['sample' => ['items' => $metricItems, 'item_groups' => [['items' => $metricItems]]]];
+    ob_start();
+    wallos_render_metric_explanation_trigger('sample', $metricSource);
+    $metricHtml = ob_get_clean();
+    preg_match('/data-metric-explanation="([^"]+)"/', $metricHtml, $metricMatch);
+    $metricPayload = json_decode(html_entity_decode($metricMatch[1], ENT_QUOTES, 'UTF-8'), true);
+    wallos_stored_text_assert($metricPayload['items'][0]['name'] === 'AT&T <private>'
+        && $metricPayload['item_groups'][0]['items'][0]['subscription_name'] === 'A "Plan"',
+        'Metric display JSON must decode flat and grouped stored names exactly once.');
+    wallos_stored_text_assert($metricSource['sample']['items'][0]['name'] === 'AT&amp;T &lt;private&gt;'
+        && $metricPayload['items'][0]['total_amount'] === 12.5
+        && strpos($metricHtml, '<private>') === false,
+        'Metric rendering must preserve source data and amounts, and escape JSON attributes.');
 
     // The decoder must invert validate() exactly for the characters
     // htmlspecialchars() escapes by default (ENT_QUOTES | ENT_HTML401).
@@ -91,8 +106,8 @@ try {
 
     $calendarPage = wallos_stored_text_source('calendar.php');
     wallos_stored_text_assert(
-        substr_count($calendarPage, 'htmlspecialchars(wallos_decode_stored_text($subscription[\'name\'])') === 2,
-        'calendar.php must decode the stored subscription name in both visible and aria output.'
+        substr_count($calendarPage, 'htmlspecialchars(wallos_decode_stored_text($subscription[\'name\'])') === 3,
+        'calendar.php must decode the stored subscription name in visible, title and aria output.'
     );
 
     $getCalendar = wallos_stored_text_source('endpoints/subscription/getcalendar.php');

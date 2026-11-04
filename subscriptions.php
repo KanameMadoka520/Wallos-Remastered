@@ -641,7 +641,6 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 </style>
 
 <section class="contain contain-wide subscriptions-page-layout" data-page-ui-hide-target>
-<?php require __DIR__ . '/includes/subscription_bulk_toolbar.php'; ?>
   <header class="<?= $headerClass ?>" id="main-actions">
     <div class="inline-row">
       <button class="button" data-subscription-action="open-add-subscription">
@@ -749,6 +748,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
           <span class="section-count-badge"><?= (int) ($subscriptionPageCounts['unassigned'] ?? 0) ?></span>
         </button>
       </div>
+      <?php require __DIR__ . '/includes/subscription_bulk_toolbar.php'; ?>
       <button type="button" class="button secondary-button tiny subscription-page-manager-trigger"
         data-subscription-action="open-pages-manager">
         <i class="fa-solid fa-table-list"></i>
@@ -1207,7 +1207,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
         </div>
         <div class="split50">
           <label for="payer_user"><?= translate('paid_by', $i18n) ?></label>
-          <select id="payer_user" name="payer_ids[]" multiple size="3" required>
+          <select id="payer_user" name="payer_ids[]" multiple size="3" required data-subscription-relation-picker>
             <?php
             foreach ($displayMembers as $member) {
               ?>
@@ -1222,7 +1222,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 
     <div class="form-group">
       <label for="category"><?= translate('category', $i18n) ?></label>
-      <select id="category" name="category_ids[]" multiple size="3" required>
+      <select id="category" name="category_ids[]" multiple size="3" required data-subscription-relation-picker>
         <?php
         foreach ($displayCategories as $category) {
           ?>
@@ -1693,6 +1693,8 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 <script defer src="scripts/subscription-payments.js?v=<?= $subscriptionPaymentsJsVersion ?>"></script>
 <script defer src="scripts/subscription-interactions.js?v=<?= $subscriptionInteractionsJsVersion ?>"></script>
 <script defer src="scripts/subscriptions.js?v=<?= $subscriptionsJsVersion ?>"></script>
+<link rel="stylesheet" href="styles/subscription-management.css?v=<?= $version . '.' . @filemtime(__DIR__ . '/styles/subscription-management.css') ?>">
+<script defer src="scripts/subscription-relations-picker.js?v=<?= $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-relations-picker.js') ?>"></script>
 <link rel="stylesheet" href="styles/logo-catalog-search.css?v=<?= $version . '.' . @filemtime(__DIR__ . '/styles/logo-catalog-search.css') ?>">
 <script defer src="scripts/logo-catalog-search.js?v=<?= $version . '.' . @filemtime(__DIR__ . '/scripts/logo-catalog-search.js') ?>"></script>
 <script defer src="scripts/subscription_bulk.js?v=<?= $version . '.' . @filemtime(__DIR__ . '/scripts/subscription_bulk.js') ?>"></script>

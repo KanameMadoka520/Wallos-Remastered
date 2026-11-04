@@ -718,6 +718,8 @@
       else maskDirectText(title, fakeName(key, "calendar"));
       if (countdown) maskDirectText(countdown, fakeDescription(key, "calendar-countdown"));
       if (flag) maskDirectText(flag, runtimeConfig.labels.chartSubtitle);
+      title.querySelectorAll(".calendar-subscription-price").forEach((price) => maskDirectText(price, fakePrice(key, "calendar-price")));
+      setMaskedAttribute(title, "title", fakeName(key, "calendar"));
       setMaskedAttribute(title, "aria-label", fakeName(key, "calendar"));
       markMasked(title);
     });

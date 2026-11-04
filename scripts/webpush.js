@@ -28,12 +28,17 @@
     list.replaceChildren();
     data.devices.forEach(device => {
       const row = document.createElement('li');
+      row.className = 'webpush-device';
       const label = document.createElement('span');
+      label.className = 'webpush-device-label';
       label.textContent = device.device_name + (device.current ? ' (' + translate('webpush_this_device') + ')' : '');
-      row.append(label, document.createTextNode(' '));
+      const actions = document.createElement('div');
+      actions.className = 'webpush-device-actions';
+      row.append(label, actions);
       [['webpush_test', 'test'], ['webpush_rename', 'rename'], ['webpush_revoke', 'remove']].forEach(([key, operation]) => {
         const button = document.createElement('button');
         button.type = 'button';
+        button.className = 'button ' + (operation === 'remove' ? 'warning-button' : 'secondary-button') + ' tiny';
         button.textContent = translate(key);
         button.addEventListener('click', async () => {
           const data = {action: operation, id: Number(device.id)};
@@ -55,12 +60,13 @@
             status.textContent = translate(operation === 'test' ? 'webpush_test_accepted' : 'success');
           } catch (error) { fail(error); } finally { button.disabled = false; }
         });
-        row.append(button, document.createTextNode(' '));
+        actions.append(button);
       });
       list.append(row);
     });
     if (!data.devices.length) {
       const item = document.createElement('li');
+      item.className = 'webpush-empty';
       item.textContent = translate('webpush_no_devices');
       list.append(item);
     }

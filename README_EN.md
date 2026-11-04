@@ -1,12 +1,14 @@
 # Wallos-Remastered
 
-> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.10.4-remastered.2`; upstream feature synchronization target: [`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4).
+> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.10.4-remastered.3`; upstream feature synchronization target: [`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4).
 
 [简体中文 README](README.md) · [Changelog (Chinese)](CHANGELOG.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
 The 2026-11-03 feature integration adds multiple payers/categories, transactional bulk updates/trash and optional device-scoped Web Push. Migration level is 86; MCP now exposes 20 tools while preserving legacy primary references and existing key scopes. See [feature integration and migration](docs/upstream-feature-integration.md), [Agent API](docs/agent-api.md), and [Web Push](docs/web-push.md). The upstream synchronization target is v5.10.4; Remastered retains its own schema, UI, ledger, recycle bin and private cache rules.
 
 This release also unifies AI requests and response parsing, adds category translation with preview/apply, adds selfh.st and Dashboard Icons catalog searches, and bounds ntfy test requests. See [AI setup and translation](docs/ai-recommendations.md) and [logo sources](docs/logo-sources.md). The schema stays at migration 86 and existing MCP tools and key scopes remain compatible.
+
+The 2026-11-04 desktop integration fixes cover the batch toolbar, compact multi-select controls, statistics/calendar and detail dialogs, plus AI, Web Push and logo settings. Layout and keyboard checks cover 1366×768, 1440×900 and 1920×1080. Existing MCP contracts and migration level 86 remain unchanged; see the [desktop acceptance checks](docs/upstream-feature-integration.md#桌面整合验收).
 
 ## What this project is
 

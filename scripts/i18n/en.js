@@ -1,4 +1,5 @@
 globalThis.wallosI18nEnglish = {
+  close: "Close",
   screenshot_privacy_mode_blocked: "Screenshot privacy mode is enabled. Disable it before using this feature.",
   ai_categories_title: "Translate categories with AI",
   ai_categories_info: "Translate your saved categories into your account language. Only category IDs, names and the target language are sent to your configured AI provider. Review the preview before applying; subscription assignments stay the same.",

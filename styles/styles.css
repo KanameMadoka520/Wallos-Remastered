@@ -585,6 +585,7 @@ main>.contain {
 }
 
 .page-nav {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -6679,8 +6680,31 @@ body.dynamic-wallpaper-enabled .calendar .calendar-cell--has-current-due .calend
   color: var(--error-color);
 }
 
-.subscription-modal:not(.subscription-payment-history-modal):not(.subscription-pages-manager-modal) {
+/* Compact calendar dialogs must not constrain unrelated subscription tools. */
+#subscriptionModal,
+#subscriptions_calendar {
   max-width: 400px;
+}
+
+.subscription-modal.subscription-payment-modal {
+  width: min(40vw, 760px);
+  max-width: min(calc(100vw - 32px), 760px);
+}
+
+.subscription-modal.subscription-payment-history-modal {
+  width: min(50vw, 980px);
+  max-width: min(calc(100vw - 32px), 980px);
+}
+
+.subscription-modal.subscription-recycle-bin-modal {
+  width: min(70vw, 1320px);
+  max-width: min(calc(100vw - 32px), 1320px);
+}
+
+@media (max-width: 768px) {
+  .subscription-modal.subscription-payment-modal,
+  .subscription-modal.subscription-payment-history-modal,
+  .subscription-modal.subscription-recycle-bin-modal { width: calc(100vw - 32px); }
 }
 
 .subscription-modal .modal-header {
@@ -7873,4 +7897,48 @@ body.light .subscription-main .logo img.logo-theme-variant[data-native-theme="da
 #subs-form select[multiple] option {
   padding: 7px 9px;
   border-radius: 4px;
+}
+
+/* Desktop integration: bounded metrics and compact calendar details. */
+.statistic { min-width: 0; container-type: inline-size; }
+.statistic > span {
+  width: 100%; max-width: 100%; box-sizing: border-box;
+  font-size: 34px; font-size: clamp(24px, 13cqw, 42px); line-height: 1.2;
+  text-align: center; overflow-wrap: anywhere;
+}
+.statistic-caption { display: flex; align-items: center; justify-content: center; gap: 7px; max-width: 100%; margin-top: 5px; }
+.statistic-caption > .title { min-width: 0; text-align: center; overflow-wrap: anywhere; }
+.statistic-caption > .metric-explanation-trigger { position: static; flex: 0 0 26px; width: 26px; height: 26px; }
+.calendar .calendar-subscription-name {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; overflow-wrap: anywhere;
+}
+.calendar .calendar-subscription-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 5px; min-width: 0; max-width: 100%; }
+.calendar .calendar-subscription-meta > span { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.calendar .calendar-subscription-title:focus-visible { outline: 2px solid var(--main-color); outline-offset: 2px; }
+
+/* Theme button display must respect application visibility state. */
+button.button.hidden, button.secondary-button.hidden, button.warning-button.hidden,
+a.button.hidden, a.secondary-button.hidden, a.warning-button.hidden,
+[hidden] { display: none !important; }
+
+#subscriptionModal .modal-header h3 { padding-right: 36px; overflow-wrap: anywhere; }
+#subscriptionModal .close-modal {
+  width: 30px; height: 30px; padding: 4px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--text-color); line-height: 1;
+}
+#subscriptionModal .close-modal:focus-visible { outline: 2px solid var(--main-color); outline-offset: 2px; }
+
+.subscription-modal > header h3 { padding-right: 48px; overflow-wrap: anywhere; }
+.metric-explanation-items { grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+.metric-explanation-items > .metric-explanation-group,
+.metric-explanation-items > .metric-explanation-empty { grid-column: 1 / -1; }
+
+.subscription-payment-history-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.subscription-payment-history-summary-card { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 768px) {
+  .subscription-payment-history-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+  .subscription-payment-history-summary { grid-template-columns: 1fr; }
 }

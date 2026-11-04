@@ -74,11 +74,50 @@
 
     function fitPopup() {
       popup.style.transform = '';
+      const available = { left: 12, top: 12, right: window.innerWidth - 12, bottom: window.innerHeight - 12 };
+      // A subscription dialog can clip an absolutely positioned search panel.
+      // Fit within both the viewport and any scrollable/clipping ancestors.
+      for (let parent = popup.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+        const style = window.getComputedStyle(parent);
+        const bounds = parent.getBoundingClientRect();
+        if (/auto|scroll|hidden|clip/.test(style.overflowX)) {
+          available.left = Math.max(available.left, bounds.left + 8);
+          available.right = Math.min(available.right, bounds.right - 8);
+        }
+        if (/auto|scroll|hidden|clip/.test(style.overflowY)) {
+          available.top = Math.max(available.top, bounds.top + 8);
+          available.bottom = Math.min(available.bottom, bounds.bottom - 8);
+        }
+      }
+      popup.style.maxWidth = `${Math.max(0, available.right - available.left)}px`;
+      popup.style.maxHeight = `${Math.max(0, Math.min(window.innerHeight * .65, available.bottom - available.top))}px`;
       const bounds = popup.getBoundingClientRect();
-      const shift = bounds.left < 12 ? 12 - bounds.left
-        : bounds.right > window.innerWidth - 12 ? window.innerWidth - 12 - bounds.right : 0;
-      if (shift) popup.style.transform = `translateX(${shift}px)`;
+      const x = bounds.left < available.left ? available.left - bounds.left
+        : bounds.right > available.right ? available.right - bounds.right : 0;
+      const y = bounds.top < available.top ? available.top - bounds.top
+        : bounds.bottom > available.bottom ? available.bottom - bounds.bottom : 0;
+      if (x || y) popup.style.transform = `translate(${x}px, ${y}px)`;
     }
+    const closeControl = popup.querySelector('.close-logo-search, .close-icon-search');
+    if (closeControl) {
+      closeControl.tabIndex = 0;
+      closeControl.setAttribute('role', 'button');
+      closeControl.setAttribute('aria-label', text('close', 'Close'));
+      closeControl.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          window[config.close]();
+        }
+      });
+    }
+    popup.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        window[config.close]();
+        nameInput.focus({ preventScroll: true });
+      }
+    });
     function updatePagination() {
       pagination.hidden = state.source === 'web';
       const current = state.renderedSource === state.source && state.renderedQuery === query.value.trim();
@@ -177,6 +216,7 @@
       query.value = nameInput.value.trim().slice(0, 128);
       popup.classList.add('is-open');
       fitPopup();
+      query.focus({ preventScroll: true });
       run(1);
     };
     const legacyClose = window[config.close];
@@ -205,6 +245,14 @@
     window.addEventListener('resize', () => {
       if (popup.classList.contains('is-open')) fitPopup();
     });
+    let scrollFrame = null;
+    window.addEventListener('scroll', event => {
+      if (!popup.classList.contains('is-open') || popup.contains(event.target) || scrollFrame !== null) return;
+      scrollFrame = window.requestAnimationFrame(() => {
+        scrollFrame = null;
+        if (popup.classList.contains('is-open')) fitPopup();
+      });
+    }, { capture: true, passive: true });
     previous.addEventListener('click', () => run(state.page - 1));
     next.addEventListener('click', () => run(state.page + 1));
     updatePagination();

@@ -537,55 +537,54 @@ function toggleDropdown() {
 }
 
 function setupPageNavigation() {
-  const pageNavs = document.querySelectorAll(".page-nav");
-
-  pageNavs.forEach((pageNav) => {
+  document.querySelectorAll(".page-nav").forEach((pageNav) => {
     const links = [...pageNav.querySelectorAll("[data-page-nav-link]")];
-    const sections = links
-      .map((link) => document.getElementById(link.dataset.pageNavLink))
-      .filter(Boolean);
-
-    if (!links.length || !sections.length) {
-      return;
-    }
-
+    const sections = links.map((link) => document.getElementById(link.dataset.pageNavLink)).filter(Boolean);
+    if (!sections.length) return;
+    let activeId = "";
+    let scheduled = false;
     const setActiveLink = (targetId) => {
+      if (activeId === targetId) return;
+      activeId = targetId;
       links.forEach((link) => {
-        const isActive = link.dataset.pageNavLink === targetId;
-        link.classList.toggle("is-active", isActive);
+        const active = link.dataset.pageNavLink === targetId;
+        link.classList.toggle("is-active", active);
+        if (active) link.setAttribute("aria-current", "location");
+        else link.removeAttribute("aria-current");
       });
+      const active = links.find((link) => link.dataset.pageNavLink === targetId);
+      if (!active) return;
+      const bounds = pageNav.getBoundingClientRect();
+      const item = active.getBoundingClientRect();
+      if (item.top < bounds.top) pageNav.scrollTop -= bounds.top - item.top + 8;
+      else if (item.bottom > bounds.bottom) pageNav.scrollTop += item.bottom - bounds.bottom + 8;
     };
-
-    const initialTarget = window.location.hash ? window.location.hash.slice(1) : sections[0].id;
-    setActiveLink(initialTarget);
-
-    links.forEach((link) => {
-      link.addEventListener("click", () => {
-        setActiveLink(link.dataset.pageNavLink);
+    const update = () => {
+      scheduled = false;
+      // Tall sections never reach an intersection ratio of 20%. Track their
+      // position at the reading line instead, including expanded settings.
+      const line = Math.max(100, Math.min(160, window.innerHeight * 0.2));
+      let current = sections[0];
+      sections.forEach((section) => {
+        if (section.getBoundingClientRect().top <= line) current = section;
       });
-    });
-
-    if (!("IntersectionObserver" in window)) {
-      return;
+      const scroller = document.scrollingElement || document.documentElement;
+      if (scroller.scrollTop > 0 && scroller.scrollTop + window.innerHeight >= scroller.scrollHeight - 2) current = sections[sections.length - 1];
+      setActiveLink(current.id);
+    };
+    const schedule = () => {
+      if (!scheduled) { scheduled = true; window.requestAnimationFrame(update); }
+    };
+    links.forEach((link) => link.addEventListener("click", () => setActiveLink(link.dataset.pageNavLink)));
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("hashchange", schedule);
+    window.addEventListener("load", schedule, { once: true });
+    if ("ResizeObserver" in window) {
+      const observer = new ResizeObserver(schedule);
+      sections.forEach((section) => observer.observe(section));
     }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleSections = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-
-        if (visibleSections.length > 0) {
-          setActiveLink(visibleSections[0].target.id);
-        }
-      },
-      {
-        rootMargin: "-20% 0px -60% 0px",
-        threshold: [0.2, 0.5, 0.8],
-      }
-    );
-
-    sections.forEach((section) => observer.observe(section));
+    schedule();
   });
 }
 

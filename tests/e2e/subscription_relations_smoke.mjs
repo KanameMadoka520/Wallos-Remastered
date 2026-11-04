@@ -28,10 +28,29 @@ try {
  await page.goto(base+'/subscriptions.php',{waitUntil:'networkidle'});
  await page.evaluate(()=>addSubscription());
  await page.locator('#name').fill(name);await page.locator('#price').fill('120');await page.locator('#next_payment').fill(new Date().toISOString().slice(0,10));
- await page.locator('#payer_user').selectOption(payers.map(r=>String(r.id)));
- await page.locator('#category').selectOption(cats.map(r=>String(r.id)));
- check(await page.locator('#payer_user').evaluate(el=>el.multiple && el.getBoundingClientRect().height>=100),'payer multi-select is visible and accessible');
- check(await page.locator('#category').evaluate(el=>el.multiple && el.getBoundingClientRect().height>=100),'category multi-select is visible and accessible');
+ const chooseRelations=async(id, rows)=>{
+  const toggle=page.locator(`#${id}-picker-toggle`);
+  await toggle.click();
+  const panel=page.locator(`#${id}-picker-panel`);
+  await panel.waitFor({state:'visible'});
+  while(await panel.locator('input:checked').count()) await panel.locator('input:checked').first().uncheck();
+  for(const row of rows) await panel.locator(`input[value="${row.id}"]`).check();
+  await page.keyboard.press('Escape');
+  check(await panel.isHidden() && await toggle.evaluate(el=>document.activeElement===el),id+' multi-select supports Escape and restores focus');
+ };
+ await chooseRelations('payer_user',payers);
+ await chooseRelations('category',cats);
+ await page.locator('#category-picker-toggle').click();
+ while(await page.locator('#category-picker-panel input:checked').count()) await page.locator('#category-picker-panel input:checked').first().uncheck();
+ check(!(await page.locator('#category').evaluate(el=>el.reportValidity())) && await page.locator('#category-picker-panel').isVisible(),'empty required relations retain native validation and open their choices');
+ for(const row of cats) await page.locator(`#category-picker-panel input[value="${row.id}"]`).check();
+ await page.keyboard.press('Escape');
+ check(await page.locator('#payer_user-picker-toggle').evaluate(el=>el.getBoundingClientRect().height===50),'payer multiple-choice control uses the standard compact form height');
+ check(await page.locator('#category-picker-toggle').evaluate(el=>el.getBoundingClientRect().height===50),'category multiple-choice control uses the standard compact form height');
+ check(await page.locator('#payer_user-picker-toggle').evaluate(el=>{
+  const a=el.getBoundingClientRect(),b=document.querySelector('#payment_method').getBoundingClientRect();
+  return Math.abs(a.top-b.top)<1 && Math.abs(a.bottom-b.bottom)<1;
+ }),'payer and payment method remain aligned in the same form row');
  await page.locator('#currency').selectOption('100');await page.locator('#cycle').selectOption('3');await page.locator('#frequency').selectOption('1');
  await page.locator('#payment_method').selectOption('100');
  const submit=page.waitForResponse(r=>r.url().includes('/endpoints/subscription/add.php') && r.request().method()==='POST');
@@ -39,6 +58,7 @@ try {
  const saved=await (await submit).json();check(saved.status==='Success','web form creates a subscription with both relation lists');
  const item=(await tool('wallos_subscriptions_list',{limit:100})).subscriptions.find(s=>s.name===name);assert(item,'created subscription exists');
  check(item.payer_ids.length===2 && item.category_ids.length===2,'MCP reads full relation lists created through the browser');
+ check(item.payer_ids.join(',')===payers.map(r=>r.id).join(',') && item.category_ids.join(',')===cats.map(r=>r.id).join(','),'checkbox choices preserve native relation ordering and primary IDs');
  await page.goto(base+'/subscriptions.php',{waitUntil:'networkidle'});
  const card=page.locator(`.subscription[data-id="${item.id}"]`);
  const labels=await card.textContent();
@@ -46,6 +66,7 @@ try {
  await page.evaluate(id=>openEditSubscription({stopPropagation(){}},id),item.id);
  await page.waitForFunction(()=>Array.from(document.querySelector('#payer_user').selectedOptions).length===2);
  check((await page.locator('#category').evaluate(el=>Array.from(el.selectedOptions).length))===2,'edit modal restores all selected categories');
+ check((await page.locator('#payer_user-picker-toggle').textContent()).includes(payers[0].name) && (await page.locator('#category-picker-toggle').textContent()).includes(cats[1].name),'compact pickers refresh from programmatic edit selection');
  await page.locator('#name').fill(name+' edited');
  const update=page.waitForResponse(r=>r.url().includes('/endpoints/subscription/add.php') && r.request().method()==='POST');
  await page.locator('#subs-form input[type=submit], #subs-form button[type=submit]').first().click();

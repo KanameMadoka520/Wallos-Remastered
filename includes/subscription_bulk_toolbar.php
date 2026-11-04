@@ -48,27 +48,14 @@ function wallos_agent_rows_for_bulk_toolbar($db, $uid, $table)
 }
 $bulkEscape = static fn($text) => htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
 ?>
-<style>
-.subscription-bulk-toolbar{margin:0 0 16px;padding:12px 16px;border:1px solid var(--border-color,#8885);border-radius:12px}
-.subscription-bulk-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px}
-.subscription-bulk-toolbar select{max-width:100%;min-width:0}
-.subscription-bulk-toolbar select[multiple]{min-height:80px}
-.subscription-bulk-hint{font-size:.85rem;opacity:.8;margin:8px 0}
-.subscription-bulk-selection{display:none;align-items:center;justify-content:center;gap:8px;padding:6px 10px;cursor:pointer}
-.subscription-bulk-mode .subscription-bulk-selection{display:flex}
-.subscription-bulk-selection input{appearance:auto!important;position:static!important;opacity:1!important;width:20px!important;height:20px!important;accent-color:var(--accent-color,#7452ce)}
-.subscription-bulk-selected{outline:2px solid var(--accent-color,#7452ce);outline-offset:2px}
-.subscription-bulk-preview{border-top:1px solid #8885;margin-top:12px;padding-top:12px}
-.subscription-bulk-preview ul{max-height:220px;overflow:auto;padding-inline-start:24px}
-.subscription-bulk-toolbar [hidden]{display:none!important}
-.subscription-bulk-error{color:var(--danger-color,#bf3636);overflow-wrap:anywhere}
-</style>
 <details id="subscription-bulk-toolbar" class="subscription-bulk-toolbar" data-page-ui-hide-target>
-  <summary><?= $bulkEscape($bulkStrings['title']) ?></summary>
+  <summary class="button secondary-button tiny subscription-bulk-trigger" aria-controls="subscription-bulk-panel"><i class="fa-solid fa-list-check" aria-hidden="true"></i><span><?= $bulkEscape($bulkStrings['title']) ?></span><i class="fa-solid fa-chevron-down subscription-bulk-chevron" aria-hidden="true"></i></summary>
+</details>
+  <div id="subscription-bulk-panel" class="subscription-bulk-panel" hidden>
   <p class="subscription-bulk-hint"><?= $bulkEscape($bulkStrings['hint']) ?></p>
   <div class="subscription-bulk-controls">
-    <button type="button" id="subscription-bulk-select-page" class="secondary-button thin"><?= $bulkEscape($bulkStrings['selectPage']) ?></button>
-    <button type="button" id="subscription-bulk-clear" class="secondary-button thin"><?= $bulkEscape($bulkStrings['clear']) ?></button>
+    <button type="button" id="subscription-bulk-select-page" class="button secondary-button thin"><?= $bulkEscape($bulkStrings['selectPage']) ?></button>
+    <button type="button" id="subscription-bulk-clear" class="button secondary-button thin"><?= $bulkEscape($bulkStrings['clear']) ?></button>
     <span id="subscription-bulk-count" aria-live="polite"></span>
     <select id="subscription-bulk-action" aria-label="<?= $bulkEscape($bulkStrings['choose']) ?>">
       <option value=""><?= $bulkEscape($bulkStrings['choose']) ?></option>
@@ -77,7 +64,7 @@ $bulkEscape = static fn($text) => htmlspecialchars((string) $text, ENT_QUOTES, '
       <?php endforeach; ?>
     </select>
     <input id="subscription-bulk-days" type="number" min="0" max="365" step="1" value="3" hidden aria-label="<?= $bulkEscape($bulkStrings['days']) ?>">
-    <select id="subscription-bulk-categories" multiple hidden aria-label="<?= $bulkEscape($bulkStrings['categories']) ?>">
+    <select id="subscription-bulk-categories" multiple hidden data-subscription-relation-picker aria-label="<?= $bulkEscape($bulkStrings['categories']) ?>">
       <?php foreach ($bulkCategories as $bulkReference): ?>
         <option value="<?= (int) $bulkReference['id'] ?>"><?= $bulkEscape(html_entity_decode($bulkReference['name'], ENT_QUOTES, 'UTF-8')) ?></option>
       <?php endforeach; ?>
@@ -87,7 +74,7 @@ $bulkEscape = static fn($text) => htmlspecialchars((string) $text, ENT_QUOTES, '
         <option value="<?= (int) $bulkReference['id'] ?>"><?= $bulkEscape(html_entity_decode($bulkReference['name'], ENT_QUOTES, 'UTF-8')) ?></option>
       <?php endforeach; ?>
     </select>
-    <button type="button" id="subscription-bulk-preview-button" class="thin"><?= $bulkEscape($bulkStrings['preview']) ?></button>
+    <button type="button" id="subscription-bulk-preview-button" class="button thin"><?= $bulkEscape($bulkStrings['preview']) ?></button>
   </div>
   <p id="subscription-bulk-error" class="subscription-bulk-error" role="alert" hidden></p>
   <div id="subscription-bulk-preview" class="subscription-bulk-preview" hidden>
@@ -96,8 +83,10 @@ $bulkEscape = static fn($text) => htmlspecialchars((string) $text, ENT_QUOTES, '
     <ul id="subscription-bulk-targets"></ul>
     <p class="subscription-bulk-hint"><?= $bulkEscape($bulkStrings['previewHint']) ?></p>
     <p id="subscription-bulk-retry-hint" class="subscription-bulk-hint" hidden><?= $bulkEscape($bulkStrings['retryHint']) ?></p>
-    <button type="button" id="subscription-bulk-apply" class="thin"><?= $bulkEscape($bulkStrings['apply']) ?></button>
-    <button type="button" id="subscription-bulk-cancel" class="secondary-button thin"><?= $bulkEscape($bulkStrings['cancel']) ?></button>
+    <div class="subscription-bulk-preview-actions">
+    <button type="button" id="subscription-bulk-apply" class="button thin"><?= $bulkEscape($bulkStrings['apply']) ?></button>
+    <button type="button" id="subscription-bulk-cancel" class="button secondary-button thin"><?= $bulkEscape($bulkStrings['cancel']) ?></button>
+    </div>
   </div>
-</details>
+  </div>
 <script>window.subscriptionBulkStrings = <?= json_encode($bulkStrings, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;</script>

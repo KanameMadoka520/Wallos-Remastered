@@ -1,3 +1,5 @@
+let metricExplanationTrigger = null;
+
 function mountMetricExplanationModalToBody() {
   const modal = document.getElementById('metric-explanation-modal');
   if (!modal || modal.dataset.mountedToBody === '1' || !document.body) {
@@ -16,6 +18,7 @@ function closeMetricExplanationModal() {
 
   modal.classList.remove('is-open');
   document.body.classList.remove('no-scroll');
+  if (metricExplanationTrigger?.isConnected) metricExplanationTrigger.focus({ preventScroll: true });
 }
 
 function escapeMetricExplanationHtml(value) {
@@ -211,8 +214,10 @@ function openMetricExplanationModal(payload) {
   renderMetricExplanationSummary(payload);
   renderMetricExplanationItems(payload);
 
+  metricExplanationTrigger = document.activeElement;
   modal.classList.add('is-open');
   document.body.classList.add('no-scroll');
+  modal.querySelector('.close-form')?.focus({ preventScroll: true });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -231,4 +236,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   });
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && document.getElementById('metric-explanation-modal')?.classList.contains('is-open')) closeMetricExplanationModal();
 });

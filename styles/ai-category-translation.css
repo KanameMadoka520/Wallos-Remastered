@@ -1,7 +1,19 @@
-.ai-category-translation { margin-top: 1.5rem; }
-.ai-category-translation p { overflow-wrap: anywhere; }
+.ai-category-translation {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(var(--main-color-rgb), .22);
+  border-radius: 14px;
+  background: rgba(var(--main-color-rgb), .035);
+}
+.ai-category-translation h3 { margin: 0 0 10px; }
+.ai-category-translation p { margin: 0 0 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.ai-category-translation a { color: var(--main-color); text-underline-offset: 3px; }
+.account-categories .ai-category-translation .buttons { flex-wrap: wrap; justify-content: flex-start; gap: 12px; }
 .ai-category-preview-scroll { max-height: 26rem; overflow: auto; margin: 1rem 0; }
 .ai-category-translation table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .ai-category-translation th, .ai-category-translation td { padding: .65rem; text-align: start; vertical-align: top; overflow-wrap: anywhere; border-bottom: 1px solid var(--border-color, #8886); }
 .ai-category-translation [hidden] { display: none !important; }
 .ai-category-translation [role="status"]:empty { display: none; }
+#settings-ai .form-group-inline > input[type="text"],
+#settings-ai .form-group-inline > input[type="password"] { flex: 1 1 0; width: 0; min-width: 0; }
+#settings-ai .form-group-inline > button { flex: 0 0 auto; white-space: nowrap; }

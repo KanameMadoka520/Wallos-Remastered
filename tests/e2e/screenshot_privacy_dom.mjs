@@ -79,7 +79,7 @@ try {
         </section>
 
         <div class="calendar-monthly-stats"><div class="statistics"><div class="statistic"><span>$812.22</span><div class="title">Total</div></div></div></div>
-        <div class="calendar-subscription-title">Real Calendar Plan</div>
+        <div class="calendar-subscription-title" title="Real Calendar Plan · $61.11" aria-label="Real Calendar Plan · $61.11"><span class="calendar-subscription-name">Real Calendar Plan</span><span class="calendar-subscription-meta"><span class="calendar-subscription-price">$61.11</span></span></div>
         <div id="subscriptionModal" class="is-open"><div id="subscriptionModalContent"><div class="modal-header"><h3>Real Calendar Plan</h3></div><div class="subscription-info"><p><strong>Price:</strong> $17.00</p></div></div></div>
 
         <section id="stats-overview"><div class="statistics">
@@ -139,7 +139,10 @@ try {
     notesVisible: document.querySelector(".subscription-notes-content").innerText.trim(),
     dashboardName: document.querySelector(".dashboard-subscription-trigger .subscription-item-title").textContent.trim(),
     dashboardValue: document.querySelector(".subscription-item.thin .subscription-item-value").textContent.trim(),
-    calendarName: document.querySelector(".calendar-subscription-title").textContent.trim(),
+    calendarName: document.querySelector(".calendar-subscription-name").textContent.trim(),
+    calendarTooltip: document.querySelector(".calendar-subscription-title").getAttribute("title"),
+    calendarLabel: document.querySelector(".calendar-subscription-title").getAttribute("aria-label"),
+    calendarPrice: document.querySelector(".calendar-subscription-price").textContent.trim(),
     calendarStat: document.querySelector(".calendar-monthly-stats .statistic > span").textContent.trim(),
     statsValue: document.querySelector("#stats-overview .statistic > span").textContent.trim(),
     mostExpensive: document.querySelector("#stats-overview .statistic.short .subtitle").textContent.trim(),
@@ -157,6 +160,8 @@ try {
     textarea: document.getElementById("real-textarea").value,
   }));
 
+  assert(!masked.calendarTooltip.includes("Real Calendar Plan") && !masked.calendarTooltip.includes("$61.11"), "calendar tooltip retained private text");
+  assert(!masked.calendarLabel.includes("Real Calendar Plan") && masked.calendarPrice !== "$61.11", "calendar label or compact price retained private data");
   assert(masked.rootEnabled && masked.subscriptionMasked && masked.subscriptionVisible === "visible", "subscription card did not leave the fail-closed state after masking");
   assert(masked.name !== "Real Stream" && masked.price !== "$91.27", "subscription name or price was not masked");
   assert(masked.image.startsWith("data:image/svg+xml"), "subscription image did not become an in-memory SVG");
@@ -235,12 +240,15 @@ try {
     image: document.getElementById("real-subscription-image").getAttribute("src"),
     url: document.querySelector("#subscriptions .url a").getAttribute("href"),
     notes: document.querySelector(".subscription-notes-content").innerText.trim(),
+    calendarTooltip: document.querySelector(".calendar-subscription-title").getAttribute("title"),
+    calendarPrice: document.querySelector(".calendar-subscription-price").textContent.trim(),
     dynamicName: document.querySelector('[data-subscription-id="99"] .name').textContent.trim(),
     chartPlaceholder: document.querySelector(".wallos-privacy-chart-placeholder"),
     chartCanvasDisplay: getComputedStyle(document.getElementById("private-chart")).display,
     input: document.getElementById("real-input").value,
     textarea: document.getElementById("real-textarea").value,
   }));
+  assert(restored.calendarTooltip === "Real Calendar Plan · $61.11" && restored.calendarPrice === "$61.11", "calendar tooltip/price did not restore exactly");
   assert(!restored.rootEnabled, "privacy root class remained after disabling");
   assert(restored.name === "Real Stream" && restored.price === "$91.27", "original subscription text was not restored");
   assert(restored.image.startsWith("data:image/gif"), "original image source was not restored");

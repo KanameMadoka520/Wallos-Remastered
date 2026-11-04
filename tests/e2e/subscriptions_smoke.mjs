@@ -1048,14 +1048,26 @@ try {
   });
 
   await step("three-dot menu opens edit modal", async () => {
-    const card = await openCreatedCardActions();
+    let card = await openCreatedCardActions();
+    await page.keyboard.press('Escape');
+    if (await card.locator('.actions.is-open').count() || await card.evaluate((element) => element.classList.contains('actions-menu-open'))) {
+      throw new Error('Escape did not dismiss the card actions menu');
+    }
+    card = await openCreatedCardActions();
     await card.locator('[data-subscription-action="open-edit-subscription"]').first().click();
     await expectVisible("#subscription-form.is-open", "edit subscription modal", 15000);
+    if (await card.locator('.actions.is-open').count()) {
+      throw new Error('Selecting edit left the card actions menu open');
+    }
     await closeModal("#subscription-form", '#subscription-form [data-subscription-action="close-add-subscription"]', "edit subscription modal");
+    if (await card.locator('.actions.is-open').count()) {
+      throw new Error('The card actions menu reappeared after closing edit');
+    }
   });
 
   await step("payment history and record-payment modal open", async () => {
-    const card = await openCreatedCardActions();
+    // Payment history is a card-body button, not a three-dot menu item.
+    const card = page.locator('.subscription-container', { hasText: createdSubscriptionName }).first();
     await card.locator('[data-subscription-action="open-payment-history"]').first().click();
     await expectVisible("#subscription-payment-history-modal.is-open", "payment history modal", 15000);
     await expectVisible("#subscription-payment-history-content", "payment history content", 15000);

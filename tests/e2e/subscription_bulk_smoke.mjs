@@ -99,7 +99,10 @@ try {
   check(await page.locator('#subscription-bulk-preview').isHidden(), 'conflict requires a new preview and explicit review');
   check(!(await get(ids[0])).notify && !(await get(ids[2])).notify, 'conflict leaves every other target unchanged');
   await page.locator('#subscription-bulk-action').selectOption('categories');
-  await page.locator('#subscription-bulk-categories').selectOption([String(category), '100']);
+  await page.locator('#subscription-bulk-categories-picker-toggle').click();
+  await page.locator(`#subscription-bulk-categories-picker-panel input[value="${category}"]`).check();
+  await page.locator('#subscription-bulk-categories-picker-panel input[value="100"]').check();
+  await page.keyboard.press('Escape');
   await page.locator('#subscription-bulk-preview-button').click();
   await page.locator('#subscription-bulk-preview').waitFor({ state: 'visible' });
   await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle' }), page.locator('#subscription-bulk-apply').click()]);
@@ -107,7 +110,7 @@ try {
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#subscription-bulk-toolbar summary').click();
-  check(await page.locator('#subscription-bulk-toolbar').evaluate((element) => {
+  check(await page.locator('#subscription-bulk-panel').evaluate((element) => {
     const rect = element.getBoundingClientRect();
     return rect.left >= 0 && rect.right <= window.innerWidth + 1 && element.scrollWidth <= element.clientWidth + 1;
   }), 'bulk toolbar fits a narrow viewport');

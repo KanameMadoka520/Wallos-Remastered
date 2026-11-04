@@ -1,5 +1,18 @@
 <?php
 
+require_once __DIR__ . '/inputvalidation.php';
+
+function wallos_metric_explanation_decode_item_names(array $items)
+{
+    return array_map(static function ($item) {
+        if (!is_array($item)) return $item;
+        foreach (['name', 'subscription_name'] as $field) {
+            if (isset($item[$field])) $item[$field] = wallos_decode_stored_text($item[$field]);
+        }
+        return $item;
+    }, $items);
+}
+
 function wallos_render_metric_explanation_trigger($metricKey, array $metricExplanations, $label = '')
 {
     if (!isset($metricExplanations[$metricKey])) {
@@ -7,6 +20,16 @@ function wallos_render_metric_explanation_trigger($metricKey, array $metricExpla
     }
 
     $payloadData = $metricExplanations[$metricKey];
+    // Names use the legacy escaped storage contract. Decode only this display
+    // copy; the JSON attribute and browser renderer still escape their output.
+    if (isset($payloadData['items']) && is_array($payloadData['items'])) {
+        $payloadData['items'] = wallos_metric_explanation_decode_item_names($payloadData['items']);
+    }
+    foreach ($payloadData['item_groups'] ?? [] as $index => $group) {
+        if (isset($group['items']) && is_array($group['items'])) {
+            $payloadData['item_groups'][$index]['items'] = wallos_metric_explanation_decode_item_names($group['items']);
+        }
+    }
     $settings = $GLOBALS['settings'] ?? [];
     if (function_exists('wallos_screenshot_privacy_enabled')
         && is_array($settings)

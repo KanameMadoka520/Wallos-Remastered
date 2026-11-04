@@ -1,0 +1,41 @@
+#webpush-settings .webpush-device-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 20px 0;
+}
+#webpush-settings .webpush-device-field {
+  display: grid;
+  flex: 1 1 16rem;
+  min-width: 0;
+  gap: 6px;
+  margin: 0;
+}
+#webpush-settings .webpush-device-field > span { font-size: 14px; }
+#webpush-settings .webpush-device-field > input { width: 100%; min-width: 0; }
+#webpush-settings .webpush-device-controls > button { flex: 0 0 auto; white-space: nowrap; }
+#webpush-settings button:disabled { opacity: .55; cursor: not-allowed; }
+#webpush-devices {
+  display: grid;
+  gap: 12px;
+  max-height: min(24rem, 45vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+#webpush-devices .webpush-device {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--input-border-color);
+}
+#webpush-devices .webpush-device-label { flex: 1 1 14rem; min-width: 0; overflow-wrap: anywhere; }
+#webpush-devices .webpush-device-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#webpush-devices .webpush-device-actions > button { white-space: nowrap; }
+#webpush-devices .webpush-empty { padding: 0; }

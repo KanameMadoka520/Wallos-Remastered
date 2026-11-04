@@ -318,13 +318,15 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
                   }
                   ?>
                   <div class="<?= $titleClasses ?>" data-subscription-id="<?= (int) $subscription['id'] ?>"
-                    aria-label="<?= htmlspecialchars(wallos_decode_stored_text($subscription['name']) . ' · ' . $countdownLabel, ENT_QUOTES, 'UTF-8') ?>"
+                    role="button" tabindex="0"
+                    title="<?= htmlspecialchars(wallos_decode_stored_text($subscription['name']) . ' · ' . $payment['display_price'] . ' · ' . $countdownLabel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                    aria-label="<?= htmlspecialchars(wallos_decode_stored_text($subscription['name']) . ' · ' . $payment['display_price'] . ' · ' . $countdownLabel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
                     onClick="openSubscriptionModal(<?= (int) $subscription['id'] ?>)">
                     <span class="calendar-subscription-name"><?= htmlspecialchars(wallos_decode_stored_text($subscription['name']), ENT_QUOTES, 'UTF-8') ?></span>
-                    <span class="calendar-subscription-price"><?= htmlspecialchars($payment['display_price'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span>
+                    <span class="calendar-subscription-meta"><span class="calendar-subscription-price"><?= htmlspecialchars($payment['display_price'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span>
                     <?php if ((int) $subscription['cycle'] !== 5): ?>
                       <span class="calendar-subscription-renewal-type"><?= translate(!empty($subscription['auto_renew']) ? 'automatically_renews' : 'manual_renewal', $i18n) ?></span>
-                    <?php endif; ?>
+                    <?php endif; ?></span>
                     <span class="calendar-subscription-countdown"><?= htmlspecialchars($countdownLabel, ENT_QUOTES, 'UTF-8') ?></span>
                     <?php if (!empty($payment['is_due_this_month'])): ?>
                       <span class="calendar-subscription-renewal-flag"><?= translate('calendar_renewal_due_this_month', $i18n) ?></span>
