@@ -994,6 +994,16 @@ try {
     await page.locator("#start_date").fill(new Date().toISOString().slice(0, 10));
     const nextDate = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     await page.locator("#next_payment").fill(nextDate);
+    await page.locator("#cycle").selectOption("1");
+    const expectedMessage = await page.locator("#subs-form").getAttribute("data-confirm-daily-billing");
+    const dailyConfirmation = page.waitForEvent("dialog");
+    const dailyClick = page.locator("#save-button").click();
+    const dialog = await dailyConfirmation;
+    await dailyClick;
+    if (dialog.message() !== expectedMessage || !(await page.locator("#save-button").isEnabled())) {
+      throw new Error("Declining the daily billing confirmation must leave the form open for correction");
+    }
+    await page.locator("#cycle").selectOption("3");
     await page.locator("#save-button").click();
     await page.locator("#subscription-form.is-open").waitFor({ state: "detached", timeout: 20000 }).catch(async () => {
       const stillOpen = await page.locator("#subscription-form.is-open").count();
@@ -1068,6 +1078,7 @@ try {
   await step("payment history and record-payment modal open", async () => {
     // Payment history is a card-body button, not a three-dot menu item.
     const card = page.locator('.subscription-container', { hasText: createdSubscriptionName }).first();
+    await page.mouse.move(10, 100); // Leave the account menu if closing Edit exposed it under the pointer.
     await card.locator('[data-subscription-action="open-payment-history"]').first().click();
     await expectVisible("#subscription-payment-history-modal.is-open", "payment history modal", 15000);
     await expectVisible("#subscription-payment-history-content", "payment history content", 15000);

@@ -392,6 +392,30 @@ function wallos_calendar_get_first_day_offset($timestamp, $weekStartsSunday = fa
     return $weekStartsSunday ? (($offset + 1) % 7) : $offset;
 }
 
+/**
+ * Separate the paid ledger from recurring dates projected before or after the
+ * authoritative next payment. Advancing a schedule does not record a charge.
+ */
+function wallos_calendar_get_payment_state($paymentTimestamp, $nextPaymentTimestamp, $todayTimestamp, bool $paid)
+{
+    if ($paid) {
+        return ['state' => 'completed', 'days' => 0];
+    }
+
+    if ($nextPaymentTimestamp !== false) {
+        $date = date('Y-m-d', $paymentTimestamp);
+        $nextDate = date('Y-m-d', $nextPaymentTimestamp);
+        if ($date < $nextDate) {
+            return ['state' => 'past-schedule', 'days' => 0];
+        }
+        if ($date > $nextDate && $nextDate < date('Y-m-d', $todayTimestamp)) {
+            return ['state' => 'blocked', 'days' => 0];
+        }
+    }
+
+    return wallos_calendar_get_renewal_countdown($paymentTimestamp, $todayTimestamp);
+}
+
 function wallos_calendar_is_due($paymentTimestamp, $todayTimestamp)
 {
     return (int) $paymentTimestamp >= (int) $todayTimestamp;

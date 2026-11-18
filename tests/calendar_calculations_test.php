@@ -115,13 +115,29 @@ try {
         'Renewal countdowns must use calendar days and distinguish upcoming, today and overdue payments'
     );
 
+    $next = strtotime('2026-08-20');
+    $testDate = strtotime('2026-08-21');
+    wallos_calendar_test_assert(
+        wallos_calendar_get_payment_state(strtotime('2026-08-19'), $next, $testDate, false)['state'] === 'past-schedule'
+        && wallos_calendar_get_payment_state(strtotime('2026-08-19'), $next, $testDate, true)['state'] === 'completed'
+        && wallos_calendar_get_payment_state($next, $next, $testDate, false)['state'] === 'overdue'
+        && wallos_calendar_get_payment_state(strtotime('2026-08-22'), $next, $testDate, false)['state'] === 'blocked',
+        'Only a paid ledger row means payment recorded. Planned dates before and after the real next payment are distinct.'
+    );
+    $daily = ['start_date' => '2026-08-01', 'next_payment' => '2026-08-18', 'cycle' => 1, 'frequency' => 1];
+    wallos_calendar_test_assert(
+        count(wallos_calendar_get_payment_dates($daily, 2026, 8)) === 31
+        && wallos_calendar_advance_subscription_next_payment($daily, '2026-08-19') === '2026-08-19',
+        'Daily billing remains supported, including an automatic advance that lands on today'
+    );
+
     $calendarPageSource = file_get_contents(__DIR__ . '/../calendar.php');
     wallos_calendar_test_assert(
         strpos($calendarPageSource, "calendar-subscription-title--current-due") !== false
         && strpos($calendarPageSource, "calendar_renewal_due_this_month") !== false
         && strpos($calendarPageSource, "calendar_renewal_completed") !== false
         && strpos($calendarPageSource, "calendar_renewal_handle_previous_first") !== false
-        && strpos($calendarPageSource, "wallos_calendar_get_renewal_countdown") !== false,
+        && strpos($calendarPageSource, "wallos_calendar_get_payment_state") !== false,
         'Calendar entries must expose a countdown, a distinct current-month renewal marker, and safe forecast states'
     );
 
@@ -260,6 +276,7 @@ try {
         is_string($cronWriteSource)
         && strpos($cronWriteSource, 'wallos_calendar_advance_subscription_next_payment(') !== false
         && strpos($cronWriteSource, 'start_date') !== false
+        && preg_match('/wallos_calendar_advance_subscription_next_payment\(\s*\$row,\s*\$currentDateString\s*\)/', $cronWriteSource) === 1
         && strpos($cronWriteSource, 'new DateInterval(') === false,
         'The automatic renewal writer must use the shared anchored helper'
     );

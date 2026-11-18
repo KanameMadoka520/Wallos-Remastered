@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.10.4-remastered.3`; upstream feature synchronization target: [`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4).
+> A Wallos branch remastered for long-lived self-hosted installations. Current release: `v5.10.4-remastered.4`; upstream feature synchronization target: [`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4).
 
 [简体中文 README](README.md) · [Changelog (Chinese)](CHANGELOG.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 

@@ -1213,6 +1213,7 @@ function resetForm() {
   replacementSubscription.classList.add("hide");
   const form = document.querySelector("#subs-form");
   form.reset();
+  delete form.dataset.originalDailyBilling;
   ["#payer_user", "#category"].forEach((selector) => {
     const select = document.querySelector(selector);
     // Sorting by numeric reference keeps defaults stable after editing a multi-selection.
@@ -1252,6 +1253,7 @@ function fillEditFormFields(subscription) {
   frequencySelect.value = subscription.frequency;
   const cycleSelect = document.querySelector("#cycle");
   cycleSelect.value = subscription.cycle;
+  cycleSelect.form.dataset.originalDailyBilling = String(cycleSelect.value === "1" && frequencySelect.value === "1");
   const paymentSelect = document.querySelector("#payment_method");
   paymentSelect.value = subscription.payment_method_id;
   const categorySelect = document.querySelector("#category");
@@ -2233,8 +2235,13 @@ document.addEventListener('DOMContentLoaded', function () {
   subscriptionForm.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    submitButton.disabled = true;
     const formData = new FormData(subscriptionForm);
+    const isDailyBilling = formData.get("cycle") === "1" && formData.get("frequency") === "1";
+    if (isDailyBilling && subscriptionForm.dataset.originalDailyBilling !== "true"
+        && !window.confirm(subscriptionForm.dataset.confirmDailyBilling)) {
+      return;
+    }
+    submitButton.disabled = true;
     const selectedDetailImageFiles = getSelectedDetailImageFiles();
     const removedUploadedImageIds = getRemovedUploadedImageIds();
     const detailImageConfig = getDetailImageConfig();

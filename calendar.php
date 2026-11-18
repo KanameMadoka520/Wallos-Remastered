@@ -5,6 +5,7 @@ require_once 'includes/inputvalidation.php';
 require_once 'includes/calendar_calculations.php';
 require_once 'includes/currency_rates.php';
 require_once 'includes/subscription_price_rules.php';
+require_once 'includes/subscription_payment_records.php';
 
 $calendarJsVersion = $version . '.' . @filemtime(__DIR__ . '/scripts/calendar.js');
 
@@ -185,6 +186,13 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
       && wallos_screenshot_privacy_enabled($settings);
     $calendarPrivacySeed = $calendarPrivacyEnabled ? wallos_screenshot_privacy_seed() : '';
     $calendarPriceRules = wallos_get_subscription_price_rules_map($db, $userId, true);
+    $paidDueDates = wallos_get_paid_due_dates_map(
+      $db, $userId,
+      sprintf('%04d-%02d-01', $calendarYear, $calendarMonth),
+      sprintf('%04d-%02d-%02d', $calendarYear, $calendarMonth, $daysInMonth),
+      false
+    );
+
     foreach ($subscriptions as $subscription) {
       $nextPaymentTimestamp = wallos_calendar_parse_date($subscription['next_payment'] ?? '');
       $paymentDates = wallos_calendar_get_payment_dates(
@@ -196,9 +204,11 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
 
       foreach ($paymentDates as $paymentDate) {
         $dayNumber = (int) date('j', $paymentDate);
+        $dueDate = date('Y-m-d', $paymentDate);
+        $paid = isset($paidDueDates[(int) $subscription['id']][$dueDate]);
         $effectiveCalendarPrice = wallos_get_effective_subscription_price_for_due_date(
           $subscription, $calendarPriceRules[(int) $subscription['id']] ?? [],
-          date('Y-m-d', $paymentDate), $db, $userId);
+          $dueDate, $db, $userId);
         $pricedSubscription = array_replace($subscription, [
           'price' => $effectiveCalendarPrice['amount_original'],
           'currency_id' => $effectiveCalendarPrice['currency_id'],
@@ -212,24 +222,9 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
             )
           : $pricedSubscription;
         $isCurrentNextPayment = $nextPaymentTimestamp !== false
-          && date('Y-m-d', $paymentDate) === date('Y-m-d', $nextPaymentTimestamp);
-        if (!$isCurrentNextPayment
-          && $nextPaymentTimestamp !== false
-          && $paymentDate < $nextPaymentTimestamp) {
-          // The projection intentionally includes older occurrences in the
-          // selected month. Once next_payment has advanced past one, it must
-          // not be presented as an overdue renewal.
-          $countdown = ['state' => 'completed', 'days' => 0];
-        } elseif (!$isCurrentNextPayment
-          && $nextPaymentTimestamp !== false
-          && $nextPaymentTimestamp < $today) {
-          // Do not imply a later forecast can be handled while the real next
-          // payment is still overdue.
-          $countdown = ['state' => 'blocked', 'days' => 0];
-        } else {
-          $countdown = wallos_calendar_get_renewal_countdown($paymentDate, $today);
-        }
-        $isDueThisMonth = $sameAsCurrent
+          && $dueDate === date('Y-m-d', $nextPaymentTimestamp);
+        $countdown = wallos_calendar_get_payment_state($paymentDate, $nextPaymentTimestamp, $today, $paid);
+        $isDueThisMonth = $sameAsCurrent && !$paid
           && $isCurrentNextPayment
           && date('Y-m', $nextPaymentTimestamp) === sprintf('%04d-%02d', $calendarYear, $calendarMonth);
         $paymentsByDay[$dayNumber][] = [
@@ -237,14 +232,14 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
           'display_price' => CurrencyFormatter::format($displaySubscription['price'],
             $effectiveCalendarPrice['currency_code'] ?: $code),
           'countdown' => $countdown,
+          'is_forecast' => $nextPaymentTimestamp !== false && $dueDate > date('Y-m-d', $nextPaymentTimestamp),
           'is_due_this_month' => $isDueThisMonth,
         ];
 
         $convertedPrice = $effectiveCalendarPrice['amount_main'];
         $totalCostThisMonth += $convertedPrice;
         $numberOfSubscriptionsToPayThisMonth++;
-        // A payment due today is still due; only older dates are paid.
-        if (wallos_calendar_is_due($paymentDate, $today)) {
+        if (!$paid && wallos_calendar_is_due($paymentDate, $today)) {
           $amountDueThisMonth += $convertedPrice;
         }
       }
@@ -303,15 +298,16 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
                   $countdown = $payment['countdown'];
                   $countdownState = is_array($countdown) ? (string) ($countdown['state'] ?? 'upcoming') : 'upcoming';
                   $countdownDays = is_array($countdown) ? (int) ($countdown['days'] ?? 0) : 0;
-                  $countdownLabel = $countdownState === 'completed'
-                    ? translate('calendar_renewal_completed', $i18n)
-                    : ($countdownState === 'blocked'
-                      ? translate('calendar_renewal_handle_previous_first', $i18n)
-                      : ($countdownState === 'overdue'
-                        ? sprintf(translate('calendar_renewal_overdue_days', $i18n), $countdownDays)
-                        : ($countdownState === 'today'
-                          ? translate('calendar_renewal_due_today', $i18n)
-                          : sprintf(translate('calendar_renewal_days_until', $i18n), $countdownDays))));
+                  $countdownLabel = match ($countdownState) {
+                    'completed' => translate('calendar_renewal_completed', $i18n),
+                    'past-schedule' => translate('calendar_renewal_past_schedule', $i18n),
+                    'blocked' => translate('calendar_renewal_handle_previous_first', $i18n),
+                    'overdue' => sprintf(translate('calendar_renewal_overdue_days', $i18n), $countdownDays),
+                    'today' => translate('calendar_renewal_due_today', $i18n),
+                    default => sprintf(translate($payment['is_forecast']
+                      ? 'calendar_renewal_forecast_days'
+                      : 'calendar_renewal_days_until', $i18n), $countdownDays),
+                  };
                   $titleClasses = 'calendar-subscription-title calendar-subscription-title--' . $countdownState;
                   if (!empty($payment['is_due_this_month'])) {
                     $titleClasses .= ' calendar-subscription-title--current-due';
@@ -375,11 +371,11 @@ $calendarWeekDays = wallos_calendar_get_week_days($weekStartsSunday);
         <div class="statistic">
           <span>
             <?= $numberOfSubscriptionsToPayThisMonth ?></span>
-          <div class="title"><?= translate("active_subscriptions", $i18n) ?></div>
+          <div class="title"><?= translate("calendar_scheduled_payments", $i18n) ?></div>
         </div>
         <div class="statistic">
           <span><?= CurrencyFormatter::format($totalCostThisMonth, $code) ?></span>
-          <div class="title"><?= translate("total_cost", $i18n) ?></div>
+          <div class="title"><?= translate("calendar_scheduled_total", $i18n) ?></div>
         </div>
         <div class="statistic">
           <span><?= CurrencyFormatter::format($amountDueThisMonth, $code) ?></span>

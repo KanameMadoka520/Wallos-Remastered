@@ -1071,7 +1071,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
       <i class="fa-solid fa-xmark"></i>
     </button>
   </header>
-  <form action="endpoints/subscription/add.php" method="post" id="subs-form" enctype="multipart/form-data"
+  <form action="endpoints/subscription/add.php" method="post" id="subs-form" data-confirm-daily-billing="<?= htmlspecialchars(translate('confirm_daily_billing', $i18n), ENT_QUOTES, 'UTF-8') ?>" enctype="multipart/form-data"
     data-effective-user-group="<?= $effectiveUserGroup ?>"
     data-can-upload-detail-image="<?= $canUploadSubscriptionImages ? '1' : '0' ?>"
     data-compression-mode="<?= $canUploadSubscriptionImages ? 'optional' : 'disabled' ?>"

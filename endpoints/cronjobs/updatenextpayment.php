@@ -32,7 +32,7 @@ try {
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         $nextPaymentDate = wallos_calendar_advance_subscription_next_payment(
             $row,
-            $currentDate->format('Y-m-d H:i:s')
+            $currentDateString
         );
         if ($nextPaymentDate === false) {
             throw new RuntimeException(

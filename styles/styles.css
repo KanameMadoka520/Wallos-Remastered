@@ -6588,6 +6588,7 @@ body.dynamic-wallpaper-enabled .subscription-image-viewer-meta {
   color: var(--error-color);
 }
 
+.calendar .calendar-subscription-title--past-schedule,
 .calendar .calendar-subscription-title--completed {
   border-color: rgba(var(--text-color-rgb), 0.24);
   opacity: 0.72;
@@ -6618,6 +6619,7 @@ body.dynamic-wallpaper-enabled .calendar .calendar-subscription-title--overdue {
   background: rgba(var(--error-color-rgb), 0.2);
 }
 
+body.dynamic-wallpaper-enabled .calendar .calendar-subscription-title--past-schedule,
 body.dynamic-wallpaper-enabled .calendar .calendar-subscription-title--completed {
   border-color: rgba(255, 255, 255, 0.24);
 }
