@@ -87,8 +87,11 @@ try {
         ['rule_type' => 'first_n_cycles', 'price' => 1, 'currency_id' => 200, 'max_cycles' => 1],
     ]]), 'invalid promotion rejected before replacing rules');
     check(count($get()['price_rules']) === 1, 'failed rule replacement preserves old rules');
-    $payment = ['due_date' => '2026-11-01', 'paid_at' => '2026-11-01', 'amount_original' => 20, 'currency_id' => 100, 'payment_method_id' => 100];
+    $payment = ['due_date' => '2026-11-01', 'paid_at' => min(date('Y-m-d'), '2026-11-01'), 'amount_original' => 20, 'currency_id' => 100, 'payment_method_id' => 100];
     $payReq = ['subscription_id' => $id, 'expected_version' => $get()['version'], 'data' => $payment, 'request_id' => 'payment-001'];
+    rejects('invalid_arguments', fn() => call_tool($db, $key, 'wallos_payments_create', array_replace($payReq, [
+        'request_id' => 'future-payment-date', 'data' => array_replace($payment, ['paid_at' => date('Y-m-d', strtotime('+1 day'))]),
+    ])), 'future paid_at does not create a ledger record');
     $paid = call_tool($db, $key, 'wallos_payments_create', $payReq)['payment'];
     check((float) $paid['amount_main_snapshot'] === 20.0, 'payments reuse correct currency snapshot logic');
     check($get()['next_payment'] === '2026-11-01', 'payment recording preserves schedule by default');
@@ -105,7 +108,7 @@ try {
     check($get()['next_payment'] === '2026-12-01', 'explicit schedule advance uses existing recurrence logic');
     rejects('schedule_range_exceeded', fn() => call_tool($db, $key, 'wallos_payments_create', [
         'subscription_id' => $id, 'expected_version' => $get()['version'],
-        'data' => array_replace($payment, ['due_date' => '9999-01-01', 'paid_at' => '9999-01-01']),
+        'data' => array_replace($payment, ['due_date' => '9999-01-01']),
         'advance_next_payment' => true, 'request_id' => 'far-future-001',
     ]), 'far-future payment cannot trigger unbounded schedule walking');
     $reference = call_tool($db, $key, 'wallos_references_save', ['kind' => 'categories', 'data' => ['name' => 'New category'], 'request_id' => 'ref-create-001'])['reference'];

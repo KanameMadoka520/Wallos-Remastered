@@ -988,6 +988,22 @@ try {
   await step("add subscription saves, closes modal, and refreshes card list", async () => {
     await clickFirst('[data-subscription-action="open-add-subscription"]', "add subscription button");
     await expectVisible("#subscription-form.is-open", "add subscription modal");
+    const initialPayment = await expectVisible("#record-initial-payment", "optional initial payment");
+    if (await initialPayment.isChecked()) {
+      throw new Error("A new subscription must not presume that its first payment was made");
+    }
+    const anchoredDates = await page.evaluate(() => {
+      const recurrence = window.WallosSubscriptionRecurrence;
+      return [
+        recurrence.getNextDate("2026-01-31", 3, 1, "2026-02-01"),
+        recurrence.getNextDate("2026-01-31", 3, 1, "2026-02-28"),
+        recurrence.getNextDate("2024-02-29", 4, 1, "2027-03-01"),
+        recurrence.getOccurrenceIndex({ start_date: "2026-01-31", cycle: 3, frequency: 1 }, "2026-02-28"),
+      ];
+    });
+    if (JSON.stringify(anchoredDates) !== JSON.stringify(["2026-02-28", "2026-03-31", "2028-02-29", 2])) {
+      throw new Error("The date picker and introductory price rules must agree about month-end and leap days");
+    }
     createdSubscriptionName = `E2E Smoke ${Date.now()}`;
     await page.locator("#name").fill(createdSubscriptionName);
     await page.locator("#price").fill("1.23");
@@ -1066,6 +1082,9 @@ try {
     card = await openCreatedCardActions();
     await card.locator('[data-subscription-action="open-edit-subscription"]').first().click();
     await expectVisible("#subscription-form.is-open", "edit subscription modal", 15000);
+    if (await page.locator("#record-initial-payment").isVisible()) {
+      throw new Error("Editing a subscription must not offer to create its initial payment again");
+    }
     if (await card.locator('.actions.is-open').count()) {
       throw new Error('Selecting edit left the card actions menu open');
     }

@@ -48,10 +48,56 @@ for field in ('currency_id','category_id','payer_user_id','payment_method_id'):
 foreign_rule = [{'rule_type':'first_n_cycles','price':1,'currency_id':200,'max_cycles':1}]
 status, body, _ = request(endpoint, dict(values, subscription_price_rules_json=json.dumps(foreign_rule)), form=True)
 check(status == 400, 'price rule rejects a currency belonging to another account')
+for field, invalid in [('cycle','6'), ('frequency','0'), ('frequency','367'),
+                       ('next_payment','2026-02-30'), ('start_date','2999-01-01'), ('price','-4')]:
+    status, body, _ = request(endpoint, dict(values, **{field:invalid}), form=True)
+    check(status == 400 and json.loads(body)['status'] == 'Error', field+' rejects invalid subscription value '+invalid)
 check(len(tool('wallos_subscriptions_list', {'limit':100})['subscriptions']) == count_before, 'rejected writes leave the subscription count unchanged')
 status, body, _ = request(endpoint, values, form=True)
 check(status == 200 and json.loads(body)['status'] == 'Success', 'legacy browser form creates with valid owner references')
 created = next(s for s in tool('wallos_subscriptions_list', {'limit':100})['subscriptions'] if s['name'] == values['name'])
+def payments(subscription_id):
+    return tool('wallos_payments_list', {'subscription_id':subscription_id})['payments']
+
+check(payments(created['id']) == [], 'creating a web subscription leaves the ledger empty by default')
+tomorrow = (datetime.date.fromisoformat(today) + datetime.timedelta(days=1)).isoformat()
+status, body, _ = request(endpoint, dict(values, start_date=tomorrow, next_payment=tomorrow, record_initial_payment='1'), form=True)
+check(status == 400 and json.loads(body)['status'] == 'Error', 'a future start date cannot be recorded as an initial payment')
+
+def create_with_rule(initial_payment):
+    suffix = uuid.uuid4().hex
+    due = today if initial_payment else tomorrow
+    rule = {'rule_type':'one_time','price':7.25,'currency_id':101,'start_date':due}
+    test_form = dict(values, name='Renewal fixture '+suffix, next_payment=due,
+                     subscription_price_rules_json=json.dumps([rule]))
+    if initial_payment:
+        test_form['record_initial_payment'] = '1'
+    status, body, _ = request(endpoint, test_form, form=True)
+    check(status == 200 and json.loads(body)['status'] == 'Success', 'valid renewal fixture saved')
+    subscription = next(s for s in tool('wallos_subscriptions_list', {'limit':100})['subscriptions'] if s['name'] == test_form['name'])
+    return subscription['id'], due
+
+id_paid, paid_due = create_with_rule(True)
+paid = payments(id_paid)
+check(len(paid) == 1 and paid[0]['amount_original'] == 7.25 and paid[0]['currency_id'] == 101,
+      'explicit initial payment uses the effective price and currency')
+renew_endpoint = '/endpoints/subscription/renew.php'
+status, body, _ = request(renew_endpoint, {'id':id_paid,'expected_due_date':paid_due})
+check(status == 200 and json.loads(body)['success'] and len(payments(id_paid)) == 1,
+      'renewal advances a previously paid due date without a second charge record')
+
+id_unpaid, unpaid_due = create_with_rule(False)
+renew_data = {'id':id_unpaid,'expected_due_date':unpaid_due}
+status, body, _ = request(renew_endpoint, renew_data, account=2)
+check(status == 409 and payments(id_unpaid) == [], 'renewal is limited to the owner')
+status, body, _ = request(renew_endpoint, renew_data)
+check(status == 200 and json.loads(body)['success'], 'manual renewal accepts the expected due date')
+status, body, _ = request(renew_endpoint, renew_data)
+ledger = payments(id_unpaid)
+check(status == 409 and len(ledger) == 1 and ledger[0]['due_date'] == unpaid_due
+      and ledger[0]['amount_original'] == 7.25 and ledger[0]['currency_id'] == 101,
+      'replaying renewal leaves one correctly priced payment and cannot advance another cycle')
+
 status, body, _ = request(endpoint, dict(values, id=str(created['id']),price='21.92'), form=True)
 check(status == 200 and json.loads(body)['status'] == 'Success', 'legacy browser form can edit an existing subscription')
 status, body, _ = request(endpoint, dict(values, id=str(created['id']),inactive='1',replacement_subscription_id=str(created['id'])), form=True)

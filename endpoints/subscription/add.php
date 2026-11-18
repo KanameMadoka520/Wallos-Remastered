@@ -280,14 +280,40 @@ function resizeAndUploadLogo($uploadedFile, $uploadDir, $name, $settings)
 }
 
 $isEdit = isset($_POST['id']) && $_POST['id'] != "";
-$name = validate($_POST["name"]);
-$price = $_POST['price'];
-$currencyId = $_POST["currency_id"];
-$frequency = $_POST["frequency"];
-$cycle = $_POST["cycle"];
-$nextPayment = $_POST["next_payment"];
-$autoRenew = isset($_POST['auto_renew']) ? true : false;
-$startDate = $_POST["start_date"];
+$nameInput = $_POST['name'] ?? null;
+if (!is_string($nameInput) || trim($nameInput) === '') {
+    http_response_code(400);
+    subscription_error_response(translate('fill_all_fields', $i18n));
+}
+$name = validate($nameInput);
+$priceInput = $_POST['price'] ?? null;
+if (!is_string($priceInput) || !is_numeric($priceInput) || !is_finite((float) $priceInput) || (float) $priceInput < 0) {
+    http_response_code(400);
+    subscription_error_response(translate('subscription_invalid_price', $i18n));
+}
+$price = (float) $priceInput;
+$currencyId = $_POST['currency_id'];
+$frequency = filter_var($_POST['frequency'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 366]]);
+$cycle = filter_var($_POST['cycle'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 5]]);
+$nextPayment = $_POST['next_payment'] ?? null;
+$startDate = $_POST['start_date'] ?? '';
+if (!$cycle || !$frequency || !is_string($nextPayment) || !is_string($startDate)) {
+    http_response_code(400);
+    subscription_error_response(translate('subscription_invalid_schedule', $i18n));
+}
+$nextPayment = trim($nextPayment);
+$startDate = trim($startDate);
+if (!wallos_payment_record_is_valid_date($nextPayment)
+    || ($startDate !== '' && (!wallos_payment_record_is_valid_date($startDate) || $startDate > $nextPayment))) {
+    http_response_code(400);
+    subscription_error_response(translate('subscription_invalid_schedule', $i18n));
+}
+$autoRenew = $cycle !== 5 && isset($_POST['auto_renew']);
+$recordInitialPayment = !$isEdit && ($_POST['record_initial_payment'] ?? null) === '1';
+if ($recordInitialPayment && ($startDate === '' || $startDate > date('Y-m-d'))) {
+    http_response_code(400);
+    subscription_error_response(translate('subscription_initial_payment_date_error', $i18n));
+}
 $paymentMethodId = $_POST["payment_method_id"];
 $existingRelationSubscription = null;
 if ($isEdit) {
@@ -602,19 +628,18 @@ try {
     if (!$isEdit) {
         $subscriptionId = $db->lastInsertRowID();
 
-        if ((float) $price > 0) {
-            $initialPaymentDate = trim((string) $startDate) !== '' ? trim((string) $startDate) : (new DateTime())->format('Y-m-d');
-            wallos_record_subscription_payment(
-                $db,
-                $userId,
-                (int) $subscriptionId,
-                $initialPaymentDate,
-                $initialPaymentDate,
-                (float) $price,
-                (int) $currencyId,
-                (int) $paymentMethodId,
-                ''
+        if ($recordInitialPayment) {
+            $initialPrice = wallos_get_effective_subscription_price_for_due_date(
+                ['price' => $price, 'currency_id' => $currencyId, 'start_date' => $startDate,
+                    'next_payment' => $nextPayment, 'cycle' => $cycle, 'frequency' => $frequency],
+                $subscriptionPriceRules, $startDate, $db, $userId
             );
+            if ($initialPrice['amount_original'] > 0) {
+                wallos_record_subscription_payment(
+                    $db, $userId, (int) $subscriptionId, $startDate, $startDate,
+                    $initialPrice['amount_original'], $initialPrice['currency_id'], (int) $paymentMethodId
+                );
+            }
         }
     }
 

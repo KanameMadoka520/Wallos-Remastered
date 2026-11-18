@@ -479,6 +479,9 @@ function wallos_agent_execute_tool($db, array $key, $name, array $a)
             return ['deleted_id' => $id, 'subscription_version' => wallos_agent_version(wallos_agent_subscription_state($db, $uid, $sid))];
         }
         $data = $a['data'];
+        if ($data['paid_at'] > date('Y-m-d')) {
+            wallos_agent_fail('invalid_arguments', 'paid_at cannot be later than today in the account time zone. A future due_date is allowed for an actual prepayment.');
+        }
         wallos_agent_reference($db, $uid, 'currencies', $data['currency_id']);
         wallos_agent_reference($db, $uid, 'payment_methods', $data['payment_method_id']);
         $duplicate = wallos_agent_sql($db, 'SELECT id FROM subscription_payment_records WHERE user_id=:uid AND subscription_id=:sid AND due_date=:due AND id!=:id LIMIT 1',

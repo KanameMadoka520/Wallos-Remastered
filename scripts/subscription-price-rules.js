@@ -33,48 +33,7 @@
   }
 
   function getOccurrenceIndexForDueDate(subscription, dueDate) {
-    if (!subscription || !dueDate) {
-      return null;
-    }
-
-    const startDateValue = subscription.start_date || "";
-    const nextPaymentValue = subscription.next_payment || "";
-
-    if (!startDateValue) {
-      return nextPaymentValue === dueDate ? 1 : null;
-    }
-
-    const startDate = new Date(`${startDateValue}T00:00:00`);
-    const targetDate = new Date(`${dueDate}T00:00:00`);
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(targetDate.getTime()) || targetDate < startDate) {
-      return null;
-    }
-
-    let current = new Date(startDate.getTime());
-    let occurrenceIndex = 1;
-    const cycle = Number(subscription.cycle || 3);
-    const frequency = Math.max(1, Number(subscription.frequency || 1));
-
-    while (current <= targetDate && occurrenceIndex <= 2400) {
-      const currentString = current.toISOString().split("T")[0];
-      if (currentString === dueDate) {
-        return occurrenceIndex;
-      }
-
-      if (cycle === 1) {
-        current.setDate(current.getDate() + frequency);
-      } else if (cycle === 2) {
-        current.setDate(current.getDate() + (frequency * 7));
-      } else if (cycle === 3) {
-        current.setMonth(current.getMonth() + frequency);
-      } else {
-        current.setFullYear(current.getFullYear() + frequency);
-      }
-
-      occurrenceIndex += 1;
-    }
-
-    return null;
+    return subscription ? window.WallosSubscriptionRecurrence.getOccurrenceIndex(subscription, dueDate) : null;
   }
 
   function doesRuleMatch(rule, subscription, dueDate) {

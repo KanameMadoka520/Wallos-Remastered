@@ -1072,6 +1072,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     </button>
   </header>
   <form action="endpoints/subscription/add.php" method="post" id="subs-form" data-confirm-daily-billing="<?= htmlspecialchars(translate('confirm_daily_billing', $i18n), ENT_QUOTES, 'UTF-8') ?>" enctype="multipart/form-data"
+    data-account-timezone="<?= htmlspecialchars(date_default_timezone_get(), ENT_QUOTES, 'UTF-8') ?>"
     data-effective-user-group="<?= $effectiveUserGroup ?>"
     data-can-upload-detail-image="<?= $canUploadSubscriptionImages ? '1' : '0' ?>"
     data-compression-mode="<?= $canUploadSubscriptionImages ? 'optional' : 'disabled' ?>"
@@ -1110,7 +1111,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
     </div>
 
     <div class="form-group-inline">
-      <input type="number" step="0.01" id="price" name="price" autocomplete="off"
+      <input type="number" step="0.01" min="0" id="price" name="price" autocomplete="off"
         placeholder="<?= translate('price', $i18n) ?>" required>
       <select id="currency" name="currency_id" placeholder="<?= translate('add_subscription', $i18n) ?>">
         <?php
@@ -1187,6 +1188,11 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="form-group inline" id="record-initial-payment-option">
+      <input type="checkbox" id="record-initial-payment" name="record_initial_payment" value="1">
+      <label for="record-initial-payment"><?= translate('subscription_record_initial_payment', $i18n) ?></label>
     </div>
 
     <div class="form-group">
@@ -1688,6 +1694,7 @@ $subscriptionPageManageHint = $lang === 'zh_cn'
 <script defer src="scripts/subscription-preferences.js?v=<?= $subscriptionPreferencesJsVersion ?>"></script>
 <script defer src="scripts/subscription-media.js?v=<?= $subscriptionMediaJsVersion ?>"></script>
 <script defer src="scripts/subscription-image-viewer.js?v=<?= $subscriptionImageViewerJsVersion ?>"></script>
+<script defer src="scripts/subscription-recurrence.js?v=<?= $version . '.' . @filemtime(__DIR__ . '/scripts/subscription-recurrence.js') ?>"></script>
 <script defer src="scripts/subscription-price-rules.js?v=<?= $subscriptionPriceRulesJsVersion ?>"></script>
 <script defer src="scripts/subscription-layout.js?v=<?= $subscriptionLayoutJsVersion ?>"></script>
 <script defer src="scripts/subscription-payments.js?v=<?= $subscriptionPaymentsJsVersion ?>"></script>

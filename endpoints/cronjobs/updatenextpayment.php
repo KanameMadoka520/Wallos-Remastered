@@ -29,15 +29,15 @@ try {
     $result = $stmt->execute();
 
     $pendingUpdates = [];
+    $invalidSchedules = [];
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         $nextPaymentDate = wallos_calendar_advance_subscription_next_payment(
             $row,
             $currentDateString
         );
         if ($nextPaymentDate === false) {
-            throw new RuntimeException(
-                'Invalid recurring schedule for subscription ' . (int) ($row['id'] ?? 0) . '.'
-            );
+            $invalidSchedules[] = (int) $row['id'];
+            continue;
         }
 
         $pendingUpdates[] = [
@@ -63,6 +63,10 @@ try {
 
     $db->exec('COMMIT');
     $transactionStarted = false;
+    if ($invalidSchedules !== []) {
+        fwrite(STDERR, 'Skipped invalid recurring schedules for subscription IDs: '
+            . implode(', ', $invalidSchedules) . PHP_EOL);
+    }
     echo 'Updated next payment dates';
 } catch (Throwable $throwable) {
     if ($transactionStarted) {

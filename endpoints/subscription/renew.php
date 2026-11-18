@@ -3,78 +3,62 @@ require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/validate_endpoint.php';
 require_once '../../includes/subscription_trash.php';
 require_once '../../includes/subscription_payment_records.php';
-require_once '../../includes/calendar_calculations.php';
+require_once '../../includes/subscription_price_rules.php';
 
-$postData = file_get_contents("php://input");
-$data = json_decode($postData, true);
-
-$currentDate = new DateTime();
-$currentDateString = $currentDate->format('Y-m-d');
-
-$subscriptionId = $data["id"];
-$query = "SELECT * FROM subscriptions WHERE id = :id AND user_id = :user_id AND auto_renew = 0 AND cycle != 5 AND lifecycle_status = :lifecycle_status";
-$stmt = $db->prepare($query);
-$stmt->bindValue(':id', $subscriptionId, SQLITE3_INTEGER);
-$stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-$stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
-$result = $stmt->execute();
-$subscriptionToRenew = $result->fetchArray(SQLITE3_ASSOC);
-if ($subscriptionToRenew === false) {
-    die(json_encode([
-        "success" => false,
-        "message" => translate("error", $i18n)
-    ]));
+header('Content-Type: application/json');
+$data = json_decode(file_get_contents('php://input'), true);
+$subscriptionId = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+$expectedDueDate = $data['expected_due_date'] ?? null;
+if (!$subscriptionId || !is_string($expectedDueDate) || !wallos_payment_record_is_valid_date($expectedDueDate)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => translate('subscription_renewal_schedule_changed', $i18n)]);
+    exit;
 }
 
-$renewedDueDate = $subscriptionToRenew['next_payment'];
-$nextPaymentDate = wallos_calendar_advance_subscription_next_payment(
-    $subscriptionToRenew,
-    $currentDate->format('Y-m-d H:i:s'),
-    1
-);
-if ($nextPaymentDate === false) {
-    die(json_encode([
-        "success" => false,
-        "message" => translate("error", $i18n)
-    ]));
-}
-
+$currentDateString = date('Y-m-d');
 try {
-    $db->exec('BEGIN IMMEDIATE');
+    $renewed = wallos_payment_write_transaction($db, function () use ($db, $userId, $subscriptionId, $expectedDueDate, $currentDateString) {
+        $stmt = $db->prepare('SELECT * FROM subscriptions WHERE id = :id AND user_id = :user_id
+            AND auto_renew = 0 AND inactive = 0 AND cycle != 5 AND lifecycle_status = :lifecycle_status');
+        $stmt->bindValue(':id', $subscriptionId, SQLITE3_INTEGER);
+        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+        $stmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
+        $subscriptionToRenew = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
 
-    wallos_record_subscription_payment(
-        $db,
-        $userId,
-        (int) $subscriptionId,
-        $renewedDueDate,
-        $currentDateString,
-        (float) $subscriptionToRenew['price'],
-        (int) $subscriptionToRenew['currency_id'],
-        (int) $subscriptionToRenew['payment_method_id'],
-        ''
-    );
+        if ($subscriptionToRenew === false || $subscriptionToRenew['next_payment'] !== $expectedDueDate) {
+            return false;
+        }
 
-    $updateQuery = "UPDATE subscriptions SET next_payment = :nextPaymentDate WHERE id = :subscriptionId";
-    $updateStmt = $db->prepare($updateQuery);
-    $updateStmt->bindValue(':nextPaymentDate', $nextPaymentDate, SQLITE3_TEXT);
-    $updateStmt->bindValue(':subscriptionId', $subscriptionId);
+        $nextPaymentDate = wallos_calendar_advance_subscription_next_payment($subscriptionToRenew, $currentDateString, 1);
+        if ($nextPaymentDate === false) {
+            throw new RuntimeException('Could not calculate the next payment date.');
+        }
 
-    if (!$updateStmt->execute()) {
-        throw new RuntimeException('Failed to update next payment date.');
+        if (!wallos_get_subscription_payment_record_by_due_date($db, $subscriptionId, $userId, $expectedDueDate)) {
+            $rules = wallos_get_subscription_price_rules($db, $subscriptionId, $userId, true);
+            $price = wallos_get_effective_subscription_price_for_due_date($subscriptionToRenew, $rules, $expectedDueDate, $db, $userId);
+            if ($price['amount_original'] > 0) {
+                wallos_record_subscription_payment(
+                    $db, $userId, $subscriptionId, $expectedDueDate, $currentDateString,
+                    $price['amount_original'], $price['currency_id'], (int) $subscriptionToRenew['payment_method_id']
+                );
+            }
+        }
+
+        $updateStmt = $db->prepare('UPDATE subscriptions SET next_payment = :next_payment WHERE id = :id AND user_id = :user_id');
+        $updateStmt->bindValue(':next_payment', $nextPaymentDate, SQLITE3_TEXT);
+        $updateStmt->bindValue(':id', $subscriptionId, SQLITE3_INTEGER);
+        $updateStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+        $updateStmt->execute();
+        return true;
+    });
+    if (!$renewed) {
+        http_response_code(409);
+        echo json_encode(['success' => false, 'message' => translate('subscription_renewal_schedule_changed', $i18n)]);
+        exit;
     }
-
-    $db->exec('COMMIT');
-    $response = [
-        "success" => true,
-        "message" => translate('success', $i18n),
-        "id" => $subscriptionId
-    ];
-    echo json_encode($response);
+    echo json_encode(['success' => true, 'message' => translate('success', $i18n), 'id' => $subscriptionId]);
 } catch (Throwable $throwable) {
-    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db ?? null);
-    $db->exec('ROLLBACK');
-    die(json_encode([
-        "success" => false,
-        "message" => translate("error", $i18n)
-    ]));
+    wallos_database_emit_busy_response_if_needed($i18n, $throwable, $db);
+    echo json_encode(['success' => false, 'message' => translate('error', $i18n)]);
 }

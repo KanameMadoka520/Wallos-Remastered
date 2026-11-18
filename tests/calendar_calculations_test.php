@@ -292,7 +292,7 @@ try {
     wallos_calendar_test_assert(
         is_string($manualWriteSource)
         && preg_match(
-            '/wallos_calendar_advance_subscription_next_payment\\(\\s*\\$subscriptionToRenew,\\s*\\$currentDate->format\\([^)]*\\),\\s*1\\s*\\)/s',
+            '/wallos_calendar_advance_subscription_next_payment\\(\\s*\\$subscriptionToRenew,\\s*\\$currentDateString,\\s*1\\s*\\)/s',
             $manualWriteSource
         ) === 1
         && strpos($manualWriteSource, 'new DateInterval(') === false,

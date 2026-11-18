@@ -312,8 +312,10 @@ function wallos_calendar_get_payment_dates(array $subscription, $calendarYear, $
     }
 
     $yearsToLoad = max(1, (int) $yearsToLoad);
-    $endDate = strtotime('+' . $yearsToLoad . ' years', $nextPaymentDate);
-    if ($endDate === false) {
+    $projectionEnd = strtotime('+' . $yearsToLoad . ' years', $nextPaymentDate);
+    $nextMonthStart = strtotime('first day of next month', $startOfMonth);
+    if ($projectionEnd === false || $nextMonthStart === false
+        || $projectionEnd < $startOfMonth || $subscriptionStartDate >= $nextMonthStart) {
         return [];
     }
 
@@ -335,7 +337,7 @@ function wallos_calendar_get_payment_dates(array $subscription, $calendarYear, $
     }
 
     $dates = [];
-    for ($date = $startDate; $date <= $endDate;) {
+    for ($date = $startDate; $date < $nextMonthStart && $date <= $projectionEnd;) {
         if ($date >= $subscriptionStartDate && date('Y-m', $date) === $monthKey) {
             $dates[] = $date;
         }

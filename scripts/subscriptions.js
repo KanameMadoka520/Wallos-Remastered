@@ -1195,8 +1195,6 @@ function resetForm() {
   submitButton.disabled = false;
   const autoRenew = document.querySelector("#auto_renew");
   autoRenew.checked = true;
-  const startDate = document.querySelector("#start_date");
-  startDate.value = new Date().toISOString().split('T')[0];
   const manualUsedValueInput = document.querySelector("#manual_cycle_used_value_main");
   if (manualUsedValueInput) {
     manualUsedValueInput.value = "";
@@ -1213,7 +1211,9 @@ function resetForm() {
   replacementSubscription.classList.add("hide");
   const form = document.querySelector("#subs-form");
   form.reset();
+  form.elements.start_date.value = window.WallosSubscriptionRecurrence.getAccountDate();
   delete form.dataset.originalDailyBilling;
+  document.getElementById("record-initial-payment-option").hidden = false;
   ["#payer_user", "#category"].forEach((selector) => {
     const select = document.querySelector(selector);
     // Sorting by numeric reference keeps defaults stable after editing a multi-selection.
@@ -1230,6 +1230,8 @@ function resetForm() {
 }
 
 function fillEditFormFields(subscription) {
+  document.getElementById("record-initial-payment-option").hidden = true;
+  document.getElementById("record-initial-payment").checked = false;
   const formTitle = document.querySelector("#form-title");
   formTitle.textContent = translate('edit_subscription');
   const logo = document.querySelector("#form-logo");
@@ -1362,8 +1364,6 @@ function addSubscription() {
   resetForm();
   const modal = document.getElementById('subscription-form');
   
-  const startDate = document.querySelector("#start_date");
-  startDate.value = new Date().toISOString().split('T')[0];
 
   modal.classList.add("is-open");
   const body = document.querySelector('body');
@@ -1496,11 +1496,11 @@ function cloneSubscription(event, id) {
 }
 
 
-function renewSubscription(event, id) {
+function renewSubscription(event, id, expectedDueDate) {
   event.stopPropagation();
   event.preventDefault();
 
-  window.WallosHttp.postJson("endpoints/subscription/renew.php", { id }, {
+  window.WallosHttp.postJson("endpoints/subscription/renew.php", { id, expected_due_date: expectedDueDate }, {
     requireOk: true,
     fallbackErrorMessage: translate("network_response_error"),
   })
@@ -1735,7 +1735,7 @@ function handleStaticSubscriptionAction(event) {
     cloneSubscription(event, getActionSubscriptionId(trigger));
     break;
   case "renew-subscription":
-    renewSubscription(event, getActionSubscriptionId(trigger));
+    renewSubscription(event, getActionSubscriptionId(trigger), trigger.dataset.expectedDueDate);
     break;
   case "toggle-open-subscription":
     if (!shouldSkipSubscriptionToggle(trigger, event.target)) {
@@ -2440,71 +2440,12 @@ function swipeHintAnimation() {
 
 function autoFillNextPaymentDate(e) {
   e.preventDefault();
-  const frequencySelect = document.querySelector("#frequency");
-  const cycleSelect = document.querySelector("#cycle"); 
-  const startDate = document.querySelector("#start_date");
-  const nextPayment = document.querySelector("#next_payment"); 
-
-  // Do nothing if frequency, cycle, or start date is not set
-  if (!frequencySelect.value || !cycleSelect.value || !startDate.value || isNaN(Date.parse(startDate.value))) {
-    console.log(frequencySelect.value, cycleSelect.value, startDate.value);
-    return;
-  }
-  
-  const today = new Date();
-  const cycle = cycleSelect.value;
-  const frequency = Number(frequencySelect.value);
-
-  const nextDate = new Date(startDate.value);
-  if (cycle === '5') {
-    nextPayment.value = startDate.value;
-    return;
-  }
-
-  let safetyCounter = 0;
-  const maxIterations = 1000;
-
-  while (nextDate <= today && safetyCounter < maxIterations) {
-    switch (cycle) {
-    case '1': // Days
-      nextDate.setDate(nextDate.getDate() + frequency);
-      break;
-    case '2': // Weeks
-      nextDate.setDate(nextDate.getDate() + 7 * frequency);
-      break;
-    case '3': // Months  
-      nextDate.setMonth(nextDate.getMonth() + frequency);
-      break;
-    case '4': // Years
-      nextDate.setFullYear(nextDate.getFullYear() + frequency);
-      break;
-    default:
-    }
-    safetyCounter++;
-  }
-
-if (safetyCounter === maxIterations) {
-  return;
-}
-
-nextPayment.value = toISOStringWithTimezone(nextDate).substring(0, 10);
-}
-
-function toISOStringWithTimezone(date) {
-  const pad = n => String(Math.floor(Math.abs(n))).padStart(2, '0');
-  const tzOffset = -date.getTimezoneOffset();
-  const sign = tzOffset >= 0 ? '+' : '-';
-  const hoursOffset = pad(tzOffset / 60);
-  const minutesOffset = pad(tzOffset % 60);
-
-  return date.getFullYear() +
-    '-' + pad(date.getMonth() + 1) +
-    '-' + pad(date.getDate()) +
-    'T' + pad(date.getHours()) +
-    ':' + pad(date.getMinutes()) +
-    ':' + pad(date.getSeconds()) +
-    sign + hoursOffset +
-    ':' + minutesOffset;
+  const form = document.getElementById("subs-form");
+  const { start_date, next_payment, cycle, frequency } = form.elements;
+  const nextDate = window.WallosSubscriptionRecurrence.getNextDate(
+    start_date.value, Number(cycle.value), Number(frequency.value)
+  );
+  if (nextDate) next_payment.value = nextDate;
 }
 
 function insertMarkdownSyntax(textarea, prefix, suffix, placeholder) {

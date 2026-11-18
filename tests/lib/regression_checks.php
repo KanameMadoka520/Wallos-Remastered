@@ -119,7 +119,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $versionPhp = wallos_regression_read_repo_file($config, 'includes/version.php');
     $aboutPhp = wallos_regression_read_repo_file($config, 'about.php');
     $remasteredVersionValid = strpos($versionPhp, '$version = "v5.10.4";') !== false
-        && strpos($versionPhp, '$remasteredVersion = "v5.10.4-remastered.4";') !== false
+        && strpos($versionPhp, '$remasteredVersion = "v5.10.4-remastered.5";') !== false
         && strpos($aboutPhp, 'Current running remastered build.') !== false
         && strpos($aboutPhp, 'Compatibility sync target: Wallos <?= htmlspecialchars($version') !== false
         && strpos($aboutPhp, 'Remastered update scope') !== false;
@@ -237,7 +237,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
     $updateNextPaymentPhp = wallos_regression_read_repo_file($config, 'endpoints/cronjobs/updatenextpayment.php');
     $renewSubscriptionPhp = wallos_regression_read_repo_file($config, 'endpoints/subscription/renew.php');
     $yearlyCostPhp = wallos_regression_read_repo_file($config, 'endpoints/cronjobs/storetotalyearlycost.php');
-    $oneTimeSubscriptionsJs = wallos_regression_read_repo_file($config, 'scripts/subscriptions.js');
+    $oneTimeSubscriptionsJs = wallos_regression_read_repo_file($config, 'scripts/subscription-recurrence.js');
     $oneTimeCompatibilityValid = wallos_regression_text_has_all($statsCalculationsPhp, array(
         'case 5:',
         'return 0;',
@@ -261,8 +261,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'case 5:',
         'return 0;',
     )) && wallos_regression_text_has_all($oneTimeSubscriptionsJs, array(
-        "if (cycle === '5')",
-        'nextPayment.value = startDate.value;',
+        'if (cycle === 5) return startValue;',
     ));
     $results[] = wallos_regression_make_result(
         $oneTimeCompatibilityValid ? 'PASS' : 'FAIL',
@@ -340,6 +339,7 @@ function wallos_regression_run_static_suite(array $config, array $suiteDefinitio
         'scripts/subscription-preferences.js',
         'scripts/subscription-media.js',
         'scripts/subscription-image-viewer.js',
+        'scripts/subscription-recurrence.js',
         'scripts/subscription-price-rules.js',
         'scripts/subscription-layout.js',
         'scripts/subscription-payments.js',

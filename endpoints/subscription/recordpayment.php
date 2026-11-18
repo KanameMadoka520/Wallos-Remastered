@@ -23,34 +23,46 @@ if ($subscriptionId <= 0 || $paidAt === '' || $amountOriginal <= 0) {
     exit;
 }
 
+if (wallos_payment_record_is_valid_date($paidAt) && $paidAt > date('Y-m-d')) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => translate('subscription_payment_date_future', $i18n)]);
+    exit;
+}
+
 try {
-    $checkStmt = $db->prepare('SELECT id FROM subscriptions WHERE id = :id AND user_id = :user_id AND lifecycle_status = :lifecycle_status');
-    $checkStmt->bindValue(':id', $subscriptionId, SQLITE3_INTEGER);
-    $checkStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    $checkStmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
-    $checkResult = $checkStmt->execute();
-    if (!$checkResult || $checkResult->fetchArray(SQLITE3_ASSOC) === false) {
-        throw new RuntimeException('Subscription not found.');
-    }
+    $recordId = wallos_payment_write_transaction($db, function () use (
+        $db, $userId, $subscriptionId, $dueDate, $paidAt, $amountOriginal, $currencyId, $paymentMethodId, $note
+    ) {
+        $checkStmt = $db->prepare('SELECT id FROM subscriptions WHERE id = :id AND user_id = :user_id AND lifecycle_status = :lifecycle_status');
+        $checkStmt->bindValue(':id', $subscriptionId, SQLITE3_INTEGER);
+        $checkStmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+        $checkStmt->bindValue(':lifecycle_status', WALLOS_SUBSCRIPTION_STATUS_ACTIVE, SQLITE3_TEXT);
+        $checkResult = $checkStmt->execute();
+        if (!$checkResult || $checkResult->fetchArray(SQLITE3_ASSOC) === false) {
+            throw new RuntimeException('Subscription not found.');
+        }
 
-    $recordId = wallos_record_subscription_payment(
-        $db,
-        $userId,
-        $subscriptionId,
-        $dueDate,
-        $paidAt,
-        $amountOriginal,
-        $currencyId,
-        $paymentMethodId,
-        $note
-    );
+        $recordId = wallos_record_subscription_payment(
+            $db,
+            $userId,
+            $subscriptionId,
+            $dueDate,
+            $paidAt,
+            $amountOriginal,
+            $currencyId,
+            $paymentMethodId,
+            $note
+        );
 
-    wallos_recalculate_subscription_next_payment_from_history(
-        $db,
-        $subscriptionId,
-        $userId,
-        [$dueDate !== '' ? $dueDate : $paidAt]
-    );
+        wallos_recalculate_subscription_next_payment_from_history(
+            $db,
+            $subscriptionId,
+            $userId,
+            [$dueDate !== '' ? $dueDate : $paidAt]
+        );
+
+        return $recordId;
+    });
 
     echo json_encode([
         'success' => true,

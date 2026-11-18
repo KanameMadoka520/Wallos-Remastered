@@ -1,6 +1,6 @@
 # Wallos-Remastered
 
-> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.10.4-remastered.4`；上游功能同步目标：[`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4)。
+> 面向长期自托管的 Wallos 重制分支。当前版本：`v5.10.4-remastered.5`；上游功能同步目标：[`ellite/Wallos v5.10.4`](https://github.com/ellite/Wallos/tree/v5.10.4)。
 
 [English README](README_EN.md) · [变更记录](CHANGELOG.md) · [安全策略](SECURITY.md) · [贡献指南](CONTRIBUTING.md)
 

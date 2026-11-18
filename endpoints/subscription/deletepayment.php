@@ -19,18 +19,22 @@ if ($recordId <= 0 || $subscriptionId <= 0) {
 }
 
 try {
-    $existingRecord = wallos_get_subscription_payment_record_by_id($db, $recordId, $subscriptionId, $userId);
-    if ($existingRecord === false) {
-        throw new RuntimeException('Payment record not found.');
-    }
+    wallos_payment_write_transaction($db, function () use (
+        $db, $userId, $recordId, $subscriptionId
+    ) {
+        $existingRecord = wallos_get_subscription_payment_record_by_id($db, $recordId, $subscriptionId, $userId);
+        if ($existingRecord === false) {
+            throw new RuntimeException('Payment record not found.');
+        }
 
-    wallos_delete_subscription_payment_record($db, $recordId, $subscriptionId, $userId);
-    wallos_recalculate_subscription_next_payment_from_history(
-        $db,
-        $subscriptionId,
-        $userId,
-        [$existingRecord['due_date'] ?? '']
-    );
+        wallos_delete_subscription_payment_record($db, $recordId, $subscriptionId, $userId);
+        wallos_recalculate_subscription_next_payment_from_history(
+            $db,
+            $subscriptionId,
+            $userId,
+            [$existingRecord['due_date'] ?? '']
+        );
+    });
 
     echo json_encode([
         'success' => true,

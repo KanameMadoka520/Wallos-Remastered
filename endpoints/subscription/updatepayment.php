@@ -24,34 +24,44 @@ if ($recordId <= 0 || $subscriptionId <= 0 || $paidAt === '' || $amountOriginal 
     exit;
 }
 
+if (wallos_payment_record_is_valid_date($paidAt) && $paidAt > date('Y-m-d')) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => translate('subscription_payment_date_future', $i18n)]);
+    exit;
+}
+
 try {
-    $existingRecord = wallos_get_subscription_payment_record_by_id($db, $recordId, $subscriptionId, $userId);
-    if ($existingRecord === false) {
-        throw new RuntimeException('Payment record not found.');
-    }
+    wallos_payment_write_transaction($db, function () use (
+        $db, $userId, $recordId, $subscriptionId, $dueDate, $paidAt, $amountOriginal, $currencyId, $paymentMethodId, $note
+    ) {
+        $existingRecord = wallos_get_subscription_payment_record_by_id($db, $recordId, $subscriptionId, $userId);
+        if ($existingRecord === false) {
+            throw new RuntimeException('Payment record not found.');
+        }
 
-    wallos_update_subscription_payment_record(
-        $db,
-        $userId,
-        $recordId,
-        $subscriptionId,
-        $dueDate,
-        $paidAt,
-        $amountOriginal,
-        $currencyId,
-        $paymentMethodId,
-        $note
-    );
+        wallos_update_subscription_payment_record(
+            $db,
+            $userId,
+            $recordId,
+            $subscriptionId,
+            $dueDate,
+            $paidAt,
+            $amountOriginal,
+            $currencyId,
+            $paymentMethodId,
+            $note
+        );
 
-    wallos_recalculate_subscription_next_payment_from_history(
-        $db,
-        $subscriptionId,
-        $userId,
-        [
-            $existingRecord['due_date'] ?? '',
-            $dueDate !== '' ? $dueDate : $paidAt,
-        ]
-    );
+        wallos_recalculate_subscription_next_payment_from_history(
+            $db,
+            $subscriptionId,
+            $userId,
+            [
+                $existingRecord['due_date'] ?? '',
+                $dueDate !== '' ? $dueDate : $paidAt,
+            ]
+        );
+    });
 
     echo json_encode([
         'success' => true,

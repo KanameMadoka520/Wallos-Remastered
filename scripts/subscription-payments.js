@@ -37,11 +37,12 @@ function resetSubscriptionPaymentForm() {
 
   const dueDateInput = document.querySelector("#subscription-payment-due-date");
   const paidAtInput = document.querySelector("#subscription-payment-paid-at");
-  const today = new Date().toISOString().split('T')[0];
+  const today = window.WallosSubscriptionRecurrence.getAccountDate();
   if (dueDateInput) {
     dueDateInput.value = today;
   }
   if (paidAtInput) {
+    paidAtInput.max = today;
     paidAtInput.value = today;
   }
 
@@ -95,10 +96,10 @@ function fillSubscriptionPaymentForm(subscription) {
     subscriptionIdInput.value = subscription.id || "";
   }
   if (dueDateInput) {
-    dueDateInput.value = subscription.next_payment || new Date().toISOString().split('T')[0];
+    dueDateInput.value = subscription.next_payment || window.WallosSubscriptionRecurrence.getAccountDate();
   }
   if (paidAtInput) {
-    paidAtInput.value = new Date().toISOString().split('T')[0];
+    paidAtInput.value = window.WallosSubscriptionRecurrence.getAccountDate();
   }
   if (currencyInput) {
     currencyInput.value = String(subscription.currency_id || "");

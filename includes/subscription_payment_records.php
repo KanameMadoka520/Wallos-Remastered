@@ -404,6 +404,24 @@ function wallos_get_subscription_payment_records_for_period($db, $userId, $dateF
     return $records;
 }
 
+function wallos_payment_write_transaction($db, callable $write)
+{
+    $db->enableExceptions(true);
+    $db->exec('BEGIN IMMEDIATE');
+    try {
+        $result = $write();
+        $db->exec('COMMIT');
+        return $result;
+    } catch (Throwable $error) {
+        try {
+            $db->exec('ROLLBACK');
+        } catch (Throwable $rollbackError) {
+            // Preserve the write error for the caller's error handling.
+        }
+        throw $error;
+    }
+}
+
 function wallos_record_subscription_payment(
     $db,
     $userId,
@@ -449,7 +467,7 @@ function wallos_record_subscription_payment(
     }
 
     $amountOriginal = (float) $amountOriginal;
-    if ($amountOriginal <= 0) {
+    if (!is_finite($amountOriginal) || $amountOriginal <= 0) {
         throw new RuntimeException('Invalid payment amount.');
     }
 
@@ -538,7 +556,7 @@ function wallos_update_subscription_payment_record(
     }
 
     $amountOriginal = (float) $amountOriginal;
-    if ($amountOriginal <= 0) {
+    if (!is_finite($amountOriginal) || $amountOriginal <= 0) {
         throw new RuntimeException('Invalid payment amount.');
     }
 

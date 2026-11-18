@@ -51,7 +51,8 @@ try:
     status,body=request('/endpoints/subscription/clone.php',{'id':source})
     check(status==400 and body.get('success') is False,'clone reports a late secondary-relation failure')
     check(db.execute('SELECT count(*) FROM subscriptions WHERE name=?',(name,)).fetchone()[0]==1,'clone failure rolls back its initial subscription row')
-    values.update(name=created_name,notes='',url='',**{'logo-url':'','notify_days_before':1,'replacement_subscription_id':0})
+    values.update(name=created_name,notes='',url='',record_initial_payment=1,
+                  **{'logo-url':'','notify_days_before':1,'replacement_subscription_id':0})
     values['payer_ids[]']=values.pop('payer_ids');values['category_ids[]']=values.pop('category_ids')
     status,body=request('/endpoints/subscription/add.php',values,form=True)
     check(body.get('status')=='Error','browser create reports a late secondary-relation failure')
@@ -59,5 +60,36 @@ try:
     check(db.execute('SELECT count(*) FROM subscription_payment_records p WHERE NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.id=p.subscription_id)').fetchone()[0]==0,'late create failure leaves no orphan initial payment')
     check(db.execute('SELECT count(*) FROM subscription_payers r WHERE NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.id=r.subscription_id)').fetchone()[0]==0,'failed create/clone leave no orphan relation rows')
 finally:
-    db.execute('DROP TRIGGER IF EXISTS '+trigger);db.commit();db.close()
+    db.execute('DROP TRIGGER IF EXISTS '+trigger);db.commit()
+
+ledger_trigger = 'isolated_schedule_failure_'+suffix
+payment_data = {'id':source,'due_date':today,'paid_at':today,'amount_original':3,'currency_id':100,'payment_method_id':100}
+def schedule():
+    return db.execute('SELECT next_payment FROM subscriptions WHERE id=?',(source,)).fetchone()[0]
+def ledger():
+    return db.execute('SELECT id, amount_original FROM subscription_payment_records WHERE subscription_id=?',(source,)).fetchall()
+def block_advance():
+    db.execute(f'''CREATE TRIGGER {ledger_trigger} BEFORE UPDATE OF next_payment ON subscriptions
+        WHEN NEW.id={int(source)} BEGIN SELECT RAISE(ABORT,'isolated expiry write failure'); END''')
+    db.commit()
+
+try:
+    block_advance()
+    _,body=request('/endpoints/subscription/recordpayment.php',payment_data)
+    check(body.get('success') is False and schedule() == today and ledger() == [],
+          'a failed schedule write rolls back a newly added payment')
+    db.execute('DROP TRIGGER '+ledger_trigger);db.commit()
+    _,body=request('/endpoints/subscription/recordpayment.php',payment_data)
+    check(body.get('success') is True and schedule() > today and len(ledger()) == 1,
+          'retry applies the ledger write and its renewal date together')
+    prior_schedule,prior_ledger=schedule(),ledger()
+    block_advance()
+    _,body=request('/endpoints/subscription/updatepayment.php',dict(payment_data,record_id=prior_ledger[0][0],amount_original=5))
+    check(body.get('success') is False and schedule() == prior_schedule and ledger() == prior_ledger,
+          'a failed schedule write rolls back a payment edit')
+    _,body=request('/endpoints/subscription/deletepayment.php',{'id':source,'record_id':prior_ledger[0][0]})
+    check(body.get('success') is False and schedule() == prior_schedule and ledger() == prior_ledger,
+          'a failed schedule write rolls back a payment deletion')
+finally:
+    db.execute('DROP TRIGGER IF EXISTS '+ledger_trigger);db.commit();db.close()
 print(f'PASS: {checks} real HTTP relation atomicity checks.')

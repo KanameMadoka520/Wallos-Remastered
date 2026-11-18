@@ -268,9 +268,10 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                         Delete
                     </button>
                     <?php
-                    if ($subscription['auto_renew'] != 1 && empty($subscription['one_time'])) {
+                    if (empty($subscription['inactive']) && $subscription['auto_renew'] != 1 && empty($subscription['one_time'])) {
                         ?>
-                        <button class="mobile-action-renew" data-subscription-action="renew-subscription" data-subscription-id="<?= (int) $subscription['id'] ?>">
+                        <button class="mobile-action-renew" data-subscription-action="renew-subscription" data-subscription-id="<?= (int) $subscription['id'] ?>"
+                            data-expected-due-date="<?= htmlspecialchars($subscription['next_payment'], ENT_QUOTES, 'UTF-8') ?>">
                             <?php include $imagePath . "images/siteicons/svg/mobile-menu/renew.php"; ?>
                             Renew
                         </button>
@@ -409,10 +410,11 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
                             <?= translate('clone', $i18n) ?>
                         </li>
                         <?php
-                        if ($subscription['auto_renew'] != 1 && empty($subscription['one_time'])) {
+                        if (empty($subscription['inactive']) && $subscription['auto_renew'] != 1 && empty($subscription['one_time'])) {
                             ?>
                             <li class="renew" title="<?= translate('renew', $i18n) ?>" data-subscription-action="renew-subscription"
-                                data-subscription-id="<?= (int) $subscription['id'] ?>">
+                                data-subscription-id="<?= (int) $subscription['id'] ?>"
+                                data-expected-due-date="<?= htmlspecialchars($subscription['next_payment'], ENT_QUOTES, 'UTF-8') ?>">
                                 <?php include $imagePath . "images/siteicons/svg/renew.php"; ?>
                                 <?= translate('renew', $i18n) ?>
                             </li>
